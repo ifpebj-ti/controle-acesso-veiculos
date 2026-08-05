@@ -8,6 +8,7 @@ Sistema para gerenciamento e controle de acesso de veículos, desenvolvido como 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 ![Repo Size](https://img.shields.io/github/repo-size/ifpebj-ti/controle-acesso-veiculos)
 ![Last Commit](https://img.shields.io/github/last-commit/ifpebj-ti/controle-acesso-veiculos)
+![Apresentação de Acompanhamento do Projeto (Atualizada Semanalmente):](https://canva.link/tjsp5iu5c5iwbdp)
 
 </div>
 
