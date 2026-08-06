@@ -16,7 +16,8 @@ Sistema para gerenciamento e controle de acesso de veículos, desenvolvido como 
 ## 📌 Índice
 
 - [Sobre o Projeto](#-sobre-o-projeto)
-- [Funcionalidades Planejadas](#-funcionalidades-planejadas)
+- [Problema Resolvido](#-problema-resolvido)
+- [Documentação e Artefatos](#-documentação-e-artefatos)
 - [Stack de Tecnologias](#️-stack-de-tecnologias)
 - [Como Executar](#-como-executar)
 - [Colaboradores](#-colaboradores)
@@ -26,27 +27,54 @@ Sistema para gerenciamento e controle de acesso de veículos, desenvolvido como 
 
 ## 📖 Sobre o Projeto
 
+O **Controle de Acesso de Veículos** é um sistema para registrar, acompanhar e auditar o acesso de veículos ao IFPE – Campus Belo Jardim, apoiando o setor de transporte, porteiros e guardas na organização dos registros e na segurança do campus.
+
 Este sistema tem como objetivo fornecer uma forma **eficiente e segura** de gerenciar o controle de acesso de veículos, permitindo:
 
-- Cadastro de veículos e motoristas
-- Monitoramento de entradas e saídas
-- Validação de acesso em tempo real
-- Geração de relatórios administrativos
+- cadastro de veículos e motoristas;
+- monitoramento de entradas e saídas;
+- validação de acesso em tempo real;
+- geração de relatórios administrativos para apoio à gestão.
 
-> ⚠️ A stack de tecnologias ainda está sendo definida e será atualizada aqui em breve.
+### ✨ Funcionalidades Planejadas
+
+| Funcionalidade               | Status |
+|-----------------------------|:-----:|
+| Cadastro de veículos        | 🔲    |
+| Cadastro de motoristas      | 🔲    |
+| Histórico de acessos        | 🔲    |
+| Controle de entrada e saída | 🔲    |
+| Painel administrativo       | 🔲    |
+| Relatórios de acesso        | 🔲    |
 
 ---
 
-## ✨ Funcionalidades Planejadas
+## 🎯 Problema Resolvido
 
-| Funcionalidade | Status |
-|---|:---:|
-| Cadastro de veículos | 🔲 |
-| Cadastro de motoristas | 🔲 |
-| Histórico de acessos | 🔲 |
-| Controle de entrada e saída | 🔲 |
-| Painel administrativo | 🔲 |
-| Relatórios de acesso | 🔲 |
+Hoje o controle de veículos é feito com registros dispersos (anotações manuais, planilhas e comunicação informal), o que dificulta:
+
+- localizar rapidamente quem entrou ou saiu em um determinado horário;
+- ter histórico confiável para auditoria e segurança;
+- gerar relatórios consolidados para o setor de transporte;
+- padronizar o procedimento entre diferentes porteiros e turnos.
+
+O sistema propõe centralizar essas informações em uma única aplicação, com registros padronizados e consultáveis.
+
+---
+
+## 📚 Documentação e Artefatos
+
+- **Wiki do projeto:**  
+  Documentação técnica e funcional do sistema, incluindo visão, arquitetura, segurança e operação.  
+  👉 [controle-acesso-veiculos.wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki)
+
+- **Acompanhamento semanal:**  
+  Apresentação usada nas weeklies / sprint report, com o progresso do projeto ao longo das sprints.  
+  👉 [Sprint report / Weekly 1](https://canva.link/tjsp5iu5c5iwbdp)
+
+- **Protótipo das telas:**  
+  Protótipos de interface ainda estão em desenvolvimento e serão refinados nas próximas sprints.  
+  👉 [Figma](https://www.figma.com/design/N6EOkXw8Ex7cZayyh4MJfY/Propotipagem?node-id=0-1&t=hWlwxlusfhqN3ZTP-1)
 
 ---
 
@@ -66,21 +94,10 @@ Este sistema tem como objetivo fornecer uma forma **eficiente e segura** de gere
 
 ## 👥 Colaboradores
 
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/ErnandesCosta">
-        <sub><b>Ernandes Costa</b></sub>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/Raissa-Beatriz">
-        <sub><b>Raissa Beatriz</b></sub>
-      </a>
-    </td>
-  </tr>
-</table>
-
+| Nome | Papel principal | Apoio / Responsabilidades complementares |
+|------|-----------------|-------------------------------------------|
+| [**Raíssa Beatriz**](https://github.com/Raissa-Beatriz) | Front-end / UX/UI | DevOps / Infra / QA |
+| [**José Ernandes**](https://github.com/ErnandesCosta) | Back-end / DB | DevOps / Infra / QA |
 ---
 
 ## 📄 Licença
