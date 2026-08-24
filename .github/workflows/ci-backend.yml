@@ -1,0 +1,30 @@
+name: CI - Backend
+
+on:
+  push:
+    paths:
+      - 'src/backend/**'
+  pull_request:
+    paths:
+      - 'src/backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore src/backend/ControleAcessoVeiculos.sln
+
+    - name: Build
+      run: dotnet build src/backend/ControleAcessoVeiculos.sln --no-restore
+
+    - name: Test
+      run: dotnet test src/backend/ControleAcessoVeiculos.sln --no-build --verbosity normal

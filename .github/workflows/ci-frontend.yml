@@ -1,0 +1,33 @@
+name: CI - Frontend
+
+on:
+  push:
+    paths:
+      - 'src/frontend/**'
+  pull_request:
+    paths:
+      - 'src/frontend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      working-directory: src/frontend
+      run: npm install
+
+    - name: Lint
+      working-directory: src/frontend
+      run: npm run lint
+
+    - name: Build
+      working-directory: src/frontend
+      run: npm run build
