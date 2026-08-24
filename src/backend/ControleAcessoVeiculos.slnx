@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ControleAcessoVeiculos.API/ControleAcessoVeiculos.API.csproj" />
+  <Project Path="ControleAcessoVeiculos.Application/ControleAcessoVeiculos.Application.csproj" />
+  <Project Path="ControleAcessoVeiculos.Domain/ControleAcessoVeiculos.Domain.csproj" />
+  <Project Path="ControleAcessoVeiculos.Infrastructure/ControleAcessoVeiculos.Infrastructure.csproj" />
+</Solution>
