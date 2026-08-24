@@ -21,10 +21,10 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore src/backend/ControleAcessoVeiculos.sln
+      run: dotnet restore src/backend/ControleAcessoVeiculos.slnx
 
     - name: Build
-      run: dotnet build src/backend/ControleAcessoVeiculos.sln --no-restore
+      run: dotnet build src/backend/ControleAcessoVeiculos.slnx --no-restore
 
     - name: Test
-      run: dotnet test src/backend/ControleAcessoVeiculos.sln --no-build --verbosity normal
+      run: dotnet test src/backend/ControleAcessoVeiculos.slnx --no-build --verbosity normal
