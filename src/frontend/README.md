@@ -1,75 +1,90 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Frontend
 
-Currently, two official plugins are available:
+Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jardim.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tecnologias
 
-## React Compiler
+- React;
+- TypeScript;
+- Vite;
+- Tailwind CSS 4;
+- React Router;
+- Axios;
+- ESLint.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Executar localmente
 
-## Expanding the ESLint configuration
+Na pasta `src/frontend`:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Variáveis de ambiente
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Crie um arquivo `.env.local` quando precisar configurar a URL da API:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+```
 
+Se a variável não estiver definida, o cliente HTTP utilizará:
+
+```text
+http://localhost:5000/api
+```
+
+Não inclua tokens, senhas ou credenciais em variáveis expostas ao frontend.
+
+## Estrutura de diretórios
+
+```text
+src/
+├── components/
+│   ├── layout/       # Layouts compartilhados.
+│   └── ui/           # Componentes visuais reutilizáveis.
+├── pages/            # Componentes associados às páginas.
+├── routes/           # Configuração central das rotas.
+├── services/         # Cliente HTTP e integrações externas.
+├── hooks/            # Hooks reutilizáveis.
+├── types/            # Tipos compartilhados.
+├── utils/            # Funções utilitárias puras.
+├── App.tsx           # Composição principal.
+├── main.tsx          # Ponto de entrada do React.
+└── index.css         # Estilos globais e importação do Tailwind.
+```
+
+## Convenções
+
+- Use TypeScript em todo código novo.
+- Use Tailwind CSS 4 para estilização.
+- Evite CSS manual quando as classes utilitárias forem suficientes.
+- Mantenha componentes com uma responsabilidade clara.
+- Não coloque regras de negócio em componentes visuais.
+- Não faça chamadas HTTP diretamente em componentes de apresentação.
+- Centralize chamadas HTTP em `services/`.
+- Use PascalCase para componentes React.
+- Use branches específicas para cada alteração.
+- Não adicione bibliotecas sem justificar sua necessidade.
+
+## Fora do escopo desta etapa
+
+- autenticação;
+- autorização;
+- gerenciamento de tokens;
+- telas funcionais do MVP;
+- chamadas reais de endpoints;
+- gerenciamento global de estado;
+- testes automatizados;
+- integração com PostgreSQL.
+
+## Validação
+
+Na pasta `src/frontend`:
+
+```powershell
+npm run lint
+npm run build
 ```
