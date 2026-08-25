@@ -86,8 +86,71 @@ O sistema propõe centralizar essas informações em uma única aplicação, com
 
 ## 🚀 Como Executar
 
+### Pré-requisitos
+
+- .NET SDK 10;
+- PostgreSQL 16 ou superior;
+- Docker Desktop, caso o banco seja executado pelo Docker;
+- ferramenta `dotnet-ef` 10.
+
 ```bash
-# Instruções de instalação e execução serão adicionadas assim que a stack for definida.
+dotnet tool install --global dotnet-ef --version 10.*
+```
+
+### Connection string local
+
+O arquivo `src/backend/ControleAcessoVeiculos.API/appsettings.Development.json` contém um exemplo com senha fictícia. Substitua `CHANGE_ME` somente no seu ambiente local ou use a variável de ambiente `ConnectionStrings__DefaultConnection`.
+
+Exemplo:
+
+```text
+Host=localhost;Port=5432;Database=controle_acesso_dev;Username=postgres;Password=CHANGE_ME
+```
+
+No Docker Compose, a API recebe essa configuração por `ConnectionStrings__DefaultConnection`, montada a partir do arquivo local e não versionado `infrastructure/docker/.env`.
+
+### Restaurar e compilar
+
+Execute a partir da raiz do repositório:
+
+```bash
+dotnet restore src/backend/ControleAcessoVeiculos.slnx
+dotnet build src/backend/ControleAcessoVeiculos.slnx --no-restore
+```
+
+### Criar e aplicar migrations
+
+Para criar uma nova migration:
+
+```bash
+dotnet ef migrations add NomeDaMigration --project src/backend/ControleAcessoVeiculos.Infrastructure --startup-project src/backend/ControleAcessoVeiculos.API --output-dir Data/Migrations
+```
+
+Para aplicar as migrations pendentes:
+
+```bash
+dotnet ef database update --project src/backend/ControleAcessoVeiculos.Infrastructure --startup-project src/backend/ControleAcessoVeiculos.API
+```
+
+### Executar a API localmente
+
+```bash
+dotnet run --project src/backend/ControleAcessoVeiculos.API --launch-profile http
+```
+
+A API estará disponível em `http://localhost:5118`. Para verificar os endpoints iniciais:
+
+```bash
+curl http://localhost:5118/health
+curl http://localhost:5118/weatherforecast
+```
+
+### Executar com Docker Compose
+
+```bash
+cd infrastructure/docker
+docker compose build backend
+docker compose up
 ```
 
 ---
