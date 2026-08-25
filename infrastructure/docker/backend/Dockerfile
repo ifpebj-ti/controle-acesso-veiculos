@@ -4,15 +4,24 @@ EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ["src/backend/ControleAcessoVeiculos.API/ControleAcessoVeiculos.API.csproj", "ControleAcessoVeiculos.API/"]
-COPY ["src/backend/ControleAcessoVeiculos.Application/ControleAcessoVeiculos.Application.csproj", "ControleAcessoVeiculos.Application/"]
-COPY ["src/backend/ControleAcessoVeiculos.Domain/ControleAcessoVeiculos.Domain.csproj", "ControleAcessoVeiculos.Domain/"]
-COPY ["src/backend/ControleAcessoVeiculos.Infrastructure/ControleAcessoVeiculos.Infrastructure.csproj", "ControleAcessoVeiculos.Infrastructure/"]
-RUN dotnet restore "ControleAcessoVeiculos.API/ControleAcessoVeiculos.API.csproj"
+
+# Copiar os projetos preservando a estrutura usada pelos ProjectReference.
+COPY ["src/backend/ControleAcessoVeiculos.API/ControleAcessoVeiculos.API.csproj", "src/backend/ControleAcessoVeiculos.API/"]
+COPY ["src/backend/ControleAcessoVeiculos.Application/ControleAcessoVeiculos.Application.csproj", "src/backend/ControleAcessoVeiculos.Application/"]
+COPY ["src/backend/ControleAcessoVeiculos.Domain/ControleAcessoVeiculos.Domain.csproj", "src/backend/ControleAcessoVeiculos.Domain/"]
+COPY ["src/backend/ControleAcessoVeiculos.Infrastructure/ControleAcessoVeiculos.Infrastructure.csproj", "src/backend/ControleAcessoVeiculos.Infrastructure/"]
+
+# Restore
+RUN dotnet restore "src/backend/ControleAcessoVeiculos.API/ControleAcessoVeiculos.API.csproj"
+
+# Copiar o código-fonte para a mesma árvore dos projetos restaurados.
 COPY . .
-WORKDIR "/src/ControleAcessoVeiculos.API"
+
+# Build
+WORKDIR "/src/src/backend/ControleAcessoVeiculos.API"
 RUN dotnet build "ControleAcessoVeiculos.API.csproj" -c Release -o /app/build
 
+# Publish
 FROM build AS publish
 RUN dotnet publish "ControleAcessoVeiculos.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
