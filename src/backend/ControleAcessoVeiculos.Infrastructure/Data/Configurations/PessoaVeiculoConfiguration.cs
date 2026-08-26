@@ -61,11 +61,11 @@ public class PessoaVeiculoConfiguration : IEntityTypeConfiguration<PessoaVeiculo
             .HasColumnType("timestamp with time zone");
 
         builder.HasIndex(relacao => new
-            {
-                relacao.PessoaId,
-                relacao.VeiculoId,
-                relacao.TipoRelacao
-            })
+        {
+            relacao.PessoaId,
+            relacao.VeiculoId,
+            relacao.TipoRelacao
+        })
             .IsUnique()
             .HasDatabaseName("ux_pessoas_veiculos_relacao");
 
