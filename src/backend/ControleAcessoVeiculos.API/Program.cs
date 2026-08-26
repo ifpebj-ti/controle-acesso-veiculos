@@ -1,5 +1,8 @@
+using ControleAcessoVeiculos.API.Health;
 using ControleAcessoVeiculos.Infrastructure.Data;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,12 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ControleAcessoVeiculosDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseReadinessHealthCheck>(
+        "postgresql",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: ["ready"]);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -25,11 +34,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/health", () => Results.Ok(new
+var livenessOptions = new HealthCheckOptions
 {
-    Status = "Healthy",
-    Timestamp = DateTime.UtcNow
-}));
+    Predicate = _ => false,
+    ResponseWriter = WriteHealthResponse
+};
+
+app.MapHealthChecks("/health", livenessOptions);
+app.MapHealthChecks("/health/live", livenessOptions);
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = WriteHealthResponse
+});
 
 var summaries = new[]
 {
@@ -51,6 +68,17 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 app.Run();
+
+static Task WriteHealthResponse(HttpContext context, HealthReport report)
+{
+    context.Response.ContentType = "application/json";
+
+    return context.Response.WriteAsJsonAsync(new
+    {
+        Status = report.Status.ToString(),
+        Timestamp = DateTime.UtcNow
+    });
+}
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
