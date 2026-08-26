@@ -9,7 +9,9 @@ public class CategoriaAcessoConfiguration : IEntityTypeConfiguration<CategoriaAc
     public void Configure(EntityTypeBuilder<CategoriaAcesso> builder)
     {
         builder.ToTable("categorias_acesso", "dbo", table =>
-            table.HasCheckConstraint("ck_categorias_acesso_tempo_validade", "tempo_validade_dias >= 0"));
+            table.HasCheckConstraint(
+                "ck_categorias_acesso_tempo_validade",
+                "tempo_validade_dias IS NULL OR tempo_validade_dias >= 0"));
 
         builder.HasKey(categoria => categoria.Id)
             .HasName("pk_categorias_acesso");
@@ -28,19 +30,26 @@ public class CategoriaAcessoConfiguration : IEntityTypeConfiguration<CategoriaAc
         builder.Property(categoria => categoria.Descricao)
             .HasColumnName("descricao")
             .HasColumnType("character varying(500)")
-            .HasMaxLength(500)
-            .IsRequired();
+            .HasMaxLength(500);
 
         builder.Property(categoria => categoria.TempoValidadeDias)
             .HasColumnName("tempo_validade_dias")
-            .HasColumnType("integer")
-            .IsRequired();
+            .HasColumnType("integer");
 
         builder.Property(categoria => categoria.Ativo)
             .HasColumnName("ativo")
             .HasColumnType("boolean")
             .HasDefaultValue(true)
             .IsRequired();
+
+        builder.Property(categoria => categoria.DataCriacao)
+            .HasColumnName("data_criacao")
+            .HasColumnType("timestamp with time zone")
+            .IsRequired();
+
+        builder.Property(categoria => categoria.DataAlteracao)
+            .HasColumnName("data_alteracao")
+            .HasColumnType("timestamp with time zone");
 
         builder.HasIndex(categoria => categoria.Nome)
             .IsUnique()

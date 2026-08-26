@@ -27,14 +27,22 @@ public class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
         builder.Property(perfil => perfil.Descricao)
             .HasColumnName("descricao")
             .HasColumnType("character varying(500)")
-            .HasMaxLength(500)
-            .IsRequired();
+            .HasMaxLength(500);
 
         builder.Property(perfil => perfil.Ativo)
             .HasColumnName("ativo")
             .HasColumnType("boolean")
             .HasDefaultValue(true)
             .IsRequired();
+
+        builder.Property(perfil => perfil.DataCriacao)
+            .HasColumnName("data_criacao")
+            .HasColumnType("timestamp with time zone")
+            .IsRequired();
+
+        builder.Property(perfil => perfil.DataAlteracao)
+            .HasColumnName("data_alteracao")
+            .HasColumnType("timestamp with time zone");
 
         builder.HasIndex(perfil => perfil.Nome)
             .IsUnique()

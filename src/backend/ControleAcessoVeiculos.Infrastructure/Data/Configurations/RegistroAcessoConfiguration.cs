@@ -27,6 +27,11 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
             .HasColumnType("integer")
             .IsRequired();
 
+        builder.Property(registro => registro.PessoaId)
+            .HasColumnName("pessoa_id")
+            .HasColumnType("integer")
+            .IsRequired();
+
         builder.Property(registro => registro.CategoriaAcessoId)
             .HasColumnName("categoria_acesso_id")
             .HasColumnType("integer")
@@ -41,6 +46,12 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
             .HasColumnName("data_hora_saida")
             .HasColumnType("timestamp with time zone");
 
+        builder.Property(registro => registro.Objetivo)
+            .HasColumnName("objetivo")
+            .HasColumnType("character varying(500)")
+            .HasMaxLength(500)
+            .IsRequired();
+
         builder.Property(registro => registro.Status)
             .HasColumnName("status")
             .HasColumnType("character varying(20)")
@@ -48,16 +59,43 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
             .HasConversion<string>()
             .IsRequired();
 
+        builder.Property(registro => registro.CriadoPorId)
+            .HasColumnName("criado_por_id")
+            .HasColumnType("integer")
+            .IsRequired();
+
+        builder.Property(registro => registro.AtualizadoPorId)
+            .HasColumnName("atualizado_por_id")
+            .HasColumnType("integer");
+
         builder.Property(registro => registro.Observacao)
             .HasColumnName("observacao")
             .HasColumnType("character varying(1000)")
             .HasMaxLength(1000);
+
+        builder.Property(registro => registro.DataCriacao)
+            .HasColumnName("data_criacao")
+            .HasColumnType("timestamp with time zone")
+            .IsRequired();
+
+        builder.Property(registro => registro.DataAlteracao)
+            .HasColumnName("data_alteracao")
+            .HasColumnType("timestamp with time zone");
 
         builder.HasIndex(registro => new { registro.VeiculoId, registro.DataHoraEntrada })
             .HasDatabaseName("ix_registros_acesso_veiculo_data_entrada");
 
         builder.HasIndex(registro => registro.CategoriaAcessoId)
             .HasDatabaseName("ix_registros_acesso_categoria_id");
+
+        builder.HasIndex(registro => registro.PessoaId)
+            .HasDatabaseName("ix_registros_acesso_pessoa_id");
+
+        builder.HasIndex(registro => registro.CriadoPorId)
+            .HasDatabaseName("ix_registros_acesso_criado_por_id");
+
+        builder.HasIndex(registro => registro.AtualizadoPorId)
+            .HasDatabaseName("ix_registros_acesso_atualizado_por_id");
 
         builder.HasIndex(registro => registro.Status)
             .HasDatabaseName("ix_registros_acesso_status");
@@ -73,5 +111,23 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
             .HasForeignKey(registro => registro.CategoriaAcessoId)
             .OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("fk_registros_acesso_categorias_categoria_id");
+
+        builder.HasOne<Pessoa>()
+            .WithMany()
+            .HasForeignKey(registro => registro.PessoaId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_registros_acesso_pessoas_pessoa_id");
+
+        builder.HasOne<Usuario>()
+            .WithMany()
+            .HasForeignKey(registro => registro.CriadoPorId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_registros_acesso_usuarios_criado_por_id");
+
+        builder.HasOne<Usuario>()
+            .WithMany()
+            .HasForeignKey(registro => registro.AtualizadoPorId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_registros_acesso_usuarios_atualizado_por_id");
     }
 }

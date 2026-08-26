@@ -80,7 +80,28 @@ O sistema propõe centralizar essas informações em uma única aplicação, com
 
 ## 🛠️ Stack de Tecnologias
 
-> 🚧 A definir.
+- .NET 10 e ASP.NET Core;
+- Entity Framework Core 10;
+- PostgreSQL 16;
+- xUnit;
+- Docker e Docker Compose.
+
+### Modelo de dados do MVP
+
+A persistência PostgreSQL mantém as entidades `Pessoa`, `Veiculo`,
+`PessoaVeiculo`, `CategoriaAcesso`, `Perfil`, `Usuario`, `RegistroAcesso`,
+`UsoVeiculoInstitucional` e `Auditoria` no schema `dbo`.
+
+O vínculo entre pessoas e veículos é muitos-para-muitos e possui período de
+vigência. Documentos pessoais são opcionais e separados em tipo e número para
+evitar coleta desnecessária de dados. Veículos podem ser identificados por placa
+ou por uma identificação alternativa. A auditoria armazena os estados anterior
+e posterior em colunas `jsonb`.
+
+> A migration `AlignMvpDataModel` preserva pessoas, veículos e seus vínculos.
+> Caso a base antiga possua registros de acesso, a migration interrompe a
+> atualização: objetivo e usuários responsáveis não podem ser inferidos com
+> segurança. Regularize esses registros antes de executá-la novamente.
 
 ---
 
@@ -116,6 +137,12 @@ Execute a partir da raiz do repositório:
 ```bash
 dotnet restore src/backend/ControleAcessoVeiculos.slnx
 dotnet build src/backend/ControleAcessoVeiculos.slnx --no-restore
+```
+
+### Executar os testes
+
+```bash
+dotnet test src/backend/ControleAcessoVeiculos.slnx --no-build
 ```
 
 ### Criar e aplicar migrations

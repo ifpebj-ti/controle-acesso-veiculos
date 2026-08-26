@@ -9,7 +9,14 @@ public class VeiculoConfiguration : IEntityTypeConfiguration<Veiculo>
     public void Configure(EntityTypeBuilder<Veiculo> builder)
     {
         builder.ToTable("veiculos", "dbo", table =>
-            table.HasCheckConstraint("ck_veiculos_ano", "ano > 0"));
+        {
+            table.HasCheckConstraint(
+                "ck_veiculos_identificacao",
+                "placa IS NOT NULL OR identificacao_veiculo IS NOT NULL");
+            table.HasCheckConstraint(
+                "ck_veiculos_ano",
+                "ano IS NULL OR ano > 0");
+        });
 
         builder.HasKey(veiculo => veiculo.Id)
             .HasName("pk_veiculos");
@@ -22,36 +29,42 @@ public class VeiculoConfiguration : IEntityTypeConfiguration<Veiculo>
         builder.Property(veiculo => veiculo.Placa)
             .HasColumnName("placa")
             .HasColumnType("character varying(10)")
-            .HasMaxLength(10)
+            .HasMaxLength(10);
+
+        builder.Property(veiculo => veiculo.Tipo)
+            .HasColumnName("tipo")
+            .HasColumnType("character varying(50)")
+            .HasMaxLength(50);
+
+        builder.Property(veiculo => veiculo.IdentificacaoVeiculo)
+            .HasColumnName("identificacao_veiculo")
+            .HasColumnType("character varying(100)")
+            .HasMaxLength(100);
+
+        builder.Property(veiculo => veiculo.EhInstitucional)
+            .HasColumnName("eh_institucional")
+            .HasColumnType("boolean")
+            .HasDefaultValue(false)
             .IsRequired();
 
         builder.Property(veiculo => veiculo.Marca)
             .HasColumnName("marca")
             .HasColumnType("character varying(80)")
-            .HasMaxLength(80)
-            .IsRequired();
+            .HasMaxLength(80);
 
         builder.Property(veiculo => veiculo.Modelo)
             .HasColumnName("modelo")
             .HasColumnType("character varying(100)")
-            .HasMaxLength(100)
-            .IsRequired();
+            .HasMaxLength(100);
 
         builder.Property(veiculo => veiculo.Cor)
             .HasColumnName("cor")
             .HasColumnType("character varying(40)")
-            .HasMaxLength(40)
-            .IsRequired();
+            .HasMaxLength(40);
 
         builder.Property(veiculo => veiculo.Ano)
             .HasColumnName("ano")
-            .HasColumnType("integer")
-            .IsRequired();
-
-        builder.Property(veiculo => veiculo.PessoaId)
-            .HasColumnName("pessoa_id")
-            .HasColumnType("integer")
-            .IsRequired();
+            .HasColumnType("integer");
 
         builder.Property(veiculo => veiculo.Ativo)
             .HasColumnName("ativo")
@@ -62,7 +75,6 @@ public class VeiculoConfiguration : IEntityTypeConfiguration<Veiculo>
         builder.Property(veiculo => veiculo.DataCriacao)
             .HasColumnName("data_criacao")
             .HasColumnType("timestamp with time zone")
-            .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .IsRequired();
 
         builder.Property(veiculo => veiculo.DataAlteracao)
@@ -71,18 +83,13 @@ public class VeiculoConfiguration : IEntityTypeConfiguration<Veiculo>
 
         builder.HasIndex(veiculo => veiculo.Placa)
             .IsUnique()
+            .HasFilter("placa IS NOT NULL")
             .HasDatabaseName("ux_veiculos_placa");
 
-        builder.HasIndex(veiculo => veiculo.PessoaId)
-            .HasDatabaseName("ix_veiculos_pessoa_id");
+        builder.HasIndex(veiculo => veiculo.EhInstitucional)
+            .HasDatabaseName("ix_veiculos_institucional");
 
         builder.HasIndex(veiculo => veiculo.Ativo)
             .HasDatabaseName("ix_veiculos_ativo");
-
-        builder.HasOne<Pessoa>()
-            .WithMany()
-            .HasForeignKey(veiculo => veiculo.PessoaId)
-            .OnDelete(DeleteBehavior.Restrict)
-            .HasConstraintName("fk_veiculos_pessoas_pessoa_id");
     }
 }
