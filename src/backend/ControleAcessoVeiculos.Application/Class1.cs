@@ -1,4 +1,4 @@
-﻿namespace ControleAcessoVeiculos.Application;
+namespace ControleAcessoVeiculos.Application;
 
 public class Class1
 {
