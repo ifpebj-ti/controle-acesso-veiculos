@@ -68,6 +68,11 @@ O sistema propõe centralizar essas informações em uma única aplicação, com
   Documentação técnica e funcional do sistema, incluindo visão, arquitetura, segurança e operação.  
   👉 [controle-acesso-veiculos.wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki)
 
+- **Segurança versionada:**
+  A [modelagem de ameaças](docs/security/threat-model.md) e o
+  [guia de desenvolvimento seguro](docs/security/secure-development-guide.md)
+  são mantidos no repositório para revisão por Pull Request.
+
 - **Acompanhamento semanal:**  
   Apresentação usada nas weeklies / sprint report, com o progresso do projeto ao longo das sprints.  
   👉 [Sprint report / Weekly 1](https://canva.link/tjsp5iu5c5iwbdp)
