@@ -4,4 +4,5 @@
   <Project Path="ControleAcessoVeiculos.Domain.Tests/ControleAcessoVeiculos.Domain.Tests.csproj" />
   <Project Path="ControleAcessoVeiculos.Domain/ControleAcessoVeiculos.Domain.csproj" />
   <Project Path="ControleAcessoVeiculos.Infrastructure/ControleAcessoVeiculos.Infrastructure.csproj" />
+  <Project Path="ControleAcessoVeiculos.IntegrationTests/ControleAcessoVeiculos.IntegrationTests.csproj" />
 </Solution>
