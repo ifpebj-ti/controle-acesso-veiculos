@@ -8,10 +8,13 @@ public class ControleAcessoVeiculosDbContext(
 {
     public DbSet<Pessoa> Pessoas => Set<Pessoa>();
     public DbSet<Veiculo> Veiculos => Set<Veiculo>();
+    public DbSet<PessoaVeiculo> PessoasVeiculos => Set<PessoaVeiculo>();
     public DbSet<CategoriaAcesso> CategoriasAcesso => Set<CategoriaAcesso>();
     public DbSet<Perfil> Perfis => Set<Perfil>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<RegistroAcesso> RegistrosAcesso => Set<RegistroAcesso>();
+    public DbSet<UsoVeiculoInstitucional> UsosVeiculosInstitucionais =>
+        Set<UsoVeiculoInstitucional>();
     public DbSet<Auditoria> Auditorias => Set<Auditoria>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

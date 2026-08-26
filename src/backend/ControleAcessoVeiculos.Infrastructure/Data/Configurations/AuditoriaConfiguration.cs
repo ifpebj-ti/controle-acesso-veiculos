@@ -31,8 +31,8 @@ public class AuditoriaConfiguration : IEntityTypeConfiguration<Auditoria>
             .HasConversion<string>()
             .IsRequired();
 
-        builder.Property(auditoria => auditoria.Tabela)
-            .HasColumnName("tabela")
+        builder.Property(auditoria => auditoria.Entidade)
+            .HasColumnName("entidade")
             .HasColumnType("character varying(100)")
             .HasMaxLength(100)
             .IsRequired();
@@ -49,8 +49,15 @@ public class AuditoriaConfiguration : IEntityTypeConfiguration<Auditoria>
 
         builder.Property(auditoria => auditoria.Detalhes)
             .HasColumnName("detalhes")
-            .HasColumnType("text")
-            .IsRequired();
+            .HasColumnType("text");
+
+        builder.Property(auditoria => auditoria.DadosAnteriores)
+            .HasColumnName("dados_anteriores")
+            .HasColumnType("jsonb");
+
+        builder.Property(auditoria => auditoria.DadosNovos)
+            .HasColumnName("dados_novos")
+            .HasColumnType("jsonb");
 
         builder.HasIndex(auditoria => auditoria.DataHora)
             .HasDatabaseName("ix_auditorias_data_hora");
@@ -58,8 +65,8 @@ public class AuditoriaConfiguration : IEntityTypeConfiguration<Auditoria>
         builder.HasIndex(auditoria => auditoria.UsuarioId)
             .HasDatabaseName("ix_auditorias_usuario_id");
 
-        builder.HasIndex(auditoria => new { auditoria.Tabela, auditoria.RegistroId })
-            .HasDatabaseName("ix_auditorias_tabela_registro_id");
+        builder.HasIndex(auditoria => new { auditoria.Entidade, auditoria.RegistroId })
+            .HasDatabaseName("ix_auditorias_entidade_registro_id");
 
         builder.HasOne<Usuario>()
             .WithMany()
