@@ -1,6 +1,6 @@
-FROM node:26-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
-COPY src/frontend/package*.json ./
+COPY src/frontend/package*.json src/frontend/.npmrc ./
 RUN npm ci
 COPY src/frontend/ .
 RUN npm run build
