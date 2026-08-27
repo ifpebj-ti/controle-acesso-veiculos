@@ -1,222 +1,290 @@
 <div align="center">
 
-# 🚗 Controle de Acesso de Veículos
+# Controle de Acesso de Veículos
 
-Sistema para gerenciamento e controle de acesso de veículos, desenvolvido como parte do projeto PI7 no **IFPE - Campus Belo Jardim**.
+Sistema web para digitalizar o registro, a consulta e a auditoria da movimentação de veículos no IFPE — Campus Belo Jardim.
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![CI Backend](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-backend.yml/badge.svg)](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-backend.yml)
+[![CI Frontend](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-frontend.yml/badge.svg)](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-frontend.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
-![Repo Size](https://img.shields.io/github/repo-size/ifpebj-ti/controle-acesso-veiculos)
-![Last Commit](https://img.shields.io/github/last-commit/ifpebj-ti/controle-acesso-veiculos)
+
+[Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki) · [Issues](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues) · [Pull Requests](https://github.com/ifpebj-ti/controle-acesso-veiculos/pulls)
 
 </div>
 
----
+## Estado atual
 
-## 📌 Índice
+> Atualizado em 27 de agosto de 2026. O projeto possui fundação técnica e persistência, mas ainda não está pronto para uso real na portaria.
 
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Problema Resolvido](#-problema-resolvido)
-- [Documentação e Artefatos](#-documentação-e-artefatos)
-- [Stack de Tecnologias](#️-stack-de-tecnologias)
-- [Como Executar](#-como-executar)
-- [Colaboradores](#-colaboradores)
-- [Licença](#-licença)
+| Área | Estado |
+|---|---|
+| Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
+| Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
+| Backend | API .NET 10, domínio e persistência inicial implementados; casos de uso e endpoints de negócio pendentes |
+| Dados | PostgreSQL 16, EF Core 10, nove entidades e duas migrations versionadas |
+| Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
+| Qualidade | 21 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Segurança | Modelo de ameaças e guia seguro em revisão na PR #32; autenticação e autorização pendentes |
+| Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
----
+Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. Não representam os fluxos de negócio do produto.
 
-## 📖 Sobre o Projeto
+## Problema e escopo do MVP
 
-O **Controle de Acesso de Veículos** é um sistema para registrar, acompanhar e auditar o acesso de veículos ao IFPE – Campus Belo Jardim, apoiando o setor de transporte, porteiros e guardas na organização dos registros e na segurança do campus.
+O controle atual depende de formulários físicos, arquivamento manual e consultas demoradas. O projeto busca preservar a rastreabilidade necessária e reduzir repetição e erros, sem copiar automaticamente toda a burocracia do papel.
 
-Este sistema tem como objetivo fornecer uma forma **eficiente e segura** de gerenciar o controle de acesso de veículos, permitindo:
+O MVP está concentrado em:
 
-- cadastro de veículos e motoristas;
-- monitoramento de entradas e saídas;
-- validação de acesso em tempo real;
-- geração de relatórios administrativos para apoio à gestão.
+- pessoas, veículos e seus vínculos;
+- registro e consulta de entrada e saída;
+- identificação de acessos ainda abertos;
+- uso de veículos institucionais com motorista, quilometragem e itinerário;
+- perfis, usuário responsável, correções rastreáveis e auditoria.
 
-### ✨ Funcionalidades Planejadas
+Reconhecimento automático de placas, câmeras, RFID, cancelas, estacionamento e os fluxos gerais de pedestres permanecem fora do primeiro incremento. Uma solução observada no mercado não se torna requisito sem levantamento local e validação do cliente.
 
-| Funcionalidade               | Status |
-|-----------------------------|:-----:|
-| Cadastro de veículos        | 🔲    |
-| Cadastro de motoristas      | 🔲    |
-| Histórico de acessos        | 🔲    |
-| Controle de entrada e saída | 🔲    |
-| Painel administrativo       | 🔲    |
-| Relatórios de acesso        | 🔲    |
+## Arquitetura e stack
 
----
-
-## 🎯 Problema Resolvido
-
-Hoje o controle de veículos é feito com registros dispersos (anotações manuais, planilhas e comunicação informal), o que dificulta:
-
-- localizar rapidamente quem entrou ou saiu em um determinado horário;
-- ter histórico confiável para auditoria e segurança;
-- gerar relatórios consolidados para o setor de transporte;
-- padronizar o procedimento entre diferentes porteiros e turnos.
-
-O sistema propõe centralizar essas informações em uma única aplicação, com registros padronizados e consultáveis.
-
----
-
-## 📚 Documentação e Artefatos
-
-- **Wiki do projeto:**  
-  Documentação técnica e funcional do sistema, incluindo visão, arquitetura, segurança e operação.  
-  👉 [controle-acesso-veiculos.wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki)
-
-- **Acompanhamento semanal:**  
-  Apresentação usada nas weeklies / sprint report, com o progresso do projeto ao longo das sprints.  
-  👉 [Sprint report / Weekly 1](https://canva.link/tjsp5iu5c5iwbdp)
-
-- **Protótipo das telas:**  
-  Protótipos de interface ainda estão em desenvolvimento e serão refinados nas próximas sprints.  
-  👉 [Figma](https://www.figma.com/design/N6EOkXw8Ex7cZayyh4MJfY/Propotipagem?node-id=0-1&t=hWlwxlusfhqN3ZTP-1)
-
----
-
-## 🛠️ Stack de Tecnologias
-
-- .NET 10 e ASP.NET Core;
-- Entity Framework Core 10;
-- PostgreSQL 16;
-- xUnit;
-- Docker e Docker Compose.
-
-### Modelo de dados do MVP
-
-A persistência PostgreSQL mantém as entidades `Pessoa`, `Veiculo`,
-`PessoaVeiculo`, `CategoriaAcesso`, `Perfil`, `Usuario`, `RegistroAcesso`,
-`UsoVeiculoInstitucional` e `Auditoria` no schema `dbo`.
-
-O vínculo entre pessoas e veículos é muitos-para-muitos e possui período de
-vigência. Documentos pessoais são opcionais e separados em tipo e número para
-evitar coleta desnecessária de dados. Veículos podem ser identificados por placa
-ou por uma identificação alternativa. A auditoria armazena os estados anterior
-e posterior em colunas `jsonb`.
-
-> A migration `AlignMvpDataModel` preserva pessoas, veículos e seus vínculos.
-> Caso a base antiga possua registros de acesso, a migration interrompe a
-> atualização: objetivo e usuários responsáveis não podem ser inferidos com
-> segurança. Regularize esses registros antes de executá-la novamente.
-
----
-
-## 🚀 Como Executar
-
-### Pré-requisitos
-
-- .NET SDK 10;
-- PostgreSQL 16 ou superior;
-- Docker Desktop, caso o banco seja executado pelo Docker;
-- ferramenta `dotnet-ef` 10.
-
-```bash
-dotnet tool install --global dotnet-ef --version 10.*
-```
-
-### Connection string local
-
-O arquivo `src/backend/ControleAcessoVeiculos.API/appsettings.Development.json` contém um exemplo com senha fictícia. Substitua `CHANGE_ME` somente no seu ambiente local ou use a variável de ambiente `ConnectionStrings__DefaultConnection`.
-
-Exemplo:
+O repositório utiliza um monólito modular com Clean Architecture adaptada:
 
 ```text
-Host=localhost;Port=5432;Database=controle_acesso_dev;Username=postgres;Password=CHANGE_ME
+React + TypeScript
+        |
+ASP.NET Core Web API
+        |
+Application -> Domain
+        |
+Infrastructure -> EF Core -> PostgreSQL
 ```
 
-No Docker Compose, a API recebe essa configuração por `ConnectionStrings__DefaultConnection`, montada a partir do arquivo local e não versionado `infrastructure/docker/.env`.
+| Área | Tecnologias |
+|---|---|
+| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, React Router, Axios, React Hook Form e Zod |
+| Backend | .NET 10, ASP.NET Core Web API e C# |
+| Persistência | Entity Framework Core 10, Npgsql e PostgreSQL 16 |
+| Testes | xUnit, Testcontainers, `WebApplicationFactory` e coverlet |
+| Infraestrutura | Docker, Docker Compose, Nginx e GitHub Actions |
+| Implantação futura | VM Linux na Oracle Cloud Infrastructure, ainda não configurada |
 
-### Restaurar e compilar
+O Domain não referencia Entity Framework Core. O `DbContext`, as configurações Fluent API e as migrations permanecem em Infrastructure.
 
-Execute a partir da raiz do repositório:
+## Estrutura do repositório
+
+```text
+controle-acesso-veiculos/
+├── .github/                  # workflows, templates e instruções
+├── docs/                     # convenções e segurança versionada
+├── infrastructure/docker/    # Dockerfiles, Compose e configuração de exemplo
+├── src/backend/
+│   ├── ControleAcessoVeiculos.API/
+│   ├── ControleAcessoVeiculos.Application/
+│   ├── ControleAcessoVeiculos.Application.Tests/
+│   ├── ControleAcessoVeiculos.Domain/
+│   ├── ControleAcessoVeiculos.Domain.Tests/
+│   ├── ControleAcessoVeiculos.Infrastructure/
+│   └── ControleAcessoVeiculos.IntegrationTests/
+└── src/frontend/             # aplicação React
+```
+
+## Pré-requisitos
+
+- Git;
+- .NET SDK 10;
+- Node.js 20 e npm;
+- Docker Desktop ou Docker Engine com o plugin Compose;
+- `dotnet-ef` 10 para criar ou aplicar migrations fora do container.
+
+Instale ou atualize a ferramenta do EF Core:
+
+```bash
+dotnet tool update --global dotnet-ef --version 10.*
+```
+
+## Início rápido com Docker Compose
+
+Crie o arquivo local de ambiente sem alterar o exemplo versionado:
+
+```bash
+cd infrastructure/docker
+cp .env.example .env
+```
+
+No PowerShell, use:
+
+```powershell
+Set-Location infrastructure/docker
+Copy-Item .env.example .env
+```
+
+Os valores do `.env.example` são exclusivamente locais e fictícios. Troque a senha no arquivo `.env`, que é ignorado pelo Git, antes de usar um ambiente compartilhado.
+
+Valide, construa e suba os serviços:
+
+```bash
+docker compose config
+docker compose build backend
+docker compose up --build
+```
+
+Serviços padrão:
+
+| Serviço | Endereço local |
+|---|---|
+| Frontend | `http://localhost:3000` |
+| API | `http://localhost:8080` |
+| PostgreSQL | `localhost:5432` |
+
+O Compose não aplica migrations automaticamente. Em outro terminal, a partir da raiz do repositório, configure a conexão com os mesmos valores do seu `.env` e execute `dotnet ef database update` conforme a seção de migrations.
+
+Para encerrar os containers sem apagar o volume do banco:
+
+```bash
+docker compose down
+```
+
+Não use `docker compose down --volumes` sem confirmar que os dados locais podem ser descartados.
+
+## Desenvolvimento local
+
+### Banco PostgreSQL
+
+Você pode executar apenas o banco pelo Compose:
+
+```bash
+cd infrastructure/docker
+docker compose up -d postgresql
+```
+
+O arquivo `src/backend/ControleAcessoVeiculos.API/appsettings.Development.json` contém uma senha marcadora (`CHANGE_ME`), não uma credencial funcional. Prefira configurar a conexão apenas no ambiente local.
+
+PowerShell:
+
+```powershell
+$env:ConnectionStrings__DefaultConnection = 'Host=localhost;Port=5432;Database=controle_acesso;Username=controle_acesso_app;Password=change_this_local_password'
+```
+
+Bash:
+
+```bash
+export ConnectionStrings__DefaultConnection='Host=localhost;Port=5432;Database=controle_acesso;Username=controle_acesso_app;Password=change_this_local_password'
+```
+
+Os valores acima correspondem ao exemplo local e devem ser substituídos fora do ambiente de desenvolvimento.
+
+### Backend
+
+A partir da raiz:
 
 ```bash
 dotnet restore src/backend/ControleAcessoVeiculos.slnx
 dotnet build src/backend/ControleAcessoVeiculos.slnx --no-restore
+dotnet run --project src/backend/ControleAcessoVeiculos.API --launch-profile http
 ```
 
-### Executar os testes
+A API ficará em `http://localhost:5118`.
 
-Mantenha o Docker Desktop em execução. Os testes de integração criam um
-PostgreSQL 16 isolado com Testcontainers, aplicam todas as migrations e removem
-o container automaticamente ao final.
+### Frontend
 
-A solução executa testes unitários do domínio, uma verificação de dependências
-da camada Application e testes de integração da API e persistência.
+Em outro terminal:
 
 ```bash
-dotnet test src/backend/ControleAcessoVeiculos.slnx --no-build --no-restore
+cd src/frontend
+npm ci
+npm run dev
 ```
 
-Para gerar resultados TRX e cobertura no mesmo formato publicado pela CI:
+O Vite informará a URL de desenvolvimento, normalmente `http://localhost:5173`.
 
-```bash
-dotnet test src/backend/ControleAcessoVeiculos.slnx \
-  --no-build \
-  --no-restore \
-  --collect:"XPlat Code Coverage" \
-  --logger trx \
-  --results-directory artifacts/test-results
-```
+O cliente HTTP do frontend está preparado para uma futura API sob `/api`, mas ainda não existe integração com endpoints de negócio. Para testar os endpoints técnicos, acesse a API diretamente.
 
-Os dados utilizados são exclusivamente fictícios. Não configure os testes com
-banco compartilhado ou credenciais de outros ambientes.
+## Migrations
 
-### Criar e aplicar migrations
+Execute a partir da raiz, com `ConnectionStrings__DefaultConnection` configurada.
 
-Para criar uma nova migration:
-
-```bash
-dotnet ef migrations add NomeDaMigration --project src/backend/ControleAcessoVeiculos.Infrastructure --startup-project src/backend/ControleAcessoVeiculos.API --output-dir Data/Migrations
-```
-
-Para aplicar as migrations pendentes:
+Aplicar migrations pendentes:
 
 ```bash
 dotnet ef database update --project src/backend/ControleAcessoVeiculos.Infrastructure --startup-project src/backend/ControleAcessoVeiculos.API
 ```
 
-### Executar a API localmente
+Criar uma migration depois de aprovar uma mudança de modelo:
 
 ```bash
-dotnet run --project src/backend/ControleAcessoVeiculos.API --launch-profile http
+dotnet ef migrations add NomeDaMigration --project src/backend/ControleAcessoVeiculos.Infrastructure --startup-project src/backend/ControleAcessoVeiculos.API --output-dir Data/Migrations
 ```
 
-A API estará disponível em `http://localhost:5118`. Para verificar os endpoints iniciais:
+Nunca edite ou remova uma migration já aplicada em ambiente compartilhado sem plano de migração e revisão.
+
+## Validação e testes
+
+Backend:
+
+```bash
+dotnet restore src/backend/ControleAcessoVeiculos.slnx
+dotnet build src/backend/ControleAcessoVeiculos.slnx --no-restore
+dotnet test src/backend/ControleAcessoVeiculos.slnx --no-build --no-restore
+```
+
+Frontend:
+
+```bash
+cd src/frontend
+npm ci
+npm run lint
+npm run build
+```
+
+Verificações técnicas da API:
 
 ```bash
 curl http://localhost:5118/health
+curl http://localhost:5118/health/live
+curl http://localhost:5118/health/ready
 curl http://localhost:5118/weatherforecast
 ```
 
-### Executar com Docker Compose
+`/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível.
 
-```bash
-cd infrastructure/docker
-docker compose build backend
-docker compose up
-```
+## Configuração e segurança
 
----
+- Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
+- Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
+- Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
+- O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
+- Revise migrations, permissões e logs antes de usar dados institucionais.
+- O projeto ainda não possui autenticação nem autorização operacional e não deve ser exposto publicamente.
 
-## 👥 Colaboradores
+Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 
-| Nome | Papel principal | Apoio / Responsabilidades complementares |
-|------|-----------------|-------------------------------------------|
-| [**Raíssa Beatriz**](https://github.com/Raissa-Beatriz) | Front-end / UX/UI | DevOps / Infra / QA |
-| [**José Ernandes**](https://github.com/ErnandesCosta) | Back-end / DB | DevOps / Infra / QA |
----
+## Documentação
 
-## 📄 Licença
+- [Wiki do projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki): visão, processo, requisitos, arc42, dados, segurança, testes, operação e status.
+- [Convenções de commit](docs/development/commit-conventions.md).
+- [CI/CD e segurança de containers](docs/development/ci-cd.md).
+- [Modelagem de ameaças](docs/security/threat-model.md).
+- [Guia de desenvolvimento seguro](docs/security/secure-development-guide.md).
+- [Protótipo no Figma](https://www.figma.com/design/N6EOkXw8Ex7cZayyh4MJfY/Propotipagem?node-id=0-1&t=hWlwxlusfhqN3ZTP-1).
+- [Sprint report / Weekly 1](https://canva.link/tjsp5iu5c5iwbdp).
 
-Este projeto está licenciado sob a [Licença Apache 2.0](LICENSE).
+A Wiki abrange o projeto completo, não apenas o backend. Documentos acadêmicos e decisões históricas devem ser atualizados de forma aditiva, preservando contexto e rastreabilidade.
 
-<div align="center">
+## Contribuição
 
-Feito com 💚 por alunos do IFPE - Campus Belo Jardim
+1. Confirme ou abra uma Issue com escopo e critérios de aceite.
+2. Crie uma branch vinculada à Issue.
+3. Faça commits pequenos conforme as [convenções](docs/development/commit-conventions.md).
+4. Execute as validações proporcionais à mudança.
+5. Abra uma Pull Request com evidências e riscos conhecidos.
+6. Aguarde a revisão e os checks obrigatórios; não contorne a proteção da `main`.
 
-</div>
+Papéis principais:
+
+| Pessoa | Responsabilidade principal | Apoio |
+|---|---|---|
+| [Raíssa Beatriz](https://github.com/Raissa-Beatriz) | Frontend e UX/UI | DevOps, infraestrutura e QA |
+| [José Ernandes](https://github.com/ErnandesCosta) | Backend e banco de dados | DevOps, infraestrutura e QA |
+
+## Licença
+
+Distribuído sob a [Apache License 2.0](LICENSE).

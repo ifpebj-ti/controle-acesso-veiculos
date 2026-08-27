@@ -1,5 +1,9 @@
 # Diretrizes de segurança
 
+Consulte também a modelagem de ameaças e o guia de desenvolvimento seguro em
+`docs/security/`. Mudanças que alterem atores, dados, fronteiras de confiança ou
+controles devem atualizar esses documentos na mesma Issue ou em Issue vinculada.
+
 ## Segredos e configuração
 
 - Nunca versionar arquivos `.env` com valores reais.
