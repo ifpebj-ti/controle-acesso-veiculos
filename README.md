@@ -91,7 +91,7 @@ controle-acesso-veiculos/
 
 - Git;
 - .NET SDK 10;
-- Node.js 20 e npm;
+- Node.js 24 LTS e npm;
 - Docker Desktop ou Docker Engine com o plugin Compose;
 - `dotnet-ef` 10 para criar ou aplicar migrations fora do container.
 

@@ -28,6 +28,8 @@ O Dependabot verifica semanalmente:
 
 As atualizações continuam sujeitas aos mesmos testes e à mesma revisão de uma Pull Request comum. Dependabot não autoriza merge automático.
 
+Atualizações major do toolchain frontend são deliberadas: propostas para Node 26 e TypeScript 7 continuam visíveis, mas só devem ser mescladas depois de cumprirem os critérios de compatibilidade e LTS da Issue #41. O projeto não suprime alertas de novas versões ou correções de segurança.
+
 ## Controles dos containers
 
 - O backend utiliza o usuário não privilegiado `app` fornecido pela imagem oficial .NET.
