@@ -15,7 +15,7 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 
 ## Estado atual
 
-> Atualizado em 26 de agosto de 2026. O projeto possui fundação técnica e persistência, mas ainda não está pronto para uso real na portaria.
+> Atualizado em 27 de agosto de 2026. O projeto possui fundação técnica e persistência, mas ainda não está pronto para uso real na portaria.
 
 | Área | Estado |
 |---|---|
@@ -23,12 +23,12 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
 | Backend | API .NET 10, domínio e persistência inicial implementados; casos de uso e endpoints de negócio pendentes |
 | Dados | PostgreSQL 16, EF Core 10, nove entidades e duas migrations versionadas |
-| Infraestrutura | Dockerfiles, Docker Compose e workflows iniciais de CI configurados |
-| Qualidade | 12 testes de domínio na `main`; suíte ampliada de Application, API e PostgreSQL em revisão na PR #28 |
+| Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
+| Qualidade | 21 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | Modelo de ameaças e guia seguro em revisão na PR #32; autenticação e autorização pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
-Os endpoints `/health` e `/weatherforecast` são verificações técnicas iniciais. Não representam os fluxos de negócio do produto.
+Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. Não representam os fluxos de negócio do produto.
 
 ## Problema e escopo do MVP
 
@@ -63,7 +63,7 @@ Infrastructure -> EF Core -> PostgreSQL
 | Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, React Router, Axios, React Hook Form e Zod |
 | Backend | .NET 10, ASP.NET Core Web API e C# |
 | Persistência | Entity Framework Core 10, Npgsql e PostgreSQL 16 |
-| Testes | xUnit; Testcontainers, `WebApplicationFactory` e coverlet na suíte em revisão |
+| Testes | xUnit, Testcontainers, `WebApplicationFactory` e coverlet |
 | Infraestrutura | Docker, Docker Compose, Nginx e GitHub Actions |
 | Implantação futura | VM Linux na Oracle Cloud Infrastructure, ainda não configurada |
 
@@ -79,9 +79,11 @@ controle-acesso-veiculos/
 ├── src/backend/
 │   ├── ControleAcessoVeiculos.API/
 │   ├── ControleAcessoVeiculos.Application/
+│   ├── ControleAcessoVeiculos.Application.Tests/
 │   ├── ControleAcessoVeiculos.Domain/
 │   ├── ControleAcessoVeiculos.Domain.Tests/
-│   └── ControleAcessoVeiculos.Infrastructure/
+│   ├── ControleAcessoVeiculos.Infrastructure/
+│   └── ControleAcessoVeiculos.IntegrationTests/
 └── src/frontend/             # aplicação React
 ```
 
@@ -194,7 +196,7 @@ npm run dev
 
 O Vite informará a URL de desenvolvimento, normalmente `http://localhost:5173`.
 
-O cliente HTTP do frontend está preparado para uma futura API sob `/api`, mas ainda não existe integração com endpoints de negócio. Para testar `/health` e `/weatherforecast`, acesse a API diretamente.
+O cliente HTTP do frontend está preparado para uma futura API sob `/api`, mas ainda não existe integração com endpoints de negócio. Para testar os endpoints técnicos, acesse a API diretamente.
 
 ## Migrations
 
@@ -237,8 +239,12 @@ Verificações técnicas da API:
 
 ```bash
 curl http://localhost:5118/health
+curl http://localhost:5118/health/live
+curl http://localhost:5118/health/ready
 curl http://localhost:5118/weatherforecast
 ```
+
+`/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível.
 
 ## Configuração e segurança
 
@@ -255,6 +261,7 @@ Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de de
 
 - [Wiki do projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki): visão, processo, requisitos, arc42, dados, segurança, testes, operação e status.
 - [Convenções de commit](docs/development/commit-conventions.md).
+- [CI/CD e segurança de containers](docs/development/ci-cd.md).
 - [Modelagem de ameaças](docs/security/threat-model.md).
 - [Guia de desenvolvimento seguro](docs/security/secure-development-guide.md).
 - [Protótipo no Figma](https://www.figma.com/design/N6EOkXw8Ex7cZayyh4MJfY/Propotipagem?node-id=0-1&t=hWlwxlusfhqN3ZTP-1).
