@@ -19,6 +19,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
 
         Assert.Contains("20260825222017_InitialCreate", migrations);
         Assert.Contains("20260826183028_AlignMvpDataModel", migrations);
+        Assert.Contains("20260827232042_AddAuthenticationSecurity", migrations);
 
         await dbContext.Database.OpenConnectionAsync();
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
