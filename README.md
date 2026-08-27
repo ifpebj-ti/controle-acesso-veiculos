@@ -22,13 +22,13 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
 | Backend | API .NET 10, domínio e persistência inicial implementados; casos de uso e endpoints de negócio pendentes |
-| Dados | PostgreSQL 16, EF Core 10, nove entidades e duas migrations versionadas |
+| Dados | PostgreSQL 16, EF Core 10, nove entidades e três migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
 | Qualidade | 21 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
-| Segurança | Modelo de ameaças e guia seguro em revisão na PR #32; autenticação e autorização pendentes |
+| Segurança | Modelo de ameaças, guia seguro e fundação de autenticação/autorização implementados; matriz de perfis e ciclo de contas pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
-Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. Não representam os fluxos de negócio do produto.
+Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT e a política operacional apenas para validar a fundação de segurança; não representa um fluxo de negócio do produto.
 
 ## Problema e escopo do MVP
 
@@ -172,6 +172,22 @@ export ConnectionStrings__DefaultConnection='Host=localhost;Port=5432;Database=c
 
 Os valores acima correspondem ao exemplo local e devem ser substituídos fora do ambiente de desenvolvimento.
 
+Gere uma chave JWT local sem versioná-la. No PowerShell:
+
+```powershell
+$jwtKeyBytes = New-Object byte[] 48
+[Security.Cryptography.RandomNumberGenerator]::Fill($jwtKeyBytes)
+$env:Authentication__Jwt__SigningKey = [Convert]::ToBase64String($jwtKeyBytes)
+```
+
+No Bash:
+
+```bash
+export Authentication__Jwt__SigningKey="$(openssl rand -base64 48)"
+```
+
+Essa variável também é necessária para executar comandos `dotnet ef`, pois a API valida a configuração no startup. No Docker Compose, defina `JWT_SIGNING_KEY` no `.env` local conforme `.env.example`.
+
 ### Backend
 
 A partir da raiz:
@@ -241,10 +257,10 @@ Verificações técnicas da API:
 curl http://localhost:5118/health
 curl http://localhost:5118/health/live
 curl http://localhost:5118/health/ready
-curl http://localhost:5118/weatherforecast
+curl -i http://localhost:5118/weatherforecast
 ```
 
-`/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível.
+`/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível. `/weatherforecast` retorna HTTP 401 sem token; contas reais e seu provisionamento ainda serão definidos na continuação da Issue #29.
 
 ## Configuração e segurança
 
@@ -256,6 +272,7 @@ curl http://localhost:5118/weatherforecast
 - O projeto ainda não possui autenticação nem autorização operacional e não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
+As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).
 
 ## Documentação
 

@@ -134,7 +134,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 
 | ID | STRIDE | Cenário | P | I | Nível | Mitigação e rastreabilidade | Estado |
 |---|---|---|---:|---:|---:|---|---|
-| TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, autenticação forte, bloqueio e testes — #29 | Planejado |
+| TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio e testes — #29 | Parcialmente mitigado; provisionamento pendente |
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
 | TM-03 | Tampering | Cliente altera IDs, status, horários ou quilometragem enviados à API | 3 | 3 | 9 | Autorização por objeto, DTOs, validação e invariantes no servidor — #29 e #31 | Parcial |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários | Planejado |
@@ -146,7 +146,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-10 | Information disclosure | PostgreSQL publicado em interface de rede inadequada | 2 | 3 | 6 | Não publicar banco em produção, firewall e rede privada — #25 e implantação futura | Pendente |
 | TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limites, paginação, timeout, rate limiting e índices medidos — #31 | Planejado |
 | TM-12 | Denial of service | Falha de rede, API ou PostgreSQL interrompe a portaria | 3 | 3 | 9 | Readiness, monitoramento, backup e contingência reconciliável — #25 e #30 | Pendente |
-| TM-13 | Elevation of privilege | Usuário comum executa operação administrativa ou acessa auditoria | 3 | 3 | 9 | Políticas explícitas, deny-by-default e testes por perfil — #29 | Planejado |
+| TM-13 | Elevation of privilege | Usuário comum executa operação administrativa ou acessa auditoria | 3 | 3 | 9 | Políticas explícitas, deny-by-default e testes por perfil — #29 | Parcialmente mitigado; matriz final pendente |
 | TM-14 | Elevation of privilege | Container executado como root amplia impacto de exploração | 2 | 3 | 6 | Usuário não privilegiado, filesystem e capabilities restritos — #25 | Planejado |
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Criptografia, acesso restrito, retenção e inventário — #30 | Planejado |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
@@ -158,6 +158,9 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - separação entre Domain, Application, Infrastructure e API;
 - EF Core restrito à Infrastructure/API;
 - migrations versionadas e sem execução automática no startup;
+- autenticação JWT com validade curta, chave externa e validação de emissor e audiência;
+- hash de senha com salt e derivação, bloqueio temporário e resposta uniforme de login;
+- autorização deny-by-default e políticas preliminares testadas;
 - migration de alinhamento falha em vez de inventar dados legados;
 - documento pessoal opcional e dados de teste fictícios;
 - `.env` ignorado e exemplos sem segredo real;

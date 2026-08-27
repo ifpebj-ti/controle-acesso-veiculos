@@ -50,6 +50,9 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
                 builder.UseSetting(
                     "ConnectionStrings:DefaultConnection",
                     "Host=127.0.0.1;Port=1;Database=unavailable;Username=test;Password=test;Timeout=1");
+                builder.UseSetting(
+                    "Authentication:Jwt:SigningKey",
+                    "integration-tests-only-signing-key-32-characters");
             });
         using var client = unavailableDatabaseFactory.CreateClient(new()
         {
@@ -65,22 +68,13 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task WeatherForecastReturnsFiveItems()
+    public async Task WeatherForecastRejectsAnonymousRequests()
     {
         var response = await _client.GetAsync("/weatherforecast");
 
-        response.EnsureSuccessStatusCode();
-        var body = await response.Content.ReadFromJsonAsync<WeatherForecastResponse[]>();
-
-        Assert.NotNull(body);
-        Assert.Equal(5, body.Length);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     private sealed record HealthResponse(string Status, DateTime Timestamp);
 
-    private sealed record WeatherForecastResponse(
-        DateOnly Date,
-        int TemperatureC,
-        int TemperatureF,
-        string? Summary);
 }

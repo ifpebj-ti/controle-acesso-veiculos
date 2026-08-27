@@ -45,5 +45,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting(
             "ConnectionStrings:DefaultConnection",
             _postgres.GetConnectionString());
+        builder.UseSetting(
+            "Authentication:Jwt:SigningKey",
+            "integration-tests-only-signing-key-32-characters");
     }
 }

@@ -1,6 +1,8 @@
 # Segurança do projeto
 
 Esta pasta contém a fonte versionada dos documentos de segurança do projeto.
+
+- [Autenticação e autorização](authentication.md)
 A Wiki apresenta cópias de leitura e contexto acadêmico, mas mudanças nestes
 documentos devem passar por Issue, branch, revisão e Pull Request.
 

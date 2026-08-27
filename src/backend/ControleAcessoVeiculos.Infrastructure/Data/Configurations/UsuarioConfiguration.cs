@@ -56,6 +56,16 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
             .HasColumnName("data_alteracao")
             .HasColumnType("timestamp with time zone");
 
+        builder.Property(usuario => usuario.TentativasFalhas)
+            .HasColumnName("tentativas_falhas")
+            .HasColumnType("integer")
+            .HasDefaultValue(0)
+            .IsRequired();
+
+        builder.Property(usuario => usuario.BloqueadoAte)
+            .HasColumnName("bloqueado_ate")
+            .HasColumnType("timestamp with time zone");
+
         builder.HasIndex(usuario => usuario.Email)
             .IsUnique()
             .HasDatabaseName("ux_usuarios_email");

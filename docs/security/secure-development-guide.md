@@ -89,7 +89,7 @@ Referência:
 - não implementar algoritmo criptográfico próprio;
 - não registrar senha, token ou header de autorização.
 
-As escolhas de token, sessão e hash pertencem à Issue #29.
+As decisões atuais de token, hash, bloqueio e políticas estão em [Autenticação e autorização](authentication.md). Refresh token, revogação, recuperação e matriz final de perfis permanecem na Issue #29.
 
 Referências:
 
