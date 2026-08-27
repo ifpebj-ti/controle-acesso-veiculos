@@ -141,9 +141,30 @@ dotnet build src/backend/ControleAcessoVeiculos.slnx --no-restore
 
 ### Executar os testes
 
+Mantenha o Docker Desktop em execução. Os testes de integração criam um
+PostgreSQL 16 isolado com Testcontainers, aplicam todas as migrations e removem
+o container automaticamente ao final.
+
+A solução executa testes unitários do domínio, uma verificação de dependências
+da camada Application e testes de integração da API e persistência.
+
 ```bash
-dotnet test src/backend/ControleAcessoVeiculos.slnx --no-build
+dotnet test src/backend/ControleAcessoVeiculos.slnx --no-build --no-restore
 ```
+
+Para gerar resultados TRX e cobertura no mesmo formato publicado pela CI:
+
+```bash
+dotnet test src/backend/ControleAcessoVeiculos.slnx \
+  --no-build \
+  --no-restore \
+  --collect:"XPlat Code Coverage" \
+  --logger trx \
+  --results-directory artifacts/test-results
+```
+
+Os dados utilizados são exclusivamente fictícios. Não configure os testes com
+banco compartilhado ou credenciais de outros ambientes.
 
 ### Criar e aplicar migrations
 
