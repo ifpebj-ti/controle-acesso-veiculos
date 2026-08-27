@@ -27,6 +27,7 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=postgresql;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Authentication__Jwt__SigningKey: ${JWT_SIGNING_KEY:?Defina JWT_SIGNING_KEY no arquivo .env}
     depends_on:
       postgresql:
         condition: service_healthy
