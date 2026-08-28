@@ -1,6 +1,38 @@
 @ControleAcessoVeiculos.API_HostAddress = http://localhost:5118
+@Email = admin.local@example.test
+@Password = replace-with-local-password
+@AccessToken = replace-with-access-token
 
-GET {{ControleAcessoVeiculos.API_HostAddress}}/weatherforecast/
+GET {{ControleAcessoVeiculos.API_HostAddress}}/health/ready
 Accept: application/json
+
+###
+
+POST {{ControleAcessoVeiculos.API_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{Email}}",
+  "password": "{{Password}}"
+}
+
+###
+
+GET {{ControleAcessoVeiculos.API_HostAddress}}/weatherforecast
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+POST {{ControleAcessoVeiculos.API_HostAddress}}/users
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "name": "Pessoa Fictícia",
+  "email": "pessoa.ficticia@example.test",
+  "password": "replace-with-local-password",
+  "profileName": "Porteiro"
+}
 
 ###
