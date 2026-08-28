@@ -1,5 +1,6 @@
 using ControleAcessoVeiculos.API.Health;
 using ControleAcessoVeiculos.API.Endpoints;
+using ControleAcessoVeiculos.API.Middleware;
 using ControleAcessoVeiculos.API.Security;
 using ControleAcessoVeiculos.Application.AccessRecords;
 using ControleAcessoVeiculos.Application.Accounts;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +23,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["correlationId"] =
+            RequestSafetyMiddleware.GetCorrelationId(context.HttpContext);
+        context.ProblemDetails.Extensions["traceId"] =
+            Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
+    };
+});
+builder.WebHost.ConfigureKestrel(options =>
+    options.Limits.MaxRequestBodySize = RequestSafetyMiddleware.MaximumRequestBodySize);
 
 var jwtOptions = builder.Configuration
     .GetSection(JwtOptions.SectionName)
@@ -97,6 +111,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();
 }
 
+app.UseMiddleware<RequestSafetyMiddleware>();
+app.UseStatusCodePages();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
