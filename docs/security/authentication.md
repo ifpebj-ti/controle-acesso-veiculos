@@ -2,7 +2,7 @@
 
 ## Estado
 
-A fundação técnica da Issue #29 implementa login individual, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A issue não deve ser encerrada até a matriz de perfis ser validada e o fluxo de provisionamento e recuperação de contas ser definido.
+A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação administrativa de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A issue não deve ser encerrada até a matriz de perfis e o restante do ciclo de contas serem validados.
 
 ## Decisões implementadas
 
@@ -15,6 +15,8 @@ A fundação técnica da Issue #29 implementa login individual, hash de senha, b
 - O token contém apenas identificador do usuário, e-mail, perfil e identificador único do token.
 - A política global exige autenticação. Login, health checks e OpenAPI em desenvolvimento são exceções explícitas.
 - OpenAPI não é publicado fora do ambiente `Development`.
+- O primeiro administrador é criado somente por comando explícito, fora da superfície HTTP.
+- Depois do bootstrap, somente `users:manage` pode criar uma conta individual em `POST /users`.
 
 Não existem refresh token, revogação ou logout no servidor neste incremento. Até essa decisão, o frontend deve manter o access token somente em memória e solicitar novo login após a expiração. Não armazenar token em `localStorage`, logs ou mensagens de erro.
 
@@ -27,6 +29,18 @@ Authentication__Jwt__SigningKey
 ```
 
 Nunca versionar a chave real. Ambientes diferentes devem usar chaves diferentes. Uma troca de chave invalida os tokens emitidos anteriormente.
+
+## Provisionamento inicial
+
+Depois de aplicar as migrations, configure temporariamente `BootstrapAdmin__Name`, `BootstrapAdmin__Email` e `BootstrapAdmin__Password` e execute:
+
+```bash
+dotnet run --project src/backend/ControleAcessoVeiculos.API -- --bootstrap-admin
+```
+
+O comando cria uma pessoa, o perfil `Administrador` e a primeira conta somente quando a tabela de usuários está vazia. Ele não abre endpoint anônimo e não imprime senha ou hash. Remova as três variáveis logo após o uso.
+
+Administradores autenticados podem criar outras contas pelo endpoint `POST /users`. Neste MVP, nome, e-mail, senha de 12 a 128 caracteres e um perfil preliminar são obrigatórios. A API persiste apenas o hash.
 
 ## Políticas preliminares
 
@@ -42,7 +56,6 @@ Esses nomes estão centralizados e não pertencem ao Domain. A matriz ainda depe
 
 - validar se Vigilante possui as mesmas operações do Porteiro;
 - validar correção, conferência, consulta, exportação e administração por perfil;
-- definir criação do primeiro administrador e provisionamento de contas;
 - definir redefinição de senha, recuperação, desativação e encerramento de sessões;
 - decidir se haverá integração com identidade institucional;
 - avaliar refresh token ou sessão por cookie quando o fluxo do frontend for implementado;
@@ -51,4 +64,4 @@ Esses nomes estão centralizados e não pertencem ao Domain. A matriz ainda depe
 
 ## Validação automatizada
 
-Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, acesso sem token, acesso permitido e acesso negado por perfil. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.
+Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, acesso sem token, acesso permitido, acesso negado por perfil, validação de conta e criação administrativa. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.

@@ -200,6 +200,20 @@ dotnet run --project src/backend/ControleAcessoVeiculos.API --launch-profile htt
 
 A API ficará em `http://localhost:5118`.
 
+### Primeira conta administrativa
+
+Depois de aplicar as migrations, configure temporariamente nome, e-mail fictício/local e uma senha de desenvolvimento com pelo menos 12 caracteres:
+
+```powershell
+$env:BootstrapAdmin__Name = 'Administrador Local'
+$env:BootstrapAdmin__Email = 'admin.local@example.test'
+$env:BootstrapAdmin__Password = 'substitua-por-uma-senha-local-segura'
+dotnet run --project src/backend/ControleAcessoVeiculos.API -- --bootstrap-admin
+Remove-Item Env:BootstrapAdmin__Name, Env:BootstrapAdmin__Email, Env:BootstrapAdmin__Password
+```
+
+O comando funciona somente enquanto não existir nenhum usuário. Ele cria a primeira conta fora da API HTTP. Depois disso, um Administrador autenticado pode criar contas individuais em `POST /users`. Não use dados ou senhas reais nos exemplos e não versione essas variáveis.
+
 ### Frontend
 
 Em outro terminal:
@@ -260,7 +274,7 @@ curl http://localhost:5118/health/ready
 curl -i http://localhost:5118/weatherforecast
 ```
 
-`/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível. `/weatherforecast` retorna HTTP 401 sem token; contas reais e seu provisionamento ainda serão definidos na continuação da Issue #29.
+`/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível. `/weatherforecast` retorna HTTP 401 sem token e pode ser usado para verificar uma autenticação local.
 
 ## Configuração e segurança
 
@@ -269,7 +283,7 @@ curl -i http://localhost:5118/weatherforecast
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
 - O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
 - Revise migrations, permissões e logs antes de usar dados institucionais.
-- O projeto ainda não possui autenticação nem autorização operacional e não deve ser exposto publicamente.
+- A fundação de autenticação existe, mas matriz final de perfis, recuperação, revogação e endpoints de negócio ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).
