@@ -30,7 +30,7 @@ public sealed class AuthenticationTests(ApiFactory factory)
 
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", body.AccessToken);
-        var protectedResponse = await client.GetAsync("/weatherforecast");
+        var protectedResponse = await client.GetAsync("/access-records/open");
 
         protectedResponse.EnsureSuccessStatusCode();
     }
@@ -90,7 +90,7 @@ public sealed class AuthenticationTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task TransportationProfileCannotUseOperationalPolicy()
+    public async Task TransportationProfileCannotOperateVehicleAccess()
     {
         const string password = "Test-only-password-123!";
         var email = await CreateUserAsync(ProfileNames.TransportationDepartment, password);
@@ -101,7 +101,7 @@ public sealed class AuthenticationTests(ApiFactory factory)
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", body.AccessToken);
 
-        var response = await client.GetAsync("/weatherforecast");
+        var response = await client.GetAsync("/access-records/open");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
