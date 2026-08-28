@@ -1,6 +1,8 @@
 using ControleAcessoVeiculos.API.Health;
 using ControleAcessoVeiculos.API.Security;
+using ControleAcessoVeiculos.Application.Accounts;
 using ControleAcessoVeiculos.Application.Authentication;
+using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Infrastructure.Authentication;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -62,8 +64,11 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IPasswordHashService, AspNetPasswordHashService>();
 builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
+builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddScoped<LoginService>();
+builder.Services.AddScoped<CreateUserAccountService>();
+builder.Services.AddScoped<BootstrapAdministratorService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -135,6 +140,38 @@ app.MapPost("/auth/login", async (
 .AllowAnonymous()
 .WithName("Login");
 
+app.MapPost("/users", async (
+    CreateUserRequest request,
+    CreateUserAccountService createUserAccountService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await createUserAccountService.CreateAsync(
+        new CreateUserAccountCommand(
+            request.Name,
+            request.Email,
+            request.Password,
+            request.ProfileName),
+        cancellationToken);
+
+    return result.Status switch
+    {
+        CreateUserAccountStatus.Success => Results.Created(
+            $"/users/{result.UserId}",
+            new CreateUserResponse(
+                result.UserId!.Value,
+                result.Email!,
+                result.ProfileName!)),
+        CreateUserAccountStatus.Conflict => Results.Conflict(new
+        {
+            Message = "Não foi possível criar a conta.",
+            Errors = result.Errors
+        }),
+        _ => Results.ValidationProblem(result.Errors)
+    };
+})
+.RequireAuthorization(AuthorizationPolicies.ManageUsers)
+.WithName("CreateUser");
+
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -154,6 +191,38 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast")
 .RequireAuthorization(AuthorizationPolicies.OperateAccess);
+
+if (args.Contains("--bootstrap-admin", StringComparer.OrdinalIgnoreCase))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var bootstrapService = scope.ServiceProvider
+        .GetRequiredService<BootstrapAdministratorService>();
+    var bootstrapSection = app.Configuration.GetSection("BootstrapAdmin");
+    var name = bootstrapSection["Name"];
+    var email = bootstrapSection["Email"];
+    var password = bootstrapSection["Password"];
+
+    if (string.IsNullOrWhiteSpace(name) ||
+        string.IsNullOrWhiteSpace(email) ||
+        string.IsNullOrWhiteSpace(password))
+    {
+        throw new InvalidOperationException(
+            "BootstrapAdmin:Name, BootstrapAdmin:Email e BootstrapAdmin:Password são obrigatórios para o provisionamento inicial.");
+    }
+
+    var status = await bootstrapService.BootstrapAsync(name, email, password);
+
+    Console.WriteLine(status switch
+    {
+        BootstrapAdministratorStatus.Success =>
+            "Administrador inicial criado. Remova as variáveis BootstrapAdmin do ambiente.",
+        BootstrapAdministratorStatus.AlreadyInitialized =>
+            "O banco já possui usuários; nenhum administrador foi criado.",
+        _ => "Não foi possível criar o administrador inicial. Revise os valores informados."
+    });
+
+    return;
+}
 
 app.Run();
 
@@ -179,3 +248,9 @@ public partial class Program
 
 public sealed record LoginRequest(string Email, string Password);
 public sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
+public sealed record CreateUserRequest(
+    string Name,
+    string Email,
+    string Password,
+    string ProfileName);
+public sealed record CreateUserResponse(int Id, string Email, string ProfileName);
