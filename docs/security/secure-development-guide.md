@@ -124,6 +124,12 @@ aplicação. Um não substitui o outro.
 - evitar log injection e dados fornecidos pelo usuário sem normalização;
 - restringir acesso e retenção dos logs.
 
+Estado implementado na Issue #49: toda resposta possui correlation ID; logs HTTP
+registram apenas método, template de rota, status e duração; exceções
+inesperadas geram resposta `ProblemDetails` sem mensagem interna ou stack trace.
+O middleware registra somente o tipo da exceção, nunca o objeto ou sua mensagem.
+Auditoria de negócio e integração com observabilidade externa continuam pendentes.
+
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
 

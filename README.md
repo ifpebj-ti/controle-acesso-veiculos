@@ -24,7 +24,7 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Backend | API .NET 10 com autenticação, contas e fluxo geral de entrada, consulta de abertos e saída de veículos |
 | Dados | PostgreSQL 16, EF Core 10, nove entidades e quatro migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 40 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 47 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, autorização operacional, horários de servidor e identificação do ator implementados; auditoria transversal e matriz final de perfis pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
@@ -307,6 +307,10 @@ curl -i http://localhost:5118/weatherforecast
 
 ## Configuração e segurança
 
+- Toda resposta inclui `X-Correlation-ID`; somente UUIDs válidos enviados pelo cliente são reutilizados.
+- Erros inesperados usam `application/problem+json` sem mensagem interna ou stack trace.
+- O corpo de cada requisição é limitado globalmente a 1 MiB.
+- Logs HTTP incluem correlação, método, template da rota, status e duração; não incluem valores da URL, query string, corpo nem cabeçalho de autorização.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
