@@ -15,20 +15,30 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 
 ## Estado atual
 
-> Atualizado em 27 de agosto de 2026. O projeto possui fundação técnica e persistência, mas ainda não está pronto para uso real na portaria.
+> Atualizado em 28 de agosto de 2026. O projeto possui o primeiro fluxo operacional vertical do MVP, mas ainda não está pronto para uso real na portaria.
 
 | Área | Estado |
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10, domínio e persistência inicial implementados; casos de uso e endpoints de negócio pendentes |
-| Dados | PostgreSQL 16, EF Core 10, nove entidades e três migrations versionadas |
+| Backend | API .NET 10 com autenticação, contas e fluxo geral de entrada, consulta de abertos e saída de veículos |
+| Dados | PostgreSQL 16, EF Core 10, nove entidades e quatro migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 21 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
-| Segurança | Modelo de ameaças, guia seguro e fundação de autenticação/autorização implementados; matriz de perfis e ciclo de contas pendentes |
+| Qualidade | 40 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Segurança | JWT, contas individuais, autorização operacional, horários de servidor e identificação do ator implementados; auditoria transversal e matriz final de perfis pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
-Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT e a política operacional apenas para validar a fundação de segurança; não representa um fluxo de negócio do produto.
+Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
+
+O primeiro fluxo funcional está disponível para os perfis preliminares `Porteiro`, `Vigilante` e `Administrador`:
+
+| Método e rota | Finalidade |
+|---|---|
+| `POST /access-records/entries` | registra entrada e cria ou reutiliza pessoa, veículo, vínculo e categoria em uma transação |
+| `GET /access-records/open` | lista veículos com acesso ainda aberto |
+| `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
+
+A placa é normalizada e o PostgreSQL impede dois acessos abertos para o mesmo veículo, inclusive em requisições concorrentes. Nome do condutor, placa, objetivo e categoria são obrigatórios; documento e detalhes do veículo permanecem opcionais até validação institucional.
 
 ## Problema e escopo do MVP
 
@@ -228,6 +238,25 @@ O Vite informará a URL de desenvolvimento, normalmente `http://localhost:5173`.
 
 O cliente HTTP do frontend está preparado para uma futura API sob `/api`, mas ainda não existe integração com endpoints de negócio. Para testar os endpoints técnicos, acesse a API diretamente.
 
+### Testar o fluxo geral de acesso
+
+Autentique uma conta de perfil operacional em `POST /auth/login`, copie o `accessToken` e use o arquivo [`ControleAcessoVeiculos.API.http`](src/backend/ControleAcessoVeiculos.API/ControleAcessoVeiculos.API.http) ou envie:
+
+```bash
+curl -X POST http://localhost:5118/access-records/entries \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"driverName":"Condutor Fictício","plate":"ABC-1D23","objective":"Visita técnica","categoryName":"Visitante"}'
+
+curl http://localhost:5118/access-records/open \
+  -H "Authorization: Bearer SEU_TOKEN"
+
+curl -X POST http://localhost:5118/access-records/1/exit \
+  -H "Authorization: Bearer SEU_TOKEN"
+```
+
+As categorias preliminares aceitas são: `Visitante`, `Prestador de serviço`, `Entrega`, `Evento`, `Treino ou jogo`, `Caminhada com veículo`, `Mototáxi`, `Permanência excepcional` e `Outro acesso autorizado`. Elas são hipóteses do MVP e devem ser revistas após a validação com a portaria.
+
 ## Migrations
 
 Execute a partir da raiz, com `ConnectionStrings__DefaultConnection` configurada.
@@ -283,7 +312,7 @@ curl -i http://localhost:5118/weatherforecast
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
 - O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
 - Revise migrations, permissões e logs antes de usar dados institucionais.
-- A fundação de autenticação existe, mas matriz final de perfis, recuperação, revogação e endpoints de negócio ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
+- O primeiro endpoint de negócio existe, mas matriz final de perfis, recuperação, revogação, auditoria e demais fluxos ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).

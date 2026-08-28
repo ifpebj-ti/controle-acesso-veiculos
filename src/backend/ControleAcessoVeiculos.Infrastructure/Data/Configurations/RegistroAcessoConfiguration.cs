@@ -100,6 +100,11 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
         builder.HasIndex(registro => registro.Status)
             .HasDatabaseName("ix_registros_acesso_status");
 
+        builder.HasIndex(registro => registro.VeiculoId)
+            .IsUnique()
+            .HasFilter("status = 'Aberto'")
+            .HasDatabaseName("ux_registros_acesso_veiculo_aberto");
+
         builder.HasOne<Veiculo>()
             .WithMany()
             .HasForeignKey(registro => registro.VeiculoId)

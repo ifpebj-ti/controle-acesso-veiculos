@@ -1,9 +1,12 @@
 using ControleAcessoVeiculos.API.Health;
+using ControleAcessoVeiculos.API.Endpoints;
 using ControleAcessoVeiculos.API.Security;
+using ControleAcessoVeiculos.Application.AccessRecords;
 using ControleAcessoVeiculos.Application.Accounts;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Infrastructure.Authentication;
+using ControleAcessoVeiculos.Infrastructure.AccessRecords;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -65,10 +68,12 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IPasswordHashService, AspNetPasswordHashService>();
 builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
+builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<CreateUserAccountService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
+builder.Services.AddScoped<VehicleAccessService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -109,6 +114,8 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = registration => registration.Tags.Contains("ready"),
     ResponseWriter = WriteHealthResponse
 }).AllowAnonymous();
+
+app.MapVehicleAccessEndpoints();
 
 app.MapPost("/auth/login", async (
     LoginRequest request,

@@ -36,3 +36,29 @@ Content-Type: application/json
 }
 
 ###
+
+POST {{ControleAcessoVeiculos.API_HostAddress}}/access-records/entries
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "driverName": "Condutor Fictício",
+  "plate": "ABC-1D23",
+  "objective": "Visita técnica",
+  "categoryName": "Visitante",
+  "vehicleType": "Automóvel",
+  "color": "Prata"
+}
+
+###
+
+GET {{ControleAcessoVeiculos.API_HostAddress}}/access-records/open
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+POST {{ControleAcessoVeiculos.API_HostAddress}}/access-records/1/exit
+Authorization: Bearer {{AccessToken}}
+
+###

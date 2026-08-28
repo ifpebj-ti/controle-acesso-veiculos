@@ -27,13 +27,13 @@ public class Veiculo
             throw new ArgumentOutOfRangeException(nameof(ano));
         }
 
-        Placa = placa;
-        Tipo = tipo;
-        IdentificacaoVeiculo = identificacaoVeiculo;
+        Placa = string.IsNullOrWhiteSpace(placa) ? null : NormalizarPlaca(placa);
+        Tipo = tipo?.Trim();
+        IdentificacaoVeiculo = identificacaoVeiculo?.Trim();
         EhInstitucional = ehInstitucional;
-        Marca = marca;
-        Modelo = modelo;
-        Cor = cor;
+        Marca = marca?.Trim();
+        Modelo = modelo?.Trim();
+        Cor = cor?.Trim();
         Ano = ano;
         Ativo = true;
         DataCriacao = DateTime.UtcNow;
@@ -51,4 +51,19 @@ public class Veiculo
     public bool Ativo { get; private set; }
     public DateTime DataCriacao { get; private set; }
     public DateTime? DataAlteracao { get; private set; }
+
+    public static string NormalizarPlaca(string placa)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(placa);
+
+        var placaNormalizada = string.Concat(
+            placa.Where(char.IsLetterOrDigit)).ToUpperInvariant();
+
+        if (string.IsNullOrWhiteSpace(placaNormalizada))
+        {
+            throw new ArgumentException("A placa deve conter letras ou números.", nameof(placa));
+        }
+
+        return placaNormalizada;
+    }
 }

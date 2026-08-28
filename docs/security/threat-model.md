@@ -6,9 +6,9 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 1.0
+**Versão:** 1.1
 
-**Data de referência:** 26 de agosto de 2026
+**Data de referência:** 28 de agosto de 2026
 
 **Rastreabilidade:** Issue #26
 
@@ -20,8 +20,9 @@ CI/CD, operação local, implantação futura e backups.
 
 Não são considerados implementados:
 
-- autenticação e autorização;
-- endpoints funcionais do MVP;
+- matriz definitiva de autorização e ciclo completo de contas;
+- auditoria transversal e imutável;
+- demais endpoints funcionais além do primeiro fluxo geral de acesso;
 - ambiente de homologação ou produção;
 - OCI, domínio, HTTPS e proxy reverso;
 - backup, recuperação e contingência;
@@ -120,7 +121,7 @@ flowchart LR
 | Fronteira | Mudança de confiança | Estado |
 |---|---|---|
 | B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
-| B2 | Código executado no navegador para API | Contrato funcional e autorização pendentes |
+| B2 | Código executado no navegador para API | JWT e primeiro contrato operacional implementados; matriz final e frontend pendentes |
 | B3 | API para PostgreSQL | Implementado localmente |
 | B4 | Aplicação para logs e auditoria | Logging básico; auditoria automática pendente |
 | B5 | Banco para backup | Não implementado |
@@ -134,12 +135,12 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 
 | ID | STRIDE | Cenário | P | I | Nível | Mitigação e rastreabilidade | Estado |
 |---|---|---|---:|---:|---:|---|---|
-| TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio e testes — #29 | Parcialmente mitigado; provisionamento pendente |
+| TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio e testes — #29 | Parcialmente mitigado; recuperação e ciclo de conta pendentes |
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
-| TM-03 | Tampering | Cliente altera IDs, status, horários ou quilometragem enviados à API | 3 | 3 | 9 | Autorização por objeto, DTOs, validação e invariantes no servidor — #29 e #31 | Parcial |
+| TM-03 | Tampering | Cliente altera IDs, status, horários ou quilometragem enviados à API | 3 | 3 | 9 | Política operacional, DTOs, validação, horário do servidor e unicidade transacional — #29, #31 e #47 | Parcialmente mitigado no fluxo geral de acesso |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários | Planejado |
 | TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, scanner, build e proveniência — #25 | Parcial |
-| TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, correlation ID e auditoria imutável suficiente — #29 e #31 | Modelado |
+| TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, correlation ID e auditoria imutável suficiente — #29, #31 e #47 | Ator persistido em entrada/saída; auditoria imutável pendente |
 | TM-07 | Information disclosure | Stack trace, log ou erro expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, redaction, revisão de logs e testes de não exposição — #31 | Planejado |
 | TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29 e #31 | Planejado |
 | TM-09 | Information disclosure | Segredo entra no Git, imagem, artefato ou Wiki | 2 | 3 | 6 | `.gitignore`, exemplos fictícios, secret scanning e rotação — #25 | Parcial |
@@ -161,6 +162,9 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - autenticação JWT com validade curta, chave externa e validação de emissor e audiência;
 - hash de senha com salt e derivação, bloqueio temporário e resposta uniforme de login;
 - autorização deny-by-default e políticas preliminares testadas;
+- primeiro fluxo operacional protegido, com validação no servidor e erros previsíveis;
+- data/hora de entrada e saída definidas pelo servidor e vinculadas ao usuário autenticado;
+- transação e índice único parcial impedem dois acessos abertos para o mesmo veículo;
 - migration de alinhamento falha em vez de inventar dados legados;
 - documento pessoal opcional e dados de teste fictícios;
 - `.env` ignorado e exemplos sem segredo real;
@@ -170,8 +174,8 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 
 ## Risco residual atual
 
-O risco residual permanece alto para identidade, autorização, auditoria e
-continuidade porque esses controles ainda não foram implementados. Portanto, a
+O risco residual permanece alto para ciclo de identidade, autorização definitiva,
+auditoria e continuidade porque esses controles ainda estão incompletos. Portanto, a
 API atual não deve ser tratada como pronta para exposição pública ou produção.
 
 ## Responsabilidades

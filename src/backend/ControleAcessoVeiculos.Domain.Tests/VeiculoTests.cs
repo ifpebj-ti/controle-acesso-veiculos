@@ -25,4 +25,21 @@ public class VeiculoTests
         Assert.True(veiculo.EhInstitucional);
         Assert.Equal("Patrimônio 0001", veiculo.IdentificacaoVeiculo);
     }
+
+    [Theory]
+    [InlineData("abc-1d23", "ABC1D23")]
+    [InlineData(" ABC 1234 ", "ABC1234")]
+    public void Constructor_ShouldNormalizePlate(string input, string expected)
+    {
+        var veiculo = new Veiculo(input, "Automóvel", null, false);
+
+        Assert.Equal(expected, veiculo.Placa);
+    }
+
+    [Fact]
+    public void Constructor_ShouldRejectPlateWithoutLettersOrNumbers()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new Veiculo("---", "Automóvel", null, false));
+    }
 }
