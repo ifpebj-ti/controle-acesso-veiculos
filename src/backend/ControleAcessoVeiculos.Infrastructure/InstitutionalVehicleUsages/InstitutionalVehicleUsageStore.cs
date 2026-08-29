@@ -132,7 +132,7 @@ public sealed class InstitutionalVehicleUsageStore(
             .ToListAsync(cancellationToken);
         var totalPages = totalCount == 0
             ? 0
-            : (totalCount + criteria.PageSize - 1) / criteria.PageSize;
+            : ((totalCount - 1) / criteria.PageSize) + 1;
 
         return new(
             items,

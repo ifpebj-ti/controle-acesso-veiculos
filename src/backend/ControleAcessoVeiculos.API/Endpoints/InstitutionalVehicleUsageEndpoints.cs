@@ -54,7 +54,7 @@ public static class InstitutionalVehicleUsageEndpoints
                 result.Usage),
             RegisterInstitutionalVehicleDepartureStatus.NotFound => Results.NotFound(new
             {
-                Message = "Veículo institucional ou motorista ativo não encontrado."
+                Message = "Veículo institucional ou motorista autorizado e ativo não encontrado."
             }),
             RegisterInstitutionalVehicleDepartureStatus.Conflict => Results.Conflict(new
             {
