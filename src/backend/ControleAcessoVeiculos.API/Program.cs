@@ -6,9 +6,11 @@ using ControleAcessoVeiculos.Application.AccessRecords;
 using ControleAcessoVeiculos.Application.Accounts;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
+using ControleAcessoVeiculos.Application.InstitutionalVehicleUsages;
 using ControleAcessoVeiculos.Infrastructure.Authentication;
 using ControleAcessoVeiculos.Infrastructure.AccessRecords;
 using ControleAcessoVeiculos.Infrastructure.Data;
+using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicleUsages;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -83,11 +85,13 @@ builder.Services.AddSingleton<IPasswordHashService, AspNetPasswordHashService>()
 builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
 builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
+builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<CreateUserAccountService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
+builder.Services.AddScoped<InstitutionalVehicleUsageService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -132,6 +136,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 }).AllowAnonymous();
 
 app.MapVehicleAccessEndpoints();
+app.MapInstitutionalVehicleUsageEndpoints();
 
 app.MapPost("/auth/login", async (
     LoginRequest request,
