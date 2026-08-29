@@ -1,5 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using ControleAcessoVeiculos.API.Security;
 using ControleAcessoVeiculos.Application.AccessRecords;
 
@@ -30,7 +28,7 @@ public static class VehicleAccessEndpoints
         VehicleAccessService vehicleAccessService,
         CancellationToken cancellationToken)
     {
-        if (!TryGetActorUserId(httpContext.User, out var actorUserId))
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
         {
             return Results.Unauthorized();
         }
@@ -80,7 +78,7 @@ public static class VehicleAccessEndpoints
         VehicleAccessService vehicleAccessService,
         CancellationToken cancellationToken)
     {
-        if (!TryGetActorUserId(httpContext.User, out var actorUserId))
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
         {
             return Results.Unauthorized();
         }
@@ -104,9 +102,6 @@ public static class VehicleAccessEndpoints
         };
     }
 
-    private static bool TryGetActorUserId(ClaimsPrincipal user, out int userId) =>
-        int.TryParse(user.FindFirstValue(JwtRegisteredClaimNames.Sub), out userId) &&
-        userId > 0;
 }
 
 public sealed record RegisterVehicleEntryRequest(

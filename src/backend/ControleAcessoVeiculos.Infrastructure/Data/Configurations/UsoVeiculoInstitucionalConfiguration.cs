@@ -94,6 +94,11 @@ public class UsoVeiculoInstitucionalConfiguration :
         builder.HasIndex(uso => new { uso.VeiculoId, uso.DataHoraSaida })
             .HasDatabaseName("ix_usos_institucionais_veiculo_saida");
 
+        builder.HasIndex(uso => uso.VeiculoId)
+            .IsUnique()
+            .HasFilter("status IN ('EmUso', 'PendenteRetorno')")
+            .HasDatabaseName("ux_usos_institucionais_veiculo_aberto");
+
         builder.HasIndex(uso => uso.MotoristaId)
             .HasDatabaseName("ix_usos_institucionais_motorista_id");
 

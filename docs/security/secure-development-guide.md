@@ -128,9 +128,10 @@ Estado implementado nas Issues #49 e #51: toda resposta possui correlation ID;
 logs HTTP registram apenas método, template de rota, status e duração; exceções
 inesperadas geram resposta `ProblemDetails` sem mensagem interna ou stack trace.
 O middleware registra somente o tipo da exceção, nunca o objeto ou sua mensagem.
-Entrada e saída de veículos geram auditoria de negócio na mesma transação, com
-falha fechada e sem duplicar dados pessoais. Auditoria dos demais casos de uso,
-proteção por privilégios separados e observabilidade externa continuam pendentes.
+Entrada, saída e o fluxo de uso institucional geram auditoria de negócio na mesma
+transação, com falha fechada e sem duplicar dados pessoais ou itinerário. Auditoria
+dos demais casos de uso, proteção por privilégios separados e observabilidade
+externa continuam pendentes.
 
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).

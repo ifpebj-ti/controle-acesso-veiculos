@@ -1,0 +1,395 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using ControleAcessoVeiculos.Application.Authentication;
+using ControleAcessoVeiculos.Application.Authorization;
+using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
+using ControleAcessoVeiculos.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace ControleAcessoVeiculos.IntegrationTests;
+
+[Collection(IntegrationTestCollection.Name)]
+public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
+{
+    [Fact]
+    public async Task OperationalUserCanRegisterListAndReturnInstitutionalVehicle()
+    {
+        const string password = "Test-only-password-123!";
+        var (userId, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        var catalog = await CreateCatalogAsync(institutionalVehicle: true);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var request = new
+        {
+            vehicleId = catalog.VehicleId,
+            driverId = catalog.DriverId,
+            departureMileage = 12500,
+            itinerary = "Campus - Unidade rural"
+        };
+
+        var departureResponse = await client.PostAsJsonAsync(
+            "/institutional-vehicle-usages/departures",
+            request);
+        var departure = await departureResponse.Content
+            .ReadFromJsonAsync<InstitutionalUsageResponse>();
+
+        Assert.Equal(HttpStatusCode.Created, departureResponse.StatusCode);
+        Assert.NotNull(departure);
+        Assert.Equal("EmUso", departure.Status);
+        Assert.Equal(userId, departure.CreatedById);
+        Assert.Equal(catalog.Plate, departure.Plate);
+
+        var openUsages = await client.GetFromJsonAsync<List<InstitutionalUsageResponse>>(
+            "/institutional-vehicle-usages/open");
+        Assert.Contains(openUsages!, item => item.Id == departure.Id);
+
+        var invalidReturn = await client.PostAsJsonAsync(
+            $"/institutional-vehicle-usages/{departure.Id}/returns",
+            new { returnMileage = 12499 });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidReturn.StatusCode);
+
+        var returnResponse = await client.PostAsJsonAsync(
+            $"/institutional-vehicle-usages/{departure.Id}/returns",
+            new { returnMileage = 12542 });
+        var returned = await returnResponse.Content
+            .ReadFromJsonAsync<InstitutionalUsageResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, returnResponse.StatusCode);
+        Assert.NotNull(returned);
+        Assert.Equal("Concluido", returned.Status);
+        Assert.Equal(12542, returned.ReturnMileage);
+        Assert.NotNull(returned.ReturnAtUtc);
+        Assert.Equal(userId, returned.UpdatedById);
+
+        openUsages = await client.GetFromJsonAsync<List<InstitutionalUsageResponse>>(
+            "/institutional-vehicle-usages/open");
+        Assert.DoesNotContain(openUsages!, item => item.Id == departure.Id);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var audits = await dbContext.Auditorias
+            .AsNoTracking()
+            .Where(item => item.Entidade == nameof(UsoVeiculoInstitucional) &&
+                item.RegistroId == departure.Id)
+            .OrderBy(item => item.Id)
+            .ToListAsync();
+
+        Assert.Collection(
+            audits,
+            audit =>
+            {
+                Assert.Equal(TipoAcaoAuditoria.Inclusao, audit.TipoAcao);
+                Assert.Equal(userId, audit.UsuarioId);
+                AssertAuditState(audit.DadosNovos, "EmUso");
+            },
+            audit =>
+            {
+                Assert.Equal(TipoAcaoAuditoria.Alteracao, audit.TipoAcao);
+                Assert.Equal(userId, audit.UsuarioId);
+                AssertAuditState(audit.DadosAnteriores, "EmUso");
+                AssertAuditState(audit.DadosNovos, "Concluido");
+            });
+
+        var auditContent = string.Join(
+            ' ',
+            audits.SelectMany(item => new[]
+            {
+                item.DadosAnteriores,
+                item.DadosNovos,
+                item.Detalhes
+            }).Where(item => item is not null));
+        Assert.DoesNotContain(catalog.DriverName, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(catalog.Plate, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(request.itinerary, auditContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task DepartureRejectsInvalidOrUnavailableCatalogData()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
+        var catalog = await CreateCatalogAsync(institutionalVehicle: false);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+
+        var invalidResponse = await client.PostAsJsonAsync(
+            "/institutional-vehicle-usages/departures",
+            new
+            {
+                vehicleId = 0,
+                driverId = 0,
+                departureMileage = -1,
+                itinerary = ""
+            });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidResponse.StatusCode);
+
+        var unavailableResponse = await client.PostAsJsonAsync(
+            "/institutional-vehicle-usages/departures",
+            new
+            {
+                vehicleId = catalog.VehicleId,
+                driverId = catalog.DriverId,
+                departureMileage = 100,
+                itinerary = "Campus"
+            });
+        Assert.Equal(HttpStatusCode.NotFound, unavailableResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task AnonymousUserCannotOperateInstitutionalVehicleUsages()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/institutional-vehicle-usages/open");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ConcurrentRequestsCreateAndReturnInstitutionalUsageOnlyOnce()
+    {
+        const string password = "Test-only-password-123!";
+        var (userId, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
+        var catalog = await CreateCatalogAsync(institutionalVehicle: true);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var departureRequest = new
+        {
+            vehicleId = catalog.VehicleId,
+            driverId = catalog.DriverId,
+            departureMileage = 8000,
+            itinerary = "Campus - Cidade"
+        };
+
+        var departures = await Task.WhenAll(
+            client.PostAsJsonAsync(
+                "/institutional-vehicle-usages/departures",
+                departureRequest),
+            client.PostAsJsonAsync(
+                "/institutional-vehicle-usages/departures",
+                departureRequest));
+
+        Assert.Single(departures, response => response.StatusCode == HttpStatusCode.Created);
+        Assert.Single(departures, response => response.StatusCode == HttpStatusCode.Conflict);
+        var createdResponse = departures.Single(
+            response => response.StatusCode == HttpStatusCode.Created);
+        var usage = await createdResponse.Content
+            .ReadFromJsonAsync<InstitutionalUsageResponse>();
+        Assert.NotNull(usage);
+
+        var returns = await Task.WhenAll(
+            client.PostAsJsonAsync(
+                $"/institutional-vehicle-usages/{usage.Id}/returns",
+                new { returnMileage = 8010 }),
+            client.PostAsJsonAsync(
+                $"/institutional-vehicle-usages/{usage.Id}/returns",
+                new { returnMileage = 8011 }));
+
+        Assert.Single(returns, response => response.StatusCode == HttpStatusCode.OK);
+        Assert.Single(returns, response => response.StatusCode == HttpStatusCode.Conflict);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.Equal(
+            1,
+            await dbContext.UsosVeiculosInstitucionais.CountAsync(item =>
+                item.VeiculoId == catalog.VehicleId));
+        Assert.Equal(
+            2,
+            await dbContext.Auditorias.CountAsync(item =>
+                item.Entidade == nameof(UsoVeiculoInstitucional) &&
+                item.RegistroId == usage.Id &&
+                item.UsuarioId == userId));
+    }
+
+    [Fact]
+    public async Task AuditFailureRollsBackInstitutionalDepartureAndReturn()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        var departureCatalog = await CreateCatalogAsync(institutionalVehicle: true);
+        var returnCatalog = await CreateCatalogAsync(institutionalVehicle: true);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var existingResponse = await client.PostAsJsonAsync(
+            "/institutional-vehicle-usages/departures",
+            new
+            {
+                vehicleId = returnCatalog.VehicleId,
+                driverId = returnCatalog.DriverId,
+                departureMileage = 4000,
+                itinerary = "Campus - Município"
+            });
+        var existing = await existingResponse.Content
+            .ReadFromJsonAsync<InstitutionalUsageResponse>();
+        existingResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(existing);
+
+        await InstallRejectingAuditTriggerAsync();
+
+        try
+        {
+            var departureResponse = await client.PostAsJsonAsync(
+                "/institutional-vehicle-usages/departures",
+                new
+                {
+                    vehicleId = departureCatalog.VehicleId,
+                    driverId = departureCatalog.DriverId,
+                    departureMileage = 5000,
+                    itinerary = "Campus - Zona rural"
+                });
+            var returnResponse = await client.PostAsJsonAsync(
+                $"/institutional-vehicle-usages/{existing.Id}/returns",
+                new { returnMileage = 4010 });
+
+            Assert.Equal(HttpStatusCode.InternalServerError, departureResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.InternalServerError, returnResponse.StatusCode);
+        }
+        finally
+        {
+            await RemoveRejectingAuditTriggerAsync();
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.False(await dbContext.UsosVeiculosInstitucionais.AnyAsync(item =>
+            item.VeiculoId == departureCatalog.VehicleId));
+        var preserved = await dbContext.UsosVeiculosInstitucionais
+            .AsNoTracking()
+            .SingleAsync(item => item.Id == existing.Id);
+        Assert.Equal(StatusUsoVeiculoInstitucional.EmUso, preserved.Status);
+        Assert.Null(preserved.DataHoraEntrada);
+        Assert.Equal(
+            1,
+            await dbContext.Auditorias.CountAsync(item =>
+                item.Entidade == nameof(UsoVeiculoInstitucional) &&
+                item.RegistroId == existing.Id));
+    }
+
+    private async Task<(int UserId, string Email)> CreateUserAsync(
+        string profileName,
+        string password)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHashService>();
+        var suffix = Guid.NewGuid().ToString("N");
+        var profile = await dbContext.Perfis.SingleOrDefaultAsync(item => item.Nome == profileName);
+
+        if (profile is null)
+        {
+            profile = new Perfil(profileName, "Perfil criado exclusivamente para teste de integração.");
+            dbContext.Perfis.Add(profile);
+        }
+
+        var person = new Pessoa($"Pessoa de Teste {suffix}");
+        dbContext.Pessoas.Add(person);
+        await dbContext.SaveChangesAsync();
+
+        var email = $"institutional-{suffix}@example.test";
+        var user = new Usuario(email, passwordHasher.Hash(password), person.Id, profile.Id);
+        dbContext.Usuarios.Add(user);
+        await dbContext.SaveChangesAsync();
+
+        return (user.Id, email);
+    }
+
+    private async Task<InstitutionalCatalog> CreateCatalogAsync(bool institutionalVehicle)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var suffix = Guid.NewGuid().ToString("N");
+        var plate = $"IF{suffix[..5]}".ToUpperInvariant();
+        var driverName = $"Motorista {suffix}";
+        var vehicle = new Veiculo(
+            plate,
+            "Automóvel",
+            $"FROTA-{suffix[..8]}",
+            institutionalVehicle);
+        var driver = new Pessoa(driverName, tipoVinculo: "Servidor");
+        dbContext.Veiculos.Add(vehicle);
+        dbContext.Pessoas.Add(driver);
+        await dbContext.SaveChangesAsync();
+
+        return new InstitutionalCatalog(vehicle.Id, driver.Id, plate, driverName);
+    }
+
+    private static async Task AuthenticateClientAsync(
+        HttpClient client,
+        string email,
+        string password)
+    {
+        var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
+        var body = await login.Content.ReadFromJsonAsync<LoginResponse>();
+        login.EnsureSuccessStatusCode();
+        Assert.NotNull(body);
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", body.AccessToken);
+    }
+
+    private async Task InstallRejectingAuditTriggerAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            CREATE OR REPLACE FUNCTION dbo.reject_institutional_usage_audit()
+            RETURNS trigger AS $function$
+            BEGIN
+                RAISE EXCEPTION 'forced integration test audit failure';
+            END;
+            $function$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER reject_institutional_usage_audit
+            BEFORE INSERT ON dbo.auditorias
+            FOR EACH ROW
+            WHEN (NEW.entidade = 'UsoVeiculoInstitucional')
+            EXECUTE FUNCTION dbo.reject_institutional_usage_audit();
+            """);
+    }
+
+    private async Task RemoveRejectingAuditTriggerAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            DROP TRIGGER IF EXISTS reject_institutional_usage_audit ON dbo.auditorias;
+            DROP FUNCTION IF EXISTS dbo.reject_institutional_usage_audit();
+            """);
+    }
+
+    private static void AssertAuditState(string? json, string expectedStatus)
+    {
+        Assert.NotNull(json);
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expectedStatus, document.RootElement.GetProperty("status").GetString());
+    }
+
+    private sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
+
+    private sealed record InstitutionalCatalog(
+        int VehicleId,
+        int DriverId,
+        string Plate,
+        string DriverName);
+
+    private sealed record InstitutionalUsageResponse(
+        int Id,
+        int VehicleId,
+        string? Plate,
+        int DriverId,
+        string DriverName,
+        DateTime DepartureAtUtc,
+        int DepartureMileage,
+        string Itinerary,
+        DateTime? ReturnAtUtc,
+        int? ReturnMileage,
+        string Status,
+        int CreatedById,
+        int? UpdatedById);
+}

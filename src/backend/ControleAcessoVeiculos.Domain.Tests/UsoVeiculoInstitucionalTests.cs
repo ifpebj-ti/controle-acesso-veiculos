@@ -45,6 +45,36 @@ public class UsoVeiculoInstitucionalTests
                 atualizadoPorId: 2));
     }
 
+    [Fact]
+    public void RegistrarRetorno_ShouldAcceptUnchangedMileage()
+    {
+        var uso = CreateUso();
+
+        uso.RegistrarRetorno(
+            Saida.AddHours(1),
+            quilometragemEntrada: 1000,
+            atualizadoPorId: 2);
+
+        Assert.Equal(StatusUsoVeiculoInstitucional.Concluido, uso.Status);
+        Assert.Equal(1000, uso.QuilometragemEntrada);
+    }
+
+    [Fact]
+    public void RegistrarRetorno_ShouldRejectDuplicateReturn()
+    {
+        var uso = CreateUso();
+        uso.RegistrarRetorno(
+            Saida.AddHours(1),
+            quilometragemEntrada: 1001,
+            atualizadoPorId: 2);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            uso.RegistrarRetorno(
+                Saida.AddHours(2),
+                quilometragemEntrada: 1002,
+                atualizadoPorId: 2));
+    }
+
     private static UsoVeiculoInstitucional CreateUso() =>
         new(
             veiculoId: 1,

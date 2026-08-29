@@ -6,7 +6,7 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 1.3
+**Versão:** 1.4
 
 **Data de referência:** 28 de agosto de 2026
 
@@ -22,7 +22,7 @@ Não são considerados implementados:
 
 - matriz definitiva de autorização e ciclo completo de contas;
 - auditoria transversal e imutável;
-- demais endpoints funcionais além do primeiro fluxo geral de acesso;
+- demais endpoints funcionais além dos fluxos geral e institucional;
 - ambiente de homologação ou produção;
 - OCI, domínio, HTTPS e proxy reverso;
 - backup, recuperação e contingência;
@@ -123,7 +123,7 @@ flowchart LR
 | B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
 | B2 | Código executado no navegador para API | JWT e primeiro contrato operacional implementados; matriz final e frontend pendentes |
 | B3 | API para PostgreSQL | Implementado localmente |
-| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada para entrada e saída |
+| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada nos fluxos geral e institucional |
 | B5 | Banco para backup | Não implementado |
 | B6 | Repositório para runner e artefatos | CI inicial implementada |
 | B7 | Registry para infraestrutura OCI | Não implementado |
@@ -137,10 +137,10 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 |---|---|---|---:|---:|---:|---|---|
 | TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio e testes — #29 | Parcialmente mitigado; recuperação e ciclo de conta pendentes |
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
-| TM-03 | Tampering | Cliente altera IDs, status, horários ou quilometragem enviados à API | 3 | 3 | 9 | Política operacional, DTOs, validação, horário do servidor e unicidade transacional — #29, #31 e #47 | Parcialmente mitigado no fluxo geral de acesso |
+| TM-03 | Tampering | Cliente altera IDs, status, horários ou quilometragem enviados à API | 3 | 3 | 9 | Política operacional, DTOs, validação, horário do servidor e unicidade transacional — #29, #31, #47 e #53 | Mitigado nos fluxos geral e institucional; correções pendentes |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários | Planejado |
 | TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, scanner, build e proveniência — #25 | Parcial |
-| TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, correlation ID e auditoria imutável suficiente — #29, #31, #47 e #51 | Auditoria transacional implementada para entrada e saída; correção e imutabilidade por privilégios pendentes |
+| TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, correlation ID e auditoria imutável suficiente — #29, #31, #47, #51 e #53 | Auditoria transacional implementada nos fluxos geral e institucional; correção e imutabilidade por privilégios pendentes |
 | TM-07 | Information disclosure | Stack trace, log ou erro expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, logs mínimos e testes de não exposição — #31 e #49 | Parcialmente mitigado; auditoria e logs externos pendentes |
 | TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29 e #31 | Planejado |
 | TM-09 | Information disclosure | Segredo entra no Git, imagem, artefato ou Wiki | 2 | 3 | 6 | `.gitignore`, exemplos fictícios, secret scanning e rotação — #25 | Parcial |
@@ -152,7 +152,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Criptografia, acesso restrito, retenção e inventário — #30 | Planejado |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
 | TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup, upgrade/downgrade e falha explícita — #23 e #30 | Parcialmente mitigado |
-| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31 e #51 | Mitigado para entrada e saída; alerta e demais operações pendentes |
+| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31, #51 e #53 | Mitigado nos fluxos geral e institucional; alerta e demais operações pendentes |
 
 ## Controles existentes verificados
 
@@ -165,11 +165,12 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - primeiro fluxo operacional protegido, com validação no servidor e erros previsíveis;
 - data/hora de entrada e saída definidas pelo servidor e vinculadas ao usuário autenticado;
 - transação e índice único parcial impedem dois acessos abertos para o mesmo veículo;
+- transação e índice único parcial impedem dois usos institucionais abertos para o mesmo veículo;
 - correlation ID validado ou gerado pelo servidor em todas as respostas;
 - logs HTTP estruturados com template de rota, sem valores da URL, query string, corpo ou cabeçalho de autorização;
 - exceções inesperadas retornam `ProblemDetails` sem mensagem interna ou stack trace;
 - limite global de 1 MiB para corpos de requisição;
-- auditoria de entrada e saída atômica, associada ao operador e sem duplicação de dados pessoais;
+- auditoria dos fluxos geral e institucional atômica, associada ao operador e sem duplicação de dados pessoais ou itinerário;
 - migration de alinhamento falha em vez de inventar dados legados;
 - documento pessoal opcional e dados de teste fictícios;
 - `.env` ignorado e exemplos sem segredo real;
