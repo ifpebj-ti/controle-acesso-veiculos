@@ -8,7 +8,7 @@ Esta página documenta a fundação de integração contínua da Issue #25. Os w
 
 | Workflow | Gatilho | Verificações |
 |---|---|---|
-| CI - Backend | Alterações do backend e de suas regras de formato | restore, `dotnet format`, build Release com warnings como erros, 21 testes e cobertura |
+| CI - Backend | Alterações do backend e de suas regras de formato | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura |
 | CI - Frontend | Alterações do frontend | `npm ci`, ESLint e build Vite |
 | CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado das duas imagens e Trivy para vulnerabilidades HIGH/CRITICAL corrigíveis |
 | Dependency Review | Toda Pull Request | bloqueio de novas dependências com vulnerabilidade alta ou crítica |

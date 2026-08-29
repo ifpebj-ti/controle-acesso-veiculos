@@ -85,6 +85,29 @@ Accept: application/json
 
 ###
 
+POST {{ControleAcessoVeiculos.API_HostAddress}}/institutional-drivers
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "name": "Motorista Fictício",
+  "documentType": "ID",
+  "documentNumber": "EXEMPLO-001"
+}
+
+###
+
+GET {{ControleAcessoVeiculos.API_HostAddress}}/institutional-drivers
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+DELETE {{ControleAcessoVeiculos.API_HostAddress}}/institutional-drivers/1
+Authorization: Bearer {{AccessToken}}
+
+###
+
 POST {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicle-usages/departures
 Authorization: Bearer {{AccessToken}}
 Content-Type: application/json
