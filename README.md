@@ -21,27 +21,29 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, contas, fluxo geral de acesso e saída/retorno de veículos institucionais |
-| Dados | PostgreSQL 16, EF Core 10, nove entidades e cinco migrations versionadas |
+| Backend | API .NET 10 com autenticação, contas, fluxo geral de acesso, catálogo de frota e saída/retorno de veículos institucionais |
+| Dados | PostgreSQL 16, EF Core 10, nove entidades e seis migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 60 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 68 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, autorização operacional, controles HTTP e auditoria transacional dos fluxos geral e institucional implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
 
-O primeiro fluxo funcional está disponível para os perfis preliminares `Porteiro`, `Vigilante` e `Administrador`:
+Os contratos operacionais e administrativos disponíveis são:
 
 | Método e rota | Finalidade |
 |---|---|
 | `POST /access-records/entries` | registra entrada e cria ou reutiliza pessoa, veículo, vínculo e categoria em uma transação |
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
+| `GET /institutional-vehicles` | lista a frota institucional ativa para operação e conferência |
+| `POST /institutional-vehicles` | cadastra veículo institucional para `SetorTransporte` ou `Administrador` |
 | `POST /institutional-vehicle-usages/departures` | registra a saída de veículo institucional e motorista já cadastrados |
 | `GET /institutional-vehicle-usages/open` | lista usos institucionais ainda sem retorno |
 | `POST /institutional-vehicle-usages/{id}/returns` | registra retorno e valida a quilometragem |
 
-A placa é normalizada e o PostgreSQL impede dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. No fluxo institucional, veículo e motorista devem estar ativos e previamente cadastrados; itinerário permanece como texto livre até validação institucional.
+A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. No fluxo institucional, veículo e motorista devem estar ativos e previamente cadastrados; itinerário permanece como texto livre até validação institucional.
 
 ## Problema e escopo do MVP
 
@@ -262,7 +264,19 @@ As categorias preliminares aceitas são: `Visitante`, `Prestador de serviço`, `
 
 ### Testar o fluxo de veículos institucionais
 
-Use os identificadores de um veículo ativo marcado como institucional e de um motorista ativo já cadastrados:
+Com uma conta `SetorTransporte` ou `Administrador`, cadastre e consulte um veículo institucional:
+
+```bash
+curl -X POST http://localhost:5118/institutional-vehicles \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"plate":"IFP-1E23","identification":"FROTA-001","vehicleType":"Automóvel","brand":"Marca fictícia","model":"Modelo de teste","color":"Branco","year":2026}'
+
+curl http://localhost:5118/institutional-vehicles \
+  -H "Authorization: Bearer SEU_TOKEN"
+```
+
+`Porteiro` e `Vigilante` também podem consultar a frota ativa, mas não cadastrar veículos. Use o `id` retornado e o identificador de um motorista ativo já cadastrado para operar a saída e o retorno:
 
 ```bash
 curl -X POST http://localhost:5118/institutional-vehicle-usages/departures \
@@ -279,7 +293,7 @@ curl -X POST http://localhost:5118/institutional-vehicle-usages/1/returns \
   -d '{"returnMileage":12542}'
 ```
 
-Cadastro e consulta dos catálogos de frota e motoristas, pesquisa histórica e correção autorizada permanecem em recortes futuros. A API não cria veículo institucional implicitamente a partir de uma saída.
+Atualização e inativação da frota, catálogo e critérios de elegibilidade de motoristas, pesquisa histórica e correção autorizada permanecem em recortes futuros. A API não cria veículo institucional implicitamente a partir de uma saída.
 
 ## Migrations
 
@@ -335,13 +349,13 @@ curl -i http://localhost:5118/weatherforecast
 - Erros inesperados usam `application/problem+json` sem mensagem interna ou stack trace.
 - O corpo de cada requisição é limitado globalmente a 1 MiB.
 - Logs HTTP incluem correlação, método, template da rota, status e duração; não incluem valores da URL, query string, corpo nem cabeçalho de autorização.
-- A auditoria dos fluxos geral e institucional registra somente identificadores e estados necessários; não duplica nome, documento, placa, objetivo, observação nem itinerário.
+- A auditoria dos fluxos geral, institucional e do catálogo de frota registra somente identificadores e estados necessários; não duplica nome, documento, placa, identificação patrimonial, objetivo, observação nem itinerário.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
 - O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
 - Revise migrations, permissões e logs antes de usar dados institucionais.
-- Os primeiros fluxos de negócio existem, mas catálogos administrativos, consultas históricas, matriz final de perfis, recuperação, revogação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
+- Os primeiros fluxos de negócio e o catálogo inicial de frota existem, mas catálogo de motoristas, manutenção de cadastros, consultas históricas, matriz final de perfis, recuperação, revogação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).
