@@ -10,4 +10,18 @@ public interface IInstitutionalVehicleCatalogStore
 
     Task<IReadOnlyList<InstitutionalVehicleRecord>> ListActiveAsync(
         CancellationToken cancellationToken);
+
+    Task<InstitutionalVehicleStoreUpdate> TryUpdateAsync(
+        int vehicleId,
+        InstitutionalVehicleData vehicle,
+        int actorUserId,
+        DateTime updatedAtUtc,
+        CancellationToken cancellationToken);
+
+    Task<InstitutionalVehicleStoreStateStatus> TrySetActiveAsync(
+        int vehicleId,
+        bool active,
+        int actorUserId,
+        DateTime updatedAtUtc,
+        CancellationToken cancellationToken);
 }

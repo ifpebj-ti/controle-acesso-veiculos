@@ -45,6 +45,77 @@ public sealed class InstitutionalVehicleCatalogService(
         CancellationToken cancellationToken = default) =>
         store.ListActiveAsync(cancellationToken);
 
+    public async Task<UpdateInstitutionalVehicleResult> UpdateAsync(
+        int vehicleId,
+        UpdateInstitutionalVehicleCommand command,
+        int actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(actorUserId);
+        var now = timeProvider.GetUtcNow();
+        var errors = ValidateVehicleId(vehicleId);
+
+        foreach (var error in Validate(
+                     new CreateInstitutionalVehicleCommand(
+                         command.Plate,
+                         command.Identification,
+                         command.VehicleType,
+                         command.Brand,
+                         command.Model,
+                         command.Color,
+                         command.Year),
+                     now.Year))
+        {
+            errors[error.Key] = error.Value;
+        }
+
+        if (errors.Count > 0)
+        {
+            return new(UpdateInstitutionalVehicleStatus.Invalid, null, errors);
+        }
+
+        var stored = await store.TryUpdateAsync(
+            vehicleId,
+            Normalize(
+                command.Plate,
+                command.Identification,
+                command.VehicleType,
+                command.Brand,
+                command.Model,
+                command.Color,
+                command.Year),
+            actorUserId,
+            now.UtcDateTime,
+            cancellationToken);
+
+        return stored.Status switch
+        {
+            InstitutionalVehicleStoreUpdateStatus.Success =>
+                new(UpdateInstitutionalVehicleStatus.Success, stored.Vehicle,
+                    EmptyErrors()),
+            InstitutionalVehicleStoreUpdateStatus.NotFound =>
+                new(UpdateInstitutionalVehicleStatus.NotFound, null, EmptyErrors()),
+            _ => new(UpdateInstitutionalVehicleStatus.Conflict, null,
+                new Dictionary<string, string[]>
+                {
+                    ["vehicle"] =
+                        ["Já existe um veículo com a placa ou identificação informada."]
+                })
+        };
+    }
+
+    public Task<ChangeInstitutionalVehicleStateResult> DeactivateAsync(
+        int vehicleId,
+        int actorUserId,
+        CancellationToken cancellationToken = default) =>
+        ChangeStateAsync(vehicleId, active: false, actorUserId, cancellationToken);
+
+    public Task<ChangeInstitutionalVehicleStateResult> ReactivateAsync(
+        int vehicleId,
+        int actorUserId,
+        CancellationToken cancellationToken = default) =>
+        ChangeStateAsync(vehicleId, active: true, actorUserId, cancellationToken);
+
     private static Dictionary<string, string[]> Validate(
         CreateInstitutionalVehicleCommand command,
         int currentYear)
@@ -112,4 +183,68 @@ public sealed class InstitutionalVehicleCatalogService(
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private async Task<ChangeInstitutionalVehicleStateResult> ChangeStateAsync(
+        int vehicleId,
+        bool active,
+        int actorUserId,
+        CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(actorUserId);
+        var errors = ValidateVehicleId(vehicleId);
+
+        if (errors.Count > 0)
+        {
+            return new(ChangeInstitutionalVehicleStateStatus.Invalid, errors);
+        }
+
+        var status = await store.TrySetActiveAsync(
+            vehicleId,
+            active,
+            actorUserId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            cancellationToken);
+
+        return status switch
+        {
+            InstitutionalVehicleStoreStateStatus.Success =>
+                new(ChangeInstitutionalVehicleStateStatus.Success, EmptyErrors()),
+            InstitutionalVehicleStoreStateStatus.NotFound =>
+                new(ChangeInstitutionalVehicleStateStatus.NotFound, EmptyErrors()),
+            _ => new(ChangeInstitutionalVehicleStateStatus.Conflict,
+                new Dictionary<string, string[]>
+                {
+                    ["vehicle"] =
+                        [active ? "O veículo já está ativo." : "O veículo já está inativo."]
+                })
+        };
+    }
+
+    private static InstitutionalVehicleData Normalize(
+        string? plate,
+        string? identification,
+        string? vehicleType,
+        string? brand,
+        string? model,
+        string? color,
+        int? year) =>
+        new(
+            NormalizePlate(plate),
+            NormalizeIdentification(identification),
+            NormalizeOptional(vehicleType),
+            NormalizeOptional(brand),
+            NormalizeOptional(model),
+            NormalizeOptional(color),
+            year);
+
+    private static Dictionary<string, string[]> ValidateVehicleId(int vehicleId) =>
+        vehicleId > 0
+            ? []
+            : new Dictionary<string, string[]>
+            {
+                ["vehicleId"] = ["O identificador do veículo deve ser positivo."]
+            };
+
+    private static IReadOnlyDictionary<string, string[]> EmptyErrors() =>
+        new Dictionary<string, string[]>();
 }
