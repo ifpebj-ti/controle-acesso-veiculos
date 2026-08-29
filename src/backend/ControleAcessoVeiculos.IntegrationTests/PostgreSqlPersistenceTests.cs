@@ -20,6 +20,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains("20260825222017_InitialCreate", migrations);
         Assert.Contains("20260826183028_AlignMvpDataModel", migrations);
         Assert.Contains("20260827232042_AddAuthenticationSecurity", migrations);
+        Assert.Contains("20260829110009_AddInstitutionalDriverAuthorization", migrations);
 
         await dbContext.Database.OpenConnectionAsync();
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
@@ -32,7 +33,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
 
         var tableCount = (long)(await command.ExecuteScalarAsync())!;
 
-        Assert.Equal(9, tableCount);
+        Assert.Equal(10, tableCount);
     }
 
     [Fact]
