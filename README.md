@@ -21,10 +21,10 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, contas, fluxo geral, manutenção de frota, motoristas, saída/retorno e histórico institucional |
-| Dados | PostgreSQL 16, EF Core 10, dez entidades e oito migrations versionadas |
+| Backend | API .NET 10 com autenticação, contas, fluxo geral e seu histórico, manutenção de frota, motoristas, saída/retorno e histórico institucional |
+| Dados | PostgreSQL 16, EF Core 10, dez entidades e nove migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 94 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 99 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, autorização operacional, controles HTTP e auditoria transacional dos fluxos geral e institucional implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
@@ -36,6 +36,7 @@ Os contratos operacionais e administrativos disponíveis são:
 |---|---|
 | `POST /access-records/entries` | registra entrada e cria ou reutiliza pessoa, veículo, vínculo e categoria em uma transação |
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
+| `GET /access-records/history` | pesquisa acessos por período, placa, condutor, categoria ou status para Portaria, Vigilância e Administração |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
 | `GET /institutional-vehicles` | lista a frota institucional ativa para operação e conferência |
 | `POST /institutional-vehicles` | cadastra veículo institucional para `SetorTransporte` ou `Administrador` |
@@ -63,7 +64,7 @@ O MVP está concentrado em:
 - identificação de acessos ainda abertos;
 - uso de veículos institucionais com motorista, quilometragem e itinerário;
 - autorização e revogação de motoristas institucionais pelo setor responsável;
-- consulta histórica paginada para localizar veículo e motorista por período;
+- consultas históricas paginadas para localizar acessos gerais e usos institucionais pelos filtros necessários;
 - perfis, usuário responsável, correções rastreáveis e auditoria.
 
 Reconhecimento automático de placas, câmeras, RFID, cancelas, estacionamento e os fluxos gerais de pedestres permanecem fora do primeiro incremento. Uma solução observada no mercado não se torna requisito sem levantamento local e validação do cliente.
@@ -265,11 +266,14 @@ curl -X POST http://localhost:5118/access-records/entries \
 curl http://localhost:5118/access-records/open \
   -H "Authorization: Bearer SEU_TOKEN"
 
+curl "http://localhost:5118/access-records/history?plate=ABC-1D23&driverName=Condutor&categoryName=Visitante&status=Encerrado&page=1&pageSize=25" \
+  -H "Authorization: Bearer SEU_TOKEN"
+
 curl -X POST http://localhost:5118/access-records/1/exit \
   -H "Authorization: Bearer SEU_TOKEN"
 ```
 
-As categorias preliminares aceitas são: `Visitante`, `Prestador de serviço`, `Entrega`, `Evento`, `Treino ou jogo`, `Caminhada com veículo`, `Mototáxi`, `Permanência excepcional` e `Outro acesso autorizado`. Elas são hipóteses do MVP e devem ser revistas após a validação com a portaria.
+As categorias preliminares aceitas são: `Visitante`, `Prestador de serviço`, `Entrega`, `Evento`, `Treino ou jogo`, `Caminhada com veículo`, `Mototáxi`, `Permanência excepcional` e `Outro acesso autorizado`. Elas são hipóteses do MVP e devem ser revistas após a validação com a portaria. A consulta histórica aceita filtros combináveis por placa, trecho do nome do condutor, categoria, status e período de entrada. Sem período, usa os últimos 30 dias; o intervalo máximo é de 366 dias e cada página contém de 1 a 100 registros. Documento pessoal, objetivo e observação não são parâmetros de busca.
 
 ### Testar o fluxo de veículos institucionais
 
@@ -390,7 +394,7 @@ curl -i http://localhost:5118/weatherforecast
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
 - O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
 - Revise migrations, permissões e logs antes de usar dados institucionais.
-- Os primeiros fluxos de negócio, a manutenção inicial da frota, o catálogo de motoristas e a consulta histórica institucional existem, mas histórico do fluxo geral, matriz final de perfis, recuperação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
+- Os primeiros fluxos de negócio, a manutenção inicial da frota, o catálogo de motoristas e as consultas históricas geral e institucional existem, mas a matriz final de perfis, recuperação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).

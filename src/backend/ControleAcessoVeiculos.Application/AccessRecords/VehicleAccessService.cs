@@ -1,4 +1,5 @@
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 
 namespace ControleAcessoVeiculos.Application.AccessRecords;
 
@@ -50,6 +51,54 @@ public sealed class VehicleAccessService(
     public Task<IReadOnlyList<VehicleAccessRecord>> ListOpenAsync(
         CancellationToken cancellationToken = default) =>
         vehicleAccessStore.ListOpenAsync(cancellationToken);
+
+    public async Task<SearchVehicleAccessesResult> SearchHistoryAsync(
+        SearchVehicleAccessesCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var now = timeProvider.GetUtcNow();
+        var to = command.To?.ToUniversalTime() ?? now;
+        var from = command.From?.ToUniversalTime() ?? to.AddDays(-30);
+        var errors = ValidateSearch(command, from, to);
+
+        if (errors.Count > 0)
+        {
+            return new(
+                SearchVehicleAccessesStatus.Invalid,
+                null,
+                errors);
+        }
+
+        StatusRegistroAcesso? status = null;
+        if (!string.IsNullOrWhiteSpace(command.Status))
+        {
+            TryParseStatus(command.Status, out var parsedStatus);
+            status = parsedStatus;
+        }
+
+        string? categoryName = null;
+        if (!string.IsNullOrWhiteSpace(command.CategoryName))
+        {
+            AccessCategoryNames.TryGetCanonicalName(command.CategoryName, out categoryName);
+        }
+
+        var result = await vehicleAccessStore.SearchAsync(
+            new VehicleAccessSearchCriteria(
+                NormalizePlate(command.Plate),
+                NormalizeOptional(command.DriverName),
+                categoryName,
+                status,
+                from.UtcDateTime,
+                to.UtcDateTime,
+                command.Page,
+                command.PageSize),
+            cancellationToken);
+
+        return new(
+            SearchVehicleAccessesStatus.Success,
+            result,
+            new Dictionary<string, string[]>());
+    }
 
     public Task<CloseVehicleAccessResult> CloseAsync(
         int accessRecordId,
@@ -124,6 +173,66 @@ public sealed class VehicleAccessService(
         return errors;
     }
 
+    private static Dictionary<string, string[]> ValidateSearch(
+        SearchVehicleAccessesCommand command,
+        DateTimeOffset from,
+        DateTimeOffset to)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (from > to || to - from > TimeSpan.FromDays(366))
+        {
+            errors["period"] =
+                ["O período deve estar em ordem cronológica e possuir até 366 dias."];
+        }
+
+        if (command.Page is <= 0 or > 10000)
+        {
+            errors["page"] = ["A página deve estar entre 1 e 10000."];
+        }
+
+        if (command.PageSize is <= 0 or > 100)
+        {
+            errors["pageSize"] = ["O tamanho da página deve estar entre 1 e 100."];
+        }
+
+        if (!string.IsNullOrWhiteSpace(command.Plate))
+        {
+            try
+            {
+                if (Veiculo.NormalizarPlaca(command.Plate).Length > 10)
+                {
+                    errors["plate"] = ["A placa deve possuir até 10 letras ou números."];
+                }
+            }
+            catch (ArgumentException)
+            {
+                errors["plate"] = ["A placa deve conter letras ou números."];
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(command.DriverName) &&
+            command.DriverName.Trim().Length is < 2 or > 200)
+        {
+            errors["driverName"] =
+                ["O nome do condutor deve possuir entre 2 e 200 caracteres."];
+        }
+
+        if (!string.IsNullOrWhiteSpace(command.CategoryName) &&
+            !AccessCategoryNames.TryGetCanonicalName(command.CategoryName, out _))
+        {
+            errors["categoryName"] = ["Informe uma categoria suportada pelo MVP."];
+        }
+
+        if (!string.IsNullOrWhiteSpace(command.Status) &&
+            !TryParseStatus(command.Status, out _))
+        {
+            errors["status"] = ["Informe um status de acesso válido."];
+        }
+
+        return errors;
+    }
+
     private static void ValidateRequired(
         string? value,
         int maximumLength,
@@ -151,4 +260,12 @@ public sealed class VehicleAccessService(
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string? NormalizePlate(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : Veiculo.NormalizarPlaca(value);
+
+    private static bool TryParseStatus(
+        string value,
+        out StatusRegistroAcesso status) =>
+        Enum.TryParse(value.Trim(), true, out status) && Enum.IsDefined(status);
 }

@@ -1,3 +1,5 @@
+using ControleAcessoVeiculos.Domain.Enums;
+
 namespace ControleAcessoVeiculos.Application.AccessRecords;
 
 public sealed record RegisterVehicleEntryCommand(
@@ -42,6 +44,44 @@ public sealed record VehicleAccessRecord(
     int CreatedById,
     int? UpdatedById,
     string? Observation);
+
+public sealed record SearchVehicleAccessesCommand(
+    string? Plate = null,
+    string? DriverName = null,
+    string? CategoryName = null,
+    string? Status = null,
+    DateTimeOffset? From = null,
+    DateTimeOffset? To = null,
+    int Page = 1,
+    int PageSize = 25);
+
+public sealed record VehicleAccessSearchCriteria(
+    string? Plate,
+    string? DriverName,
+    string? CategoryName,
+    StatusRegistroAcesso? Status,
+    DateTime FromUtc,
+    DateTime ToUtc,
+    int Page,
+    int PageSize);
+
+public sealed record PagedVehicleAccessResult(
+    IReadOnlyList<VehicleAccessRecord> Items,
+    int Page,
+    int PageSize,
+    int TotalCount,
+    int TotalPages);
+
+public enum SearchVehicleAccessesStatus
+{
+    Success,
+    Invalid
+}
+
+public sealed record SearchVehicleAccessesResult(
+    SearchVehicleAccessesStatus Status,
+    PagedVehicleAccessResult? Result,
+    IReadOnlyDictionary<string, string[]> Errors);
 
 public enum RegisterVehicleEntryStatus
 {

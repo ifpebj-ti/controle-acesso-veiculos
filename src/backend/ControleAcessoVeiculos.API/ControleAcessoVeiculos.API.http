@@ -58,6 +58,12 @@ Accept: application/json
 
 ###
 
+GET {{ControleAcessoVeiculos.API_HostAddress}}/access-records/history?plate=ABC-1D23&driverName=Condutor&categoryName=Visitante&status=Encerrado&from=2026-08-01T00:00:00Z&to=2026-08-31T23:59:59Z&page=1&pageSize=25
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
 POST {{ControleAcessoVeiculos.API_HostAddress}}/access-records/1/exit
 Authorization: Bearer {{AccessToken}}
 

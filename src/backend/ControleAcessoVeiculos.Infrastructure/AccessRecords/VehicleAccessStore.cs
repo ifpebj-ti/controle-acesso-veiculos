@@ -150,6 +150,61 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 .OrderBy(item => item.DataHoraEntrada))
             .ToListAsync(cancellationToken);
 
+    public async Task<PagedVehicleAccessResult> SearchAsync(
+        VehicleAccessSearchCriteria criteria,
+        CancellationToken cancellationToken)
+    {
+        var accessRecords = dbContext.RegistrosAcesso
+            .AsNoTracking()
+            .Where(item => item.DataHoraEntrada >= criteria.FromUtc &&
+                item.DataHoraEntrada <= criteria.ToUtc);
+
+        if (criteria.Plate is not null)
+        {
+            accessRecords = accessRecords.Where(item => dbContext.Veiculos.Any(vehicle =>
+                vehicle.Id == item.VeiculoId && vehicle.Placa == criteria.Plate));
+        }
+
+        if (criteria.DriverName is not null)
+        {
+            var pattern = $"%{EscapeLikePattern(criteria.DriverName)}%";
+            accessRecords = accessRecords.Where(item => dbContext.Pessoas.Any(person =>
+                person.Id == item.PessoaId &&
+                EF.Functions.ILike(person.Nome, pattern, "\\")));
+        }
+
+        if (criteria.CategoryName is not null)
+        {
+            accessRecords = accessRecords.Where(item =>
+                dbContext.CategoriasAcesso.Any(category =>
+                    category.Id == item.CategoriaAcessoId &&
+                    category.Nome == criteria.CategoryName));
+        }
+
+        if (criteria.Status.HasValue)
+        {
+            accessRecords = accessRecords.Where(item => item.Status == criteria.Status.Value);
+        }
+
+        var totalCount = await accessRecords.CountAsync(cancellationToken);
+        var items = await ProjectRecords(accessRecords
+                .OrderByDescending(item => item.DataHoraEntrada)
+                .ThenByDescending(item => item.Id)
+                .Skip((criteria.Page - 1) * criteria.PageSize)
+                .Take(criteria.PageSize))
+            .ToListAsync(cancellationToken);
+        var totalPages = totalCount == 0
+            ? 0
+            : ((totalCount - 1) / criteria.PageSize) + 1;
+
+        return new(
+            items,
+            criteria.Page,
+            criteria.PageSize,
+            totalCount,
+            totalPages);
+    }
+
     public async Task<CloseVehicleAccessResult> TryCloseAsync(
         int accessRecordId,
         int actorUserId,
@@ -277,4 +332,9 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
 
     private static VehicleAccessStoreRegistration Conflict() =>
         new(VehicleAccessStoreRegistrationStatus.Conflict, null);
+
+    private static string EscapeLikePattern(string value) =>
+        value.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal);
 }
