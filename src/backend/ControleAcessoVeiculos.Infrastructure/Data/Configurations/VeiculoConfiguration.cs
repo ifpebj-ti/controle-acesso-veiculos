@@ -86,6 +86,11 @@ public class VeiculoConfiguration : IEntityTypeConfiguration<Veiculo>
             .HasFilter("placa IS NOT NULL")
             .HasDatabaseName("ux_veiculos_placa");
 
+        builder.HasIndex(veiculo => veiculo.IdentificacaoVeiculo)
+            .IsUnique()
+            .HasFilter("identificacao_veiculo IS NOT NULL AND eh_institucional = TRUE")
+            .HasDatabaseName("ux_veiculos_identificacao_institucional");
+
         builder.HasIndex(veiculo => veiculo.EhInstitucional)
             .HasDatabaseName("ix_veiculos_institucional");
 
