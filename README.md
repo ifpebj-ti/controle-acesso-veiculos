@@ -24,8 +24,8 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Backend | API .NET 10 com autenticação, contas e fluxo geral de entrada, consulta de abertos e saída de veículos |
 | Dados | PostgreSQL 16, EF Core 10, nove entidades e quatro migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 47 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
-| Segurança | JWT, contas individuais, autorização operacional, horários de servidor e identificação do ator implementados; auditoria transversal e matriz final de perfis pendentes |
+| Qualidade | 50 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Segurança | JWT, contas individuais, autorização operacional, controles HTTP e auditoria transacional de entrada e saída implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
@@ -38,7 +38,7 @@ O primeiro fluxo funcional está disponível para os perfis preliminares `Portei
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
 
-A placa é normalizada e o PostgreSQL impede dois acessos abertos para o mesmo veículo, inclusive em requisições concorrentes. Nome do condutor, placa, objetivo e categoria são obrigatórios; documento e detalhes do veículo permanecem opcionais até validação institucional.
+A placa é normalizada e o PostgreSQL impede dois acessos abertos para o mesmo veículo, inclusive em requisições concorrentes. Entrada e saída geram uma trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios; documento e detalhes do veículo permanecem opcionais até validação institucional.
 
 ## Problema e escopo do MVP
 
@@ -311,12 +311,13 @@ curl -i http://localhost:5118/weatherforecast
 - Erros inesperados usam `application/problem+json` sem mensagem interna ou stack trace.
 - O corpo de cada requisição é limitado globalmente a 1 MiB.
 - Logs HTTP incluem correlação, método, template da rota, status e duração; não incluem valores da URL, query string, corpo nem cabeçalho de autorização.
+- A auditoria de entrada e saída registra somente identificadores e transições de estado; não duplica nome, documento, placa, objetivo nem observação.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
 - O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
 - Revise migrations, permissões e logs antes de usar dados institucionais.
-- O primeiro endpoint de negócio existe, mas matriz final de perfis, recuperação, revogação, auditoria e demais fluxos ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
+- O primeiro fluxo de negócio existe, mas matriz final de perfis, recuperação, revogação, auditoria dos demais casos de uso e outros fluxos ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).

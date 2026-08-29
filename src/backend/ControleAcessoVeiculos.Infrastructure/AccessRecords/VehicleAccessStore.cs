@@ -4,6 +4,7 @@ using ControleAcessoVeiculos.Domain.Enums;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using System.Text.Json;
 
 namespace ControleAcessoVeiculos.Infrastructure.AccessRecords;
 
@@ -121,6 +122,9 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             dbContext.RegistrosAcesso.Add(accessRecord);
 
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            dbContext.Auditorias.Add(CreateEntryAudit(accessRecord, actorUserId, entryAtUtc));
+            await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
             return new VehicleAccessStoreRegistration(
@@ -152,9 +156,13 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
         DateTime exitAtUtc,
         CancellationToken cancellationToken)
     {
-        var accessRecord = await dbContext.RegistrosAcesso.SingleOrDefaultAsync(
-            item => item.Id == accessRecordId,
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
             cancellationToken);
+
+        var accessRecord = await dbContext.RegistrosAcesso
+            .FromSqlInterpolated(
+                $"SELECT * FROM dbo.registros_acesso WHERE id = {accessRecordId} FOR UPDATE")
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (accessRecord is null)
         {
@@ -171,6 +179,7 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
         }
 
         accessRecord.RegistrarSaida(exitAtUtc, actorUserId);
+        dbContext.Auditorias.Add(CreateExitAudit(accessRecord, actorUserId, exitAtUtc));
         await dbContext.SaveChangesAsync(cancellationToken);
 
         var result = await ProjectRecords(dbContext.RegistrosAcesso
@@ -178,8 +187,49 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 .Where(item => item.Id == accessRecordId))
             .SingleAsync(cancellationToken);
 
+        await transaction.CommitAsync(cancellationToken);
         return new CloseVehicleAccessResult(CloseVehicleAccessStatus.Success, result);
     }
+
+    private static Auditoria CreateEntryAudit(
+        RegistroAcesso accessRecord,
+        int actorUserId,
+        DateTime occurredAtUtc) =>
+        new(
+            occurredAtUtc,
+            TipoAcaoAuditoria.Inclusao,
+            nameof(RegistroAcesso),
+            accessRecord.Id,
+            actorUserId,
+            dadosNovos: JsonSerializer.Serialize(new
+            {
+                status = StatusRegistroAcesso.Aberto.ToString(),
+                vehicleId = accessRecord.VeiculoId,
+                personId = accessRecord.PessoaId,
+                accessCategoryId = accessRecord.CategoriaAcessoId
+            }),
+            detalhes: "Vehicle access entry registered.");
+
+    private static Auditoria CreateExitAudit(
+        RegistroAcesso accessRecord,
+        int actorUserId,
+        DateTime occurredAtUtc) =>
+        new(
+            occurredAtUtc,
+            TipoAcaoAuditoria.Alteracao,
+            nameof(RegistroAcesso),
+            accessRecord.Id,
+            actorUserId,
+            dadosAnteriores: JsonSerializer.Serialize(new
+            {
+                status = StatusRegistroAcesso.Aberto.ToString()
+            }),
+            dadosNovos: JsonSerializer.Serialize(new
+            {
+                status = StatusRegistroAcesso.Encerrado.ToString(),
+                exitAtUtc = occurredAtUtc
+            }),
+            detalhes: "Vehicle access exit registered.");
 
     private IQueryable<VehicleAccessRecord> ProjectRecords(
         IQueryable<RegistroAcesso> accessRecords) =>

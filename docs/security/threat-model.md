@@ -6,7 +6,7 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 1.2
+**Versão:** 1.3
 
 **Data de referência:** 28 de agosto de 2026
 
@@ -123,7 +123,7 @@ flowchart LR
 | B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
 | B2 | Código executado no navegador para API | JWT e primeiro contrato operacional implementados; matriz final e frontend pendentes |
 | B3 | API para PostgreSQL | Implementado localmente |
-| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria de negócio pendente |
+| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada para entrada e saída |
 | B5 | Banco para backup | Não implementado |
 | B6 | Repositório para runner e artefatos | CI inicial implementada |
 | B7 | Registry para infraestrutura OCI | Não implementado |
@@ -140,7 +140,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-03 | Tampering | Cliente altera IDs, status, horários ou quilometragem enviados à API | 3 | 3 | 9 | Política operacional, DTOs, validação, horário do servidor e unicidade transacional — #29, #31 e #47 | Parcialmente mitigado no fluxo geral de acesso |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários | Planejado |
 | TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, scanner, build e proveniência — #25 | Parcial |
-| TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, correlation ID e auditoria imutável suficiente — #29, #31 e #47 | Ator persistido em entrada/saída; auditoria imutável pendente |
+| TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, correlation ID e auditoria imutável suficiente — #29, #31, #47 e #51 | Auditoria transacional implementada para entrada e saída; correção e imutabilidade por privilégios pendentes |
 | TM-07 | Information disclosure | Stack trace, log ou erro expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, logs mínimos e testes de não exposição — #31 e #49 | Parcialmente mitigado; auditoria e logs externos pendentes |
 | TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29 e #31 | Planejado |
 | TM-09 | Information disclosure | Segredo entra no Git, imagem, artefato ou Wiki | 2 | 3 | 6 | `.gitignore`, exemplos fictícios, secret scanning e rotação — #25 | Parcial |
@@ -152,7 +152,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Criptografia, acesso restrito, retenção e inventário — #30 | Planejado |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
 | TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup, upgrade/downgrade e falha explícita — #23 e #30 | Parcialmente mitigado |
-| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Definir atomicidade, alerta e comportamento de falha — #31 | Planejado |
+| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31 e #51 | Mitigado para entrada e saída; alerta e demais operações pendentes |
 
 ## Controles existentes verificados
 
@@ -169,6 +169,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - logs HTTP estruturados com template de rota, sem valores da URL, query string, corpo ou cabeçalho de autorização;
 - exceções inesperadas retornam `ProblemDetails` sem mensagem interna ou stack trace;
 - limite global de 1 MiB para corpos de requisição;
+- auditoria de entrada e saída atômica, associada ao operador e sem duplicação de dados pessoais;
 - migration de alinhamento falha em vez de inventar dados legados;
 - documento pessoal opcional e dados de teste fictícios;
 - `.env` ignorado e exemplos sem segredo real;
@@ -179,7 +180,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 ## Risco residual atual
 
 O risco residual permanece alto para ciclo de identidade, autorização definitiva,
-auditoria e continuidade porque esses controles ainda estão incompletos. Portanto, a
+auditoria dos demais fluxos, imutabilidade e continuidade porque esses controles ainda estão incompletos. Portanto, a
 API atual não deve ser tratada como pronta para exposição pública ou produção.
 
 ## Responsabilidades

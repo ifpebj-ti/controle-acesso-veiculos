@@ -1,10 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using ControleAcessoVeiculos.Application.AccessRecords;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -83,6 +85,161 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.Equal(1, await dbContext.Veiculos.CountAsync(item => item.Placa == "ABC1D23"));
         Assert.Equal(1, await dbContext.Pessoas.CountAsync(
             item => item.DocumentoTipo == "CPF" && item.DocumentoNumero == documentNumber));
+
+        var audits = await dbContext.Auditorias
+            .AsNoTracking()
+            .Where(item => item.Entidade == nameof(RegistroAcesso) &&
+                item.RegistroId == entry.Id)
+            .OrderBy(item => item.Id)
+            .ToListAsync();
+
+        Assert.Collection(
+            audits,
+            audit =>
+            {
+                Assert.Equal(TipoAcaoAuditoria.Inclusao, audit.TipoAcao);
+                Assert.Equal(userId, audit.UsuarioId);
+                Assert.Null(audit.DadosAnteriores);
+                AssertAuditState(audit.DadosNovos, "Aberto");
+            },
+            audit =>
+            {
+                Assert.Equal(TipoAcaoAuditoria.Alteracao, audit.TipoAcao);
+                Assert.Equal(userId, audit.UsuarioId);
+                AssertAuditState(audit.DadosAnteriores, "Aberto");
+                AssertAuditState(audit.DadosNovos, "Encerrado");
+            });
+
+        var auditContent = string.Join(
+            ' ',
+            audits.SelectMany(item => new[]
+            {
+                item.DadosAnteriores,
+                item.DadosNovos,
+                item.Detalhes
+            }).Where(item => item is not null));
+        Assert.DoesNotContain(request.driverName, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(documentNumber, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ABC1D23", auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(request.objective, auditContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ConcurrentExitAttemptsCloseAndAuditAccessOnlyOnce()
+    {
+        const string password = "Test-only-password-123!";
+        var (userId, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Condutor {suffix}",
+            plate = suffix[..7],
+            objective = "Entrega",
+            categoryName = AccessCategoryNames.Delivery
+        });
+        var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        entryResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(entry);
+
+        var responses = await Task.WhenAll(
+            client.PostAsync($"/access-records/{entry.Id}/exit", content: null),
+            client.PostAsync($"/access-records/{entry.Id}/exit", content: null));
+
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.OK);
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Conflict);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.Equal(
+            1,
+            await dbContext.Auditorias.CountAsync(item =>
+                item.Entidade == nameof(RegistroAcesso) &&
+                item.RegistroId == entry.Id &&
+                item.TipoAcao == TipoAcaoAuditoria.Alteracao &&
+                item.UsuarioId == userId));
+    }
+
+    [Fact]
+    public async Task AuditFailureRollsBackVehicleEntry()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var plate = suffix[..7].ToUpperInvariant();
+
+        await InstallRejectingAuditTriggerAsync();
+
+        try
+        {
+            var response = await client.PostAsJsonAsync("/access-records/entries", new
+            {
+                driverName = $"Condutor {suffix}",
+                plate,
+                objective = "Visita",
+                categoryName = AccessCategoryNames.Visitor
+            });
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        finally
+        {
+            await RemoveRejectingAuditTriggerAsync();
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.False(await dbContext.Veiculos.AnyAsync(item => item.Placa == plate));
+    }
+
+    [Fact]
+    public async Task AuditFailureRollsBackVehicleExit()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Condutor {suffix}",
+            plate = suffix[..7],
+            objective = "Visita",
+            categoryName = AccessCategoryNames.Visitor
+        });
+        var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        entryResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(entry);
+
+        await InstallRejectingAuditTriggerAsync();
+
+        try
+        {
+            var response = await client.PostAsync(
+                $"/access-records/{entry.Id}/exit",
+                content: null);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        finally
+        {
+            await RemoveRejectingAuditTriggerAsync();
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var accessRecord = await dbContext.RegistrosAcesso
+            .AsNoTracking()
+            .SingleAsync(item => item.Id == entry.Id);
+        Assert.Equal(StatusRegistroAcesso.Aberto, accessRecord.Status);
+        Assert.Null(accessRecord.DataHoraSaida);
+        Assert.Equal(
+            1,
+            await dbContext.Auditorias.CountAsync(item =>
+                item.Entidade == nameof(RegistroAcesso) && item.RegistroId == entry.Id));
     }
 
     [Fact]
@@ -134,6 +291,45 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         await dbContext.SaveChangesAsync();
 
         return (user.Id, email);
+    }
+
+    private async Task InstallRejectingAuditTriggerAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            CREATE OR REPLACE FUNCTION dbo.reject_vehicle_access_audit()
+            RETURNS trigger AS $function$
+            BEGIN
+                RAISE EXCEPTION 'forced integration test audit failure';
+            END;
+            $function$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER reject_vehicle_access_audit
+            BEFORE INSERT ON dbo.auditorias
+            FOR EACH ROW
+            WHEN (NEW.entidade = 'RegistroAcesso')
+            EXECUTE FUNCTION dbo.reject_vehicle_access_audit();
+            """);
+    }
+
+    private async Task RemoveRejectingAuditTriggerAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            DROP TRIGGER IF EXISTS reject_vehicle_access_audit ON dbo.auditorias;
+            DROP FUNCTION IF EXISTS dbo.reject_vehicle_access_audit();
+            """);
+    }
+
+    private static void AssertAuditState(string? json, string expectedStatus)
+    {
+        Assert.NotNull(json);
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expectedStatus, document.RootElement.GetProperty("status").GetString());
     }
 
     private sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
