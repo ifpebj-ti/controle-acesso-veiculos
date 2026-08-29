@@ -15,17 +15,17 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 
 ## Estado atual
 
-> Atualizado em 28 de agosto de 2026. O projeto possui o primeiro fluxo operacional vertical do MVP, mas ainda não está pronto para uso real na portaria.
+> Atualizado em 29 de agosto de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
 
 | Área | Estado |
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, contas e fluxo geral de entrada, consulta de abertos e saída de veículos |
-| Dados | PostgreSQL 16, EF Core 10, nove entidades e quatro migrations versionadas |
+| Backend | API .NET 10 com autenticação, contas, fluxo geral de acesso e saída/retorno de veículos institucionais |
+| Dados | PostgreSQL 16, EF Core 10, nove entidades e cinco migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 50 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
-| Segurança | JWT, contas individuais, autorização operacional, controles HTTP e auditoria transacional de entrada e saída implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
+| Qualidade | 60 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Segurança | JWT, contas individuais, autorização operacional, controles HTTP e auditoria transacional dos fluxos geral e institucional implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
@@ -37,8 +37,11 @@ O primeiro fluxo funcional está disponível para os perfis preliminares `Portei
 | `POST /access-records/entries` | registra entrada e cria ou reutiliza pessoa, veículo, vínculo e categoria em uma transação |
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
+| `POST /institutional-vehicle-usages/departures` | registra a saída de veículo institucional e motorista já cadastrados |
+| `GET /institutional-vehicle-usages/open` | lista usos institucionais ainda sem retorno |
+| `POST /institutional-vehicle-usages/{id}/returns` | registra retorno e valida a quilometragem |
 
-A placa é normalizada e o PostgreSQL impede dois acessos abertos para o mesmo veículo, inclusive em requisições concorrentes. Entrada e saída geram uma trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios; documento e detalhes do veículo permanecem opcionais até validação institucional.
+A placa é normalizada e o PostgreSQL impede dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. No fluxo institucional, veículo e motorista devem estar ativos e previamente cadastrados; itinerário permanece como texto livre até validação institucional.
 
 ## Problema e escopo do MVP
 
@@ -257,6 +260,27 @@ curl -X POST http://localhost:5118/access-records/1/exit \
 
 As categorias preliminares aceitas são: `Visitante`, `Prestador de serviço`, `Entrega`, `Evento`, `Treino ou jogo`, `Caminhada com veículo`, `Mototáxi`, `Permanência excepcional` e `Outro acesso autorizado`. Elas são hipóteses do MVP e devem ser revistas após a validação com a portaria.
 
+### Testar o fluxo de veículos institucionais
+
+Use os identificadores de um veículo ativo marcado como institucional e de um motorista ativo já cadastrados:
+
+```bash
+curl -X POST http://localhost:5118/institutional-vehicle-usages/departures \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"vehicleId":1,"driverId":1,"departureMileage":12500,"itinerary":"Campus - Unidade rural"}'
+
+curl http://localhost:5118/institutional-vehicle-usages/open \
+  -H "Authorization: Bearer SEU_TOKEN"
+
+curl -X POST http://localhost:5118/institutional-vehicle-usages/1/returns \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"returnMileage":12542}'
+```
+
+Cadastro e consulta dos catálogos de frota e motoristas, pesquisa histórica e correção autorizada permanecem em recortes futuros. A API não cria veículo institucional implicitamente a partir de uma saída.
+
 ## Migrations
 
 Execute a partir da raiz, com `ConnectionStrings__DefaultConnection` configurada.
@@ -311,13 +335,13 @@ curl -i http://localhost:5118/weatherforecast
 - Erros inesperados usam `application/problem+json` sem mensagem interna ou stack trace.
 - O corpo de cada requisição é limitado globalmente a 1 MiB.
 - Logs HTTP incluem correlação, método, template da rota, status e duração; não incluem valores da URL, query string, corpo nem cabeçalho de autorização.
-- A auditoria de entrada e saída registra somente identificadores e transições de estado; não duplica nome, documento, placa, objetivo nem observação.
+- A auditoria dos fluxos geral e institucional registra somente identificadores e estados necessários; não duplica nome, documento, placa, objetivo, observação nem itinerário.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
 - O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
 - Revise migrations, permissões e logs antes de usar dados institucionais.
-- O primeiro fluxo de negócio existe, mas matriz final de perfis, recuperação, revogação, auditoria dos demais casos de uso e outros fluxos ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
+- Os primeiros fluxos de negócio existem, mas catálogos administrativos, consultas históricas, matriz final de perfis, recuperação, revogação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).

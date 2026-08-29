@@ -62,3 +62,32 @@ POST {{ControleAcessoVeiculos.API_HostAddress}}/access-records/1/exit
 Authorization: Bearer {{AccessToken}}
 
 ###
+
+POST {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicle-usages/departures
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": 1,
+  "driverId": 1,
+  "departureMileage": 12500,
+  "itinerary": "Campus - Unidade rural"
+}
+
+###
+
+GET {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicle-usages/open
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+POST {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicle-usages/1/returns
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "returnMileage": 12542
+}
+
+###
