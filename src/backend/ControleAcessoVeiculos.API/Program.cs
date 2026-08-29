@@ -8,11 +8,13 @@ using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Application.InstitutionalVehicleUsages;
 using ControleAcessoVeiculos.Application.InstitutionalVehicles;
+using ControleAcessoVeiculos.Application.InstitutionalDrivers;
 using ControleAcessoVeiculos.Infrastructure.Authentication;
 using ControleAcessoVeiculos.Infrastructure.AccessRecords;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicleUsages;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicles;
+using ControleAcessoVeiculos.Infrastructure.InstitutionalDrivers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -87,6 +89,14 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.ManageInstitutionalVehicleCatalog, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ReadInstitutionalDrivers, policy => policy.RequireRole(
+        ProfileNames.Doorman,
+        ProfileNames.SecurityGuard,
+        ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ManageInstitutionalDrivers, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator));
 
@@ -97,6 +107,7 @@ builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
 builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
 builder.Services.AddScoped<IInstitutionalVehicleCatalogStore, InstitutionalVehicleCatalogStore>();
+builder.Services.AddScoped<IInstitutionalDriverStore, InstitutionalDriverStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<CreateUserAccountService>();
@@ -104,6 +115,7 @@ builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
 builder.Services.AddScoped<InstitutionalVehicleCatalogService>();
+builder.Services.AddScoped<InstitutionalDriverService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -150,6 +162,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 app.MapVehicleAccessEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
+app.MapInstitutionalDriverEndpoints();
 
 app.MapPost("/auth/login", async (
     LoginRequest request,

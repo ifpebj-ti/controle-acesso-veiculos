@@ -20,7 +20,7 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
     {
         const string password = "Test-only-password-123!";
         var (userId, email) = await CreateUserAsync(ProfileNames.Doorman, password);
-        var catalog = await CreateCatalogAsync(institutionalVehicle: true);
+        var catalog = await CreateCatalogAsync(userId, institutionalVehicle: true);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
         var request = new
@@ -51,6 +51,16 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
             $"/institutional-vehicle-usages/{departure.Id}/returns",
             new { returnMileage = 12499 });
         Assert.Equal(HttpStatusCode.BadRequest, invalidReturn.StatusCode);
+
+        using (var deactivationScope = factory.Services.CreateScope())
+        {
+            var deactivationDbContext = deactivationScope.ServiceProvider
+                .GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var authorization = await deactivationDbContext.MotoristasInstitucionais
+                .SingleAsync(item => item.PessoaId == catalog.DriverId);
+            authorization.Desativar(DateTime.UtcNow, userId);
+            await deactivationDbContext.SaveChangesAsync();
+        }
 
         var returnResponse = await client.PostAsJsonAsync(
             $"/institutional-vehicle-usages/{departure.Id}/returns",
@@ -111,8 +121,12 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
     public async Task DepartureRejectsInvalidOrUnavailableCatalogData()
     {
         const string password = "Test-only-password-123!";
-        var (_, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
-        var catalog = await CreateCatalogAsync(institutionalVehicle: false);
+        var (userId, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
+        var catalog = await CreateCatalogAsync(userId, institutionalVehicle: false);
+        var unauthorizedDriverCatalog = await CreateCatalogAsync(
+            userId,
+            institutionalVehicle: true,
+            authorizeDriver: false);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
 
@@ -137,6 +151,17 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
                 itinerary = "Campus"
             });
         Assert.Equal(HttpStatusCode.NotFound, unavailableResponse.StatusCode);
+
+        var unauthorizedDriverResponse = await client.PostAsJsonAsync(
+            "/institutional-vehicle-usages/departures",
+            new
+            {
+                vehicleId = unauthorizedDriverCatalog.VehicleId,
+                driverId = unauthorizedDriverCatalog.DriverId,
+                departureMileage = 100,
+                itinerary = "Campus"
+            });
+        Assert.Equal(HttpStatusCode.NotFound, unauthorizedDriverResponse.StatusCode);
     }
 
     [Fact]
@@ -154,7 +179,7 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
     {
         const string password = "Test-only-password-123!";
         var (userId, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
-        var catalog = await CreateCatalogAsync(institutionalVehicle: true);
+        var catalog = await CreateCatalogAsync(userId, institutionalVehicle: true);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
         var departureRequest = new
@@ -210,9 +235,9 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
     public async Task AuditFailureRollsBackInstitutionalDepartureAndReturn()
     {
         const string password = "Test-only-password-123!";
-        var (_, email) = await CreateUserAsync(ProfileNames.Doorman, password);
-        var departureCatalog = await CreateCatalogAsync(institutionalVehicle: true);
-        var returnCatalog = await CreateCatalogAsync(institutionalVehicle: true);
+        var (userId, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        var departureCatalog = await CreateCatalogAsync(userId, institutionalVehicle: true);
+        var returnCatalog = await CreateCatalogAsync(userId, institutionalVehicle: true);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
         var existingResponse = await client.PostAsJsonAsync(
@@ -298,7 +323,10 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
         return (user.Id, email);
     }
 
-    private async Task<InstitutionalCatalog> CreateCatalogAsync(bool institutionalVehicle)
+    private async Task<InstitutionalCatalog> CreateCatalogAsync(
+        int actorUserId,
+        bool institutionalVehicle,
+        bool authorizeDriver = true)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
@@ -314,6 +342,14 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
         dbContext.Veiculos.Add(vehicle);
         dbContext.Pessoas.Add(driver);
         await dbContext.SaveChangesAsync();
+        if (authorizeDriver)
+        {
+            dbContext.MotoristasInstitucionais.Add(new MotoristaInstitucional(
+                driver.Id,
+                actorUserId,
+                DateTime.UtcNow));
+            await dbContext.SaveChangesAsync();
+        }
 
         return new InstitutionalCatalog(vehicle.Id, driver.Id, plate, driverName);
     }
