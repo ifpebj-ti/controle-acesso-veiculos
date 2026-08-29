@@ -23,7 +23,7 @@ public class VeiculoTests
             ehInstitucional: true);
 
         Assert.True(veiculo.EhInstitucional);
-        Assert.Equal("Patrimônio 0001", veiculo.IdentificacaoVeiculo);
+        Assert.Equal("PATRIMÔNIO 0001", veiculo.IdentificacaoVeiculo);
     }
 
     [Theory]
@@ -41,5 +41,17 @@ public class VeiculoTests
     {
         Assert.Throws<ArgumentException>(() =>
             new Veiculo("---", "Automóvel", null, false));
+    }
+
+    [Theory]
+    [InlineData(" patrimônio 0001 ", "PATRIMÔNIO 0001")]
+    [InlineData("van-02", "VAN-02")]
+    public void Constructor_ShouldNormalizeAlternativeIdentification(
+        string input,
+        string expected)
+    {
+        var veiculo = new Veiculo(null, "Automóvel", input, true);
+
+        Assert.Equal(expected, veiculo.IdentificacaoVeiculo);
     }
 }

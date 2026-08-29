@@ -29,7 +29,9 @@ public class Veiculo
 
         Placa = string.IsNullOrWhiteSpace(placa) ? null : NormalizarPlaca(placa);
         Tipo = tipo?.Trim();
-        IdentificacaoVeiculo = identificacaoVeiculo?.Trim();
+        IdentificacaoVeiculo = string.IsNullOrWhiteSpace(identificacaoVeiculo)
+            ? null
+            : NormalizarIdentificacao(identificacaoVeiculo);
         EhInstitucional = ehInstitucional;
         Marca = marca?.Trim();
         Modelo = modelo?.Trim();
@@ -65,5 +67,12 @@ public class Veiculo
         }
 
         return placaNormalizada;
+    }
+
+    public static string NormalizarIdentificacao(string identificacaoVeiculo)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(identificacaoVeiculo);
+
+        return identificacaoVeiculo.Trim().ToUpperInvariant();
     }
 }
