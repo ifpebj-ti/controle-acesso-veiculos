@@ -9,6 +9,26 @@ public sealed record RegisterInstitutionalVehicleDepartureCommand(
 public sealed record RegisterInstitutionalVehicleReturnCommand(
     int ReturnMileage);
 
+public sealed record SearchInstitutionalVehicleUsagesCommand(
+    int? VehicleId = null,
+    int? DriverId = null,
+    string? Plate = null,
+    string? VehicleIdentification = null,
+    DateTimeOffset? From = null,
+    DateTimeOffset? To = null,
+    int Page = 1,
+    int PageSize = 25);
+
+public sealed record InstitutionalVehicleUsageSearchCriteria(
+    int? VehicleId,
+    int? DriverId,
+    string? Plate,
+    string? VehicleIdentification,
+    DateTime FromUtc,
+    DateTime ToUtc,
+    int Page,
+    int PageSize);
+
 public sealed record InstitutionalVehicleUsageRecord(
     int Id,
     int VehicleId,
@@ -24,6 +44,24 @@ public sealed record InstitutionalVehicleUsageRecord(
     string Status,
     int CreatedById,
     int? UpdatedById);
+
+public sealed record PagedInstitutionalVehicleUsageResult(
+    IReadOnlyList<InstitutionalVehicleUsageRecord> Items,
+    int Page,
+    int PageSize,
+    int TotalCount,
+    int TotalPages);
+
+public enum SearchInstitutionalVehicleUsagesStatus
+{
+    Success,
+    Invalid
+}
+
+public sealed record SearchInstitutionalVehicleUsagesResult(
+    SearchInstitutionalVehicleUsagesStatus Status,
+    PagedInstitutionalVehicleUsageResult? Result,
+    IReadOnlyDictionary<string, string[]> Errors);
 
 public enum RegisterInstitutionalVehicleDepartureStatus
 {
