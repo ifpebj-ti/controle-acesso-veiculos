@@ -127,6 +127,12 @@ Accept: application/json
 
 ###
 
+GET {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicle-usages/history?plate=IFP-1E23&from=2026-08-01T00:00:00Z&to=2026-08-31T23:59:59Z&page=1&pageSize=25
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
 POST {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicle-usages/1/returns
 Authorization: Bearer {{AccessToken}}
 Content-Type: application/json

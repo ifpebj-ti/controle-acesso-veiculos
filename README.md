@@ -21,10 +21,10 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, contas, fluxo geral de acesso, catálogo de frota e saída/retorno de veículos institucionais |
-| Dados | PostgreSQL 16, EF Core 10, dez entidades e sete migrations versionadas |
+| Backend | API .NET 10 com autenticação, contas, fluxo geral, frota, motoristas, saída/retorno e consulta histórica institucional |
+| Dados | PostgreSQL 16, EF Core 10, dez entidades e oito migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 79 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 84 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, autorização operacional, controles HTTP e auditoria transacional dos fluxos geral e institucional implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
@@ -44,6 +44,7 @@ Os contratos operacionais e administrativos disponíveis são:
 | `DELETE /institutional-drivers/{id}` | revoga a autorização sem apagar seu histórico |
 | `POST /institutional-vehicle-usages/departures` | registra a saída de veículo institucional e motorista já cadastrados |
 | `GET /institutional-vehicle-usages/open` | lista usos institucionais ainda sem retorno |
+| `GET /institutional-vehicle-usages/history` | pesquisa usos por período, veículo ou motorista para Transporte e Administrador |
 | `POST /institutional-vehicle-usages/{id}/returns` | registra retorno e valida a quilometragem |
 
 A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
@@ -59,6 +60,7 @@ O MVP está concentrado em:
 - identificação de acessos ainda abertos;
 - uso de veículos institucionais com motorista, quilometragem e itinerário;
 - autorização e revogação de motoristas institucionais pelo setor responsável;
+- consulta histórica paginada para localizar veículo e motorista por período;
 - perfis, usuário responsável, correções rastreáveis e auditoria.
 
 Reconhecimento automático de placas, câmeras, RFID, cancelas, estacionamento e os fluxos gerais de pedestres permanecem fora do primeiro incremento. Uma solução observada no mercado não se torna requisito sem levantamento local e validação do cliente.
@@ -307,9 +309,12 @@ curl -X POST http://localhost:5118/institutional-vehicle-usages/1/returns \
   -H "Authorization: Bearer SEU_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"returnMileage":12542}'
+
+curl "http://localhost:5118/institutional-vehicle-usages/history?plate=IFP-1E23&from=2026-08-01T00:00:00Z&to=2026-08-31T23:59:59Z&page=1&pageSize=25" \
+  -H "Authorization: Bearer SEU_TOKEN"
 ```
 
-Atualização e inativação da frota, critérios adicionais de elegibilidade de motoristas, pesquisa histórica e correção autorizada permanecem em recortes futuros. A API não cria veículo institucional nem concede autorização implicitamente a partir de uma saída. CNH, validade, categoria, escala, assinatura, imagem e vínculo fixo com veículo não foram copiados das planilhas para o MVP sem necessidade institucional validada.
+A consulta histórica aceita placa, identificação da frota, `vehicleId`, `driverId` e período combináveis. Sem período, usa os últimos 30 dias; o intervalo máximo é de 366 dias e cada página contém de 1 a 100 registros. Atualização e inativação da frota, critérios adicionais de elegibilidade de motoristas e correção autorizada permanecem em recortes futuros. A API não cria veículo institucional nem concede autorização implicitamente a partir de uma saída. CNH, validade, categoria, escala, assinatura, imagem e vínculo fixo com veículo não foram copiados das planilhas para o MVP sem necessidade institucional validada.
 
 ## Migrations
 
@@ -365,13 +370,13 @@ curl -i http://localhost:5118/weatherforecast
 - Erros inesperados usam `application/problem+json` sem mensagem interna ou stack trace.
 - O corpo de cada requisição é limitado globalmente a 1 MiB.
 - Logs HTTP incluem correlação, método, template da rota, status e duração; não incluem valores da URL, query string, corpo nem cabeçalho de autorização.
-- A auditoria dos fluxos geral, institucional e do catálogo de frota registra somente identificadores e estados necessários; não duplica nome, documento, placa, identificação patrimonial, objetivo, observação nem itinerário.
+- A auditoria dos fluxos geral, institucional e dos catálogos de frota e motoristas registra somente identificadores e estados necessários; não duplica nome, documento, placa, identificação patrimonial, objetivo, observação nem itinerário.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
 - O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
 - Revise migrations, permissões e logs antes de usar dados institucionais.
-- Os primeiros fluxos de negócio e os catálogos iniciais de frota e motoristas existem, mas manutenção completa de cadastros, consultas históricas, matriz final de perfis, recuperação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
+- Os primeiros fluxos de negócio, os catálogos iniciais e a consulta histórica institucional existem, mas manutenção completa de cadastros, histórico do fluxo geral, matriz final de perfis, recuperação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).

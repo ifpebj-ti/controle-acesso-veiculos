@@ -68,6 +68,74 @@ public sealed class InstitutionalVehicleUsageServiceTests
         Assert.Equal(0, store.ReturnCalls);
     }
 
+    [Fact]
+    public async Task SearchHistoryAsync_ShouldUseDefaultPeriodAndNormalizeFilters()
+    {
+        var store = new FakeStore();
+        var service = new InstitutionalVehicleUsageService(
+            store,
+            new FixedTimeProvider(FixedNow));
+
+        var result = await service.SearchHistoryAsync(new(
+            Plate: " ifp-1e23 ",
+            VehicleIdentification: " frota-001 "));
+
+        Assert.Equal(SearchInstitutionalVehicleUsagesStatus.Success, result.Status);
+        Assert.NotNull(store.LastSearchCriteria);
+        Assert.Equal("IFP1E23", store.LastSearchCriteria.Plate);
+        Assert.Equal("FROTA-001", store.LastSearchCriteria.VehicleIdentification);
+        Assert.Equal(FixedNow.AddDays(-30).UtcDateTime, store.LastSearchCriteria.FromUtc);
+        Assert.Equal(FixedNow.UtcDateTime, store.LastSearchCriteria.ToUtc);
+        Assert.Equal(1, store.LastSearchCriteria.Page);
+        Assert.Equal(25, store.LastSearchCriteria.PageSize);
+    }
+
+    [Fact]
+    public async Task SearchHistoryAsync_ShouldRejectInvalidPeriodPaginationAndFilters()
+    {
+        var store = new FakeStore();
+        var service = new InstitutionalVehicleUsageService(
+            store,
+            new FixedTimeProvider(FixedNow));
+
+        var result = await service.SearchHistoryAsync(new(
+            VehicleId: 0,
+            DriverId: -1,
+            Plate: "---",
+            VehicleIdentification: new string('x', 101),
+            From: FixedNow,
+            To: FixedNow.AddDays(-1),
+            Page: 0,
+            PageSize: 101));
+
+        Assert.Equal(SearchInstitutionalVehicleUsagesStatus.Invalid, result.Status);
+        Assert.Contains("vehicleId", result.Errors.Keys);
+        Assert.Contains("driverId", result.Errors.Keys);
+        Assert.Contains("plate", result.Errors.Keys);
+        Assert.Contains("vehicleIdentification", result.Errors.Keys);
+        Assert.Contains("period", result.Errors.Keys);
+        Assert.Contains("page", result.Errors.Keys);
+        Assert.Contains("pageSize", result.Errors.Keys);
+        Assert.Null(store.LastSearchCriteria);
+    }
+
+    [Fact]
+    public async Task SearchHistoryAsync_ShouldRejectPeriodLongerThanOneYear()
+    {
+        var store = new FakeStore();
+        var service = new InstitutionalVehicleUsageService(
+            store,
+            new FixedTimeProvider(FixedNow));
+
+        var result = await service.SearchHistoryAsync(new(
+            From: FixedNow.AddDays(-367),
+            To: FixedNow));
+
+        Assert.Equal(SearchInstitutionalVehicleUsagesStatus.Invalid, result.Status);
+        Assert.Contains("period", result.Errors.Keys);
+        Assert.Null(store.LastSearchCriteria);
+    }
+
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
@@ -80,6 +148,7 @@ public sealed class InstitutionalVehicleUsageServiceTests
         public string? LastItinerary { get; private set; }
         public int LastActorUserId { get; private set; }
         public DateTime LastOccurredAtUtc { get; private set; }
+        public InstitutionalVehicleUsageSearchCriteria? LastSearchCriteria { get; private set; }
 
         public Task<InstitutionalVehicleDepartureStoreResult> TryRegisterDepartureAsync(
             int vehicleId,
@@ -109,6 +178,19 @@ public sealed class InstitutionalVehicleUsageServiceTests
         public Task<IReadOnlyList<InstitutionalVehicleUsageRecord>> ListOpenAsync(
             CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<InstitutionalVehicleUsageRecord>>([]);
+
+        public Task<PagedInstitutionalVehicleUsageResult> SearchAsync(
+            InstitutionalVehicleUsageSearchCriteria criteria,
+            CancellationToken cancellationToken)
+        {
+            LastSearchCriteria = criteria;
+            return Task.FromResult(new PagedInstitutionalVehicleUsageResult(
+                [],
+                criteria.Page,
+                criteria.PageSize,
+                0,
+                0));
+        }
 
         public Task<InstitutionalVehicleReturnStoreResult> TryRegisterReturnAsync(
             int usageId,

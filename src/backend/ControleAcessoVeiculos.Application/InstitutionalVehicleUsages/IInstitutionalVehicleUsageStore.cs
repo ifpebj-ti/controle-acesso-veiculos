@@ -14,6 +14,10 @@ public interface IInstitutionalVehicleUsageStore
     Task<IReadOnlyList<InstitutionalVehicleUsageRecord>> ListOpenAsync(
         CancellationToken cancellationToken);
 
+    Task<PagedInstitutionalVehicleUsageResult> SearchAsync(
+        InstitutionalVehicleUsageSearchCriteria criteria,
+        CancellationToken cancellationToken);
+
     Task<InstitutionalVehicleReturnStoreResult> TryRegisterReturnAsync(
         int usageId,
         int returnMileage,

@@ -9,15 +9,20 @@ public static class InstitutionalVehicleUsageEndpoints
         this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/institutional-vehicle-usages")
-            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithTags("Institutional vehicle usages");
 
         group.MapPost("/departures", RegisterDepartureAsync)
+            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterInstitutionalVehicleDeparture");
         group.MapGet("/open", ListOpenAsync)
+            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("ListOpenInstitutionalVehicleUsages");
         group.MapPost("/{usageId:int}/returns", RegisterReturnAsync)
+            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterInstitutionalVehicleReturn");
+        group.MapGet("/history", SearchHistoryAsync)
+            .RequireAuthorization(AuthorizationPolicies.ReviewTransportationRecords)
+            .WithName("SearchInstitutionalVehicleUsageHistory");
 
         return endpoints;
     }
@@ -49,7 +54,7 @@ public static class InstitutionalVehicleUsageEndpoints
                 result.Usage),
             RegisterInstitutionalVehicleDepartureStatus.NotFound => Results.NotFound(new
             {
-                Message = "Veículo institucional ou motorista ativo não encontrado."
+                Message = "Veículo institucional ou motorista autorizado e ativo não encontrado."
             }),
             RegisterInstitutionalVehicleDepartureStatus.Conflict => Results.Conflict(new
             {
@@ -66,6 +71,28 @@ public static class InstitutionalVehicleUsageEndpoints
     {
         var usages = await service.ListOpenAsync(cancellationToken);
         return Results.Ok(usages);
+    }
+
+    private static async Task<IResult> SearchHistoryAsync(
+        [AsParameters] SearchInstitutionalVehicleUsagesRequest request,
+        InstitutionalVehicleUsageService service,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.SearchHistoryAsync(
+            new SearchInstitutionalVehicleUsagesCommand(
+                request.VehicleId,
+                request.DriverId,
+                request.Plate,
+                request.VehicleIdentification,
+                request.From,
+                request.To,
+                request.Page,
+                request.PageSize),
+            cancellationToken);
+
+        return result.Status == SearchInstitutionalVehicleUsagesStatus.Success
+            ? Results.Ok(result.Result)
+            : Results.ValidationProblem(result.Errors);
     }
 
     private static async Task<IResult> RegisterReturnAsync(
@@ -109,3 +136,13 @@ public sealed record RegisterInstitutionalVehicleDepartureRequest(
     string? Itinerary);
 
 public sealed record RegisterInstitutionalVehicleReturnRequest(int ReturnMileage);
+
+public sealed record SearchInstitutionalVehicleUsagesRequest(
+    int? VehicleId = null,
+    int? DriverId = null,
+    string? Plate = null,
+    string? VehicleIdentification = null,
+    DateTimeOffset? From = null,
+    DateTimeOffset? To = null,
+    int Page = 1,
+    int PageSize = 25);

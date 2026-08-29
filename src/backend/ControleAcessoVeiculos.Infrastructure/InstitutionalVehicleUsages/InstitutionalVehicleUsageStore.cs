@@ -91,6 +91,57 @@ public sealed class InstitutionalVehicleUsageStore(
                 .OrderBy(item => item.DataHoraSaida))
             .ToListAsync(cancellationToken);
 
+    public async Task<PagedInstitutionalVehicleUsageResult> SearchAsync(
+        InstitutionalVehicleUsageSearchCriteria criteria,
+        CancellationToken cancellationToken)
+    {
+        var usages = dbContext.UsosVeiculosInstitucionais
+            .AsNoTracking()
+            .Where(item => item.DataHoraSaida >= criteria.FromUtc &&
+                item.DataHoraSaida <= criteria.ToUtc);
+
+        if (criteria.VehicleId.HasValue)
+        {
+            usages = usages.Where(item => item.VeiculoId == criteria.VehicleId.Value);
+        }
+
+        if (criteria.DriverId.HasValue)
+        {
+            usages = usages.Where(item => item.MotoristaId == criteria.DriverId.Value);
+        }
+
+        if (criteria.Plate is not null)
+        {
+            usages = usages.Where(item => dbContext.Veiculos.Any(vehicle =>
+                vehicle.Id == item.VeiculoId && vehicle.Placa == criteria.Plate));
+        }
+
+        if (criteria.VehicleIdentification is not null)
+        {
+            usages = usages.Where(item => dbContext.Veiculos.Any(vehicle =>
+                vehicle.Id == item.VeiculoId &&
+                vehicle.IdentificacaoVeiculo == criteria.VehicleIdentification));
+        }
+
+        var totalCount = await usages.CountAsync(cancellationToken);
+        var items = await Project(usages
+                .OrderByDescending(item => item.DataHoraSaida)
+                .ThenByDescending(item => item.Id)
+                .Skip((criteria.Page - 1) * criteria.PageSize)
+                .Take(criteria.PageSize))
+            .ToListAsync(cancellationToken);
+        var totalPages = totalCount == 0
+            ? 0
+            : ((totalCount - 1) / criteria.PageSize) + 1;
+
+        return new(
+            items,
+            criteria.Page,
+            criteria.PageSize,
+            totalCount,
+            totalPages);
+    }
+
     public async Task<InstitutionalVehicleReturnStoreResult> TryRegisterReturnAsync(
         int usageId,
         int returnMileage,

@@ -99,8 +99,11 @@ public class UsoVeiculoInstitucionalConfiguration :
             .HasFilter("status IN ('EmUso', 'PendenteRetorno')")
             .HasDatabaseName("ux_usos_institucionais_veiculo_aberto");
 
-        builder.HasIndex(uso => uso.MotoristaId)
-            .HasDatabaseName("ix_usos_institucionais_motorista_id");
+        builder.HasIndex(uso => new { uso.MotoristaId, uso.DataHoraSaida })
+            .HasDatabaseName("ix_usos_institucionais_motorista_saida");
+
+        builder.HasIndex(uso => uso.DataHoraSaida)
+            .HasDatabaseName("ix_usos_institucionais_saida");
 
         builder.HasIndex(uso => uso.RegistroAcessoId)
             .IsUnique()

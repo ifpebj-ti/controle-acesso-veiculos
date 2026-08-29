@@ -175,6 +175,72 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task InstitutionalHistoryRequiresTransportationReviewPermission()
+    {
+        const string password = "Test-only-password-123!";
+        using var anonymousClient = factory.CreateClient();
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await anonymousClient.GetAsync(
+                "/institutional-vehicle-usages/history")).StatusCode);
+
+        var (_, doormanEmail) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var doormanClient = factory.CreateClient();
+        await AuthenticateClientAsync(doormanClient, doormanEmail, password);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await doormanClient.GetAsync(
+                "/institutional-vehicle-usages/history")).StatusCode);
+    }
+
+    [Fact]
+    public async Task TransportationUserCanFilterOrderAndPaginateInstitutionalHistory()
+    {
+        const string password = "Test-only-password-123!";
+        var (userId, email) = await CreateUserAsync(
+            ProfileNames.TransportationDepartment,
+            password);
+        var catalog = await CreateCatalogAsync(userId, institutionalVehicle: true);
+        var now = DateTime.UtcNow;
+        await CreateCompletedUsagesAsync(catalog, userId, now);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var formattedPlate = catalog.Plate.Insert(2, "-").ToLowerInvariant();
+        var from = Uri.EscapeDataString(now.AddDays(-10).ToString("O"));
+        var to = Uri.EscapeDataString(now.AddDays(1).ToString("O"));
+
+        var response = await client.GetAsync(
+            $"/institutional-vehicle-usages/history?plate={formattedPlate}" +
+            $"&driverId={catalog.DriverId}&from={from}&to={to}&page=1&pageSize=2");
+        var result = await response.Content.ReadFromJsonAsync<InstitutionalHistoryResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Page);
+        Assert.Equal(2, result.PageSize);
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.TotalPages);
+        Assert.Equal(2, result.Items.Count);
+        Assert.True(result.Items[0].DepartureAtUtc > result.Items[1].DepartureAtUtc);
+        Assert.All(result.Items, item =>
+        {
+            Assert.Equal(catalog.VehicleId, item.VehicleId);
+            Assert.Equal(catalog.DriverId, item.DriverId);
+        });
+
+        var secondPage = await client.GetFromJsonAsync<InstitutionalHistoryResponse>(
+            $"/institutional-vehicle-usages/history?vehicleIdentification=" +
+            $"{Uri.EscapeDataString(catalog.VehicleIdentification.ToLowerInvariant())}" +
+            $"&from={from}&to={to}&page=2&pageSize=2");
+        Assert.NotNull(secondPage);
+        Assert.Single(secondPage.Items);
+
+        var invalid = await client.GetAsync(
+            $"/institutional-vehicle-usages/history?from={to}&to={from}&pageSize=101");
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [Fact]
     public async Task ConcurrentRequestsCreateAndReturnInstitutionalUsageOnlyOnce()
     {
         const string password = "Test-only-password-123!";
@@ -351,7 +417,40 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
             await dbContext.SaveChangesAsync();
         }
 
-        return new InstitutionalCatalog(vehicle.Id, driver.Id, plate, driverName);
+        return new InstitutionalCatalog(
+            vehicle.Id,
+            driver.Id,
+            plate,
+            vehicle.IdentificacaoVeiculo!,
+            driverName);
+    }
+
+    private async Task CreateCompletedUsagesAsync(
+        InstitutionalCatalog catalog,
+        int actorUserId,
+        DateTime now)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+
+        foreach (var daysAgo in new[] { 1, 2, 3 })
+        {
+            var departure = now.AddDays(-daysAgo);
+            var usage = new UsoVeiculoInstitucional(
+                catalog.VehicleId,
+                catalog.DriverId,
+                departure,
+                1000 + daysAgo * 100,
+                $"Itinerário fictício {daysAgo}",
+                actorUserId);
+            usage.RegistrarRetorno(
+                departure.AddHours(2),
+                1010 + daysAgo * 100,
+                actorUserId);
+            dbContext.UsosVeiculosInstitucionais.Add(usage);
+        }
+
+        await dbContext.SaveChangesAsync();
     }
 
     private static async Task AuthenticateClientAsync(
@@ -412,7 +511,15 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
         int VehicleId,
         int DriverId,
         string Plate,
+        string VehicleIdentification,
         string DriverName);
+
+    private sealed record InstitutionalHistoryResponse(
+        List<InstitutionalUsageResponse> Items,
+        int Page,
+        int PageSize,
+        int TotalCount,
+        int TotalPages);
 
     private sealed record InstitutionalUsageResponse(
         int Id,
