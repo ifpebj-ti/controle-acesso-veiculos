@@ -243,6 +243,104 @@ public sealed class VehicleAccessTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task GeneralAccessHistoryEnforcesDedicatedReviewPermission()
+    {
+        const string password = "Test-only-password-123!";
+        using var anonymousClient = factory.CreateClient();
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await anonymousClient.GetAsync("/access-records/history")).StatusCode);
+
+        var (_, transportationEmail) = await CreateUserAsync(
+            ProfileNames.TransportationDepartment,
+            password);
+        using var transportationClient = factory.CreateClient();
+        await AuthenticateClientAsync(transportationClient, transportationEmail, password);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await transportationClient.GetAsync("/access-records/history")).StatusCode);
+
+        var (_, doormanEmail) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var doormanClient = factory.CreateClient();
+        await AuthenticateClientAsync(doormanClient, doormanEmail, password);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await doormanClient.GetAsync("/access-records/history")).StatusCode);
+    }
+
+    [Fact]
+    public async Task OperationalUserCanFilterOrderAndPaginateGeneralAccessHistory()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var plate = suffix[..7].ToUpperInvariant();
+        var driverName = $"Condutor Histórico {suffix}";
+        var accessIds = new List<int>();
+
+        for (var index = 0; index < 3; index++)
+        {
+            var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
+            {
+                driverName,
+                plate,
+                objective = "Visita técnica",
+                categoryName = AccessCategoryNames.Visitor
+            });
+            var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+            entryResponse.EnsureSuccessStatusCode();
+            Assert.NotNull(entry);
+            accessIds.Add(entry.Id);
+
+            if (index < 2)
+            {
+                (await client.PostAsync($"/access-records/{entry.Id}/exit", null))
+                    .EnsureSuccessStatusCode();
+            }
+        }
+
+        var formattedPlate = plate.Insert(3, "-").ToLowerInvariant();
+        var driverFilter = Uri.EscapeDataString($"histórico {suffix[..8]}".ToUpperInvariant());
+        var from = Uri.EscapeDataString(DateTimeOffset.UtcNow.AddDays(-1).ToString("O"));
+        var to = Uri.EscapeDataString(DateTimeOffset.UtcNow.AddDays(1).ToString("O"));
+        var response = await client.GetAsync(
+            $"/access-records/history?plate={formattedPlate}&driverName={driverFilter}" +
+            $"&categoryName=visitante&from={from}&to={to}&page=1&pageSize=2");
+        var result = await response.Content.ReadFromJsonAsync<AccessHistoryResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Page);
+        Assert.Equal(2, result.PageSize);
+        Assert.Equal(3, result.TotalCount);
+        Assert.Equal(2, result.TotalPages);
+        Assert.Equal(2, result.Items.Count);
+        Assert.Equal(accessIds[2], result.Items[0].Id);
+        Assert.Equal(accessIds[1], result.Items[1].Id);
+        Assert.All(result.Items, item =>
+        {
+            Assert.Equal(plate, item.Plate);
+            Assert.Equal(driverName, item.DriverName);
+            Assert.Equal(AccessCategoryNames.Visitor, item.CategoryName);
+        });
+
+        var closed = await client.GetFromJsonAsync<AccessHistoryResponse>(
+            $"/access-records/history?plate={formattedPlate}&status=encerrado" +
+            $"&from={from}&to={to}&page=2&pageSize=1");
+        Assert.NotNull(closed);
+        Assert.Equal(2, closed.TotalCount);
+        Assert.Equal(2, closed.TotalPages);
+        Assert.Single(closed.Items);
+        Assert.Equal("Encerrado", closed.Items[0].Status);
+
+        var invalid = await client.GetAsync(
+            $"/access-records/history?from={to}&to={from}&status=999&pageSize=101");
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [Fact]
     public async Task AnonymousUserCannotOperateVehicleAccess()
     {
         using var client = factory.CreateClient();
@@ -337,9 +435,18 @@ public sealed class VehicleAccessTests(ApiFactory factory)
     private sealed record AccessRecordResponse(
         int Id,
         string Plate,
+        string? DriverName,
+        string? CategoryName,
         string Status,
         DateTime EntryAtUtc,
         DateTime? ExitAtUtc,
         int CreatedById,
         int? UpdatedById);
+
+    private sealed record AccessHistoryResponse(
+        List<AccessRecordResponse> Items,
+        int Page,
+        int PageSize,
+        int TotalCount,
+        int TotalPages);
 }
