@@ -85,6 +85,9 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
         builder.HasIndex(registro => new { registro.VeiculoId, registro.DataHoraEntrada })
             .HasDatabaseName("ix_registros_acesso_veiculo_data_entrada");
 
+        builder.HasIndex(registro => registro.DataHoraEntrada)
+            .HasDatabaseName("ix_registros_acesso_data_entrada");
+
         builder.HasIndex(registro => registro.CategoriaAcessoId)
             .HasDatabaseName("ix_registros_acesso_categoria_id");
 

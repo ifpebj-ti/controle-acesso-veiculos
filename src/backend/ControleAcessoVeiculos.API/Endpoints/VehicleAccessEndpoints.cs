@@ -9,15 +9,20 @@ public static class VehicleAccessEndpoints
         this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/access-records")
-            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithTags("Vehicle access");
 
         group.MapPost("/entries", RegisterEntryAsync)
+            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterVehicleEntry");
         group.MapGet("/open", ListOpenAsync)
+            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("ListOpenVehicleAccesses");
         group.MapPost("/{accessRecordId:int}/exit", RegisterExitAsync)
+            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterVehicleExit");
+        group.MapGet("/history", SearchHistoryAsync)
+            .RequireAuthorization(AuthorizationPolicies.ReviewAccessRecords)
+            .WithName("SearchVehicleAccessHistory");
 
         return endpoints;
     }
@@ -102,6 +107,28 @@ public static class VehicleAccessEndpoints
         };
     }
 
+    private static async Task<IResult> SearchHistoryAsync(
+        [AsParameters] SearchVehicleAccessesRequest request,
+        VehicleAccessService vehicleAccessService,
+        CancellationToken cancellationToken)
+    {
+        var result = await vehicleAccessService.SearchHistoryAsync(
+            new SearchVehicleAccessesCommand(
+                request.Plate,
+                request.DriverName,
+                request.CategoryName,
+                request.Status,
+                request.From,
+                request.To,
+                request.Page,
+                request.PageSize),
+            cancellationToken);
+
+        return result.Status == SearchVehicleAccessesStatus.Success
+            ? Results.Ok(result.Result)
+            : Results.ValidationProblem(result.Errors);
+    }
+
 }
 
 public sealed record RegisterVehicleEntryRequest(
@@ -117,3 +144,13 @@ public sealed record RegisterVehicleEntryRequest(
     string? Color = null,
     int? Year = null,
     string? Observation = null);
+
+public sealed record SearchVehicleAccessesRequest(
+    string? Plate = null,
+    string? DriverName = null,
+    string? CategoryName = null,
+    string? Status = null,
+    DateTimeOffset? From = null,
+    DateTimeOffset? To = null,
+    int Page = 1,
+    int PageSize = 25);
