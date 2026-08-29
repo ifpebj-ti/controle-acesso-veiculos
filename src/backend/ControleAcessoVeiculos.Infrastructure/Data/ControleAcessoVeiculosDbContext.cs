@@ -15,6 +15,8 @@ public class ControleAcessoVeiculosDbContext(
     public DbSet<RegistroAcesso> RegistrosAcesso => Set<RegistroAcesso>();
     public DbSet<UsoVeiculoInstitucional> UsosVeiculosInstitucionais =>
         Set<UsoVeiculoInstitucional>();
+    public DbSet<MotoristaInstitucional> MotoristasInstitucionais =>
+        Set<MotoristaInstitucional>();
     public DbSet<Auditoria> Auditorias => Set<Auditoria>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
