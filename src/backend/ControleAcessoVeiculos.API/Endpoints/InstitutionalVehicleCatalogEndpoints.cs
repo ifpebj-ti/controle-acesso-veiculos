@@ -17,6 +17,15 @@ public static class InstitutionalVehicleCatalogEndpoints
         group.MapPost(string.Empty, CreateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageInstitutionalVehicleCatalog)
             .WithName("CreateInstitutionalVehicle");
+        group.MapPut("/{id:int}", UpdateAsync)
+            .RequireAuthorization(AuthorizationPolicies.ManageInstitutionalVehicleCatalog)
+            .WithName("UpdateInstitutionalVehicle");
+        group.MapDelete("/{id:int}", DeactivateAsync)
+            .RequireAuthorization(AuthorizationPolicies.ManageInstitutionalVehicleCatalog)
+            .WithName("DeactivateInstitutionalVehicle");
+        group.MapPost("/{id:int}/reactivation", ReactivateAsync)
+            .RequireAuthorization(AuthorizationPolicies.ManageInstitutionalVehicleCatalog)
+            .WithName("ReactivateInstitutionalVehicle");
 
         return endpoints;
     }
@@ -65,9 +74,107 @@ public static class InstitutionalVehicleCatalogEndpoints
             _ => Results.ValidationProblem(result.Errors)
         };
     }
+
+    private static async Task<IResult> UpdateAsync(
+        int id,
+        UpdateInstitutionalVehicleRequest request,
+        HttpContext httpContext,
+        InstitutionalVehicleCatalogService service,
+        CancellationToken cancellationToken)
+    {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await service.UpdateAsync(
+            id,
+            new UpdateInstitutionalVehicleCommand(
+                request.Plate,
+                request.Identification,
+                request.VehicleType,
+                request.Brand,
+                request.Model,
+                request.Color,
+                request.Year),
+            actorUserId,
+            cancellationToken);
+
+        return result.Status switch
+        {
+            UpdateInstitutionalVehicleStatus.Success => Results.Ok(result.Vehicle),
+            UpdateInstitutionalVehicleStatus.NotFound => Results.NotFound(new
+            {
+                Message = "Veículo institucional não encontrado."
+            }),
+            UpdateInstitutionalVehicleStatus.Conflict => Results.Conflict(new
+            {
+                Message = "Não foi possível atualizar o veículo institucional.",
+                Errors = result.Errors
+            }),
+            _ => Results.ValidationProblem(result.Errors)
+        };
+    }
+
+    private static Task<IResult> DeactivateAsync(
+        int id,
+        HttpContext httpContext,
+        InstitutionalVehicleCatalogService service,
+        CancellationToken cancellationToken) =>
+        ChangeStateAsync(id, reactivate: false, httpContext, service, cancellationToken);
+
+    private static Task<IResult> ReactivateAsync(
+        int id,
+        HttpContext httpContext,
+        InstitutionalVehicleCatalogService service,
+        CancellationToken cancellationToken) =>
+        ChangeStateAsync(id, reactivate: true, httpContext, service, cancellationToken);
+
+    private static async Task<IResult> ChangeStateAsync(
+        int id,
+        bool reactivate,
+        HttpContext httpContext,
+        InstitutionalVehicleCatalogService service,
+        CancellationToken cancellationToken)
+    {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = reactivate
+            ? await service.ReactivateAsync(id, actorUserId, cancellationToken)
+            : await service.DeactivateAsync(id, actorUserId, cancellationToken);
+
+        return result.Status switch
+        {
+            ChangeInstitutionalVehicleStateStatus.Success => Results.NoContent(),
+            ChangeInstitutionalVehicleStateStatus.NotFound => Results.NotFound(new
+            {
+                Message = "Veículo institucional não encontrado."
+            }),
+            ChangeInstitutionalVehicleStateStatus.Conflict => Results.Conflict(new
+            {
+                Message = reactivate
+                    ? "O veículo institucional já está ativo."
+                    : "O veículo institucional já está inativo.",
+                Errors = result.Errors
+            }),
+            _ => Results.ValidationProblem(result.Errors)
+        };
+    }
 }
 
 public sealed record CreateInstitutionalVehicleRequest(
+    string? Plate,
+    string? Identification,
+    string? VehicleType = null,
+    string? Brand = null,
+    string? Model = null,
+    string? Color = null,
+    int? Year = null);
+
+public sealed record UpdateInstitutionalVehicleRequest(
     string? Plate,
     string? Identification,
     string? VehicleType = null,

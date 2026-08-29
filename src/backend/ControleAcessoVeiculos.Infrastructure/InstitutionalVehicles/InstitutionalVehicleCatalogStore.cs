@@ -89,6 +89,113 @@ public sealed class InstitutionalVehicleCatalogStore(
                 vehicle.DataCriacao))
             .ToListAsync(cancellationToken);
 
+    public async Task<InstitutionalVehicleStoreUpdate> TryUpdateAsync(
+        int vehicleId,
+        InstitutionalVehicleData vehicle,
+        int actorUserId,
+        DateTime updatedAtUtc,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            cancellationToken);
+
+        try
+        {
+            var entity = await LockVehicleAsync(vehicleId, cancellationToken);
+
+            if (entity is null || !entity.EhInstitucional)
+            {
+                return new(InstitutionalVehicleStoreUpdateStatus.NotFound, null);
+            }
+
+            var changedFields = GetChangedFields(entity, vehicle);
+            var changed = entity.AtualizarDados(
+                vehicle.Plate,
+                vehicle.VehicleType,
+                vehicle.Identification,
+                vehicle.Brand,
+                vehicle.Model,
+                vehicle.Color,
+                vehicle.Year,
+                updatedAtUtc);
+
+            if (!changed)
+            {
+                return new(InstitutionalVehicleStoreUpdateStatus.Success, Map(entity));
+            }
+
+            dbContext.Auditorias.Add(new Auditoria(
+                updatedAtUtc,
+                TipoAcaoAuditoria.Alteracao,
+                nameof(Veiculo),
+                entity.Id,
+                actorUserId,
+                dadosNovos: JsonSerializer.Serialize(new { changedFields }),
+                detalhes: "Institutional vehicle updated."));
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return new(InstitutionalVehicleStoreUpdateStatus.Success, Map(entity));
+        }
+        catch (DbUpdateException exception)
+            when (exception.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation
+            })
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(InstitutionalVehicleStoreUpdateStatus.Conflict, null);
+        }
+    }
+
+    public async Task<InstitutionalVehicleStoreStateStatus> TrySetActiveAsync(
+        int vehicleId,
+        bool active,
+        int actorUserId,
+        DateTime updatedAtUtc,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            cancellationToken);
+        var entity = await LockVehicleAsync(vehicleId, cancellationToken);
+
+        if (entity is null || !entity.EhInstitucional)
+        {
+            return InstitutionalVehicleStoreStateStatus.NotFound;
+        }
+
+        if (entity.Ativo == active)
+        {
+            return InstitutionalVehicleStoreStateStatus.Conflict;
+        }
+
+        var previousActive = entity.Ativo;
+        if (active)
+        {
+            entity.Reativar(updatedAtUtc);
+        }
+        else
+        {
+            entity.Desativar(updatedAtUtc);
+        }
+
+        dbContext.Auditorias.Add(new Auditoria(
+            updatedAtUtc,
+            TipoAcaoAuditoria.Alteracao,
+            nameof(Veiculo),
+            entity.Id,
+            actorUserId,
+            dadosAnteriores: JsonSerializer.Serialize(new { active = previousActive }),
+            dadosNovos: JsonSerializer.Serialize(new { active }),
+            detalhes: active
+                ? "Institutional vehicle reactivated."
+                : "Institutional vehicle deactivated."));
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return InstitutionalVehicleStoreStateStatus.Success;
+    }
+
     private static InstitutionalVehicleRecord Map(Veiculo vehicle) =>
         new(
             vehicle.Id,
@@ -100,4 +207,48 @@ public sealed class InstitutionalVehicleCatalogStore(
             vehicle.Cor,
             vehicle.Ano,
             vehicle.DataCriacao);
+
+    private Task<Veiculo?> LockVehicleAsync(
+        int vehicleId,
+        CancellationToken cancellationToken) =>
+        dbContext.Veiculos
+            .FromSqlInterpolated(
+                $"SELECT * FROM dbo.veiculos WHERE id = {vehicleId} FOR UPDATE")
+            .SingleOrDefaultAsync(cancellationToken);
+
+    private static IReadOnlyList<string> GetChangedFields(
+        Veiculo entity,
+        InstitutionalVehicleData vehicle)
+    {
+        var changedFields = new List<string>();
+        AddIfChanged(changedFields, "plate", entity.Placa, vehicle.Plate);
+        AddIfChanged(
+            changedFields,
+            "identification",
+            entity.IdentificacaoVeiculo,
+            vehicle.Identification);
+        AddIfChanged(changedFields, "vehicleType", entity.Tipo, vehicle.VehicleType);
+        AddIfChanged(changedFields, "brand", entity.Marca, vehicle.Brand);
+        AddIfChanged(changedFields, "model", entity.Modelo, vehicle.Model);
+        AddIfChanged(changedFields, "color", entity.Cor, vehicle.Color);
+
+        if (entity.Ano != vehicle.Year)
+        {
+            changedFields.Add("year");
+        }
+
+        return changedFields;
+    }
+
+    private static void AddIfChanged(
+        ICollection<string> changedFields,
+        string field,
+        string? currentValue,
+        string? newValue)
+    {
+        if (currentValue != newValue)
+        {
+            changedFields.Add(field);
+        }
+    }
 }

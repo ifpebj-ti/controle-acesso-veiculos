@@ -194,6 +194,51 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task InactiveInstitutionalVehicleBlocksDepartureButAllowsOpenReturn()
+    {
+        const string password = "Test-only-password-123!";
+        var (userId, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        var catalog = await CreateCatalogAsync(userId, institutionalVehicle: true);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var request = new
+        {
+            vehicleId = catalog.VehicleId,
+            driverId = catalog.DriverId,
+            departureMileage = 2000,
+            itinerary = "Campus - Destino fictício"
+        };
+        var departureResponse = await client.PostAsJsonAsync(
+            "/institutional-vehicle-usages/departures",
+            request);
+        var departure = await departureResponse.Content
+            .ReadFromJsonAsync<InstitutionalUsageResponse>();
+        departureResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(departure);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var vehicle = await dbContext.Veiculos
+                .SingleAsync(item => item.Id == catalog.VehicleId);
+            vehicle.Desativar(DateTime.UtcNow);
+            await dbContext.SaveChangesAsync();
+        }
+
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await client.PostAsJsonAsync(
+                "/institutional-vehicle-usages/departures",
+                request)).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await client.PostAsJsonAsync(
+                $"/institutional-vehicle-usages/{departure.Id}/returns",
+                new { returnMileage = 2010 })).StatusCode);
+    }
+
+    [Fact]
     public async Task TransportationUserCanFilterOrderAndPaginateInstitutionalHistory()
     {
         const string password = "Test-only-password-123!";

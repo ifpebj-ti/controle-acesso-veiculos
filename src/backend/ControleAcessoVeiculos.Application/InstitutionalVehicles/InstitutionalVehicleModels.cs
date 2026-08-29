@@ -9,6 +9,15 @@ public sealed record CreateInstitutionalVehicleCommand(
     string? Color = null,
     int? Year = null);
 
+public sealed record UpdateInstitutionalVehicleCommand(
+    string? Plate,
+    string? Identification,
+    string? VehicleType = null,
+    string? Brand = null,
+    string? Model = null,
+    string? Color = null,
+    int? Year = null);
+
 public sealed record InstitutionalVehicleData(
     string? Plate,
     string? Identification,
@@ -71,3 +80,46 @@ public enum InstitutionalVehicleStoreRegistrationStatus
 public sealed record InstitutionalVehicleStoreRegistration(
     InstitutionalVehicleStoreRegistrationStatus Status,
     InstitutionalVehicleRecord? Vehicle);
+
+public enum UpdateInstitutionalVehicleStatus
+{
+    Success,
+    Invalid,
+    NotFound,
+    Conflict
+}
+
+public sealed record UpdateInstitutionalVehicleResult(
+    UpdateInstitutionalVehicleStatus Status,
+    InstitutionalVehicleRecord? Vehicle,
+    IReadOnlyDictionary<string, string[]> Errors);
+
+public enum InstitutionalVehicleStoreUpdateStatus
+{
+    Success,
+    NotFound,
+    Conflict
+}
+
+public sealed record InstitutionalVehicleStoreUpdate(
+    InstitutionalVehicleStoreUpdateStatus Status,
+    InstitutionalVehicleRecord? Vehicle);
+
+public enum ChangeInstitutionalVehicleStateStatus
+{
+    Success,
+    Invalid,
+    NotFound,
+    Conflict
+}
+
+public sealed record ChangeInstitutionalVehicleStateResult(
+    ChangeInstitutionalVehicleStateStatus Status,
+    IReadOnlyDictionary<string, string[]> Errors);
+
+public enum InstitutionalVehicleStoreStateStatus
+{
+    Success,
+    NotFound,
+    Conflict
+}

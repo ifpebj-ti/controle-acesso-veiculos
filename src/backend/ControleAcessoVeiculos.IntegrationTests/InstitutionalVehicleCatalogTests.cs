@@ -94,6 +94,20 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
             new { plate = "ABC-1D23", identification = "FROTA-TESTE" });
 
         Assert.Equal(HttpStatusCode.Forbidden, forbiddenResponse.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await operationalClient.PutAsJsonAsync(
+                "/institutional-vehicles/1",
+                new { plate = "ABC-1D23", identification = "FROTA-TESTE" }))
+            .StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await operationalClient.DeleteAsync("/institutional-vehicles/1")).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await operationalClient.PostAsync(
+                "/institutional-vehicles/1/reactivation",
+                content: null)).StatusCode);
 
         var (_, transportationEmail) = await CreateUserAsync(
             ProfileNames.TransportationDepartment,
@@ -131,6 +145,126 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task TransportationUserCanUpdateDeactivateAndReactivateVehicle()
+    {
+        const string password = "Test-only-password-123!";
+        var (userId, email) = await CreateUserAsync(
+            ProfileNames.TransportationDepartment,
+            password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var originalPlate = $"IF{suffix[..5]}";
+        var originalIdentification = $"FROTA-{suffix}";
+        var createResponse = await client.PostAsJsonAsync(
+            "/institutional-vehicles",
+            new { plate = originalPlate, identification = originalIdentification });
+        var created = await createResponse.Content
+            .ReadFromJsonAsync<InstitutionalVehicleResponse>();
+        createResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(created);
+        var updatedPlate = $"UP{suffix[..5]}";
+        var updatedIdentification = $"ATUAL-{suffix}";
+
+        var updateResponse = await client.PutAsJsonAsync(
+            $"/institutional-vehicles/{created.Id}",
+            new
+            {
+                plate = updatedPlate.ToLowerInvariant(),
+                identification = updatedIdentification.ToLowerInvariant(),
+                vehicleType = " Van ",
+                brand = " Marca Fictícia ",
+                model = " Modelo de Teste ",
+                color = " Branco ",
+                year = 2026
+            });
+        var updated = await updateResponse.Content
+            .ReadFromJsonAsync<InstitutionalVehicleResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        Assert.NotNull(updated);
+        Assert.Equal(updatedPlate, updated.Plate);
+        Assert.Equal(updatedIdentification, updated.Identification);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await client.DeleteAsync($"/institutional-vehicles/{created.Id}")).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await client.DeleteAsync($"/institutional-vehicles/{created.Id}")).StatusCode);
+        var active = await client.GetFromJsonAsync<List<InstitutionalVehicleResponse>>(
+            "/institutional-vehicles");
+        Assert.DoesNotContain(active!, item => item.Id == created.Id);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            (await client.PostAsync(
+                $"/institutional-vehicles/{created.Id}/reactivation",
+                content: null)).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await client.PostAsync(
+                $"/institutional-vehicles/{created.Id}/reactivation",
+                content: null)).StatusCode);
+        active = await client.GetFromJsonAsync<List<InstitutionalVehicleResponse>>(
+            "/institutional-vehicles");
+        Assert.Contains(active!, item => item.Id == created.Id);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var audits = await dbContext.Auditorias.AsNoTracking()
+            .Where(item => item.Entidade == nameof(Veiculo) &&
+                item.RegistroId == created.Id)
+            .OrderBy(item => item.Id)
+            .ToListAsync();
+        Assert.Equal(4, audits.Count);
+        Assert.All(audits, audit => Assert.Equal(userId, audit.UsuarioId));
+        Assert.Contains("changedFields", Assert.IsType<string>(audits[1].DadosNovos));
+        var auditContent = string.Join(
+            ' ',
+            audits.SelectMany(item => new[]
+            {
+                item.DadosAnteriores,
+                item.DadosNovos,
+                item.Detalhes
+            }).Where(item => item is not null));
+        Assert.DoesNotContain(originalPlate, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(originalIdentification, auditContent,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(updatedPlate, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(updatedIdentification, auditContent,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task UpdateRejectsDuplicateVehicleIdentity()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Administrator, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var firstPlate = $"AA{suffix[..5]}";
+        var first = await client.PostAsJsonAsync(
+            "/institutional-vehicles",
+            new { plate = firstPlate, identification = $"FIRST-{suffix}" });
+        var second = await client.PostAsJsonAsync(
+            "/institutional-vehicles",
+            new { plate = $"BB{suffix[..5]}", identification = $"SECOND-{suffix}" });
+        var secondVehicle = await second.Content
+            .ReadFromJsonAsync<InstitutionalVehicleResponse>();
+        first.EnsureSuccessStatusCode();
+        second.EnsureSuccessStatusCode();
+        Assert.NotNull(secondVehicle);
+
+        var duplicate = await client.PutAsJsonAsync(
+            $"/institutional-vehicles/{secondVehicle.Id}",
+            new { plate = firstPlate, identification = $"SECOND-{suffix}" });
+
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+    }
+
+    [Fact]
     public async Task AuditFailureRollsBackVehicleCreation()
     {
         const string password = "Test-only-password-123!";
@@ -140,6 +274,14 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
         var identification = $"ROLLBACK-{Guid.NewGuid():N}".ToUpperInvariant();
+        var existingIdentification = $"PRESERVED-{Guid.NewGuid():N}".ToUpperInvariant();
+        var existingResponse = await client.PostAsJsonAsync(
+            "/institutional-vehicles",
+            new { plate = (string?)null, identification = existingIdentification });
+        var existing = await existingResponse.Content
+            .ReadFromJsonAsync<InstitutionalVehicleResponse>();
+        existingResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(existing);
         await InstallRejectingAuditTriggerAsync();
 
         try
@@ -147,8 +289,15 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
             var response = await client.PostAsJsonAsync(
                 "/institutional-vehicles",
                 new { plate = (string?)null, identification });
+            var updateResponse = await client.PutAsJsonAsync(
+                $"/institutional-vehicles/{existing.Id}",
+                new { plate = (string?)null, identification = $"CHANGED-{Guid.NewGuid():N}" });
+            var deactivateResponse = await client.DeleteAsync(
+                $"/institutional-vehicles/{existing.Id}");
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.Equal(HttpStatusCode.InternalServerError, updateResponse.StatusCode);
+            Assert.Equal(HttpStatusCode.InternalServerError, deactivateResponse.StatusCode);
         }
         finally
         {
@@ -159,6 +308,10 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
         Assert.False(await dbContext.Veiculos
             .AnyAsync(vehicle => vehicle.IdentificacaoVeiculo == identification));
+        var preserved = await dbContext.Veiculos.AsNoTracking()
+            .SingleAsync(vehicle => vehicle.Id == existing.Id);
+        Assert.Equal(existingIdentification, preserved.IdentificacaoVeiculo);
+        Assert.True(preserved.Ativo);
     }
 
     private async Task<(int UserId, string Email)> CreateUserAsync(

@@ -75,4 +75,94 @@ public class Veiculo
 
         return identificacaoVeiculo.Trim().ToUpperInvariant();
     }
+
+    public bool AtualizarDados(
+        string? placa,
+        string? tipo,
+        string? identificacaoVeiculo,
+        string? marca,
+        string? modelo,
+        string? cor,
+        int? ano,
+        DateTime dataAlteracao)
+    {
+        if (string.IsNullOrWhiteSpace(placa) && string.IsNullOrWhiteSpace(identificacaoVeiculo))
+        {
+            throw new ArgumentException(
+                "A placa ou outra identificação do veículo deve ser informada.");
+        }
+
+        if (ano is <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ano));
+        }
+
+        ValidateChangeDate(dataAlteracao);
+        var normalizedPlate = string.IsNullOrWhiteSpace(placa)
+            ? null
+            : NormalizarPlaca(placa);
+        var normalizedIdentification = string.IsNullOrWhiteSpace(identificacaoVeiculo)
+            ? null
+            : NormalizarIdentificacao(identificacaoVeiculo);
+        var normalizedType = tipo?.Trim();
+        var normalizedBrand = marca?.Trim();
+        var normalizedModel = modelo?.Trim();
+        var normalizedColor = cor?.Trim();
+        var changed = Placa != normalizedPlate ||
+            Tipo != normalizedType ||
+            IdentificacaoVeiculo != normalizedIdentification ||
+            Marca != normalizedBrand ||
+            Modelo != normalizedModel ||
+            Cor != normalizedColor ||
+            Ano != ano;
+
+        if (!changed)
+        {
+            return false;
+        }
+
+        Placa = normalizedPlate;
+        Tipo = normalizedType;
+        IdentificacaoVeiculo = normalizedIdentification;
+        Marca = normalizedBrand;
+        Modelo = normalizedModel;
+        Cor = normalizedColor;
+        Ano = ano;
+        DataAlteracao = dataAlteracao;
+        return true;
+    }
+
+    public void Desativar(DateTime dataAlteracao)
+    {
+        ValidateChangeDate(dataAlteracao);
+
+        if (!Ativo)
+        {
+            throw new InvalidOperationException("O veículo já está inativo.");
+        }
+
+        Ativo = false;
+        DataAlteracao = dataAlteracao;
+    }
+
+    public void Reativar(DateTime dataAlteracao)
+    {
+        ValidateChangeDate(dataAlteracao);
+
+        if (Ativo)
+        {
+            throw new InvalidOperationException("O veículo já está ativo.");
+        }
+
+        Ativo = true;
+        DataAlteracao = dataAlteracao;
+    }
+
+    private void ValidateChangeDate(DateTime dataAlteracao)
+    {
+        if (dataAlteracao == default || dataAlteracao < DataCriacao)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dataAlteracao));
+        }
+    }
 }

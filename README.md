@@ -21,10 +21,10 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, contas, fluxo geral, frota, motoristas, saída/retorno e consulta histórica institucional |
+| Backend | API .NET 10 com autenticação, contas, fluxo geral, manutenção de frota, motoristas, saída/retorno e histórico institucional |
 | Dados | PostgreSQL 16, EF Core 10, dez entidades e oito migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 84 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 94 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, autorização operacional, controles HTTP e auditoria transacional dos fluxos geral e institucional implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
@@ -39,6 +39,9 @@ Os contratos operacionais e administrativos disponíveis são:
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
 | `GET /institutional-vehicles` | lista a frota institucional ativa para operação e conferência |
 | `POST /institutional-vehicles` | cadastra veículo institucional para `SetorTransporte` ou `Administrador` |
+| `PUT /institutional-vehicles/{id}` | atualiza os dados da frota com auditoria transacional |
+| `DELETE /institutional-vehicles/{id}` | inativa o veículo sem apagar viagens ou histórico |
+| `POST /institutional-vehicles/{id}/reactivation` | reativa explicitamente um veículo institucional |
 | `GET /institutional-drivers` | lista somente pessoas com autorização ativa para dirigir a frota |
 | `POST /institutional-drivers` | autoriza um motorista para `SetorTransporte` ou `Administrador` |
 | `DELETE /institutional-drivers/{id}` | revoga a autorização sem apagar seu histórico |
@@ -280,6 +283,17 @@ curl -X POST http://localhost:5118/institutional-vehicles \
 
 curl http://localhost:5118/institutional-vehicles \
   -H "Authorization: Bearer SEU_TOKEN"
+
+curl -X PUT http://localhost:5118/institutional-vehicles/1 \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"plate":"IFP-1E23","identification":"FROTA-001","vehicleType":"Van","brand":"Marca fictícia","model":"Modelo de teste","color":"Branco","year":2026}'
+
+curl -X DELETE http://localhost:5118/institutional-vehicles/1 \
+  -H "Authorization: Bearer SEU_TOKEN"
+
+curl -X POST http://localhost:5118/institutional-vehicles/1/reactivation \
+  -H "Authorization: Bearer SEU_TOKEN"
 ```
 
 `Porteiro` e `Vigilante` também podem consultar a frota ativa, mas não cadastrar veículos. Antes da primeira saída, `SetorTransporte` ou `Administrador` deve autorizar explicitamente o motorista. Documento é opcional no MVP; quando informado, tipo e número devem ser enviados juntos. Não use dados pessoais reais nos exemplos:
@@ -314,7 +328,7 @@ curl "http://localhost:5118/institutional-vehicle-usages/history?plate=IFP-1E23&
   -H "Authorization: Bearer SEU_TOKEN"
 ```
 
-A consulta histórica aceita placa, identificação da frota, `vehicleId`, `driverId` e período combináveis. Sem período, usa os últimos 30 dias; o intervalo máximo é de 366 dias e cada página contém de 1 a 100 registros. Atualização e inativação da frota, critérios adicionais de elegibilidade de motoristas e correção autorizada permanecem em recortes futuros. A API não cria veículo institucional nem concede autorização implicitamente a partir de uma saída. CNH, validade, categoria, escala, assinatura, imagem e vínculo fixo com veículo não foram copiados das planilhas para o MVP sem necessidade institucional validada.
+A consulta histórica aceita placa, identificação da frota, `vehicleId`, `driverId` e período combináveis. Sem período, usa os últimos 30 dias; o intervalo máximo é de 366 dias e cada página contém de 1 a 100 registros. A manutenção da frota é lógica e auditada: inativar bloqueia novas saídas, preserva viagens e não impede o retorno de uma viagem aberta. Critérios adicionais de elegibilidade de motoristas e correção autorizada de viagens permanecem em recortes futuros. A API não cria veículo institucional nem concede autorização implicitamente a partir de uma saída. CNH, validade, categoria, escala, assinatura, imagem e vínculo fixo com veículo não foram copiados das planilhas para o MVP sem necessidade institucional validada.
 
 ## Migrations
 
@@ -376,7 +390,7 @@ curl -i http://localhost:5118/weatherforecast
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
 - O frontend recebe apenas variáveis prefixadas por `VITE_`; elas não podem conter segredos.
 - Revise migrations, permissões e logs antes de usar dados institucionais.
-- Os primeiros fluxos de negócio, os catálogos iniciais e a consulta histórica institucional existem, mas manutenção completa de cadastros, histórico do fluxo geral, matriz final de perfis, recuperação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
+- Os primeiros fluxos de negócio, a manutenção inicial da frota, o catálogo de motoristas e a consulta histórica institucional existem, mas histórico do fluxo geral, matriz final de perfis, recuperação e outros casos de uso ainda estão em desenvolvimento; o sistema não deve ser exposto publicamente.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).

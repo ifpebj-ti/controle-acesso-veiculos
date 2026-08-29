@@ -85,6 +85,32 @@ Accept: application/json
 
 ###
 
+PUT {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicles/1
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "plate": "IFP-1E23",
+  "identification": "FROTA-001",
+  "vehicleType": "Van",
+  "brand": "Marca fictícia",
+  "model": "Modelo de teste",
+  "color": "Branco",
+  "year": 2026
+}
+
+###
+
+DELETE {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicles/1
+Authorization: Bearer {{AccessToken}}
+
+###
+
+POST {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicles/1/reactivation
+Authorization: Bearer {{AccessToken}}
+
+###
+
 POST {{ControleAcessoVeiculos.API_HostAddress}}/institutional-drivers
 Authorization: Bearer {{AccessToken}}
 Content-Type: application/json
