@@ -29,11 +29,13 @@ public sealed class InstitutionalVehicleUsageStore(
                 item => item.Id == vehicleId,
                 cancellationToken);
             var driver = await dbContext.Pessoas.SingleOrDefaultAsync(
-                item => item.Id == driverId,
+                item => item.Id == driverId && item.Ativo &&
+                    dbContext.MotoristasInstitucionais.Any(authorization =>
+                        authorization.PessoaId == item.Id && authorization.Ativo),
                 cancellationToken);
 
             if (vehicle is null || !vehicle.Ativo || !vehicle.EhInstitucional ||
-                driver is null || !driver.Ativo)
+                driver is null)
             {
                 return new InstitutionalVehicleDepartureStoreResult(
                     InstitutionalVehicleDepartureStoreStatus.NotFound,
