@@ -89,7 +89,7 @@ Referência:
 - não implementar algoritmo criptográfico próprio;
 - não registrar senha, token ou header de autorização.
 
-As decisões atuais de token, hash, bloqueio e políticas estão em [Autenticação e autorização](authentication.md). Refresh token, revogação, recuperação e matriz final de perfis permanecem na Issue #29.
+As decisões atuais de token, hash, bloqueio, ciclo administrativo de contas e políticas estão em [Autenticação e autorização](authentication.md). A desativação invalida o JWT na próxima requisição; refresh token, logout com revogação individual, recuperação e matriz final de perfis permanecem na Issue #29.
 
 Referências:
 
@@ -153,6 +153,12 @@ Issue #71: a alteração do usuário e a auditoria são persistidas juntas, e ne
 token é emitido quando essa gravação falha. A trilha contém somente identificador,
 resultado e, no bloqueio, sua expiração; não contém e-mail, credencial, hash,
 token, endereço IP nem tentativa de usuário inexistente.
+
+Desativação e reativação da Issue #73 também falham de forma fechada:
+estado e auditoria são gravados na mesma transação, somente a transição
+`active` é duplicada na trilha e mudanças concorrentes são serializadas para
+preservar um Administrador ativo. A listagem não projeta hash, e toda requisição
+com JWT confirma que conta e perfil continuam ativos.
 
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
@@ -262,6 +268,7 @@ Antes de aprovar:
 - #29 — autenticação e autorização;
 - #30 — retenção, backup, recuperação e contingência;
 - #31 — validação, erros, logs e auditoria da API;
-- #69 — rate limiting correlacionado da API.
-- #71 — auditoria transacional de login e bloqueio de conta.
+- #69 — rate limiting correlacionado da API;
+- #71 — auditoria transacional de login e bloqueio de conta;
+- #73 — ciclo administrativo seguro de contas;
 - #67 — backup e restauração verificável do PostgreSQL local.

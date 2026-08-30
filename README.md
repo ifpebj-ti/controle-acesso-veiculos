@@ -15,17 +15,17 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 
 ## Estado atual
 
-> Atualizado em 29 de agosto de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
+> Atualizado em 30 de agosto de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
 
 | Área | Estado |
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, contas, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno e histórico institucional |
+| Backend | API .NET 10 com autenticação, ciclo administrativo de contas, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno e histórico institucional |
 | Dados | PostgreSQL 16, EF Core 10, dez entidades e nove migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build e scan de imagens e ensaio local de backup/restauração |
-| Qualidade | 113 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
-| Segurança | JWT, contas individuais, autorização por operação, rate limiting correlacionado, controles HTTP e auditoria transacional dos fluxos operacionais, correções descritivas, login e bloqueio de conta implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
+| Qualidade | 124 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP e auditoria transacional dos fluxos operacionais, correções descritivas e ciclo de contas implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
@@ -34,6 +34,11 @@ Os contratos operacionais e administrativos disponíveis são:
 
 | Método e rota | Finalidade |
 |---|---|
+| `POST /auth/login` | autentica uma conta ativa e emite um JWT de curta duração |
+| `GET /users` | pesquisa contas por nome/e-mail e estado, com paginação restrita a Administrador |
+| `POST /users` | cria uma conta individual para um dos perfis preliminares do MVP |
+| `DELETE /users/{id}` | desativa uma conta, revoga seus JWTs na próxima requisição e preserva o histórico |
+| `POST /users/{id}/reactivation` | reativa a conta e limpa bloqueio temporário e tentativas anteriores |
 | `POST /access-records/entries` | registra entrada e cria ou reutiliza pessoa, veículo, vínculo e categoria em uma transação |
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
 | `GET /access-records/history` | pesquisa acessos por período, placa, condutor, categoria ou status para Portaria, Vigilância e Administração |
@@ -263,7 +268,7 @@ dotnet run --project src/backend/ControleAcessoVeiculos.API -- --bootstrap-admin
 Remove-Item Env:BootstrapAdmin__Name, Env:BootstrapAdmin__Email, Env:BootstrapAdmin__Password
 ```
 
-O comando funciona somente enquanto não existir nenhum usuário. Ele cria a primeira conta fora da API HTTP. Depois disso, um Administrador autenticado pode criar contas individuais em `POST /users`. Não use dados ou senhas reais nos exemplos e não versione essas variáveis.
+O comando funciona somente enquanto não existir nenhum usuário. Ele cria a primeira conta fora da API HTTP. Depois disso, um Administrador autenticado pode consultar, criar, desativar e reativar contas em `/users`. A API impede auto-desativação e preserva ao menos um Administrador ativo. Não use dados ou senhas reais nos exemplos e não versione essas variáveis.
 
 ### Frontend
 
@@ -425,6 +430,8 @@ curl -i http://localhost:5118/weatherforecast
 - Logs HTTP incluem correlação, método, template da rota, status e duração; não incluem valores da URL, query string, corpo nem cabeçalho de autorização.
 - A auditoria dos fluxos geral, institucional e dos catálogos de frota e motoristas registra somente identificadores e estados necessários; não duplica nome, documento, placa, identificação patrimonial, objetivo, observação nem itinerário.
 - Login bem-sucedido e bloqueio temporário de conta geram auditoria transacional sem e-mail, senha, hash, token ou IP; falha da auditoria impede emitir o token.
+- Desativação e reativação de conta exigem Administrador, são auditadas na mesma transação e registram somente a mudança do estado `active`.
+- Cada requisição autenticada confirma no banco se a conta e o perfil continuam ativos; assim, um JWT emitido antes da desativação deixa de autorizar imediatamente.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.

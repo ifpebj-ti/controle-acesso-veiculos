@@ -2,7 +2,7 @@
 
 ## Estado
 
-A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação administrativa de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A issue não deve ser encerrada até a matriz de perfis e o restante do ciclo de contas serem validados.
+A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A issue não deve ser encerrada até a matriz de perfis ser validada.
 
 ## Decisões implementadas
 
@@ -19,8 +19,11 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - O primeiro administrador é criado somente por comando explícito, fora da superfície HTTP.
 - Depois do bootstrap, somente `users:manage` pode criar uma conta individual em `POST /users`.
 - Login bem-sucedido e o momento do bloqueio temporário geram auditoria `Login` associada ao usuário, na mesma unidade de trabalho da mudança de estado.
+- Somente `users:manage` consulta, desativa ou reativa contas; auto-desativação e remoção do último Administrador ativo são rejeitadas.
+- A API confirma a cada requisição autenticada que a conta e o perfil do JWT permanecem ativos.
+- Desativação e reativação são auditadas atomicamente sem duplicar nome ou e-mail.
 
-Não existem refresh token, revogação ou logout no servidor neste incremento. Até essa decisão, o frontend deve manter o access token somente em memória e solicitar novo login após a expiração. Não armazenar token em `localStorage`, logs ou mensagens de erro. A auditoria de autenticação não guarda e-mail, senha, hash, token, IP ou tentativas para usuário inexistente. Se a auditoria obrigatória de um login válido falhar, a API não emite o token.
+Não existem refresh token, lista geral de revogação ou logout no servidor neste incremento. A desativação da conta, porém, invalida seus tokens na próxima requisição protegida. Até a decisão sobre sessões, o frontend deve manter o access token somente em memória e solicitar novo login após a expiração. Não armazenar token em `localStorage`, logs ou mensagens de erro. A auditoria de autenticação não guarda e-mail, senha, hash, token, IP ou tentativas para usuário inexistente. Se a auditoria obrigatória de um login válido falhar, a API não emite o token.
 
 ## Configuração
 
@@ -48,7 +51,7 @@ dotnet run --project src/backend/ControleAcessoVeiculos.API -- --bootstrap-admin
 
 O comando cria uma pessoa, o perfil `Administrador` e a primeira conta somente quando a tabela de usuários está vazia. Ele não abre endpoint anônimo e não imprime senha ou hash. Remova as três variáveis logo após o uso.
 
-Administradores autenticados podem criar outras contas pelo endpoint `POST /users`. Neste MVP, nome, e-mail, senha de 12 a 128 caracteres e um perfil preliminar são obrigatórios. A API persiste apenas o hash.
+Administradores autenticados podem criar outras contas pelo endpoint `POST /users`. Neste MVP, nome, e-mail, senha de 12 a 128 caracteres e um perfil preliminar são obrigatórios. A API persiste apenas o hash. `GET /users` pesquisa nome ou e-mail, filtra pelo estado e limita cada página a 100 itens. `DELETE /users/{id}` desativa sem apagar o histórico; `POST /users/{id}/reactivation` reativa e limpa tentativas e bloqueio temporário anteriores.
 
 ## Políticas preliminares
 
@@ -64,12 +67,12 @@ Esses nomes estão centralizados e não pertencem ao Domain. A matriz ainda depe
 
 - validar se Vigilante possui as mesmas operações do Porteiro;
 - validar correção, conferência, consulta, exportação e administração por perfil;
-- definir redefinição de senha, recuperação, desativação e encerramento de sessões;
+- definir redefinição de senha, recuperação e encerramento explícito de sessões;
 - decidir se haverá integração com identidade institucional;
 - avaliar refresh token ou sessão por cookie quando o fluxo do frontend for implementado;
-- registrar auditoria de logout e alterações de conta na Issue #31 quando esses fluxos existirem;
+- registrar auditoria de logout, troca de perfil e redefinição de senha quando esses fluxos existirem;
 - proteger os endpoints de negócio com as políticas validadas.
 
 ## Validação automatizada
 
-Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, validação de conta e criação administrativa. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.
+Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores e atomicidade da auditoria. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.
