@@ -9,6 +9,29 @@ public class RegistroAcessoTests
         new(2026, 8, 26, 12, 0, 0, DateTimeKind.Utc);
 
     [Fact]
+    public void Constructor_ShouldAssociateOptionalEventVehicleRule()
+    {
+        var record = new RegistroAcesso(
+            1,
+            2,
+            3,
+            Entrada,
+            "Evento acadêmico",
+            4,
+            autorizacaoVeiculoEventoId: 5);
+
+        Assert.Equal(5, record.AutorizacaoVeiculoEventoId);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RegistroAcesso(
+            1,
+            2,
+            3,
+            Entrada,
+            "Evento acadêmico",
+            4,
+            autorizacaoVeiculoEventoId: 0));
+    }
+
+    [Fact]
     public void Constructor_ShouldCreateOpenAccessRecord()
     {
         var registro = CreateRegistro();

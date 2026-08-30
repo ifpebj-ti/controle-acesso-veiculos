@@ -27,6 +27,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains("20260829154230_AddInstitutionalUsageHistoryIndexes", migrations);
         Assert.Contains("20260830065224_AllowSystemAuditActors", migrations);
         Assert.Contains("20260830202007_AddEventAuthorizationCatalog", migrations);
+        Assert.Contains("20260830204741_LinkEventAuthorizationsToAccessRecords", migrations);
 
         await dbContext.Database.OpenConnectionAsync();
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
@@ -76,6 +77,16 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains(
             "ux_autorizacoes_veiculos_eventos_evento_tipo_sem_placa",
             constraints);
+
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM information_schema.table_constraints
+            WHERE table_schema = 'dbo'
+              AND table_name = 'registros_acesso'
+              AND constraint_name = 'fk_registros_acesso_autorizacoes_eventos'
+              AND constraint_type = 'FOREIGN KEY';
+            """;
+        Assert.Equal(1L, (long)(await command.ExecuteScalarAsync())!);
     }
 
     [Fact]
