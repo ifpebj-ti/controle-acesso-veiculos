@@ -160,6 +160,11 @@ estado e auditoria são gravados na mesma transação, somente a transição
 preservar um Administrador ativo. A listagem não projeta hash, e toda requisição
 com JWT confirma que conta e perfil continuam ativos.
 
+Na Issue #76, criação administrativa e bootstrap passam a gerar auditoria na
+mesma transação de pessoa e conta. Ações humanas exigem ator autenticado; o
+bootstrap usa ator nulo e origem explícita de sistema, sem atribuir a ação ao
+usuário que ainda está sendo criado. Nome, e-mail, senha e hash não são copiados.
+
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
 
@@ -271,4 +276,5 @@ Antes de aprovar:
 - #69 — rate limiting correlacionado da API;
 - #71 — auditoria transacional de login e bloqueio de conta;
 - #73 — ciclo administrativo seguro de contas;
+- #76 — auditoria de criação e bootstrap de contas;
 - #67 — backup e restauração verificável do PostgreSQL local.
