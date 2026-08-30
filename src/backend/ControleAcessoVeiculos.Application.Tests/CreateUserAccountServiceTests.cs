@@ -63,6 +63,19 @@ public sealed class CreateUserAccountServiceTests
             return Task.FromResult<CreatedUserAccount?>(
                 new CreatedUserAccount(1, normalizedEmail, profileName));
         }
+
+        public Task<PagedUserAccountResult> SearchAsync(
+            UserAccountSearchCriteria criteria,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<UserAccountStoreStateStatus> TrySetActiveAsync(
+            int userId,
+            bool active,
+            int actorUserId,
+            DateTime updatedAtUtc,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FakePasswordHashService : IPasswordHashService

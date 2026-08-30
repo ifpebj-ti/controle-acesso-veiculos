@@ -40,4 +40,20 @@ public sealed class UsuarioTests
         Assert.Equal(0, usuario.TentativasFalhas);
         Assert.Null(usuario.BloqueadoAte);
     }
+
+    [Fact]
+    public void ReactivationRestoresAccountAndClearsAuthenticationLockout()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("user@example.com", "hash", 1, 1);
+        usuario.RegistrarTentativaFalha(now, 1, TimeSpan.FromMinutes(15));
+        usuario.Desativar(now.AddMinutes(1));
+
+        usuario.Reativar(now.AddMinutes(2));
+
+        Assert.True(usuario.Ativo);
+        Assert.Equal(0, usuario.TentativasFalhas);
+        Assert.Null(usuario.BloqueadoAte);
+        Assert.Equal(now.AddMinutes(2), usuario.DataAlteracao);
+    }
 }
