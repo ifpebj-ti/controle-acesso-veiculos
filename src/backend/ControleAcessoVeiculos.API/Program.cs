@@ -42,6 +42,15 @@ builder.Services.AddProblemDetails(options =>
 builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = RequestSafetyMiddleware.MaximumRequestBodySize);
 
+var rateLimitOptions = builder.Configuration
+    .GetSection(ApiRateLimitOptions.SectionName)
+    .Get<ApiRateLimitOptions>() ?? new ApiRateLimitOptions();
+rateLimitOptions.Validate();
+builder.Services.Configure<ApiRateLimitOptions>(
+    builder.Configuration.GetSection(ApiRateLimitOptions.SectionName));
+builder.Services.AddRateLimiter(options =>
+    ApiRateLimiting.Configure(options, rateLimitOptions));
+
 var jwtOptions = builder.Configuration
     .GetSection(JwtOptions.SectionName)
     .Get<JwtOptions>() ?? new JwtOptions();
@@ -150,6 +159,7 @@ app.UseMiddleware<RequestSafetyMiddleware>();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 var livenessOptions = new HealthCheckOptions
@@ -158,13 +168,19 @@ var livenessOptions = new HealthCheckOptions
     ResponseWriter = WriteHealthResponse
 };
 
-app.MapHealthChecks("/health", livenessOptions).AllowAnonymous();
-app.MapHealthChecks("/health/live", livenessOptions).AllowAnonymous();
+app.MapHealthChecks("/health", livenessOptions)
+    .AllowAnonymous()
+    .DisableRateLimiting();
+app.MapHealthChecks("/health/live", livenessOptions)
+    .AllowAnonymous()
+    .DisableRateLimiting();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = registration => registration.Tags.Contains("ready"),
     ResponseWriter = WriteHealthResponse
-}).AllowAnonymous();
+})
+    .AllowAnonymous()
+    .DisableRateLimiting();
 
 app.MapVehicleAccessEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
@@ -199,6 +215,7 @@ app.MapPost("/auth/login", async (
             statusCode: StatusCodes.Status401Unauthorized);
 })
 .AllowAnonymous()
+.RequireRateLimiting(ApiRateLimiting.LoginPolicy)
 .WithName("Login");
 
 app.MapPost("/users", async (
