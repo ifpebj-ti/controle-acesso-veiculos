@@ -1,9 +1,11 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +30,26 @@ public sealed class AuthenticationTests(ApiFactory factory)
         Assert.False(string.IsNullOrWhiteSpace(body.AccessToken));
         Assert.True(body.ExpiresAtUtc > DateTime.UtcNow);
 
+        var audit = await GetSingleAuthenticationAuditAsync(email);
+        Assert.Equal(TipoAcaoAuditoria.Login, audit.TipoAcao);
+        Assert.Equal(audit.UsuarioId, audit.RegistroId);
+        Assert.Equal(nameof(Usuario), audit.Entidade);
+        using (var auditState = JsonDocument.Parse(audit.DadosNovos!))
+        {
+            Assert.Equal(
+                AuthenticationAuditOutcome.LoginSucceeded.ToString(),
+                auditState.RootElement.GetProperty("outcome").GetString());
+            Assert.False(auditState.RootElement.TryGetProperty("lockedUntilUtc", out _));
+        }
+
+        var auditContent = string.Join(' ',
+            audit.DadosAnteriores,
+            audit.DadosNovos,
+            audit.Detalhes);
+        Assert.DoesNotContain(email, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(password, auditContent, StringComparison.Ordinal);
+        Assert.DoesNotContain(body.AccessToken, auditContent, StringComparison.Ordinal);
+
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", body.AccessToken);
         var protectedResponse = await client.GetAsync("/access-records/open");
@@ -39,6 +61,7 @@ public sealed class AuthenticationTests(ApiFactory factory)
     public async Task InvalidCredentialsReturnGenericUnauthorizedResponse()
     {
         using var client = factory.CreateClient();
+        var auditsBefore = await CountAuthenticationAuditsAsync();
 
         var response = await client.PostAsJsonAsync("/auth/login", new
         {
@@ -49,6 +72,7 @@ public sealed class AuthenticationTests(ApiFactory factory)
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Equal("Credenciais inválidas.", body?.Message);
+        Assert.Equal(auditsBefore, await CountAuthenticationAuditsAsync());
     }
 
     [Fact]
@@ -75,6 +99,54 @@ public sealed class AuthenticationTests(ApiFactory factory)
         });
 
         Assert.Equal(HttpStatusCode.Unauthorized, blockedResponse.StatusCode);
+
+        var audit = await GetSingleAuthenticationAuditAsync(email);
+        using var auditState = JsonDocument.Parse(audit.DadosNovos!);
+        Assert.Equal(
+            AuthenticationAuditOutcome.AccountLocked.ToString(),
+            auditState.RootElement.GetProperty("outcome").GetString());
+        Assert.True(auditState.RootElement.GetProperty("lockedUntilUtc").GetDateTime() > DateTime.UtcNow);
+        Assert.DoesNotContain(email, audit.DadosNovos, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(password, audit.DadosNovos, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AuditFailureShouldRejectLoginAndRollBackUserState()
+    {
+        const string password = "Test-only-password-123!";
+        var email = await CreateUserAsync(ProfileNames.Administrator, password);
+        using var client = factory.CreateClient();
+        var failedAttempt = await client.PostAsJsonAsync("/auth/login", new
+        {
+            email,
+            password = "Wrong-password-123!"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, failedAttempt.StatusCode);
+
+        await InstallRejectingAuthenticationAuditTriggerAsync();
+        try
+        {
+            var response = await client.PostAsJsonAsync("/auth/login", new
+            {
+                email,
+                password
+            });
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        finally
+        {
+            await RemoveRejectingAuthenticationAuditTriggerAsync();
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var user = await dbContext.Usuarios.AsNoTracking().SingleAsync(item => item.Email == email);
+        Assert.Equal(1, user.TentativasFalhas);
+        Assert.Equal(0, await dbContext.Auditorias.CountAsync(item =>
+            item.Entidade == nameof(Usuario) &&
+            item.RegistroId == user.Id &&
+            item.TipoAcao == TipoAcaoAuditoria.Login));
     }
 
     [Fact]
@@ -204,6 +276,61 @@ public sealed class AuthenticationTests(ApiFactory factory)
         dbContext.Usuarios.Add(user);
         await dbContext.SaveChangesAsync();
         return email;
+    }
+
+    private async Task<Auditoria> GetSingleAuthenticationAuditAsync(string email)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var userId = await dbContext.Usuarios
+            .Where(item => item.Email == email)
+            .Select(item => item.Id)
+            .SingleAsync();
+
+        return await dbContext.Auditorias.AsNoTracking().SingleAsync(item =>
+            item.Entidade == nameof(Usuario) &&
+            item.RegistroId == userId &&
+            item.TipoAcao == TipoAcaoAuditoria.Login);
+    }
+
+    private async Task<int> CountAuthenticationAuditsAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        return await dbContext.Auditorias.CountAsync(item =>
+            item.Entidade == nameof(Usuario) &&
+            item.TipoAcao == TipoAcaoAuditoria.Login);
+    }
+
+    private async Task InstallRejectingAuthenticationAuditTriggerAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            CREATE OR REPLACE FUNCTION dbo.reject_authentication_audit()
+            RETURNS trigger AS $$
+            BEGIN
+                IF NEW.entidade = 'Usuario' AND NEW.tipo_acao = 'Login' THEN
+                    RAISE EXCEPTION 'authentication audit rejected for integration test';
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER reject_authentication_audit_trigger
+            BEFORE INSERT ON dbo.auditorias
+            FOR EACH ROW EXECUTE FUNCTION dbo.reject_authentication_audit();
+            """);
+    }
+
+    private async Task RemoveRejectingAuthenticationAuditTriggerAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            DROP TRIGGER IF EXISTS reject_authentication_audit_trigger ON dbo.auditorias;
+            DROP FUNCTION IF EXISTS dbo.reject_authentication_audit();
+            """);
     }
 
     private sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
