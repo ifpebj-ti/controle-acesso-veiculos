@@ -175,6 +175,13 @@ pessoais desnecessários. A leitura não gera outro evento neste recorte para ev
 recursão e ruído; essa decisão, a retenção e a matriz final ainda dependem de
 validação institucional.
 
+Na Issue #80, `SetorTransporte` recebe leitura do histórico geral por sua função
+de supervisão e conferência, sem receber operação ou correção. O registro digital
+deve substituir a planilha como fonte principal somente após homologação. Papel
+fica restrito à contingência, com reconciliação posterior, evitando dois controles
+permanentes e divergentes. O horário de fechamento não é codificado como bloqueio
+fixo, pois existem exceções autorizadas e residentes.
+
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
 

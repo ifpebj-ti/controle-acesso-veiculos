@@ -42,7 +42,7 @@ Os contratos operacionais e administrativos disponíveis são:
 | `GET /audits` | consulta a trilha por período, ação, entidade, registro e ator, restrita a Administrador |
 | `POST /access-records/entries` | registra entrada e cria ou reutiliza pessoa, veículo, vínculo e categoria em uma transação |
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
-| `GET /access-records/history` | pesquisa acessos por período, placa, condutor, categoria ou status para Portaria, Vigilância e Administração |
+| `GET /access-records/history` | pesquisa acessos por período, placa, condutor, categoria ou status para Portaria, Vigilância, Transporte e Administração |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
 | `PUT /access-records/{id}/correction` | corrige objetivo, categoria e observação com justificativa para Vigilância e Administração |
 | `GET /institutional-vehicles` | lista a frota institucional ativa para operação e conferência |
@@ -59,6 +59,21 @@ Os contratos operacionais e administrativos disponíveis são:
 | `POST /institutional-vehicle-usages/{id}/returns` | registra retorno e valida a quilometragem |
 
 A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. Vigilante e Administrador podem corrigir objetivo, categoria e observação com justificativa, sem alterar placa, condutor, horários, status ou autoria original. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
+
+No processo confirmado para o MVP, dois Porteiros se revezam em jornadas de 12
+horas e o Vigilante assume integralmente a operação quando não há Porteiro. Cada
+pessoa usa sua própria conta; registros abertos garantem continuidade sem trocar
+a autoria original. O Setor de Transporte supervisiona a portaria e consulta os
+históricos geral e institucional, mas não registra, encerra nem corrige acessos
+gerais. O fechamento por volta das 23h é uma regra operacional: o sistema não
+bloqueia automaticamente o horário porque residentes e acessos previamente
+autorizados podem constituir exceções.
+
+Após a homologação, o registro digital deve ser a fonte principal. Formulários
+em papel permanecem apenas para contingência diante de indisponibilidade e seus
+dados devem ser reconciliados no sistema posteriormente; não se recomenda manter
+dupla digitação permanente. O acervo físico anterior segue a retenção vigente até
+aprovação de uma política institucional para os registros digitais.
 
 ## Problema e escopo do MVP
 
