@@ -22,9 +22,9 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno e histórico institucional |
-| Dados | PostgreSQL 16, EF Core 10, dez entidades e nove migrations versionadas |
+| Dados | PostgreSQL 16, EF Core 10, dez entidades e dez migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build e scan de imagens e ensaio local de backup/restauração |
-| Qualidade | 124 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 129 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP e auditoria transacional dos fluxos operacionais, correções descritivas e ciclo de contas implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
@@ -431,6 +431,7 @@ curl -i http://localhost:5118/weatherforecast
 - A auditoria dos fluxos geral, institucional e dos catálogos de frota e motoristas registra somente identificadores e estados necessários; não duplica nome, documento, placa, identificação patrimonial, objetivo, observação nem itinerário.
 - Login bem-sucedido e bloqueio temporário de conta geram auditoria transacional sem e-mail, senha, hash, token ou IP; falha da auditoria impede emitir o token.
 - Desativação e reativação de conta exigem Administrador, são auditadas na mesma transação e registram somente a mudança do estado `active`.
+- Criação administrativa e bootstrap também são auditados atomicamente; a criação HTTP registra o Administrador, enquanto o bootstrap usa ator de sistema nulo sem atribuição falsa.
 - Cada requisição autenticada confirma no banco se a conta e o perfil continuam ativos; assim, um JWT emitido antes da desativação deixa de autorizar imediatamente.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.

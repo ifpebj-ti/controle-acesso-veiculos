@@ -7,10 +7,38 @@ namespace ControleAcessoVeiculos.Application.Accounts;
 
 public sealed class CreateUserAccountService(
     IUserAccountStore userAccountStore,
-    IPasswordHashService passwordHashService)
+    IPasswordHashService passwordHashService,
+    TimeProvider timeProvider)
 {
-    public async Task<CreateUserAccountResult> CreateAsync(
+    public Task<CreateUserAccountResult> CreateAsync(
         CreateUserAccountCommand command,
+        int actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(actorUserId);
+        return CreateAsync(
+            command,
+            new AccountCreationAudit(
+                actorUserId,
+                timeProvider.GetUtcNow().UtcDateTime,
+                AccountCreationOrigin.Administration),
+            cancellationToken);
+    }
+
+    public Task<CreateUserAccountResult> BootstrapAsync(
+        CreateUserAccountCommand command,
+        CancellationToken cancellationToken = default) =>
+        CreateAsync(
+            command,
+            new AccountCreationAudit(
+                null,
+                timeProvider.GetUtcNow().UtcDateTime,
+                AccountCreationOrigin.Bootstrap),
+            cancellationToken);
+
+    private async Task<CreateUserAccountResult> CreateAsync(
+        CreateUserAccountCommand command,
+        AccountCreationAudit audit,
         CancellationToken cancellationToken = default)
     {
         var errors = Validate(command);
@@ -26,6 +54,7 @@ public sealed class CreateUserAccountService(
             normalizedEmail,
             passwordHashService.Hash(command.Password),
             command.ProfileName,
+            audit,
             cancellationToken);
 
         return createdAccount is null

@@ -44,8 +44,7 @@ public class AuditoriaConfiguration : IEntityTypeConfiguration<Auditoria>
 
         builder.Property(auditoria => auditoria.UsuarioId)
             .HasColumnName("usuario_id")
-            .HasColumnType("integer")
-            .IsRequired();
+            .HasColumnType("integer");
 
         builder.Property(auditoria => auditoria.Detalhes)
             .HasColumnName("detalhes")

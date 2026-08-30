@@ -13,14 +13,17 @@ public class Auditoria
         TipoAcaoAuditoria tipoAcao,
         string entidade,
         int registroId,
-        int usuarioId,
+        int? usuarioId,
         string? dadosAnteriores = null,
         string? dadosNovos = null,
         string? detalhes = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(entidade);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(registroId);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(usuarioId);
+        if (usuarioId.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(usuarioId.Value);
+        }
 
         DataHora = dataHora;
         TipoAcao = tipoAcao;
@@ -37,7 +40,7 @@ public class Auditoria
     public TipoAcaoAuditoria TipoAcao { get; private set; }
     public string Entidade { get; private set; } = null!;
     public int RegistroId { get; private set; }
-    public int UsuarioId { get; private set; }
+    public int? UsuarioId { get; private set; }
     public string? DadosAnteriores { get; private set; }
     public string? DadosNovos { get; private set; }
     public string? Detalhes { get; private set; }

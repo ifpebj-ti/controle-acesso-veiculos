@@ -20,6 +20,7 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
         string normalizedEmail,
         string passwordHash,
         string profileName,
+        AccountCreationAudit audit,
         CancellationToken cancellationToken)
     {
         var emailAlreadyExists = await dbContext.Usuarios.AnyAsync(
@@ -65,6 +66,23 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 person.Id,
                 profile.Id);
             dbContext.Usuarios.Add(user);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            dbContext.Auditorias.Add(new Auditoria(
+                audit.OccurredAtUtc,
+                TipoAcaoAuditoria.Inclusao,
+                nameof(Usuario),
+                user.Id,
+                audit.ActorUserId,
+                dadosNovos: JsonSerializer.Serialize(new
+                {
+                    active = true,
+                    profileName = profile.Nome,
+                    origin = audit.Origin.ToString()
+                }),
+                detalhes: audit.Origin == AccountCreationOrigin.Bootstrap
+                    ? "Initial administrator account bootstrapped."
+                    : "User account created by an administrator."));
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 

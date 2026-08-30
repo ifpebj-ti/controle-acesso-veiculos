@@ -44,15 +44,22 @@ public static class UserAccountEndpoints
 
     private static async Task<IResult> CreateAsync(
         CreateUserRequest request,
+        HttpContext httpContext,
         CreateUserAccountService service,
         CancellationToken cancellationToken)
     {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+        {
+            return Results.Unauthorized();
+        }
+
         var result = await service.CreateAsync(
             new CreateUserAccountCommand(
                 request.Name,
                 request.Email,
                 request.Password,
                 request.ProfileName),
+            actorUserId,
             cancellationToken);
 
         return result.Status switch

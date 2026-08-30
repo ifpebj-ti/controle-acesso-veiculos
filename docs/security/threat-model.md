@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 2.0
+**Versão:** 2.1
 
 **Data de referência:** 30 de agosto de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71 e #73
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73 e #76
 
 ## Objetivo e limites
 
@@ -123,7 +123,7 @@ flowchart LR
 | B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
 | B2 | Código executado no navegador para API | JWT, contratos operacionais, consultas históricas e catálogos de frota e motoristas implementados; matriz final e frontend pendentes |
 | B3 | API para PostgreSQL | Implementado localmente |
-| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada nos fluxos geral, correção descritiva, institucional e catálogos |
+| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos |
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
 | B6 | Repositório para runner e artefatos | CI inicial implementada |
 | B7 | Registry para infraestrutura OCI | Não implementado |
@@ -152,7 +152,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Diretório fora do Git no desenvolvimento; criptografia, acesso restrito, retenção e inventário em produção — #30 e #67 | Parcialmente mitigado no desenvolvimento; produção pendente |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
 | TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup com restauração verificada, upgrade/downgrade e falha explícita — #23, #30 e #67 | Backup/restauração local e testes de migration implementados; processo de produção pendente |
-| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31, #51, #53, #55, #57, #65, #71 e #73 | Mitigado nos fluxos geral, correção descritiva, institucional, catálogos, login, bloqueio e estado da conta; alerta e demais operações pendentes |
+| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, ator humano ou origem de sistema explícita, alerta e monitoramento — #31, #51, #53, #55, #57, #65, #71, #73 e #76 | Mitigado nos fluxos geral, correção descritiva, institucional, catálogos, autenticação e ciclo de contas; alerta e demais operações pendentes |
 
 ## Controles existentes verificados
 
@@ -165,6 +165,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - consulta de contas paginada e restrita a Administrador, sem exposição de hash;
 - desativação e reativação auditadas atomicamente, com auto-desativação proibida e serialização das mudanças para preservar ao menos um Administrador ativo;
 - conta ou perfil inativo rejeitado na validação de toda requisição com JWT, inclusive para token emitido anteriormente;
+- criação administrativa e bootstrap auditados atomicamente, distinguindo ator autenticado de origem de sistema sem duplicar dados da conta;
 - autorização deny-by-default e políticas preliminares testadas;
 - políticas distintas para consultar e gerenciar a frota institucional;
 - políticas distintas para o histórico geral e o histórico institucional;

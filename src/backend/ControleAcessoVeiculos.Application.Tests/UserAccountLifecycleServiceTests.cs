@@ -95,6 +95,7 @@ public sealed class UserAccountLifecycleServiceTests
             string normalizedEmail,
             string passwordHash,
             string profileName,
+            AccountCreationAudit audit,
             CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
