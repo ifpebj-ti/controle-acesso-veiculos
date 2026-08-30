@@ -37,6 +37,12 @@ Content-Type: application/json
 
 ###
 
+GET {{ControleAcessoVeiculos.API_HostAddress}}/audits?fromUtc=2026-08-01T00:00:00Z&toUtc=2026-08-31T23:59:59Z&systemOnly=false&page=1&pageSize=25
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
 POST {{ControleAcessoVeiculos.API_HostAddress}}/access-records/entries
 Authorization: Bearer {{AccessToken}}
 Content-Type: application/json

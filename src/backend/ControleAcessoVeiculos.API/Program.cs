@@ -6,10 +6,12 @@ using ControleAcessoVeiculos.Application.AccessRecords;
 using ControleAcessoVeiculos.Application.Accounts;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
+using ControleAcessoVeiculos.Application.Auditing;
 using ControleAcessoVeiculos.Application.InstitutionalVehicleUsages;
 using ControleAcessoVeiculos.Application.InstitutionalVehicles;
 using ControleAcessoVeiculos.Application.InstitutionalDrivers;
 using ControleAcessoVeiculos.Infrastructure.Authentication;
+using ControleAcessoVeiculos.Infrastructure.Auditing;
 using ControleAcessoVeiculos.Infrastructure.AccessRecords;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicleUsages;
@@ -135,6 +137,8 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
+        ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
         ProfileNames.Administrator));
 
 builder.Services.AddSingleton(TimeProvider.System);
@@ -145,6 +149,7 @@ builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
 builder.Services.AddScoped<IInstitutionalVehicleCatalogStore, InstitutionalVehicleCatalogStore>();
 builder.Services.AddScoped<IInstitutionalDriverStore, InstitutionalDriverStore>();
+builder.Services.AddScoped<IAuditTrailStore, AuditTrailStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<CreateUserAccountService>();
@@ -154,6 +159,7 @@ builder.Services.AddScoped<VehicleAccessService>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
 builder.Services.AddScoped<InstitutionalVehicleCatalogService>();
 builder.Services.AddScoped<InstitutionalDriverService>();
+builder.Services.AddScoped<AuditTrailService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -209,6 +215,7 @@ app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
 app.MapInstitutionalDriverEndpoints();
 app.MapUserAccountEndpoints();
+app.MapAuditTrailEndpoints();
 
 app.MapPost("/auth/login", async (
     LoginRequest request,

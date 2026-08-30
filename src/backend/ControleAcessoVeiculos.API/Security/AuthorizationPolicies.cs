@@ -11,4 +11,5 @@ public static class AuthorizationPolicies
     public const string ReadInstitutionalDrivers = "institutional-drivers:read";
     public const string ManageInstitutionalDrivers = "institutional-drivers:manage";
     public const string ManageUsers = "users:manage";
+    public const string ReviewAuditTrail = "audits:read";
 }

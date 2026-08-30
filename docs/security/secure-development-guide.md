@@ -165,6 +165,16 @@ mesma transação de pessoa e conta. Ações humanas exigem ator autenticado; o
 bootstrap usa ator nulo e origem explícita de sistema, sem atribuir a ação ao
 usuário que ainda está sendo criado. Nome, e-mail, senha e hash não são copiados.
 
+Na Issue #78, a trilha passa a ser consultável sem acesso direto ao PostgreSQL.
+A política dedicada `audits:read` começa restrita a Administrador, o período
+padrão é de 30 dias, o máximo é de 90 dias e as páginas possuem até 100 eventos.
+Filtros distinguem ator humano e origem de sistema. A resposta não faz joins com
+pessoa, conta ou veículo e projeta somente os campos já persistidos na auditoria.
+Justificativas de correção fazem parte da trilha e não devem receber dados
+pessoais desnecessários. A leitura não gera outro evento neste recorte para evitar
+recursão e ruído; essa decisão, a retenção e a matriz final ainda dependem de
+validação institucional.
+
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
 
@@ -277,4 +287,5 @@ Antes de aprovar:
 - #71 — auditoria transacional de login e bloqueio de conta;
 - #73 — ciclo administrativo seguro de contas;
 - #76 — auditoria de criação e bootstrap de contas;
+- #78 — consulta administrativa segura da trilha de auditoria;
 - #67 — backup e restauração verificável do PostgreSQL local.
