@@ -11,6 +11,7 @@ Esta página documenta a fundação de integração contínua da Issue #25. Os w
 | CI - Backend | Alterações do backend e de suas regras de formato | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura |
 | CI - Frontend | Alterações do frontend | `npm ci`, ESLint e build Vite |
 | CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado das duas imagens e Trivy para vulnerabilidades HIGH/CRITICAL corrigíveis |
+| CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários |
 | Dependency Review | Toda Pull Request | bloqueio de novas dependências com vulnerabilidade alta ou crítica |
 
 Todas as actions de terceiros estão fixadas por SHA de commit e acompanhadas do número da release auditada. Os jobs usam apenas `contents: read`, cancelam execuções obsoletas da mesma referência e possuem timeout.

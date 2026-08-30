@@ -62,3 +62,8 @@ definir na Issue #30:
 Os scripts atuais são destinados exclusivamente ao desenvolvimento local e ao
 ensaio técnico. Um backup só deve ser considerado recuperável após a restauração
 ter sido testada com sucesso.
+
+O workflow `CI - Database recovery` repete o ciclo com dados fictícios sempre que
+os scripts ou a configuração local do PostgreSQL mudam. Essa verificação evita
+regressões técnicas, mas não substitui ensaios periódicos com a infraestrutura e
+os responsáveis institucionais reais.
