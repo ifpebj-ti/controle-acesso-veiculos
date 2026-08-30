@@ -1,7 +1,10 @@
 using ControleAcessoVeiculos.Domain.Entities;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace ControleAcessoVeiculos.IntegrationTests;
 
@@ -22,6 +25,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains("20260827232042_AddAuthenticationSecurity", migrations);
         Assert.Contains("20260829110009_AddInstitutionalDriverAuthorization", migrations);
         Assert.Contains("20260829154230_AddInstitutionalUsageHistoryIndexes", migrations);
+        Assert.Contains("20260830065224_AllowSystemAuditActors", migrations);
 
         await dbContext.Database.OpenConnectionAsync();
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
@@ -35,6 +39,77 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         var tableCount = (long)(await command.ExecuteScalarAsync())!;
 
         Assert.Equal(10, tableCount);
+    }
+
+    [Fact]
+    public async Task SystemAuditActorMigrationHasSafeUpgradeAndDowngrade()
+    {
+        using var scope = factory.Services.CreateScope();
+        var sourceContext = scope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var sourceConnectionString = sourceContext.Database.GetConnectionString()!;
+        var databaseName = $"migration_{Guid.NewGuid():N}";
+        var adminBuilder = new NpgsqlConnectionStringBuilder(sourceConnectionString)
+        {
+            Database = "postgres",
+            Pooling = false
+        };
+
+        await using (var adminConnection = new NpgsqlConnection(adminBuilder.ConnectionString))
+        {
+            await adminConnection.OpenAsync();
+            await using var createCommand = adminConnection.CreateCommand();
+            createCommand.CommandText = $"CREATE DATABASE \"{databaseName}\"";
+            await createCommand.ExecuteNonQueryAsync();
+        }
+
+        try
+        {
+            var testBuilder = new NpgsqlConnectionStringBuilder(sourceConnectionString)
+            {
+                Database = databaseName,
+                Pooling = false
+            };
+            var options = new DbContextOptionsBuilder<ControleAcessoVeiculosDbContext>()
+                .UseNpgsql(testBuilder.ConnectionString)
+                .Options;
+            await using var dbContext = new ControleAcessoVeiculosDbContext(options);
+            var migrator = dbContext.GetService<IMigrator>();
+
+            await migrator.MigrateAsync();
+            Assert.True(await IsAuditActorNullableAsync(dbContext));
+
+            await dbContext.Database.ExecuteSqlRawAsync("""
+                INSERT INTO dbo.auditorias
+                    (tipo_acao, entidade, registro_id, usuario_id, detalhes)
+                VALUES
+                    ('Inclusao', 'Usuario', 1, NULL, 'Temporary system audit migration test.');
+                """);
+
+            var unsafeDowngrade = await Assert.ThrowsAnyAsync<Exception>(() =>
+                migrator.MigrateAsync("20260829165235_AddGeneralAccessHistoryIndex"));
+            Assert.Contains(
+                "Cannot require an audit actor while system audit records exist.",
+                unsafeDowngrade.ToString(),
+                StringComparison.Ordinal);
+
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "DELETE FROM dbo.auditorias WHERE usuario_id IS NULL");
+            await migrator.MigrateAsync("20260829165235_AddGeneralAccessHistoryIndex");
+            Assert.False(await IsAuditActorNullableAsync(dbContext));
+
+            await migrator.MigrateAsync();
+            Assert.True(await IsAuditActorNullableAsync(dbContext));
+        }
+        finally
+        {
+            NpgsqlConnection.ClearAllPools();
+            await using var adminConnection = new NpgsqlConnection(adminBuilder.ConnectionString);
+            await adminConnection.OpenAsync();
+            await using var dropCommand = adminConnection.CreateCommand();
+            dropCommand.CommandText = $"DROP DATABASE IF EXISTS \"{databaseName}\" WITH (FORCE)";
+            await dropCommand.ExecuteNonQueryAsync();
+        }
     }
 
     [Fact]
@@ -91,5 +166,24 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
 
         Assert.Equal("Condutor", persisted.TipoRelacao);
         Assert.True(persisted.Ativo);
+    }
+
+    private static async Task<bool> IsAuditActorNullableAsync(
+        ControleAcessoVeiculosDbContext dbContext)
+    {
+        await dbContext.Database.OpenConnectionAsync();
+        await using var command = dbContext.Database.GetDbConnection().CreateCommand();
+        command.CommandText = """
+            SELECT is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = 'dbo'
+              AND table_name = 'auditorias'
+              AND column_name = 'usuario_id';
+            """;
+
+        return string.Equals(
+            (string?)await command.ExecuteScalarAsync(),
+            "YES",
+            StringComparison.Ordinal);
     }
 }

@@ -210,6 +210,52 @@ public sealed class AuthenticationTests(ApiFactory factory)
             password = newUserPassword
         });
         login.EnsureSuccessStatusCode();
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var audit = await dbContext.Auditorias.AsNoTracking().SingleAsync(item =>
+            item.Entidade == nameof(Usuario) &&
+            item.RegistroId == created.Id &&
+            item.TipoAcao == TipoAcaoAuditoria.Inclusao);
+        Assert.Equal(await GetUserIdAsync(adminEmail), audit.UsuarioId);
+        var auditContent = string.Join(' ', audit.DadosAnteriores, audit.DadosNovos, audit.Detalhes);
+        Assert.DoesNotContain(newUserEmail, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(newUserPassword, auditContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("hash", auditContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AccountCreationAuditFailureRollsBackPersonAndUser()
+    {
+        const string adminPassword = "Test-only-admin-password-123!";
+        var adminEmail = await CreateUserAsync(ProfileNames.Administrator, adminPassword);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, adminEmail, adminPassword);
+        var suffix = Guid.NewGuid().ToString("N");
+        var newUserEmail = $"rollback-{suffix}@example.test";
+
+        await InstallRejectingAccountCreationAuditTriggerAsync();
+        try
+        {
+            var response = await client.PostAsJsonAsync("/users", new
+            {
+                name = $"Pessoa Rollback {suffix}",
+                email = newUserEmail,
+                password = "Test-only-user-password-123!",
+                profileName = ProfileNames.Doorman
+            });
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        finally
+        {
+            await RemoveRejectingAccountCreationAuditTriggerAsync();
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.False(await dbContext.Usuarios.AnyAsync(item => item.Email == newUserEmail));
+        Assert.False(await dbContext.Pessoas.AnyAsync(item => item.Email == newUserEmail));
     }
 
     [Fact]
@@ -300,6 +346,47 @@ public sealed class AuthenticationTests(ApiFactory factory)
         return await dbContext.Auditorias.CountAsync(item =>
             item.Entidade == nameof(Usuario) &&
             item.TipoAcao == TipoAcaoAuditoria.Login);
+    }
+
+    private async Task<int> GetUserIdAsync(string email)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        return await dbContext.Usuarios
+            .Where(item => item.Email == email)
+            .Select(item => item.Id)
+            .SingleAsync();
+    }
+
+    private async Task InstallRejectingAccountCreationAuditTriggerAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            CREATE OR REPLACE FUNCTION dbo.reject_account_creation_audit()
+            RETURNS trigger AS $$
+            BEGIN
+                IF NEW.entidade = 'Usuario' AND NEW.tipo_acao = 'Inclusao' THEN
+                    RAISE EXCEPTION 'account creation audit rejected for integration test';
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER reject_account_creation_audit_trigger
+            BEFORE INSERT ON dbo.auditorias
+            FOR EACH ROW EXECUTE FUNCTION dbo.reject_account_creation_audit();
+            """);
+    }
+
+    private async Task RemoveRejectingAccountCreationAuditTriggerAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        await dbContext.Database.ExecuteSqlRawAsync("""
+            DROP TRIGGER IF EXISTS reject_account_creation_audit_trigger ON dbo.auditorias;
+            DROP FUNCTION IF EXISTS dbo.reject_account_creation_audit();
+            """);
     }
 
     private async Task InstallRejectingAuthenticationAuditTriggerAsync()
