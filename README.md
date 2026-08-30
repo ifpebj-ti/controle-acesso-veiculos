@@ -21,11 +21,11 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, contas, fluxo geral e seu histórico, manutenção de frota, motoristas, saída/retorno e histórico institucional |
+| Backend | API .NET 10 com autenticação, contas, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno e histórico institucional |
 | Dados | PostgreSQL 16, EF Core 10, dez entidades e nove migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
-| Qualidade | 99 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
-| Segurança | JWT, contas individuais, autorização operacional, controles HTTP e auditoria transacional dos fluxos geral e institucional implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
+| Qualidade | 108 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Segurança | JWT, contas individuais, autorização por operação, controles HTTP e auditoria transacional dos fluxos geral, institucional e correções descritivas implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
@@ -38,6 +38,7 @@ Os contratos operacionais e administrativos disponíveis são:
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
 | `GET /access-records/history` | pesquisa acessos por período, placa, condutor, categoria ou status para Portaria, Vigilância e Administração |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
+| `PUT /access-records/{id}/correction` | corrige objetivo, categoria e observação com justificativa para Vigilância e Administração |
 | `GET /institutional-vehicles` | lista a frota institucional ativa para operação e conferência |
 | `POST /institutional-vehicles` | cadastra veículo institucional para `SetorTransporte` ou `Administrador` |
 | `PUT /institutional-vehicles/{id}` | atualiza os dados da frota com auditoria transacional |
@@ -51,7 +52,7 @@ Os contratos operacionais e administrativos disponíveis são:
 | `GET /institutional-vehicle-usages/history` | pesquisa usos por período, veículo ou motorista para Transporte e Administrador |
 | `POST /institutional-vehicle-usages/{id}/returns` | registra retorno e valida a quilometragem |
 
-A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
+A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. Vigilante e Administrador podem corrigir objetivo, categoria e observação com justificativa, sem alterar placa, condutor, horários, status ou autoria original. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
 
 ## Problema e escopo do MVP
 
@@ -65,7 +66,7 @@ O MVP está concentrado em:
 - uso de veículos institucionais com motorista, quilometragem e itinerário;
 - autorização e revogação de motoristas institucionais pelo setor responsável;
 - consultas históricas paginadas para localizar acessos gerais e usos institucionais pelos filtros necessários;
-- perfis, usuário responsável, correções rastreáveis e auditoria.
+- perfis, usuário responsável, correções descritivas rastreáveis e auditoria.
 
 Reconhecimento automático de placas, câmeras, RFID, cancelas, estacionamento e os fluxos gerais de pedestres permanecem fora do primeiro incremento. Uma solução observada no mercado não se torna requisito sem levantamento local e validação do cliente.
 
@@ -271,9 +272,14 @@ curl "http://localhost:5118/access-records/history?plate=ABC-1D23&driverName=Con
 
 curl -X POST http://localhost:5118/access-records/1/exit \
   -H "Authorization: Bearer SEU_TOKEN"
+
+curl -X PUT http://localhost:5118/access-records/1/correction \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"objective":"Entrega autorizada","categoryName":"Entrega","observation":"Conferido","justification":"Categoria e objetivo conferidos pelo vigilante."}'
 ```
 
-As categorias preliminares aceitas são: `Visitante`, `Prestador de serviço`, `Entrega`, `Evento`, `Treino ou jogo`, `Caminhada com veículo`, `Mototáxi`, `Permanência excepcional` e `Outro acesso autorizado`. Elas são hipóteses do MVP e devem ser revistas após a validação com a portaria. A consulta histórica aceita filtros combináveis por placa, trecho do nome do condutor, categoria, status e período de entrada. Sem período, usa os últimos 30 dias; o intervalo máximo é de 366 dias e cada página contém de 1 a 100 registros. Documento pessoal, objetivo e observação não são parâmetros de busca.
+As categorias preliminares aceitas são: `Visitante`, `Prestador de serviço`, `Entrega`, `Evento`, `Treino ou jogo`, `Caminhada com veículo`, `Mototáxi`, `Permanência excepcional` e `Outro acesso autorizado`. Elas são hipóteses do MVP e devem ser revistas após a validação com a portaria. A consulta histórica aceita filtros combináveis por placa, trecho do nome do condutor, categoria, status e período de entrada. Sem período, usa os últimos 30 dias; o intervalo máximo é de 366 dias e cada página contém de 1 a 100 registros. Documento pessoal, objetivo e observação não são parâmetros de busca. A correção exige justificativa e aceita registros abertos ou encerrados; placa, condutor, horários, status e autoria permanecem imutáveis até que outra regra seja validada com o cliente.
 
 ### Testar o fluxo de veículos institucionais
 

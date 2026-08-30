@@ -69,6 +69,19 @@ Authorization: Bearer {{AccessToken}}
 
 ###
 
+PUT {{ControleAcessoVeiculos.API_HostAddress}}/access-records/1/correction
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "objective": "Entrega autorizada",
+  "categoryName": "Entrega",
+  "observation": "Conferido",
+  "justification": "Categoria e objetivo conferidos pelo vigilante."
+}
+
+###
+
 POST {{ControleAcessoVeiculos.API_HostAddress}}/institutional-vehicles
 Authorization: Bearer {{AccessToken}}
 Content-Type: application/json
