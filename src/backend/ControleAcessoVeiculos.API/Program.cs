@@ -10,6 +10,7 @@ using ControleAcessoVeiculos.Application.Auditing;
 using ControleAcessoVeiculos.Application.InstitutionalVehicleUsages;
 using ControleAcessoVeiculos.Application.InstitutionalVehicles;
 using ControleAcessoVeiculos.Application.InstitutionalDrivers;
+using ControleAcessoVeiculos.Application.EventAuthorizations;
 using ControleAcessoVeiculos.Infrastructure.Authentication;
 using ControleAcessoVeiculos.Infrastructure.Auditing;
 using ControleAcessoVeiculos.Infrastructure.AccessRecords;
@@ -17,6 +18,7 @@ using ControleAcessoVeiculos.Infrastructure.Data;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicleUsages;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicles;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalDrivers;
+using ControleAcessoVeiculos.Infrastructure.EventAuthorizations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -137,6 +139,14 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.ManageInstitutionalDrivers, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ReadEventAuthorizations, policy => policy.RequireRole(
+        ProfileNames.Doorman,
+        ProfileNames.SecurityGuard,
+        ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
@@ -150,6 +160,7 @@ builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
 builder.Services.AddScoped<IInstitutionalVehicleCatalogStore, InstitutionalVehicleCatalogStore>();
 builder.Services.AddScoped<IInstitutionalDriverStore, InstitutionalDriverStore>();
+builder.Services.AddScoped<IEventAuthorizationStore, EventAuthorizationStore>();
 builder.Services.AddScoped<IAuditTrailStore, AuditTrailStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddScoped<LoginService>();
@@ -160,6 +171,7 @@ builder.Services.AddScoped<VehicleAccessService>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
 builder.Services.AddScoped<InstitutionalVehicleCatalogService>();
 builder.Services.AddScoped<InstitutionalDriverService>();
+builder.Services.AddScoped<EventAuthorizationService>();
 builder.Services.AddScoped<AuditTrailService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -215,6 +227,7 @@ app.MapVehicleAccessEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
 app.MapInstitutionalDriverEndpoints();
+app.MapEventAuthorizationEndpoints();
 app.MapUserAccountEndpoints();
 app.MapAuditTrailEndpoints();
 
