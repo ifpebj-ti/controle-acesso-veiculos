@@ -22,9 +22,9 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional e catálogo de autorizações de eventos |
-| Dados | PostgreSQL 16, EF Core 10, doze entidades e onze migrations versionadas |
+| Dados | PostgreSQL 16, EF Core 10, doze entidades e doze migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build e scan de imagens e ensaio local de backup/restauração |
-| Qualidade | 150 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 155 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP, auditoria transacional e consulta administrativa da trilha implementados; matriz final de perfis, retenção e imutabilidade em produção pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
@@ -421,6 +421,10 @@ curl -X POST http://localhost:5118/event-authorizations \
 curl "http://localhost:5118/event-authorizations?fromUtc=2026-09-01T00:00:00Z&toUtc=2026-09-30T23:59:59Z&active=true&page=1&pageSize=25" \
   -H "Authorization: Bearer $TOKEN"
 
+curl -X POST http://localhost:5118/access-records/entries \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"driverName":"Condutor Fictício","plate":"ABC-1D23","objective":"Participação no evento","categoryName":"Evento","vehicleType":"Automóvel","eventAuthorizationId":1}'
+
 curl -X DELETE http://localhost:5118/event-authorizations/1 \
   -H "Authorization: Bearer $TOKEN"
 ```
@@ -428,9 +432,12 @@ curl -X DELETE http://localhost:5118/event-authorizations/1 \
 Sem período, a busca retorna eventos sobrepostos aos próximos 30 dias; o intervalo
 máximo é de 366 dias. A auditoria registra ator, horários, estado, pernoite e
 quantidade de regras, mas não duplica nome, responsável, área, observação ou
-placas. Neste recorte, o catálogo ainda não autoriza automaticamente uma entrada
-nem consome cotas: essa associação permanece na Issue #82 e será implementada
-depois da revisão do catálogo.
+placas. Quando `eventAuthorizationId` é informado na entrada, o evento precisa
+estar ativo e vigente. Placa específica tem precedência; caso não exista, uma cota
+do tipo normalizado é consumida. O bloqueio transacional do evento impede excesso
+silencioso sob concorrência. A saída não devolve a unidade consumida, e regras já
+utilizadas não podem ser substituídas. Sem o identificador, o fluxo geral continua
+inalterado. O sistema apoia a decisão da portaria e não abre o portão automaticamente.
 
 ## Migrations
 

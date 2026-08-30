@@ -138,7 +138,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 |---|---|---|---:|---:|---:|---|---|
 | TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio, ciclo administrativo, auditoria mínima e testes — #29, #71 e #73 | Parcialmente mitigado; recuperação de acesso e validação operacional pendentes |
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
-| TM-03 | Tampering | Cliente altera IDs, status, horários, quilometragem ou identificação de frota enviados à API | 3 | 3 | 9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor e unicidade transacional — #29, #31, #47, #53, #55, #61 e #65 | Correção geral limitada a campos descritivos; identidade, tempo e estado permanecem imutáveis; correções institucionais pendentes |
+| TM-03 | Tampering | Cliente altera IDs, status, horários, quilometragem, evento ou identificação de frota enviados à API | 3 | 3 | 9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor, FK e unicidade/transação — #29, #31, #47, #53, #55, #61, #65 e #82 | Associação de evento validada e imutável após a entrada; correção geral limitada a campos descritivos; correções institucionais pendentes |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67 | Ensaio local de recuperação implementado; controles de produção pendentes |
 | TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, scanner, build e proveniência — #25 | Parcial |
 | TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, justificativa, correlation ID e auditoria imutável suficiente — #29, #31, #47, #51, #53, #55, #57, #61 e #65 | Correção descritiva geral auditada; correções institucionais e imutabilidade por privilégios pendentes |
@@ -176,6 +176,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - contratos operacionais e catálogo inicial protegidos, com validação no servidor e erros previsíveis;
 - data/hora de entrada e saída definidas pelo servidor e vinculadas ao usuário autenticado;
 - transação e índice único parcial impedem dois acessos abertos para o mesmo veículo;
+- bloqueio transacional do evento impede consumo concorrente acima da cota e preserva a associação por FK;
 - transação e índice único parcial impedem dois usos institucionais abertos para o mesmo veículo;
 - correlation ID validado ou gerado pelo servidor em todas as respostas;
 - logs HTTP estruturados com template de rota, sem valores da URL, query string, corpo ou cabeçalho de autorização;
