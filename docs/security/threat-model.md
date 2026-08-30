@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 1.7
+**Versão:** 1.8
 
 **Data de referência:** 29 de agosto de 2026
 
-**Rastreabilidade:** Issues #26 e #67
+**Rastreabilidade:** Issues #26, #67 e #69
 
 ## Objetivo e limites
 
@@ -145,7 +145,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29, #31, #59 e #63 | Histórico geral restrito a Portaria, Vigilância e Administração; histórico institucional restrito a Transporte e Administração; auditoria de consulta e exportação permanecem pendentes |
 | TM-09 | Information disclosure | Segredo entra no Git, imagem, artefato ou Wiki | 2 | 3 | 6 | `.gitignore`, exemplos fictícios, secret scanning e rotação — #25 | Parcial |
 | TM-10 | Information disclosure | PostgreSQL publicado em interface de rede inadequada | 2 | 3 | 6 | Não publicar banco em produção, firewall e rede privada — #25 e implantação futura | Pendente |
-| TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limite de payload, paginação, timeout, rate limiting e índices medidos — #31, #49, #59 e #63 | Limite global de 1 MiB e consultas históricas paginadas, com período limitado e índices específicos; rate limiting permanece pendente |
+| TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limite de payload, paginação, timeout, rate limiting e índices medidos — #31, #49, #59, #63 e #69 | Limite global de 1 MiB, consultas paginadas e rate limiting por usuário/IP implementados; calibração com carga, limite distribuído e timeout permanecem pendentes |
 | TM-12 | Denial of service | Falha de rede, API ou PostgreSQL interrompe a portaria | 3 | 3 | 9 | Readiness, monitoramento, backup e contingência reconciliável — #25 e #30 | Pendente |
 | TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, correção, consultas históricas e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63 e #65 | Parcialmente mitigado; matriz final pendente |
 | TM-14 | Elevation of privilege | Container executado como root amplia impacto de exploração | 2 | 3 | 6 | Usuário não privilegiado, filesystem e capabilities restritos — #25 | Planejado |
@@ -173,6 +173,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - logs HTTP estruturados com template de rota, sem valores da URL, query string, corpo ou cabeçalho de autorização;
 - exceções inesperadas retornam `ProblemDetails` sem mensagem interna ou stack trace;
 - limite global de 1 MiB para corpos de requisição;
+- rate limiting em memória, sem fila, particionado por usuário autenticado ou endereço da conexão, com política específica para login e health checks isentos;
 - consultas históricas com período máximo de 366 dias, paginação limitada e índices orientados aos filtros temporais;
 - auditoria dos fluxos geral, institucional e cadastro da frota atômica, associada ao operador e sem duplicação de dados pessoais, placa, identificação patrimonial ou itinerário;
 - correção descritiva exige justificativa e audita apenas os nomes dos campos alterados, sem copiar objetivo ou observação;

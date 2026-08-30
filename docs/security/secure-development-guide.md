@@ -151,6 +151,25 @@ recursos e observabilidade externa continuam pendentes.
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
 
+## Limites e disponibilidade
+
+- limitar requisições no servidor sem depender do frontend;
+- usar partições independentes por identidade autenticada e, para tráfego anônimo,
+  pelo endereço da conexão;
+- aplicar limite específico ao login como complemento, não substituto, do bloqueio
+  temporário de conta;
+- rejeitar excesso sem fila e responder HTTP 429 em `ProblemDetails` correlacionado;
+- manter liveness e readiness fora do rate limiting para os orquestradores;
+- não confiar em `X-Forwarded-For` sem configurar uma lista de proxies conhecidos;
+- calibrar limites definitivos com teste de carga e observabilidade em homologação;
+- considerar rate limiting distribuído quando houver mais de uma instância da API.
+
+O estado da Issue #69 usa janela fixa em memória por instância: 300 requisições
+por minuto por usuário/IP na API e 30 por minuto por IP no login. Os valores são
+configuráveis e inválidos impedem o startup.
+
+Referência: [ASP.NET Core rate limiting](https://learn.microsoft.com/aspnet/core/performance/rate-limit?view=aspnetcore-10.0).
+
 ## Frontend
 
 - não considerar ocultação de botão como autorização;
@@ -236,5 +255,6 @@ Antes de aprovar:
 - #25 — hardening de CI/CD e containers;
 - #29 — autenticação e autorização;
 - #30 — retenção, backup, recuperação e contingência;
-- #31 — validação, erros, logs e auditoria da API.
+- #31 — validação, erros, logs e auditoria da API;
+- #69 — rate limiting correlacionado da API.
 - #67 — backup e restauração verificável do PostgreSQL local.

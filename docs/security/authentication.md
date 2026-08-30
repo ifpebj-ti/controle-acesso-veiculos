@@ -10,6 +10,7 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - A API nunca recebe nem persiste senha em texto simples fora da duração da requisição de login.
 - Usuário desconhecido, inativo, bloqueado, perfil inativo e senha incorreta recebem a mesma resposta HTTP 401.
 - Cinco senhas incorretas bloqueiam a conta por 15 minutos.
+- O login também possui limite padrão de 30 requisições por minuto por endereço da conexão, sem fila; excesso retorna HTTP 429 sem revelar a existência da conta.
 - O login válido zera as tentativas anteriores.
 - O access token é assinado com HMAC-SHA256 e expira em 15 minutos.
 - O token contém apenas identificador do usuário, e-mail, perfil e identificador único do token.
@@ -29,6 +30,12 @@ Authentication__Jwt__SigningKey
 ```
 
 Nunca versionar a chave real. Ambientes diferentes devem usar chaves diferentes. Uma troca de chave invalida os tokens emitidos anteriormente.
+
+Os limites de login são configuráveis por `RateLimiting__LoginPermitLimit` e
+`RateLimiting__LoginWindowSeconds`. Alterações para produção devem considerar
+NAT compartilhado, observabilidade e teste de carga. A aplicação usa somente o
+endereço da conexão e não confia em cabeçalhos encaminhados antes da configuração
+explícita de proxies conhecidos.
 
 ## Provisionamento inicial
 
@@ -64,4 +71,4 @@ Esses nomes estão centralizados e não pertencem ao Domain. A matriz ainda depe
 
 ## Validação automatizada
 
-Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, acesso sem token, acesso permitido, acesso negado por perfil, validação de conta e criação administrativa. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.
+Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, validação de conta e criação administrativa. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.

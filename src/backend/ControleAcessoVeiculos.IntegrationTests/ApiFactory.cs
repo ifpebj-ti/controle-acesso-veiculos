@@ -52,6 +52,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting(
             "Authentication:Jwt:SigningKey",
             "integration-tests-only-signing-key-32-characters");
+        builder.UseSetting("RateLimiting:GlobalPermitLimit", "10000");
+        builder.UseSetting("RateLimiting:LoginPermitLimit", "10000");
         builder.ConfigureServices(services =>
         {
             services.AddSingleton<ILoggerProvider>(RequestLogs);
