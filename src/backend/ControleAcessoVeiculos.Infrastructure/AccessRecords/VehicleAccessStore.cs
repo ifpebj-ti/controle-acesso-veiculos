@@ -39,6 +39,63 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 return Conflict();
             }
 
+            EventoAcesso? eventAuthorization = null;
+            AutorizacaoVeiculoEvento? eventVehicleRule = null;
+            if (entry.EventAuthorizationId.HasValue)
+            {
+                eventAuthorization = await dbContext.EventosAcesso
+                    .FromSqlInterpolated(
+                        $"SELECT * FROM dbo.eventos_acesso WHERE id = {entry.EventAuthorizationId.Value} FOR UPDATE")
+                    .SingleOrDefaultAsync(cancellationToken);
+
+                if (eventAuthorization is null)
+                {
+                    return Conflict(VehicleAccessStoreRegistrationStatus.EventNotFound);
+                }
+
+                if (!eventAuthorization.Ativo)
+                {
+                    return Conflict(VehicleAccessStoreRegistrationStatus.EventInactive);
+                }
+
+                if (entryAtUtc < eventAuthorization.Inicio ||
+                    entryAtUtc > eventAuthorization.Fim)
+                {
+                    return Conflict(VehicleAccessStoreRegistrationStatus.EventOutsideWindow);
+                }
+
+                var rules = await dbContext.AutorizacoesVeiculosEventos
+                    .Where(rule => rule.EventoAcessoId == eventAuthorization.Id)
+                    .ToListAsync(cancellationToken);
+                eventVehicleRule = rules.FirstOrDefault(rule => rule.Placa == entry.Plate);
+
+                if (eventVehicleRule is null)
+                {
+                    var vehicleType = entry.VehicleType ?? vehicle?.Tipo;
+                    if (!string.IsNullOrWhiteSpace(vehicleType))
+                    {
+                        var normalizedVehicleType = vehicleType.Trim().ToUpperInvariant();
+                        eventVehicleRule = rules.FirstOrDefault(rule =>
+                            rule.Placa == null &&
+                            rule.TipoVeiculo == normalizedVehicleType);
+                    }
+                }
+
+                if (eventVehicleRule is null)
+                {
+                    return Conflict(
+                        VehicleAccessStoreRegistrationStatus.EventVehicleNotAuthorized);
+                }
+
+                var consumedQuantity = await dbContext.RegistrosAcesso.CountAsync(
+                    record => record.AutorizacaoVeiculoEventoId == eventVehicleRule.Id,
+                    cancellationToken);
+                if (consumedQuantity >= eventVehicleRule.Quantidade)
+                {
+                    return Conflict(VehicleAccessStoreRegistrationStatus.EventQuotaExceeded);
+                }
+            }
+
             if (vehicle is null)
             {
                 vehicle = new Veiculo(
@@ -118,18 +175,28 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 entryAtUtc,
                 entry.Objective,
                 actorUserId,
-                entry.Observation);
+                entry.Observation,
+                eventVehicleRule?.Id);
             dbContext.RegistrosAcesso.Add(accessRecord);
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            dbContext.Auditorias.Add(CreateEntryAudit(accessRecord, actorUserId, entryAtUtc));
+            dbContext.Auditorias.Add(CreateEntryAudit(
+                accessRecord,
+                eventAuthorization,
+                actorUserId,
+                entryAtUtc));
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
             return new VehicleAccessStoreRegistration(
                 VehicleAccessStoreRegistrationStatus.Success,
-                Map(accessRecord, vehicle, person, category));
+                Map(
+                    accessRecord,
+                    vehicle,
+                    person,
+                    category,
+                    eventAuthorization));
         }
         catch (DbUpdateException exception)
             when (exception.InnerException is PostgresException
@@ -356,6 +423,7 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
 
     private static Auditoria CreateEntryAudit(
         RegistroAcesso accessRecord,
+        EventoAcesso? eventAuthorization,
         int actorUserId,
         DateTime occurredAtUtc) =>
         new(
@@ -369,7 +437,9 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 status = StatusRegistroAcesso.Aberto.ToString(),
                 vehicleId = accessRecord.VeiculoId,
                 personId = accessRecord.PessoaId,
-                accessCategoryId = accessRecord.CategoriaAcessoId
+                accessCategoryId = accessRecord.CategoriaAcessoId,
+                eventAuthorizationId = eventAuthorization?.Id,
+                eventVehicleRuleId = accessRecord.AutorizacaoVeiculoEventoId
             }),
             detalhes: "Vehicle access entry registered.");
 
@@ -421,6 +491,14 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             on accessRecord.PessoaId equals person.Id
         join category in dbContext.CategoriasAcesso.AsNoTracking()
             on accessRecord.CategoriaAcessoId equals category.Id
+        join eventRule in dbContext.AutorizacoesVeiculosEventos.AsNoTracking()
+            on accessRecord.AutorizacaoVeiculoEventoId equals (int?)eventRule.Id
+            into eventRules
+        from eventRule in eventRules.DefaultIfEmpty()
+        join eventAuthorization in dbContext.EventosAcesso.AsNoTracking()
+            on eventRule.EventoAcessoId equals eventAuthorization.Id
+            into eventAuthorizations
+        from eventAuthorization in eventAuthorizations.DefaultIfEmpty()
         select new VehicleAccessRecord(
             accessRecord.Id,
             vehicle.Id,
@@ -434,13 +512,17 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             accessRecord.Status.ToString(),
             accessRecord.CriadoPorId,
             accessRecord.AtualizadoPorId,
-            accessRecord.Observacao);
+            accessRecord.Observacao,
+            eventAuthorization == null ? null : eventAuthorization.Id,
+            eventAuthorization == null ? null : eventAuthorization.Nome,
+            eventRule == null ? null : eventRule.Id);
 
     private static VehicleAccessRecord Map(
         RegistroAcesso accessRecord,
         Veiculo vehicle,
         Pessoa person,
-        CategoriaAcesso category) =>
+        CategoriaAcesso category,
+        EventoAcesso? eventAuthorization) =>
         new(
             accessRecord.Id,
             vehicle.Id,
@@ -454,10 +536,15 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             accessRecord.Status.ToString(),
             accessRecord.CriadoPorId,
             accessRecord.AtualizadoPorId,
-            accessRecord.Observacao);
+            accessRecord.Observacao,
+            eventAuthorization?.Id,
+            eventAuthorization?.Nome,
+            accessRecord.AutorizacaoVeiculoEventoId);
 
-    private static VehicleAccessStoreRegistration Conflict() =>
-        new(VehicleAccessStoreRegistrationStatus.Conflict, null);
+    private static VehicleAccessStoreRegistration Conflict(
+        VehicleAccessStoreRegistrationStatus status =
+            VehicleAccessStoreRegistrationStatus.Conflict) =>
+        new(status, null);
 
     private static string EscapeLikePattern(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal)

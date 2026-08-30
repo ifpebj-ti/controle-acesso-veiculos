@@ -44,7 +44,9 @@ public sealed record EventVehicleRuleRecord(
     int Id,
     string VehicleType,
     int Quantity,
-    string? Plate);
+    string? Plate,
+    int ConsumedQuantity,
+    int RemainingQuantity);
 
 public sealed record EventAuthorizationRecord(
     int Id,
