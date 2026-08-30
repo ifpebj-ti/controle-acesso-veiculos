@@ -15,13 +15,19 @@ public class RegistroAcesso
         DateTime dataHoraEntrada,
         string objetivo,
         int criadoPorId,
-        string? observacao = null)
+        string? observacao = null,
+        int? autorizacaoVeiculoEventoId = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(veiculoId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(pessoaId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(categoriaAcessoId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(criadoPorId);
         ArgumentException.ThrowIfNullOrWhiteSpace(objetivo);
+
+        if (autorizacaoVeiculoEventoId is <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(autorizacaoVeiculoEventoId));
+        }
 
         VeiculoId = veiculoId;
         PessoaId = pessoaId;
@@ -31,6 +37,7 @@ public class RegistroAcesso
         CriadoPorId = criadoPorId;
         Status = StatusRegistroAcesso.Aberto;
         Observacao = observacao;
+        AutorizacaoVeiculoEventoId = autorizacaoVeiculoEventoId;
         DataCriacao = DateTime.UtcNow;
     }
 
@@ -38,6 +45,7 @@ public class RegistroAcesso
     public int VeiculoId { get; private set; }
     public int PessoaId { get; private set; }
     public int CategoriaAcessoId { get; private set; }
+    public int? AutorizacaoVeiculoEventoId { get; private set; }
     public DateTime DataHoraEntrada { get; private set; }
     public DateTime? DataHoraSaida { get; private set; }
     public string Objetivo { get; private set; } = null!;

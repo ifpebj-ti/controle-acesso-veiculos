@@ -14,7 +14,8 @@ public sealed record RegisterVehicleEntryCommand(
     string? Model = null,
     string? Color = null,
     int? Year = null,
-    string? Observation = null);
+    string? Observation = null,
+    int? EventAuthorizationId = null);
 
 public sealed record VehicleEntryData(
     string DriverName,
@@ -28,7 +29,8 @@ public sealed record VehicleEntryData(
     string? Model,
     string? Color,
     int? Year,
-    string? Observation);
+    string? Observation,
+    int? EventAuthorizationId);
 
 public sealed record VehicleAccessRecord(
     int Id,
@@ -43,7 +45,10 @@ public sealed record VehicleAccessRecord(
     string Status,
     int CreatedById,
     int? UpdatedById,
-    string? Observation);
+    string? Observation,
+    int? EventAuthorizationId = null,
+    string? EventAuthorizationName = null,
+    int? EventVehicleRuleId = null);
 
 public sealed record SearchVehicleAccessesCommand(
     string? Plate = null,
@@ -158,7 +163,12 @@ public sealed record CloseVehicleAccessResult(
 public enum VehicleAccessStoreRegistrationStatus
 {
     Success,
-    Conflict
+    Conflict,
+    EventNotFound,
+    EventInactive,
+    EventOutsideWindow,
+    EventVehicleNotAuthorized,
+    EventQuotaExceeded
 }
 
 public sealed record VehicleAccessStoreRegistration(

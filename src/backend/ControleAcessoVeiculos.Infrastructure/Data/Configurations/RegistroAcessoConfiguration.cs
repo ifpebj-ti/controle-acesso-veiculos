@@ -37,6 +37,10 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
             .HasColumnType("integer")
             .IsRequired();
 
+        builder.Property(registro => registro.AutorizacaoVeiculoEventoId)
+            .HasColumnName("autorizacao_veiculo_evento_id")
+            .HasColumnType("integer");
+
         builder.Property(registro => registro.DataHoraEntrada)
             .HasColumnName("data_hora_entrada")
             .HasColumnType("timestamp with time zone")
@@ -91,6 +95,9 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
         builder.HasIndex(registro => registro.CategoriaAcessoId)
             .HasDatabaseName("ix_registros_acesso_categoria_id");
 
+        builder.HasIndex(registro => registro.AutorizacaoVeiculoEventoId)
+            .HasDatabaseName("ix_registros_acesso_autorizacao_evento_id");
+
         builder.HasIndex(registro => registro.PessoaId)
             .HasDatabaseName("ix_registros_acesso_pessoa_id");
 
@@ -119,6 +126,12 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
             .HasForeignKey(registro => registro.CategoriaAcessoId)
             .OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("fk_registros_acesso_categorias_categoria_id");
+
+        builder.HasOne<AutorizacaoVeiculoEvento>()
+            .WithMany()
+            .HasForeignKey(registro => registro.AutorizacaoVeiculoEventoId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_registros_acesso_autorizacoes_eventos");
 
         builder.HasOne<Pessoa>()
             .WithMany()
