@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 2.1
+**Versão:** 2.2
 
 **Data de referência:** 30 de agosto de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73 e #76
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76 e #78
 
 ## Objetivo e limites
 
@@ -123,7 +123,7 @@ flowchart LR
 | B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
 | B2 | Código executado no navegador para API | JWT, contratos operacionais, consultas históricas e catálogos de frota e motoristas implementados; matriz final e frontend pendentes |
 | B3 | API para PostgreSQL | Implementado localmente |
-| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos |
+| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos; consulta da trilha restrita a Administrador |
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
 | B6 | Repositório para runner e artefatos | CI inicial implementada |
 | B7 | Registry para infraestrutura OCI | Não implementado |
@@ -142,12 +142,12 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, scanner, build e proveniência — #25 | Parcial |
 | TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, justificativa, correlation ID e auditoria imutável suficiente — #29, #31, #47, #51, #53, #55, #57, #61 e #65 | Correção descritiva geral auditada; correções institucionais e imutabilidade por privilégios pendentes |
 | TM-07 | Information disclosure | Stack trace, log ou erro expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, logs mínimos e testes de não exposição — #31 e #49 | Parcialmente mitigado; auditoria e logs externos pendentes |
-| TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29, #31, #59 e #63 | Histórico geral restrito a Portaria, Vigilância e Administração; histórico institucional restrito a Transporte e Administração; auditoria de consulta e exportação permanecem pendentes |
+| TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29, #31, #59, #63 e #78 | Históricos operacionais usam políticas próprias; trilha de auditoria restrita a Administrador, paginada e limitada a 90 dias; auditar consultas e exportações permanece pendente de validação |
 | TM-09 | Information disclosure | Segredo entra no Git, imagem, artefato ou Wiki | 2 | 3 | 6 | `.gitignore`, exemplos fictícios, secret scanning e rotação — #25 | Parcial |
 | TM-10 | Information disclosure | PostgreSQL publicado em interface de rede inadequada | 2 | 3 | 6 | Não publicar banco em produção, firewall e rede privada — #25 e implantação futura | Pendente |
-| TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limite de payload, paginação, timeout, rate limiting e índices medidos — #31, #49, #59, #63 e #69 | Limite global de 1 MiB, consultas paginadas e rate limiting por usuário/IP implementados; calibração com carga, limite distribuído e timeout permanecem pendentes |
+| TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limite de payload, paginação, timeout, rate limiting e índices medidos — #31, #49, #59, #63, #69 e #78 | Limite global de 1 MiB, consultas paginadas, auditoria limitada a 90 dias e rate limiting por usuário/IP implementados; calibração com carga, limite distribuído e timeout permanecem pendentes |
 | TM-12 | Denial of service | Falha de rede, API ou PostgreSQL interrompe a portaria | 3 | 3 | 9 | Readiness, monitoramento, backup e contingência reconciliável — #25 e #30 | Pendente |
-| TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, ciclo de contas, correção, consultas históricas e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63, #65 e #73 | Parcialmente mitigado; matriz final pendente |
+| TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, ciclo de contas, correção, consultas históricas, auditoria e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63, #65, #73 e #78 | Parcialmente mitigado; matriz final pendente |
 | TM-14 | Elevation of privilege | Container executado como root amplia impacto de exploração | 2 | 3 | 6 | Usuário não privilegiado, filesystem e capabilities restritos — #25 | Planejado |
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Diretório fora do Git no desenvolvimento; criptografia, acesso restrito, retenção e inventário em produção — #30 e #67 | Parcialmente mitigado no desenvolvimento; produção pendente |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
@@ -166,6 +166,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - desativação e reativação auditadas atomicamente, com auto-desativação proibida e serialização das mudanças para preservar ao menos um Administrador ativo;
 - conta ou perfil inativo rejeitado na validação de toda requisição com JWT, inclusive para token emitido anteriormente;
 - criação administrativa e bootstrap auditados atomicamente, distinguindo ator autenticado de origem de sistema sem duplicar dados da conta;
+- consulta da trilha restrita a Administrador por política dedicada, com filtros, paginação, janela máxima e distinção entre ator humano e sistema;
 - autorização deny-by-default e políticas preliminares testadas;
 - políticas distintas para consultar e gerenciar a frota institucional;
 - políticas distintas para o histórico geral e o histórico institucional;
