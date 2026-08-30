@@ -21,10 +21,10 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno e histórico institucional |
-| Dados | PostgreSQL 16, EF Core 10, dez entidades e dez migrations versionadas |
+| Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional e catálogo de autorizações de eventos |
+| Dados | PostgreSQL 16, EF Core 10, doze entidades e onze migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build e scan de imagens e ensaio local de backup/restauração |
-| Qualidade | 136 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 150 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP, auditoria transacional e consulta administrativa da trilha implementados; matriz final de perfis, retenção e imutabilidade em produção pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
@@ -57,6 +57,10 @@ Os contratos operacionais e administrativos disponíveis são:
 | `GET /institutional-vehicle-usages/open` | lista usos institucionais ainda sem retorno |
 | `GET /institutional-vehicle-usages/history` | pesquisa usos por período, veículo ou motorista para Transporte e Administrador |
 | `POST /institutional-vehicle-usages/{id}/returns` | registra retorno e valida a quilometragem |
+| `GET /event-authorizations` | pesquisa autorizações de eventos por período, nome e estado para os quatro perfis do MVP |
+| `POST /event-authorizations` | cria uma autorização de evento para `SetorTransporte` ou `Administrador` |
+| `PUT /event-authorizations/{id}` | atualiza evento e regras de veículos na mesma transação auditada |
+| `DELETE /event-authorizations/{id}` | cancela logicamente a autorização sem apagar seu histórico |
 
 A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. Vigilante e Administrador podem corrigir objetivo, categoria e observação com justificativa, sem alterar placa, condutor, horários, status ou autoria original. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
 
@@ -401,6 +405,33 @@ curl "http://localhost:5118/institutional-vehicle-usages/history?plate=IFP-1E23&
 
 A consulta histórica aceita placa, identificação da frota, `vehicleId`, `driverId` e período combináveis. Sem período, usa os últimos 30 dias; o intervalo máximo é de 366 dias e cada página contém de 1 a 100 registros. A manutenção da frota é lógica e auditada: inativar bloqueia novas saídas, preserva viagens e não impede o retorno de uma viagem aberta. Critérios adicionais de elegibilidade de motoristas e correção autorizada de viagens permanecem em recortes futuros. A API não cria veículo institucional nem concede autorização implicitamente a partir de uma saída. CNH, validade, categoria, escala, assinatura, imagem e vínculo fixo com veículo não foram copiados das planilhas para o MVP sem necessidade institucional validada.
 
+### Autorizações de eventos
+
+`SetorTransporte` e `Administrador` podem cadastrar, atualizar e cancelar eventos.
+`Porteiro` e `Vigilante` recebem somente leitura para conferir autorizações durante
+a operação. Cada evento informa período, responsável, área, pernoite e de uma a
+cem regras de veículos. Uma regra pode ser uma cota por tipo ou uma placa
+normalizada específica; placa específica sempre representa um único veículo.
+
+```bash
+curl -X POST http://localhost:5118/event-authorizations \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"Evento de demonstração","responsible":"Coordenação responsável","startsAtUtc":"2026-09-10T12:00:00Z","endsAtUtc":"2026-09-11T02:00:00Z","area":"Pátio central","overnightAllowed":true,"vehicleRules":[{"vehicleType":"Automóvel","quantity":1,"plate":"ABC-1D23"},{"vehicleType":"Ônibus","quantity":3}]}'
+
+curl "http://localhost:5118/event-authorizations?fromUtc=2026-09-01T00:00:00Z&toUtc=2026-09-30T23:59:59Z&active=true&page=1&pageSize=25" \
+  -H "Authorization: Bearer $TOKEN"
+
+curl -X DELETE http://localhost:5118/event-authorizations/1 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Sem período, a busca retorna eventos sobrepostos aos próximos 30 dias; o intervalo
+máximo é de 366 dias. A auditoria registra ator, horários, estado, pernoite e
+quantidade de regras, mas não duplica nome, responsável, área, observação ou
+placas. Neste recorte, o catálogo ainda não autoriza automaticamente uma entrada
+nem consome cotas: essa associação permanece na Issue #82 e será implementada
+depois da revisão do catálogo.
+
 ## Migrations
 
 Execute a partir da raiz, com `ConnectionStrings__DefaultConnection` configurada.
@@ -459,7 +490,7 @@ curl -i http://localhost:5118/weatherforecast
 - Os limites podem ser sobrescritos por `RateLimiting__GlobalPermitLimit`, `RateLimiting__GlobalWindowSeconds`, `RateLimiting__LoginPermitLimit` e `RateLimiting__LoginWindowSeconds`.
 - A API não confia em `X-Forwarded-For`; configure proxies conhecidos antes de usar o endereço original encaminhado em produção.
 - Logs HTTP incluem correlação, método, template da rota, status e duração; não incluem valores da URL, query string, corpo nem cabeçalho de autorização.
-- A auditoria dos fluxos geral, institucional e dos catálogos de frota e motoristas registra somente identificadores e estados necessários; não duplica nome, documento, placa, identificação patrimonial, objetivo, observação nem itinerário.
+- A auditoria dos fluxos geral, institucional e dos catálogos de frota, motoristas e eventos registra somente identificadores e estados necessários; não duplica nome, documento, responsável, placa, identificação patrimonial, objetivo, observação nem itinerário.
 - Login bem-sucedido e bloqueio temporário de conta geram auditoria transacional sem e-mail, senha, hash, token ou IP; falha da auditoria impede emitir o token.
 - Desativação e reativação de conta exigem Administrador, são auditadas na mesma transação e registram somente a mudança do estado `active`.
 - Criação administrativa e bootstrap também são auditados atomicamente; a criação HTTP registra o Administrador, enquanto o bootstrap usa ator de sistema nulo sem atribuição falsa.

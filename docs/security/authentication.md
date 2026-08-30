@@ -71,7 +71,7 @@ supervisão e conferência, sem herdar a política de operação ou correção.
 ## Evoluções após a Issue #29
 
 - validar ajustes solicitados durante a homologação da matriz da Issue #75;
-- definir conferência formal, exportação e autorizações de eventos por perfil;
+- definir conferência formal, exportação e associação das autorizações de eventos às entradas;
 - definir redefinição de senha, recuperação e encerramento explícito de sessões;
 - decidir se haverá integração com identidade institucional;
 - avaliar refresh token ou sessão por cookie quando o fluxo do frontend for implementado;

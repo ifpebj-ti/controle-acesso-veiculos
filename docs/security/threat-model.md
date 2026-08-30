@@ -68,6 +68,7 @@ A classificação orienta prioridade, mas não substitui decisão institucional.
 | Dados de pessoas e documentos opcionais | Confidencialidade, finalidade e minimização |
 | Placas, vínculos e histórico de acesso | Confidencialidade e integridade |
 | Itinerários e quilometragens | Integridade e acesso restrito |
+| Eventos, responsáveis, áreas, períodos e autorizações de veículos | Confidencialidade, integridade e finalidade |
 | Credenciais, sessões e hashes | Confidencialidade e resistência a fraude |
 | Perfis e permissões | Integridade e menor privilégio |
 | Auditoria | Integridade, disponibilidade e não repúdio |
@@ -121,9 +122,9 @@ flowchart LR
 | Fronteira | Mudança de confiança | Estado |
 |---|---|---|
 | B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
-| B2 | Código executado no navegador para API | JWT, contratos operacionais, consultas históricas e catálogos de frota e motoristas implementados; matriz final e frontend pendentes |
+| B2 | Código executado no navegador para API | JWT, contratos operacionais, consultas históricas e catálogos de frota, motoristas e eventos implementados; matriz final e frontend pendentes |
 | B3 | API para PostgreSQL | Implementado localmente |
-| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos; consulta da trilha restrita a Administrador |
+| B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos, incluindo eventos; consulta da trilha restrita a Administrador |
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
 | B6 | Repositório para runner e artefatos | CI inicial implementada |
 | B7 | Registry para infraestrutura OCI | Não implementado |
@@ -147,7 +148,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-10 | Information disclosure | PostgreSQL publicado em interface de rede inadequada | 2 | 3 | 6 | Não publicar banco em produção, firewall e rede privada — #25 e implantação futura | Pendente |
 | TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limite de payload, paginação, timeout, rate limiting e índices medidos — #31, #49, #59, #63, #69 e #78 | Limite global de 1 MiB, consultas paginadas, auditoria limitada a 90 dias e rate limiting por usuário/IP implementados; calibração com carga, limite distribuído e timeout permanecem pendentes |
 | TM-12 | Denial of service | Falha de rede, API ou PostgreSQL interrompe a portaria | 3 | 3 | 9 | Readiness, monitoramento, backup e contingência reconciliável — #25 e #30 | Pendente |
-| TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, ciclo de contas, correção, consultas históricas, auditoria e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63, #65, #73 e #78 | Parcialmente mitigado; matriz final pendente |
+| TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, ciclo de contas, correção, consultas históricas, auditoria e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63, #65, #73, #78 e #83 | Catálogo de eventos separa leitura operacional de gestão por Transporte/Administração; matriz final pendente |
 | TM-14 | Elevation of privilege | Container executado como root amplia impacto de exploração | 2 | 3 | 6 | Usuário não privilegiado, filesystem e capabilities restritos — #25 | Planejado |
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Diretório fora do Git no desenvolvimento; criptografia, acesso restrito, retenção e inventário em produção — #30 e #67 | Parcialmente mitigado no desenvolvimento; produção pendente |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
@@ -169,6 +170,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - consulta da trilha restrita a Administrador por política dedicada, com filtros, paginação, janela máxima e distinção entre ator humano e sistema;
 - autorização deny-by-default e políticas preliminares testadas;
 - políticas distintas para consultar e gerenciar a frota institucional;
+- políticas distintas para consultar e gerenciar autorizações de eventos;
 - políticas distintas para o histórico geral e o histórico institucional;
 - política de correção separada da operação e da consulta, limitada a Vigilante e Administrador;
 - contratos operacionais e catálogo inicial protegidos, com validação no servidor e erros previsíveis;
@@ -181,7 +183,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - limite global de 1 MiB para corpos de requisição;
 - rate limiting em memória, sem fila, particionado por usuário autenticado ou endereço da conexão, com política específica para login e health checks isentos;
 - consultas históricas com período máximo de 366 dias, paginação limitada e índices orientados aos filtros temporais;
-- auditoria dos fluxos geral, institucional e cadastro da frota atômica, associada ao operador e sem duplicação de dados pessoais, placa, identificação patrimonial ou itinerário;
+- auditoria dos fluxos geral, institucional e catálogos de frota, motoristas e eventos atômica, associada ao operador e sem duplicação de dados pessoais, placa, identificação patrimonial ou itinerário;
 - correção descritiva exige justificativa e audita apenas os nomes dos campos alterados, sem copiar objetivo ou observação;
 - placa e identificação institucional normalizadas, com unicidade garantida no PostgreSQL;
 - migration de alinhamento falha em vez de inventar dados legados;

@@ -182,6 +182,14 @@ fica restrito à contingência, com reconciliação posterior, evitando dois con
 permanentes e divergentes. O horário de fechamento não é codificado como bloqueio
 fixo, pois existem exceções autorizadas e residentes.
 
+Na Issue #83, autorizações de eventos separam consulta operacional de gestão:
+Porteiro e Vigilante apenas consultam; Setor de Transporte e Administrador criam,
+alteram e cancelam. Período e quantidade possuem limites, placas são normalizadas
+e constraints do PostgreSQL impedem regras duplicadas. Evento, regras e auditoria
+são persistidos atomicamente. A trilha não copia nome, responsável, área,
+observação ou placa. A associação com entradas e o consumo concorrente de cotas
+permanecem fora deste recorte e são rastreados pela Issue #82.
+
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
 
