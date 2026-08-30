@@ -113,6 +113,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.ReviewAccessRecords, policy => policy.RequireRole(
         ProfileNames.Doorman,
         ProfileNames.SecurityGuard,
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.CorrectAccessRecords, policy => policy.RequireRole(
         ProfileNames.SecurityGuard,

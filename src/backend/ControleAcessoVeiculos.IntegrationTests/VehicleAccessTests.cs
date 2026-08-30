@@ -496,7 +496,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         using var transportationClient = factory.CreateClient();
         await AuthenticateClientAsync(transportationClient, transportationEmail, password);
         Assert.Equal(
-            HttpStatusCode.Forbidden,
+            HttpStatusCode.OK,
             (await transportationClient.GetAsync("/access-records/history")).StatusCode);
 
         var (_, doormanEmail) = await CreateUserAsync(ProfileNames.Doorman, password);
@@ -505,6 +505,29 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.Equal(
             HttpStatusCode.OK,
             (await doormanClient.GetAsync("/access-records/history")).StatusCode);
+    }
+
+    [Fact]
+    public async Task TransportationProfileCannotOperateGeneralAccess()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(
+            ProfileNames.TransportationDepartment,
+            password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+
+        var entry = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = "Condutor não autorizado",
+            plate = "TST1A23",
+            objective = "Operação não autorizada",
+            categoryName = AccessCategoryNames.Visitor
+        });
+        var exit = await client.PostAsync("/access-records/1/exit", null);
+
+        Assert.Equal(HttpStatusCode.Forbidden, entry.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, exit.StatusCode);
     }
 
     [Fact]

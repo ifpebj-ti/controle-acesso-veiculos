@@ -59,15 +59,19 @@ Administradores autenticados podem criar outras contas pelo endpoint `POST /user
 | Política | Perfis preliminares |
 |---|---|
 | `access:operate` | Porteiro, Vigilante e Administrador |
+| `access-records:review` | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `transportation:review` | Setor de Transporte e Administrador |
 | `users:manage` | Administrador |
 
-Esses nomes estão centralizados e não pertencem ao Domain. A matriz ainda depende de validação com os responsáveis do processo. Endpoints de negócio só devem usar uma política depois que sua operação estiver confirmada.
+Esses nomes estão centralizados e não pertencem ao Domain. A matriz do MVP foi
+registrada na Issue #75 e continua revisável durante a homologação. O Setor de
+Transporte possui leitura do histórico geral por sua responsabilidade de
+supervisão e conferência, sem herdar a política de operação ou correção.
 
 ## Evoluções após a Issue #29
 
-- validar se Vigilante possui as mesmas operações do Porteiro;
-- validar correção, conferência, consulta, exportação e administração por perfil;
+- validar ajustes solicitados durante a homologação da matriz da Issue #75;
+- definir conferência formal, exportação e autorizações de eventos por perfil;
 - definir redefinição de senha, recuperação e encerramento explícito de sessões;
 - decidir se haverá integração com identidade institucional;
 - avaliar refresh token ou sessão por cookie quando o fluxo do frontend for implementado;
