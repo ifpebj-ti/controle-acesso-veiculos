@@ -243,6 +243,245 @@ public sealed class VehicleAccessTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task AuthorizedUserCanCorrectClosedAccessWithoutRewritingHistory()
+    {
+        const string password = "Test-only-password-123!";
+        var (creatorUserId, creatorEmail) = await CreateUserAsync(
+            ProfileNames.Doorman,
+            password);
+        var (correctorUserId, correctorEmail) = await CreateUserAsync(
+            ProfileNames.SecurityGuard,
+            password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var plate = suffix[..7].ToUpperInvariant();
+        var driverName = $"Condutor {suffix}";
+        using var creatorClient = factory.CreateClient();
+        await AuthenticateClientAsync(creatorClient, creatorEmail, password);
+        var entryResponse = await creatorClient.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName,
+            plate,
+            objective = "Visita inicial",
+            categoryName = AccessCategoryNames.Visitor,
+            observation = "Observação inicial"
+        });
+        var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        entryResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(entry);
+        var exitResponse = await creatorClient.PostAsync(
+            $"/access-records/{entry.Id}/exit",
+            null);
+        var closed = await exitResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        exitResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(closed);
+
+        const string justification = "Categoria e objetivo conferidos pelo vigilante.";
+        using var correctorClient = factory.CreateClient();
+        await AuthenticateClientAsync(correctorClient, correctorEmail, password);
+        var correctionResponse = await correctorClient.PutAsJsonAsync(
+            $"/access-records/{entry.Id}/correction",
+            new
+            {
+                objective = "Entrega autorizada",
+                categoryName = AccessCategoryNames.Delivery,
+                observation = "Correção de teste",
+                justification
+            });
+        var corrected = await correctionResponse.Content
+            .ReadFromJsonAsync<AccessRecordResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, correctionResponse.StatusCode);
+        Assert.NotNull(corrected);
+        Assert.Equal(entry.Id, corrected.Id);
+        Assert.Equal(entry.VehicleId, corrected.VehicleId);
+        Assert.Equal(entry.PersonId, corrected.PersonId);
+        Assert.Equal(entry.Plate, corrected.Plate);
+        Assert.Equal(entry.DriverName, corrected.DriverName);
+        Assert.Equal(entry.EntryAtUtc, corrected.EntryAtUtc, TimeSpan.FromMilliseconds(1));
+        Assert.NotNull(closed.ExitAtUtc);
+        Assert.NotNull(corrected.ExitAtUtc);
+        Assert.Equal(
+            closed.ExitAtUtc.Value,
+            corrected.ExitAtUtc.Value,
+            TimeSpan.FromMilliseconds(1));
+        Assert.Equal("Encerrado", corrected.Status);
+        Assert.Equal(creatorUserId, corrected.CreatedById);
+        Assert.Equal(correctorUserId, corrected.UpdatedById);
+        Assert.Equal("Entrega autorizada", corrected.Objective);
+        Assert.Equal(AccessCategoryNames.Delivery, corrected.CategoryName);
+        Assert.Equal("Correção de teste", corrected.Observation);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var correctionAudit = await dbContext.Auditorias
+            .AsNoTracking()
+            .SingleAsync(item => item.Entidade == nameof(RegistroAcesso) &&
+                item.RegistroId == entry.Id && item.Detalhes == justification);
+        Assert.Equal(TipoAcaoAuditoria.Alteracao, correctionAudit.TipoAcao);
+        Assert.Equal(correctorUserId, correctionAudit.UsuarioId);
+        Assert.Null(correctionAudit.DadosAnteriores);
+        Assert.NotNull(correctionAudit.DadosNovos);
+        using var auditJson = JsonDocument.Parse(correctionAudit.DadosNovos);
+        var changedFields = auditJson.RootElement.GetProperty("changedFields")
+            .EnumerateArray()
+            .Select(item => item.GetString())
+            .Where(item => item is not null)
+            .Cast<string>()
+            .ToArray();
+        Assert.Equal(
+            new[] { "categoryName", "objective", "observation" },
+            changedFields);
+        Assert.DoesNotContain("Visita inicial", correctionAudit.DadosNovos,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Entrega autorizada", correctionAudit.DadosNovos,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Observação inicial", correctionAudit.DadosNovos,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Correção de teste", correctionAudit.DadosNovos,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AccessCorrectionEnforcesDedicatedPermission()
+    {
+        const string password = "Test-only-password-123!";
+        var request = new
+        {
+            objective = "Objetivo corrigido",
+            categoryName = AccessCategoryNames.Visitor,
+            observation = (string?)null,
+            justification = "Justificativa válida para o teste."
+        };
+        using var anonymousClient = factory.CreateClient();
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await anonymousClient.PutAsJsonAsync(
+                "/access-records/1/correction", request)).StatusCode);
+
+        foreach (var profileName in new[]
+                 {
+                     ProfileNames.Doorman,
+                     ProfileNames.TransportationDepartment
+                 })
+        {
+            var (_, email) = await CreateUserAsync(profileName, password);
+            using var client = factory.CreateClient();
+            await AuthenticateClientAsync(client, email, password);
+            Assert.Equal(
+                HttpStatusCode.Forbidden,
+                (await client.PutAsJsonAsync(
+                    "/access-records/1/correction", request)).StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task AccessCorrectionRejectsInvalidMissingAndUnchangedRecords()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Administrator, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Condutor {suffix}",
+            plate = suffix[..7],
+            objective = "Visita técnica",
+            categoryName = AccessCategoryNames.Visitor
+        });
+        var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        entryResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(entry);
+
+        var unchanged = await client.PutAsJsonAsync(
+            $"/access-records/{entry.Id}/correction",
+            new
+            {
+                objective = "Visita técnica",
+                categoryName = AccessCategoryNames.Visitor,
+                observation = (string?)null,
+                justification = "Dados conferidos sem alteração efetiva."
+            });
+        Assert.Equal(HttpStatusCode.Conflict, unchanged.StatusCode);
+
+        var invalid = await client.PutAsJsonAsync(
+            $"/access-records/{entry.Id}/correction",
+            new
+            {
+                objective = "",
+                categoryName = "Desconhecida",
+                observation = new string('x', 1001),
+                justification = "curta"
+            });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+
+        var missing = await client.PutAsJsonAsync(
+            "/access-records/2147483647/correction",
+            new
+            {
+                objective = "Entrega autorizada",
+                categoryName = AccessCategoryNames.Delivery,
+                observation = (string?)null,
+                justification = "Correção válida para registro inexistente."
+            });
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [Fact]
+    public async Task AuditFailureRollsBackAccessCorrection()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Condutor {suffix}",
+            plate = suffix[..7],
+            objective = "Visita original",
+            categoryName = AccessCategoryNames.Visitor,
+            observation = "Observação original"
+        });
+        var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        entryResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(entry);
+
+        await InstallRejectingAuditTriggerAsync();
+        try
+        {
+            var response = await client.PutAsJsonAsync(
+                $"/access-records/{entry.Id}/correction",
+                new
+                {
+                    objective = "Entrega corrigida",
+                    categoryName = AccessCategoryNames.Delivery,
+                    observation = "Observação corrigida",
+                    justification = "Correção que deve ser revertida no teste."
+                });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        finally
+        {
+            await RemoveRejectingAuditTriggerAsync();
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var record = await dbContext.RegistrosAcesso
+            .AsNoTracking()
+            .SingleAsync(item => item.Id == entry.Id);
+        var category = await dbContext.CategoriasAcesso
+            .AsNoTracking()
+            .SingleAsync(item => item.Id == record.CategoriaAcessoId);
+        Assert.Equal("Visita original", record.Objetivo);
+        Assert.Equal("Observação original", record.Observacao);
+        Assert.Equal(AccessCategoryNames.Visitor, category.Nome);
+        Assert.Equal(1, await dbContext.Auditorias.CountAsync(item =>
+            item.Entidade == nameof(RegistroAcesso) && item.RegistroId == entry.Id));
+    }
+
+    [Fact]
     public async Task GeneralAccessHistoryEnforcesDedicatedReviewPermission()
     {
         const string password = "Test-only-password-123!";
@@ -434,14 +673,18 @@ public sealed class VehicleAccessTests(ApiFactory factory)
 
     private sealed record AccessRecordResponse(
         int Id,
+        int VehicleId,
         string Plate,
+        int PersonId,
         string? DriverName,
         string? CategoryName,
+        string? Objective,
         string Status,
         DateTime EntryAtUtc,
         DateTime? ExitAtUtc,
         int CreatedById,
-        int? UpdatedById);
+        int? UpdatedById,
+        string? Observation);
 
     private sealed record AccessHistoryResponse(
         List<AccessRecordResponse> Items,

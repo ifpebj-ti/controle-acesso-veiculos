@@ -23,6 +23,9 @@ public static class VehicleAccessEndpoints
         group.MapGet("/history", SearchHistoryAsync)
             .RequireAuthorization(AuthorizationPolicies.ReviewAccessRecords)
             .WithName("SearchVehicleAccessHistory");
+        group.MapPut("/{accessRecordId:int}/correction", CorrectAsync)
+            .RequireAuthorization(AuthorizationPolicies.CorrectAccessRecords)
+            .WithName("CorrectVehicleAccess");
 
         return endpoints;
     }
@@ -129,6 +132,44 @@ public static class VehicleAccessEndpoints
             : Results.ValidationProblem(result.Errors);
     }
 
+    private static async Task<IResult> CorrectAsync(
+        int accessRecordId,
+        CorrectVehicleAccessRequest request,
+        HttpContext httpContext,
+        VehicleAccessService vehicleAccessService,
+        CancellationToken cancellationToken)
+    {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await vehicleAccessService.CorrectAsync(
+            accessRecordId,
+            new CorrectVehicleAccessCommand(
+                request.Objective,
+                request.CategoryName,
+                request.Observation,
+                request.Justification),
+            actorUserId,
+            cancellationToken);
+
+        return result.Status switch
+        {
+            CorrectVehicleAccessStatus.Success => Results.Ok(result.AccessRecord),
+            CorrectVehicleAccessStatus.NotFound => Results.NotFound(new
+            {
+                Message = "Registro de acesso não encontrado."
+            }),
+            CorrectVehicleAccessStatus.Conflict => Results.Conflict(new
+            {
+                Message = "Não foi possível corrigir o registro de acesso.",
+                Errors = result.Errors
+            }),
+            _ => Results.ValidationProblem(result.Errors)
+        };
+    }
+
 }
 
 public sealed record RegisterVehicleEntryRequest(
@@ -154,3 +195,9 @@ public sealed record SearchVehicleAccessesRequest(
     DateTimeOffset? To = null,
     int Page = 1,
     int PageSize = 25);
+
+public sealed record CorrectVehicleAccessRequest(
+    string Objective,
+    string CategoryName,
+    string? Observation,
+    string Justification);

@@ -205,6 +205,114 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             totalPages);
     }
 
+    public async Task<VehicleAccessCorrectionStoreResult> TryCorrectAsync(
+        int accessRecordId,
+        VehicleAccessCorrectionData correction,
+        int actorUserId,
+        DateTime correctedAtUtc,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            cancellationToken);
+
+        try
+        {
+            var accessRecord = await dbContext.RegistrosAcesso
+                .FromSqlInterpolated(
+                    $"SELECT * FROM dbo.registros_acesso WHERE id = {accessRecordId} FOR UPDATE")
+                .SingleOrDefaultAsync(cancellationToken);
+
+            if (accessRecord is null)
+            {
+                return new(
+                    VehicleAccessCorrectionStoreStatus.NotFound,
+                    null);
+            }
+
+            var category = await dbContext.CategoriasAcesso.SingleOrDefaultAsync(
+                item => item.Nome == correction.CategoryName,
+                cancellationToken);
+
+            if (category is not null && !category.Ativo)
+            {
+                return new(
+                    VehicleAccessCorrectionStoreStatus.Conflict,
+                    null);
+            }
+
+            if (category is null)
+            {
+                category = new CategoriaAcesso(
+                    correction.CategoryName,
+                    "Categoria preliminar do MVP; sujeita à validação do cliente.");
+                dbContext.CategoriasAcesso.Add(category);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            var previousCategoryId = accessRecord.CategoriaAcessoId;
+            var previousObjective = accessRecord.Objetivo;
+            var previousObservation = accessRecord.Observacao;
+            var changed = accessRecord.CorrigirDados(
+                category.Id,
+                correction.Objective,
+                correction.Observation,
+                actorUserId,
+                correctedAtUtc);
+
+            if (!changed)
+            {
+                return new(
+                    VehicleAccessCorrectionStoreStatus.Conflict,
+                    null);
+            }
+
+            var changedFields = new List<string>(3);
+            if (previousCategoryId != accessRecord.CategoriaAcessoId)
+            {
+                changedFields.Add("categoryName");
+            }
+
+            if (previousObjective != accessRecord.Objetivo)
+            {
+                changedFields.Add("objective");
+            }
+
+            if (previousObservation != accessRecord.Observacao)
+            {
+                changedFields.Add("observation");
+            }
+
+            dbContext.Auditorias.Add(CreateCorrectionAudit(
+                accessRecord,
+                actorUserId,
+                correctedAtUtc,
+                correction.Justification,
+                changedFields));
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            var result = await ProjectRecords(dbContext.RegistrosAcesso
+                    .AsNoTracking()
+                    .Where(item => item.Id == accessRecordId))
+                .SingleAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            return new(
+                VehicleAccessCorrectionStoreStatus.Success,
+                result);
+        }
+        catch (DbUpdateException exception)
+            when (exception.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation
+            })
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new(
+                VehicleAccessCorrectionStoreStatus.Conflict,
+                null);
+        }
+    }
+
     public async Task<CloseVehicleAccessResult> TryCloseAsync(
         int accessRecordId,
         int actorUserId,
@@ -285,6 +393,24 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 exitAtUtc = occurredAtUtc
             }),
             detalhes: "Vehicle access exit registered.");
+
+    private static Auditoria CreateCorrectionAudit(
+        RegistroAcesso accessRecord,
+        int actorUserId,
+        DateTime occurredAtUtc,
+        string justification,
+        IReadOnlyCollection<string> changedFields) =>
+        new(
+            occurredAtUtc,
+            TipoAcaoAuditoria.Alteracao,
+            nameof(RegistroAcesso),
+            accessRecord.Id,
+            actorUserId,
+            dadosNovos: JsonSerializer.Serialize(new
+            {
+                changedFields
+            }),
+            detalhes: justification);
 
     private IQueryable<VehicleAccessRecord> ProjectRecords(
         IQueryable<RegistroAcesso> accessRecords) =>

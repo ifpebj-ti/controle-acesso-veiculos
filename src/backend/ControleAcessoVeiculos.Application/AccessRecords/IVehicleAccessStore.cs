@@ -15,6 +15,13 @@ public interface IVehicleAccessStore
         VehicleAccessSearchCriteria criteria,
         CancellationToken cancellationToken);
 
+    Task<VehicleAccessCorrectionStoreResult> TryCorrectAsync(
+        int accessRecordId,
+        VehicleAccessCorrectionData correction,
+        int actorUserId,
+        DateTime correctedAtUtc,
+        CancellationToken cancellationToken);
+
     Task<CloseVehicleAccessResult> TryCloseAsync(
         int accessRecordId,
         int actorUserId,
