@@ -148,6 +148,12 @@ identificação patrimonial ou itinerário. Leitura e gestão da frota usam pol�
 separadas. Auditoria dos demais casos de uso, privilégios separados para outros
 recursos e observabilidade externa continuam pendentes.
 
+Login bem-sucedido e bloqueio temporário de conta também usam falha fechada na
+Issue #71: a alteração do usuário e a auditoria são persistidas juntas, e nenhum
+token é emitido quando essa gravação falha. A trilha contém somente identificador,
+resultado e, no bloqueio, sua expiração; não contém e-mail, credencial, hash,
+token, endereço IP nem tentativa de usuário inexistente.
+
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
 
@@ -257,4 +263,5 @@ Antes de aprovar:
 - #30 — retenção, backup, recuperação e contingência;
 - #31 — validação, erros, logs e auditoria da API;
 - #69 — rate limiting correlacionado da API.
+- #71 — auditoria transacional de login e bloqueio de conta.
 - #67 — backup e restauração verificável do PostgreSQL local.

@@ -24,8 +24,8 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Backend | API .NET 10 com autenticação, contas, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno e histórico institucional |
 | Dados | PostgreSQL 16, EF Core 10, dez entidades e nove migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build e scan de imagens e ensaio local de backup/restauração |
-| Qualidade | 112 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
-| Segurança | JWT, contas individuais, autorização por operação, rate limiting correlacionado, controles HTTP e auditoria transacional dos fluxos geral, institucional e correções descritivas implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
+| Qualidade | 113 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Segurança | JWT, contas individuais, autorização por operação, rate limiting correlacionado, controles HTTP e auditoria transacional dos fluxos operacionais, correções descritivas, login e bloqueio de conta implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
@@ -424,6 +424,7 @@ curl -i http://localhost:5118/weatherforecast
 - A API não confia em `X-Forwarded-For`; configure proxies conhecidos antes de usar o endereço original encaminhado em produção.
 - Logs HTTP incluem correlação, método, template da rota, status e duração; não incluem valores da URL, query string, corpo nem cabeçalho de autorização.
 - A auditoria dos fluxos geral, institucional e dos catálogos de frota e motoristas registra somente identificadores e estados necessários; não duplica nome, documento, placa, identificação patrimonial, objetivo, observação nem itinerário.
+- Login bem-sucedido e bloqueio temporário de conta geram auditoria transacional sem e-mail, senha, hash, token ou IP; falha da auditoria impede emitir o token.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.

@@ -6,5 +6,19 @@ public interface IAuthenticationUserStore
         string normalizedEmail,
         CancellationToken cancellationToken);
 
-    Task SaveChangesAsync(CancellationToken cancellationToken);
+    Task SaveChangesAsync(
+        AuthenticationAudit? audit,
+        CancellationToken cancellationToken);
+}
+
+public sealed record AuthenticationAudit(
+    int UserId,
+    AuthenticationAuditOutcome Outcome,
+    DateTime OccurredAtUtc,
+    DateTime? LockedUntilUtc = null);
+
+public enum AuthenticationAuditOutcome
+{
+    LoginSucceeded = 1,
+    AccountLocked = 2
 }
