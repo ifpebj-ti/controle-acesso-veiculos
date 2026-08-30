@@ -25,7 +25,7 @@ public sealed class BootstrapAdministratorService(
             return BootstrapAdministratorStatus.AlreadyInitialized;
         }
 
-        var result = await createUserAccountService.CreateAsync(
+        var result = await createUserAccountService.BootstrapAsync(
             new CreateUserAccountCommand(
                 name,
                 email,
