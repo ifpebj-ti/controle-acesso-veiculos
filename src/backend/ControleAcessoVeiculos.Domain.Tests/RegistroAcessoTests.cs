@@ -50,6 +50,66 @@ public class RegistroAcessoTests
             registro.RegistrarSaida(Entrada.AddHours(2), atualizadoPorId: 2));
     }
 
+    [Fact]
+    public void CorrigirDados_ShouldUpdateOnlyCorrectableFields()
+    {
+        var registro = CreateRegistro();
+        var originalVehicleId = registro.VeiculoId;
+        var originalPersonId = registro.PessoaId;
+        var originalEntryAt = registro.DataHoraEntrada;
+        var changedAt = DateTime.UtcNow.AddMinutes(1);
+
+        var changed = registro.CorrigirDados(
+            categoriaAcessoId: 2,
+            objetivo: "  Entrega autorizada  ",
+            observacao: "  Conferido pelo vigilante  ",
+            atualizadoPorId: 3,
+            dataAlteracao: changedAt);
+
+        Assert.True(changed);
+        Assert.Equal(2, registro.CategoriaAcessoId);
+        Assert.Equal("Entrega autorizada", registro.Objetivo);
+        Assert.Equal("Conferido pelo vigilante", registro.Observacao);
+        Assert.Equal(3, registro.AtualizadoPorId);
+        Assert.Equal(changedAt, registro.DataAlteracao);
+        Assert.Equal(originalVehicleId, registro.VeiculoId);
+        Assert.Equal(originalPersonId, registro.PessoaId);
+        Assert.Equal(originalEntryAt, registro.DataHoraEntrada);
+        Assert.Equal(StatusRegistroAcesso.Aberto, registro.Status);
+    }
+
+    [Fact]
+    public void CorrigirDados_ShouldNotChangeMetadataWhenValuesAreEqual()
+    {
+        var registro = CreateRegistro();
+
+        var changed = registro.CorrigirDados(
+            registro.CategoriaAcessoId,
+            " Visita técnica ",
+            observacao: null,
+            atualizadoPorId: 3,
+            dataAlteracao: DateTime.UtcNow.AddMinutes(1));
+
+        Assert.False(changed);
+        Assert.Null(registro.AtualizadoPorId);
+        Assert.Null(registro.DataAlteracao);
+    }
+
+    [Fact]
+    public void CorrigirDados_ShouldRejectInvalidArguments()
+    {
+        var registro = CreateRegistro();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => registro.CorrigirDados(
+            0, "Objetivo", null, 2, DateTime.UtcNow));
+        Assert.Throws<ArgumentException>(() => registro.CorrigirDados(
+            1, " ", null, 2, DateTime.UtcNow));
+        Assert.Throws<ArgumentOutOfRangeException>(() => registro.CorrigirDados(
+            1, "Objetivo", null, 0, DateTime.UtcNow));
+        Assert.Throws<ArgumentOutOfRangeException>(() => registro.CorrigirDados(
+            1, "Objetivo", null, 2, default));
+    }
+
     private static RegistroAcesso CreateRegistro() =>
         new(
             veiculoId: 1,

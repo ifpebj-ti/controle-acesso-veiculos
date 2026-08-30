@@ -120,6 +120,56 @@ public sealed class VehicleAccessServiceTests
         Assert.Null(store.LastSearchCriteria);
     }
 
+    [Fact]
+    public async Task CorrectAsync_ShouldValidateBeforeCallingStore()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.CorrectAsync(
+            accessRecordId: 1,
+            new CorrectVehicleAccessCommand(
+                "",
+                "Desconhecida",
+                new string('x', 1001),
+                "curta"),
+            actorUserId: 7);
+
+        Assert.Equal(CorrectVehicleAccessStatus.Invalid, result.Status);
+        Assert.Equal(0, store.CorrectionCalls);
+        Assert.Contains("objective", result.Errors.Keys);
+        Assert.Contains("categoryName", result.Errors.Keys);
+        Assert.Contains("observation", result.Errors.Keys);
+        Assert.Contains("justification", result.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task CorrectAsync_ShouldNormalizeDataAndUseServerContext()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.CorrectAsync(
+            accessRecordId: 5,
+            new CorrectVehicleAccessCommand(
+                "  Entrega autorizada  ",
+                " entrega ",
+                "  Conferido  ",
+                "  Correção conferida pelo vigilante.  "),
+            actorUserId: 7);
+
+        Assert.Equal(CorrectVehicleAccessStatus.Success, result.Status);
+        Assert.Equal(1, store.CorrectionCalls);
+        Assert.Equal(5, store.LastCorrectedAccessRecordId);
+        Assert.Equal("Entrega autorizada", store.LastCorrection!.Objective);
+        Assert.Equal(AccessCategoryNames.Delivery, store.LastCorrection.CategoryName);
+        Assert.Equal("Conferido", store.LastCorrection.Observation);
+        Assert.Equal("Correção conferida pelo vigilante.",
+            store.LastCorrection.Justification);
+        Assert.Equal(7, store.LastCorrectionActorUserId);
+        Assert.Equal(FixedNow.UtcDateTime, store.LastCorrectedAtUtc);
+    }
+
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
@@ -132,6 +182,11 @@ public sealed class VehicleAccessServiceTests
         public int LastActorUserId { get; private set; }
         public DateTime LastEntryAtUtc { get; private set; }
         public VehicleAccessSearchCriteria? LastSearchCriteria { get; private set; }
+        public int CorrectionCalls { get; private set; }
+        public int LastCorrectedAccessRecordId { get; private set; }
+        public VehicleAccessCorrectionData? LastCorrection { get; private set; }
+        public int LastCorrectionActorUserId { get; private set; }
+        public DateTime LastCorrectedAtUtc { get; private set; }
 
         public Task<VehicleAccessStoreRegistration> TryRegisterEntryAsync(
             VehicleEntryData entry,
@@ -173,6 +228,37 @@ public sealed class VehicleAccessServiceTests
             LastSearchCriteria = criteria;
             return Task.FromResult(new PagedVehicleAccessResult([], criteria.Page,
                 criteria.PageSize, 0, 0));
+        }
+
+        public Task<VehicleAccessCorrectionStoreResult> TryCorrectAsync(
+            int accessRecordId,
+            VehicleAccessCorrectionData correction,
+            int actorUserId,
+            DateTime correctedAtUtc,
+            CancellationToken cancellationToken)
+        {
+            CorrectionCalls++;
+            LastCorrectedAccessRecordId = accessRecordId;
+            LastCorrection = correction;
+            LastCorrectionActorUserId = actorUserId;
+            LastCorrectedAtUtc = correctedAtUtc;
+
+            return Task.FromResult(new VehicleAccessCorrectionStoreResult(
+                VehicleAccessCorrectionStoreStatus.Success,
+                new VehicleAccessRecord(
+                    accessRecordId,
+                    2,
+                    "ABC1D23",
+                    3,
+                    "Condutor",
+                    correction.CategoryName,
+                    correction.Objective,
+                    correctedAtUtc.AddHours(-1),
+                    null,
+                    "Aberto",
+                    4,
+                    actorUserId,
+                    correction.Observation)));
         }
 
         public Task<CloseVehicleAccessResult> TryCloseAsync(
