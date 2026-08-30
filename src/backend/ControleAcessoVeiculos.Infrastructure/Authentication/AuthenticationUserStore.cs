@@ -1,4 +1,7 @@
+using System.Text.Json;
 using ControleAcessoVeiculos.Application.Authentication;
+using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,6 +31,44 @@ public sealed class AuthenticationUserStore(ControleAcessoVeiculosDbContext dbCo
         return new AuthenticationUser(user, profile.Nome, profile.Ativo);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
-        dbContext.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(
+        AuthenticationAudit? audit,
+        CancellationToken cancellationToken)
+    {
+        if (audit is not null)
+        {
+            dbContext.Auditorias.Add(CreateAudit(audit));
+        }
+
+        return dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static Auditoria CreateAudit(AuthenticationAudit audit) =>
+        new(
+            audit.OccurredAtUtc,
+            TipoAcaoAuditoria.Login,
+            nameof(Usuario),
+            audit.UserId,
+            audit.UserId,
+            dadosNovos: SerializeAuditState(audit),
+            detalhes: audit.Outcome switch
+            {
+                AuthenticationAuditOutcome.LoginSucceeded =>
+                    "Authentication succeeded.",
+                AuthenticationAuditOutcome.AccountLocked =>
+                    "Account temporarily locked after failed authentication attempts.",
+                _ => throw new ArgumentOutOfRangeException(nameof(audit))
+            });
+
+    private static string SerializeAuditState(AuthenticationAudit audit) =>
+        audit.Outcome == AuthenticationAuditOutcome.AccountLocked
+            ? JsonSerializer.Serialize(new
+            {
+                outcome = audit.Outcome.ToString(),
+                lockedUntilUtc = audit.LockedUntilUtc
+            })
+            : JsonSerializer.Serialize(new
+            {
+                outcome = audit.Outcome.ToString()
+            });
 }

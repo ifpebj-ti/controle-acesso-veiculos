@@ -36,12 +36,24 @@ public sealed class LoginService(
                 now,
                 MaximumFailedAttempts,
                 LockoutDuration);
-            await userStore.SaveChangesAsync(cancellationToken);
+            var audit = authenticationUser.User.BloqueadoAte > now
+                ? new AuthenticationAudit(
+                    authenticationUser.User.Id,
+                    AuthenticationAuditOutcome.AccountLocked,
+                    now,
+                    authenticationUser.User.BloqueadoAte)
+                : null;
+            await userStore.SaveChangesAsync(audit, cancellationToken);
             return LoginResult.InvalidCredentials();
         }
 
         authenticationUser.User.RegistrarAutenticacaoBemSucedida(now);
-        await userStore.SaveChangesAsync(cancellationToken);
+        await userStore.SaveChangesAsync(
+            new AuthenticationAudit(
+                authenticationUser.User.Id,
+                AuthenticationAuditOutcome.LoginSucceeded,
+                now),
+            cancellationToken);
 
         var token = accessTokenService.Issue(
             authenticationUser.User.Id,
