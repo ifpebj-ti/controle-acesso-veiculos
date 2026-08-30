@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 1.6
+**Versão:** 1.7
 
 **Data de referência:** 29 de agosto de 2026
 
-**Rastreabilidade:** Issue #26
+**Rastreabilidade:** Issues #26 e #67
 
 ## Objetivo e limites
 
@@ -25,7 +25,7 @@ Não são considerados implementados:
 - demais endpoints funcionais além dos fluxos geral, correção descritiva, institucional, consultas históricas e catálogos de frota e motoristas;
 - ambiente de homologação ou produção;
 - OCI, domínio, HTTPS e proxy reverso;
-- backup, recuperação e contingência;
+- backup protegido de produção, política de recuperação e contingência;
 - observabilidade e resposta a incidentes.
 
 O documento deve ser atualizado quando esses componentes forem projetados ou
@@ -98,7 +98,7 @@ flowchart LR
     Api[API ASP.NET Core]
     Db[(PostgreSQL)]
     Logs[Logs e auditoria]
-    Backup[(Backup futuro)]
+    Backup[(Backup local verificável)]
     GitHub[GitHub e Actions]
     Registry[Registry futuro]
     Oci[OCI futura]
@@ -124,7 +124,7 @@ flowchart LR
 | B2 | Código executado no navegador para API | JWT, contratos operacionais, consultas históricas e catálogos de frota e motoristas implementados; matriz final e frontend pendentes |
 | B3 | API para PostgreSQL | Implementado localmente |
 | B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada nos fluxos geral, correção descritiva, institucional e catálogos |
-| B5 | Banco para backup | Não implementado |
+| B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
 | B6 | Repositório para runner e artefatos | CI inicial implementada |
 | B7 | Registry para infraestrutura OCI | Não implementado |
 
@@ -138,7 +138,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio e testes — #29 | Parcialmente mitigado; recuperação e ciclo de conta pendentes |
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
 | TM-03 | Tampering | Cliente altera IDs, status, horários, quilometragem ou identificação de frota enviados à API | 3 | 3 | 9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor e unicidade transacional — #29, #31, #47, #53, #55, #61 e #65 | Correção geral limitada a campos descritivos; identidade, tempo e estado permanecem imutáveis; correções institucionais pendentes |
-| TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários | Planejado |
+| TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67 | Ensaio local de recuperação implementado; controles de produção pendentes |
 | TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, scanner, build e proveniência — #25 | Parcial |
 | TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, justificativa, correlation ID e auditoria imutável suficiente — #29, #31, #47, #51, #53, #55, #57, #61 e #65 | Correção descritiva geral auditada; correções institucionais e imutabilidade por privilégios pendentes |
 | TM-07 | Information disclosure | Stack trace, log ou erro expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, logs mínimos e testes de não exposição — #31 e #49 | Parcialmente mitigado; auditoria e logs externos pendentes |
@@ -149,9 +149,9 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-12 | Denial of service | Falha de rede, API ou PostgreSQL interrompe a portaria | 3 | 3 | 9 | Readiness, monitoramento, backup e contingência reconciliável — #25 e #30 | Pendente |
 | TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, correção, consultas históricas e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63 e #65 | Parcialmente mitigado; matriz final pendente |
 | TM-14 | Elevation of privilege | Container executado como root amplia impacto de exploração | 2 | 3 | 6 | Usuário não privilegiado, filesystem e capabilities restritos — #25 | Planejado |
-| TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Criptografia, acesso restrito, retenção e inventário — #30 | Planejado |
+| TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Diretório fora do Git no desenvolvimento; criptografia, acesso restrito, retenção e inventário em produção — #30 e #67 | Parcialmente mitigado no desenvolvimento; produção pendente |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
-| TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup, upgrade/downgrade e falha explícita — #23 e #30 | Parcialmente mitigado |
+| TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup com restauração verificada, upgrade/downgrade e falha explícita — #23, #30 e #67 | Backup/restauração local e testes de migration implementados; processo de produção pendente |
 | TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31, #51, #53, #55, #57 e #65 | Mitigado nos fluxos geral, correção descritiva, institucional e catálogos; alerta e demais operações pendentes |
 
 ## Controles existentes verificados
@@ -180,6 +180,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - migration de alinhamento falha em vez de inventar dados legados;
 - documento pessoal opcional e dados de teste fictícios;
 - `.env` ignorado e exemplos sem segredo real;
+- backup lógico local em formato custom, fora do Git, validado por restauração completa em banco temporário isolado;
 - branch protegida, Pull Requests e CI;
 - testes unitários e integração PostgreSQL no PR #28;
 - auditoria de vulnerabilidades NuGet executada na #23 e #24.
@@ -187,7 +188,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 ## Risco residual atual
 
 O risco residual permanece alto para ciclo de identidade, autorização definitiva,
-auditoria dos demais fluxos, imutabilidade e continuidade porque esses controles ainda estão incompletos. Portanto, a
+auditoria dos demais fluxos, imutabilidade e continuidade de produção porque esses controles ainda estão incompletos. O ensaio local de restauração reduz o risco de um dump inválido, mas não substitui armazenamento externo protegido, política institucional nem contingência. Portanto, a
 API atual não deve ser tratada como pronta para exposição pública ou produção.
 
 ## Responsabilidades

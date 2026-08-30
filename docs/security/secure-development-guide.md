@@ -111,6 +111,20 @@ Referências:
 - testar banco limpo, upgrade, downgrade e novo upgrade;
 - exigir backup antes de migration de risco.
 
+### Backup e recuperação
+
+- tratar todo dump como dado confidencial, mesmo quando criado localmente;
+- manter dumps fora do Git e não transmiti-los por canais pessoais;
+- validar o arquivo com uma restauração completa em banco isolado;
+- nunca restaurar sobre o banco operacional por padrão;
+- limpar bancos e arquivos temporários após o ensaio;
+- não confundir o ensaio local da Issue #67 com backup protegido de produção;
+- definir com a instituição retenção, criptografia, responsáveis, RPO e RTO antes
+  da implantação real, conforme a Issue #30.
+
+O procedimento local reproduzível está em
+[`infrastructure/database/README.md`](../../infrastructure/database/README.md).
+
 ## Auditoria e logs
 
 Auditoria de negócio deve registrar quem, quando, qual entidade, qual registro e
@@ -223,3 +237,4 @@ Antes de aprovar:
 - #29 — autenticação e autorização;
 - #30 — retenção, backup, recuperação e contingência;
 - #31 — validação, erros, logs e auditoria da API.
+- #67 — backup e restauração verificável do PostgreSQL local.
