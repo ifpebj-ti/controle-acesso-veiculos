@@ -26,19 +26,56 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains("20260829110009_AddInstitutionalDriverAuthorization", migrations);
         Assert.Contains("20260829154230_AddInstitutionalUsageHistoryIndexes", migrations);
         Assert.Contains("20260830065224_AllowSystemAuditActors", migrations);
+        Assert.Contains("20260830202007_AddEventAuthorizationCatalog", migrations);
 
         await dbContext.Database.OpenConnectionAsync();
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText = """
-            SELECT COUNT(*)
+            SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'dbo'
-              AND table_type = 'BASE TABLE';
+              AND table_type = 'BASE TABLE'
+            ORDER BY table_name;
             """;
+        var tables = new List<string>();
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                tables.Add(reader.GetString(0));
+            }
+        }
 
-        var tableCount = (long)(await command.ExecuteScalarAsync())!;
+        Assert.Equal(12, tables.Count);
+        Assert.Contains("eventos_acesso", tables);
+        Assert.Contains("autorizacoes_veiculos_eventos", tables);
 
-        Assert.Equal(10, tableCount);
+        command.CommandText = """
+            SELECT constraint_name
+            FROM information_schema.table_constraints
+            WHERE table_schema = 'dbo'
+              AND table_name IN ('eventos_acesso', 'autorizacoes_veiculos_eventos')
+            UNION ALL
+            SELECT indexname
+            FROM pg_indexes
+            WHERE schemaname = 'dbo'
+              AND tablename = 'autorizacoes_veiculos_eventos';
+            """;
+        var constraints = new List<string>();
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                constraints.Add(reader.GetString(0));
+            }
+        }
+
+        Assert.Contains("ck_eventos_acesso_periodo", constraints);
+        Assert.Contains("ck_autorizacoes_veiculos_eventos_quantidade", constraints);
+        Assert.Contains("ux_autorizacoes_veiculos_eventos_evento_placa", constraints);
+        Assert.Contains(
+            "ux_autorizacoes_veiculos_eventos_evento_tipo_sem_placa",
+            constraints);
     }
 
     [Fact]
