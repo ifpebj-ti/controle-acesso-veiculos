@@ -31,6 +31,19 @@ public sealed class AuthenticationUserStore(ControleAcessoVeiculosDbContext dbCo
         return new AuthenticationUser(user, profile.Nome, profile.Ativo);
     }
 
+    public Task<bool> IsActiveAsync(
+        int userId,
+        CancellationToken cancellationToken) =>
+        dbContext.Usuarios
+            .AsNoTracking()
+            .Where(user => user.Id == userId && user.Ativo)
+            .Join(
+                dbContext.Perfis.AsNoTracking().Where(profile => profile.Ativo),
+                user => user.PerfilId,
+                profile => profile.Id,
+                (_, _) => true)
+            .AnyAsync(cancellationToken);
+
     public Task SaveChangesAsync(
         AuthenticationAudit? audit,
         CancellationToken cancellationToken)

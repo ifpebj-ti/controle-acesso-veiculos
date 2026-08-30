@@ -10,6 +10,17 @@ public interface IUserAccountStore
         string passwordHash,
         string profileName,
         CancellationToken cancellationToken);
+
+    Task<PagedUserAccountResult> SearchAsync(
+        UserAccountSearchCriteria criteria,
+        CancellationToken cancellationToken);
+
+    Task<UserAccountStoreStateStatus> TrySetActiveAsync(
+        int userId,
+        bool active,
+        int actorUserId,
+        DateTime updatedAtUtc,
+        CancellationToken cancellationToken);
 }
 
 public sealed record CreatedUserAccount(int UserId, string Email, string ProfileName);

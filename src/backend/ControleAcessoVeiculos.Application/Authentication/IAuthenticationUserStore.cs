@@ -6,6 +6,10 @@ public interface IAuthenticationUserStore
         string normalizedEmail,
         CancellationToken cancellationToken);
 
+    Task<bool> IsActiveAsync(
+        int userId,
+        CancellationToken cancellationToken);
+
     Task SaveChangesAsync(
         AuthenticationAudit? audit,
         CancellationToken cancellationToken);

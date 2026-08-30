@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 1.9
+**Versão:** 2.0
 
-**Data de referência:** 29 de agosto de 2026
+**Data de referência:** 30 de agosto de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69 e #71
+**Rastreabilidade:** Issues #26, #67, #69, #71 e #73
 
 ## Objetivo e limites
 
@@ -135,7 +135,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 
 | ID | STRIDE | Cenário | P | I | Nível | Mitigação e rastreabilidade | Estado |
 |---|---|---|---:|---:|---:|---|---|
-| TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio, auditoria mínima e testes — #29 e #71 | Parcialmente mitigado; recuperação e ciclo de conta pendentes |
+| TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio, ciclo administrativo, auditoria mínima e testes — #29, #71 e #73 | Parcialmente mitigado; recuperação de acesso e validação operacional pendentes |
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
 | TM-03 | Tampering | Cliente altera IDs, status, horários, quilometragem ou identificação de frota enviados à API | 3 | 3 | 9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor e unicidade transacional — #29, #31, #47, #53, #55, #61 e #65 | Correção geral limitada a campos descritivos; identidade, tempo e estado permanecem imutáveis; correções institucionais pendentes |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67 | Ensaio local de recuperação implementado; controles de produção pendentes |
@@ -147,12 +147,12 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-10 | Information disclosure | PostgreSQL publicado em interface de rede inadequada | 2 | 3 | 6 | Não publicar banco em produção, firewall e rede privada — #25 e implantação futura | Pendente |
 | TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limite de payload, paginação, timeout, rate limiting e índices medidos — #31, #49, #59, #63 e #69 | Limite global de 1 MiB, consultas paginadas e rate limiting por usuário/IP implementados; calibração com carga, limite distribuído e timeout permanecem pendentes |
 | TM-12 | Denial of service | Falha de rede, API ou PostgreSQL interrompe a portaria | 3 | 3 | 9 | Readiness, monitoramento, backup e contingência reconciliável — #25 e #30 | Pendente |
-| TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, correção, consultas históricas e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63 e #65 | Parcialmente mitigado; matriz final pendente |
+| TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, ciclo de contas, correção, consultas históricas e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63, #65 e #73 | Parcialmente mitigado; matriz final pendente |
 | TM-14 | Elevation of privilege | Container executado como root amplia impacto de exploração | 2 | 3 | 6 | Usuário não privilegiado, filesystem e capabilities restritos — #25 | Planejado |
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Diretório fora do Git no desenvolvimento; criptografia, acesso restrito, retenção e inventário em produção — #30 e #67 | Parcialmente mitigado no desenvolvimento; produção pendente |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
 | TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup com restauração verificada, upgrade/downgrade e falha explícita — #23, #30 e #67 | Backup/restauração local e testes de migration implementados; processo de produção pendente |
-| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31, #51, #53, #55, #57, #65 e #71 | Mitigado nos fluxos geral, correção descritiva, institucional, catálogos, login e bloqueio; alerta e demais operações pendentes |
+| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31, #51, #53, #55, #57, #65, #71 e #73 | Mitigado nos fluxos geral, correção descritiva, institucional, catálogos, login, bloqueio e estado da conta; alerta e demais operações pendentes |
 
 ## Controles existentes verificados
 
@@ -162,6 +162,9 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - autenticação JWT com validade curta, chave externa e validação de emissor e audiência;
 - hash de senha com salt e derivação, bloqueio temporário e resposta uniforme de login;
 - login bem-sucedido e bloqueio temporário auditados atomicamente sem credenciais, token, e-mail ou IP, com emissão de token impedida quando a auditoria falha;
+- consulta de contas paginada e restrita a Administrador, sem exposição de hash;
+- desativação e reativação auditadas atomicamente, com auto-desativação proibida e serialização das mudanças para preservar ao menos um Administrador ativo;
+- conta ou perfil inativo rejeitado na validação de toda requisição com JWT, inclusive para token emitido anteriormente;
 - autorização deny-by-default e políticas preliminares testadas;
 - políticas distintas para consultar e gerenciar a frota institucional;
 - políticas distintas para o histórico geral e o histórico institucional;
