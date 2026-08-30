@@ -42,6 +42,9 @@ artifacts/
 *.cover
 *.coverage
 
+# Local database backups
+infrastructure/database/backups/
+
 # Logs
 logs/
 *.log

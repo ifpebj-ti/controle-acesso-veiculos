@@ -1,0 +1,74 @@
+name: CI - Database recovery
+
+on:
+  push:
+    paths:
+      - ".github/workflows/ci-database-recovery.yml"
+      - "infrastructure/database/**"
+      - "infrastructure/docker/docker-compose.yml"
+      - "infrastructure/docker/.env.example"
+  pull_request:
+    paths:
+      - ".github/workflows/ci-database-recovery.yml"
+      - "infrastructure/database/**"
+      - "infrastructure/docker/docker-compose.yml"
+      - "infrastructure/docker/.env.example"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-recovery-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backup-and-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configure local database example
+        shell: pwsh
+        run: Copy-Item infrastructure/docker/.env.example infrastructure/docker/.env
+
+      - name: Start PostgreSQL
+        run: >-
+          docker compose
+          --file infrastructure/docker/docker-compose.yml
+          up --detach --wait postgresql
+
+      - name: Create representative schema
+        run: >-
+          docker compose
+          --file infrastructure/docker/docker-compose.yml
+          exec -T postgresql
+          psql
+          --username controle_acesso_app
+          --dbname controle_acesso
+          --set ON_ERROR_STOP=1
+          --command "CREATE SCHEMA dbo;
+          CREATE TABLE dbo.pessoas (id integer PRIMARY KEY);
+          CREATE TABLE dbo.registros_acesso (id integer PRIMARY KEY);
+          CREATE TABLE dbo.auditorias (id integer PRIMARY KEY);"
+
+      - name: Create and verify backup
+        shell: pwsh
+        run: |
+          ./infrastructure/database/Backup-PostgreSql.ps1
+          $backup = Get-ChildItem infrastructure/database/backups -Filter '*.dump' |
+            Sort-Object LastWriteTimeUtc -Descending |
+            Select-Object -First 1
+          if (-not $backup) {
+            throw 'The backup script did not create a dump.'
+          }
+          ./infrastructure/database/Test-PostgreSqlRestore.ps1 -BackupPath $backup.FullName
+
+      - name: Stop PostgreSQL
+        if: always()
+        run: >-
+          docker compose
+          --file infrastructure/docker/docker-compose.yml
+          down --volumes --remove-orphans

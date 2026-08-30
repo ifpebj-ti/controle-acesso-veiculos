@@ -23,10 +23,10 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
 | Backend | API .NET 10 com autenticação, contas, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno e histórico institucional |
 | Dados | PostgreSQL 16, EF Core 10, dez entidades e nove migrations versionadas |
-| Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados e CI com build e scan de imagens |
+| Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build e scan de imagens e ensaio local de backup/restauração |
 | Qualidade | 108 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, autorização por operação, controles HTTP e auditoria transacional dos fluxos geral, institucional e correções descritivas implementados; matriz final de perfis e auditoria dos demais fluxos pendentes |
-| Deploy | Homologação, OCI, HTTPS, backup, observabilidade e deploy ainda não configurados |
+| Deploy | Homologação, OCI, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
 
@@ -101,7 +101,9 @@ O Domain não referencia Entity Framework Core. O `DbContext`, as configuraçõe
 controle-acesso-veiculos/
 ├── .github/                  # workflows, templates e instruções
 ├── docs/                     # convenções e segurança versionada
-├── infrastructure/docker/    # Dockerfiles, Compose e configuração de exemplo
+├── infrastructure/
+│   ├── database/             # backup e restauração verificável do PostgreSQL local
+│   └── docker/               # Dockerfiles, Compose e configuração de exemplo
 ├── src/backend/
 │   ├── ControleAcessoVeiculos.API/
 │   ├── ControleAcessoVeiculos.Application/
@@ -170,6 +172,29 @@ docker compose down
 ```
 
 Não use `docker compose down --volumes` sem confirmar que os dados locais podem ser descartados.
+
+### Backup e restauração local
+
+Com o PostgreSQL saudável e as migrations aplicadas, crie um dump lógico em
+formato custom:
+
+```powershell
+./infrastructure/database/Backup-PostgreSql.ps1
+```
+
+Em seguida, comprove que ele pode ser restaurado:
+
+```powershell
+./infrastructure/database/Test-PostgreSqlRestore.ps1 `
+  -BackupPath ./infrastructure/database/backups/controle-acesso-AAAAmmddTHHMMSSfffZ.dump
+```
+
+A verificação usa um banco temporário isolado e o remove ao terminar; ela nunca
+substitui o banco operacional. Os dumps ficam em um diretório ignorado pelo Git,
+mas podem conter dados pessoais e não são adequados para armazenamento de
+produção sem criptografia e controle de acesso. Consulte o
+[procedimento completo](infrastructure/database/README.md) e as decisões ainda
+pendentes na Issue #30.
 
 ## Desenvolvimento local
 
