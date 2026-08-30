@@ -83,6 +83,42 @@ public sealed record SearchVehicleAccessesResult(
     PagedVehicleAccessResult? Result,
     IReadOnlyDictionary<string, string[]> Errors);
 
+public sealed record CorrectVehicleAccessCommand(
+    string Objective,
+    string CategoryName,
+    string? Observation,
+    string Justification);
+
+public sealed record VehicleAccessCorrectionData(
+    string Objective,
+    string CategoryName,
+    string? Observation,
+    string Justification);
+
+public enum CorrectVehicleAccessStatus
+{
+    Success,
+    Invalid,
+    NotFound,
+    Conflict
+}
+
+public sealed record CorrectVehicleAccessResult(
+    CorrectVehicleAccessStatus Status,
+    VehicleAccessRecord? AccessRecord,
+    IReadOnlyDictionary<string, string[]> Errors);
+
+public enum VehicleAccessCorrectionStoreStatus
+{
+    Success,
+    NotFound,
+    Conflict
+}
+
+public sealed record VehicleAccessCorrectionStoreResult(
+    VehicleAccessCorrectionStoreStatus Status,
+    VehicleAccessRecord? AccessRecord);
+
 public enum RegisterVehicleEntryStatus
 {
     Success,

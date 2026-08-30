@@ -115,6 +115,56 @@ public sealed class VehicleAccessService(
             cancellationToken);
     }
 
+    public async Task<CorrectVehicleAccessResult> CorrectAsync(
+        int accessRecordId,
+        CorrectVehicleAccessCommand command,
+        int actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(accessRecordId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(actorUserId);
+        var errors = ValidateCorrection(command);
+
+        if (errors.Count > 0)
+        {
+            return new(
+                CorrectVehicleAccessStatus.Invalid,
+                null,
+                errors);
+        }
+
+        AccessCategoryNames.TryGetCanonicalName(command.CategoryName, out var categoryName);
+        var stored = await vehicleAccessStore.TryCorrectAsync(
+            accessRecordId,
+            new VehicleAccessCorrectionData(
+                command.Objective.Trim(),
+                categoryName,
+                NormalizeOptional(command.Observation),
+                command.Justification.Trim()),
+            actorUserId,
+            timeProvider.GetUtcNow().UtcDateTime,
+            cancellationToken);
+
+        return stored.Status switch
+        {
+            VehicleAccessCorrectionStoreStatus.Success => new(
+                CorrectVehicleAccessStatus.Success,
+                stored.AccessRecord,
+                new Dictionary<string, string[]>()),
+            VehicleAccessCorrectionStoreStatus.NotFound => new(
+                CorrectVehicleAccessStatus.NotFound,
+                null,
+                new Dictionary<string, string[]>()),
+            _ => new(
+                CorrectVehicleAccessStatus.Conflict,
+                null,
+                new Dictionary<string, string[]>
+                {
+                    ["accessRecord"] = ["A correção não altera os dados do registro."]
+                })
+        };
+    }
+
     private static Dictionary<string, string[]> Validate(
         RegisterVehicleEntryCommand command,
         int currentYear)
@@ -228,6 +278,30 @@ public sealed class VehicleAccessService(
             !TryParseStatus(command.Status, out _))
         {
             errors["status"] = ["Informe um status de acesso válido."];
+        }
+
+        return errors;
+    }
+
+    private static Dictionary<string, string[]> ValidateCorrection(
+        CorrectVehicleAccessCommand command)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        ValidateRequired(command.Objective, 500, "objective", "objetivo", errors);
+
+        if (!AccessCategoryNames.TryGetCanonicalName(command.CategoryName, out _))
+        {
+            errors["categoryName"] = ["Informe uma categoria suportada pelo MVP."];
+        }
+
+        ValidateOptional(command.Observation, 1000, "observation", errors);
+
+        if (string.IsNullOrWhiteSpace(command.Justification) ||
+            command.Justification.Trim().Length is < 10 or > 500)
+        {
+            errors["justification"] =
+                ["A justificativa é obrigatória e deve possuir entre 10 e 500 caracteres."];
         }
 
         return errors;
