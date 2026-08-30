@@ -77,6 +77,27 @@ builder.Services
             NameClaimType = "email",
             RoleClaimType = System.Security.Claims.ClaimTypes.Role
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                if (context.Principal is null ||
+                    !AuthenticatedUser.TryGetId(context.Principal, out var userId))
+                {
+                    context.Fail("Invalid token subject.");
+                    return;
+                }
+
+                var userStore = context.HttpContext.RequestServices
+                    .GetRequiredService<IAuthenticationUserStore>();
+                if (!await userStore.IsActiveAsync(
+                        userId,
+                        context.HttpContext.RequestAborted))
+                {
+                    context.Fail("Inactive user account.");
+                }
+            }
+        };
     });
 
 builder.Services.AddAuthorizationBuilder()
@@ -127,6 +148,7 @@ builder.Services.AddScoped<IInstitutionalDriverStore, InstitutionalDriverStore>(
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<CreateUserAccountService>();
+builder.Services.AddScoped<UserAccountLifecycleService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
@@ -186,6 +208,7 @@ app.MapVehicleAccessEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
 app.MapInstitutionalDriverEndpoints();
+app.MapUserAccountEndpoints();
 
 app.MapPost("/auth/login", async (
     LoginRequest request,
@@ -217,38 +240,6 @@ app.MapPost("/auth/login", async (
 .AllowAnonymous()
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
 .WithName("Login");
-
-app.MapPost("/users", async (
-    CreateUserRequest request,
-    CreateUserAccountService createUserAccountService,
-    CancellationToken cancellationToken) =>
-{
-    var result = await createUserAccountService.CreateAsync(
-        new CreateUserAccountCommand(
-            request.Name,
-            request.Email,
-            request.Password,
-            request.ProfileName),
-        cancellationToken);
-
-    return result.Status switch
-    {
-        CreateUserAccountStatus.Success => Results.Created(
-            $"/users/{result.UserId}",
-            new CreateUserResponse(
-                result.UserId!.Value,
-                result.Email!,
-                result.ProfileName!)),
-        CreateUserAccountStatus.Conflict => Results.Conflict(new
-        {
-            Message = "Não foi possível criar a conta.",
-            Errors = result.Errors
-        }),
-        _ => Results.ValidationProblem(result.Errors)
-    };
-})
-.RequireAuthorization(AuthorizationPolicies.ManageUsers)
-.WithName("CreateUser");
 
 var summaries = new[]
 {
@@ -326,9 +317,3 @@ public partial class Program
 
 public sealed record LoginRequest(string Email, string Password);
 public sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
-public sealed record CreateUserRequest(
-    string Name,
-    string Email,
-    string Password,
-    string ProfileName);
-public sealed record CreateUserResponse(int Id, string Email, string ProfileName);

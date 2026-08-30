@@ -76,6 +76,14 @@ public class Usuario
         DataAlteracao = agoraUtc;
     }
 
+    public void Reativar(DateTime agoraUtc)
+    {
+        Ativo = true;
+        TentativasFalhas = 0;
+        BloqueadoAte = null;
+        DataAlteracao = agoraUtc;
+    }
+
     public static string NormalizarEmail(string email)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
