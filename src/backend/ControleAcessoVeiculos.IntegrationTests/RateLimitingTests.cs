@@ -5,8 +5,11 @@ using System.Text.Json;
 using ControleAcessoVeiculos.API.Middleware;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
+using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ControleAcessoVeiculos.IntegrationTests;
@@ -71,8 +74,8 @@ public sealed class RateLimitingTests(ApiFactory factory)
         using var limitedFactory = CreateLimitedFactory(
             globalPermitLimit: 1,
             loginPermitLimit: 100);
-        var firstToken = IssueToken(limitedFactory, 101);
-        var secondToken = IssueToken(limitedFactory, 202);
+        var firstToken = await CreateUserAndIssueTokenAsync(limitedFactory);
+        var secondToken = await CreateUserAndIssueTokenAsync(limitedFactory);
         using var firstClient = CreateAuthenticatedClient(limitedFactory, firstToken);
         using var secondClient = CreateAuthenticatedClient(limitedFactory, secondToken);
 
@@ -123,16 +126,43 @@ public sealed class RateLimitingTests(ApiFactory factory)
             password = "Invalid-test-password-123!"
         });
 
-    private static string IssueToken(
-        WebApplicationFactory<Program> limitedFactory,
-        int userId)
+    private static async Task<string> CreateUserAndIssueTokenAsync(
+        WebApplicationFactory<Program> limitedFactory)
     {
         using var scope = limitedFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var passwordHashService = scope.ServiceProvider
+            .GetRequiredService<IPasswordHashService>();
         var tokenService = scope.ServiceProvider.GetRequiredService<IAccessTokenService>();
+        var profile = await dbContext.Perfis.SingleOrDefaultAsync(item =>
+            item.Nome == ProfileNames.Administrator);
+
+        if (profile is null)
+        {
+            profile = new Perfil(
+                ProfileNames.Administrator,
+                "Perfil criado exclusivamente para teste de integração.");
+            dbContext.Perfis.Add(profile);
+        }
+
+        var suffix = Guid.NewGuid().ToString("N");
+        var person = new Pessoa($"Pessoa Rate Limit {suffix}");
+        dbContext.Pessoas.Add(person);
+        await dbContext.SaveChangesAsync();
+
+        var email = $"rate-limit-{suffix}@example.test";
+        var user = new Usuario(
+            email,
+            passwordHashService.Hash("Test-only-password-123!"),
+            person.Id,
+            profile.Id);
+        dbContext.Usuarios.Add(user);
+        await dbContext.SaveChangesAsync();
 
         return tokenService.Issue(
-            userId,
-            $"rate-limit-{userId}@example.test",
+            user.Id,
+            email,
             ProfileNames.Administrator).Value;
     }
 
