@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 1.8
+**Versão:** 1.9
 
 **Data de referência:** 29 de agosto de 2026
 
-**Rastreabilidade:** Issues #26, #67 e #69
+**Rastreabilidade:** Issues #26, #67, #69 e #71
 
 ## Objetivo e limites
 
@@ -135,7 +135,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 
 | ID | STRIDE | Cenário | P | I | Nível | Mitigação e rastreabilidade | Estado |
 |---|---|---|---:|---:|---:|---|---|
-| TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio e testes — #29 | Parcialmente mitigado; recuperação e ciclo de conta pendentes |
+| TM-01 | Spoofing | Conta compartilhada ou credencial roubada impede identificar o operador | 3 | 3 | 9 | Contas individuais, hash de senha, login uniforme, bloqueio, auditoria mínima e testes — #29 e #71 | Parcialmente mitigado; recuperação e ciclo de conta pendentes |
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
 | TM-03 | Tampering | Cliente altera IDs, status, horários, quilometragem ou identificação de frota enviados à API | 3 | 3 | 9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor e unicidade transacional — #29, #31, #47, #53, #55, #61 e #65 | Correção geral limitada a campos descritivos; identidade, tempo e estado permanecem imutáveis; correções institucionais pendentes |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67 | Ensaio local de recuperação implementado; controles de produção pendentes |
@@ -152,7 +152,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Diretório fora do Git no desenvolvimento; criptografia, acesso restrito, retenção e inventário em produção — #30 e #67 | Parcialmente mitigado no desenvolvimento; produção pendente |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Pendente institucional |
 | TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup com restauração verificada, upgrade/downgrade e falha explícita — #23, #30 e #67 | Backup/restauração local e testes de migration implementados; processo de produção pendente |
-| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31, #51, #53, #55, #57 e #65 | Mitigado nos fluxos geral, correção descritiva, institucional e catálogos; alerta e demais operações pendentes |
+| TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, alerta e monitoramento — #31, #51, #53, #55, #57, #65 e #71 | Mitigado nos fluxos geral, correção descritiva, institucional, catálogos, login e bloqueio; alerta e demais operações pendentes |
 
 ## Controles existentes verificados
 
@@ -161,6 +161,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - migrations versionadas e sem execução automática no startup;
 - autenticação JWT com validade curta, chave externa e validação de emissor e audiência;
 - hash de senha com salt e derivação, bloqueio temporário e resposta uniforme de login;
+- login bem-sucedido e bloqueio temporário auditados atomicamente sem credenciais, token, e-mail ou IP, com emissão de token impedida quando a auditoria falha;
 - autorização deny-by-default e políticas preliminares testadas;
 - políticas distintas para consultar e gerenciar a frota institucional;
 - políticas distintas para o histórico geral e o histórico institucional;

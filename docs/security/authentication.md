@@ -18,8 +18,9 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - OpenAPI não é publicado fora do ambiente `Development`.
 - O primeiro administrador é criado somente por comando explícito, fora da superfície HTTP.
 - Depois do bootstrap, somente `users:manage` pode criar uma conta individual em `POST /users`.
+- Login bem-sucedido e o momento do bloqueio temporário geram auditoria `Login` associada ao usuário, na mesma unidade de trabalho da mudança de estado.
 
-Não existem refresh token, revogação ou logout no servidor neste incremento. Até essa decisão, o frontend deve manter o access token somente em memória e solicitar novo login após a expiração. Não armazenar token em `localStorage`, logs ou mensagens de erro.
+Não existem refresh token, revogação ou logout no servidor neste incremento. Até essa decisão, o frontend deve manter o access token somente em memória e solicitar novo login após a expiração. Não armazenar token em `localStorage`, logs ou mensagens de erro. A auditoria de autenticação não guarda e-mail, senha, hash, token, IP ou tentativas para usuário inexistente. Se a auditoria obrigatória de um login válido falhar, a API não emite o token.
 
 ## Configuração
 
@@ -66,9 +67,9 @@ Esses nomes estão centralizados e não pertencem ao Domain. A matriz ainda depe
 - definir redefinição de senha, recuperação, desativação e encerramento de sessões;
 - decidir se haverá integração com identidade institucional;
 - avaliar refresh token ou sessão por cookie quando o fluxo do frontend for implementado;
-- registrar auditoria de login, bloqueio, logout e alterações de conta na Issue #31;
+- registrar auditoria de logout e alterações de conta na Issue #31 quando esses fluxos existirem;
 - proteger os endpoints de negócio com as políticas validadas.
 
 ## Validação automatizada
 
-Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, validação de conta e criação administrativa. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.
+Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, validação de conta e criação administrativa. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.
