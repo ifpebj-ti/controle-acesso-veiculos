@@ -78,4 +78,41 @@ public class RegistroAcesso
         Status = StatusRegistroAcesso.Pendente;
         DataAlteracao = DateTime.UtcNow;
     }
+
+    public bool CorrigirDados(
+        int categoriaAcessoId,
+        string objetivo,
+        string? observacao,
+        int atualizadoPorId,
+        DateTime dataAlteracao)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(categoriaAcessoId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(atualizadoPorId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(objetivo);
+
+        if (dataAlteracao == default || dataAlteracao < DataCriacao)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dataAlteracao));
+        }
+
+        var normalizedObjective = objetivo.Trim();
+        var normalizedObservation = string.IsNullOrWhiteSpace(observacao)
+            ? null
+            : observacao.Trim();
+        var changed = CategoriaAcessoId != categoriaAcessoId ||
+            Objetivo != normalizedObjective ||
+            Observacao != normalizedObservation;
+
+        if (!changed)
+        {
+            return false;
+        }
+
+        CategoriaAcessoId = categoriaAcessoId;
+        Objetivo = normalizedObjective;
+        Observacao = normalizedObservation;
+        AtualizadoPorId = atualizadoPorId;
+        DataAlteracao = dataAlteracao;
+        return true;
+    }
 }
