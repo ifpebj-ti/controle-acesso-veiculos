@@ -5,7 +5,8 @@
 Esta página documenta a fundação de integração contínua iniciada na Issue #25 e
 ampliada pelas Issues #90 e #104. Os workflows validam código e imagens em Pull
 Requests e publicam imagens verificadas no GitHub Container Registry após
-integração na `main`. Cada digest publicado recebe proveniência assinada. A
+integração na `main`. Cada digest publicado recebe proveniência assinada e um
+SBOM SPDX 2.3 atestado. A
 publicação no registry não realiza deploy nem torna o sistema pronto para
 produção.
 
@@ -15,7 +16,7 @@ produção.
 |---|---|---|
 | CI - Backend | Alterações do backend e de suas regras de formato | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura |
 | CI - Frontend | Alterações do frontend | `npm ci`, ESLint e build Vite |
-| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado e Trivy nas duas imagens; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, novo build, novo scan, publicação no GHCR e atestação de proveniência |
+| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado e Trivy nas duas imagens; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, novo build, novo scan, publicação no GHCR e atestação de proveniência e SBOM |
 | CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários |
 | Dependency Review | Toda Pull Request | bloqueio de novas dependências com vulnerabilidade alta ou crítica |
 
@@ -128,6 +129,13 @@ gerar proveniência SLSA assinada. A atestação é associada ao repositório no
 e anexada ao artefato OCI no GHCR. Uma tag móvel, como `main`, não deve ser usada
 como única evidência; prefira a tag por commit ou o digest.
 
+Antes do push, o Trivy também gera um SBOM SPDX 2.3 JSON da imagem já aprovada
+pelo scan. O workflow rejeita arquivo vazio, documento sem pacotes, versão SPDX
+inesperada ou tamanho superior ao limite de 16 MiB aceito pela action. Depois do
+push, `actions/attest` vincula esse documento ao mesmo nome e digest imutável da
+proveniência. Em Pull Requests, o arquivo é gerado e validado apenas no runner
+descartável; nenhuma atestação ou imagem é publicada.
+
 Após autenticar no GHCR, verifique uma imagem com GitHub CLI:
 
 ```bash
@@ -139,6 +147,24 @@ gh attestation verify \
 Repita para `controle-acesso-veiculos-frontend`. A verificação confirma digest,
 assinatura e identidade do repositório produtor; não substitui análise de
 vulnerabilidades, revisão do Dockerfile ou política de admissão no ambiente.
+
+Para verificar e extrair o SBOM SPDX atestado:
+
+```bash
+gh attestation verify \
+  oci://ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:sha-<commit> \
+  --repo ifpebj-ti/controle-acesso-veiculos \
+  --signer-workflow ifpebj-ti/controle-acesso-veiculos/.github/workflows/ci-containers.yml \
+  --source-ref refs/heads/main \
+  --predicate-type https://spdx.dev/Document/v2.3 \
+  --format json \
+  --jq '.[].verificationResult.statement.predicate' \
+  > backend.spdx.json
+```
+
+O comando deve ser repetido para o frontend. O JSON extraído permite inventário
+e investigação, mas não deve ser interpretado isoladamente como garantia de que
+os componentes estão livres de vulnerabilidades.
 
 O primeiro push cria os packages no escopo da organização. A visibilidade do
 package é uma decisão administrativa: se a equipe precisar permitir download
@@ -152,7 +178,7 @@ de qualquer deploy real, a equipe ainda precisa definir:
 
 - ambiente e responsável pela implantação;
 - política de retenção das imagens;
-- geração e atestação de SBOM; a proveniência assinada já é gerada pela CI;
+- política de admissão que exija proveniência e SBOM válidos no ambiente de destino;
 - aprovação de promoção entre desenvolvimento, homologação e produção;
 - estratégia de rollback e resposta a vulnerabilidades.
 
