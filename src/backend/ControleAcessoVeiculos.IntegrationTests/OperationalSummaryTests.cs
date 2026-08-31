@@ -52,9 +52,10 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
             ProfileNames.Administrator,
             Password);
         // Keep this scenario before records created with the current clock by other
-        // tests sharing the same PostgreSQL fixture.
-        var localDate = new DateOnly(2000, 1, 15);
-        var periodStartUtc = new DateTime(2000, 1, 15, 3, 0, 0, DateTimeKind.Utc);
+        // tests sharing the same PostgreSQL fixture and after Recife's historical
+        // daylight-saving rules stopped applying.
+        var localDate = new DateOnly(2010, 1, 15);
+        var periodStartUtc = new DateTime(2010, 1, 15, 3, 0, 0, DateTimeKind.Utc);
         var periodEndUtc = periodStartUtc.AddDays(1);
         var sensitiveName = $"Pessoa Resumo {Guid.NewGuid():N}";
         await SeedSummaryRecordsAsync(
