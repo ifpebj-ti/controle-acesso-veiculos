@@ -11,6 +11,7 @@ using ControleAcessoVeiculos.Application.InstitutionalVehicleUsages;
 using ControleAcessoVeiculos.Application.InstitutionalVehicles;
 using ControleAcessoVeiculos.Application.InstitutionalDrivers;
 using ControleAcessoVeiculos.Application.EventAuthorizations;
+using ControleAcessoVeiculos.Application.OperationalSummaries;
 using ControleAcessoVeiculos.Infrastructure.Authentication;
 using ControleAcessoVeiculos.Infrastructure.Auditing;
 using ControleAcessoVeiculos.Infrastructure.AccessRecords;
@@ -19,6 +20,7 @@ using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicleUsages;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicles;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalDrivers;
 using ControleAcessoVeiculos.Infrastructure.EventAuthorizations;
+using ControleAcessoVeiculos.Infrastructure.OperationalSummaries;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -61,6 +63,26 @@ var jwtOptions = builder.Configuration
 jwtOptions.Validate();
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
+
+var institutionalTimeZoneId =
+    builder.Configuration["Institution:TimeZoneId"] ?? "America/Recife";
+TimeZoneInfo institutionalTimeZone;
+try
+{
+    institutionalTimeZone = TimeZoneInfo.FindSystemTimeZoneById(institutionalTimeZoneId);
+}
+catch (TimeZoneNotFoundException exception)
+{
+    throw new InvalidOperationException(
+        $"O fuso institucional '{institutionalTimeZoneId}' não foi encontrado.",
+        exception);
+}
+catch (InvalidTimeZoneException exception)
+{
+    throw new InvalidOperationException(
+        $"O fuso institucional '{institutionalTimeZoneId}' é inválido.",
+        exception);
+}
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -150,9 +172,15 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
+        ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ReviewOperationalSummary, policy => policy.RequireRole(
+        ProfileNames.Doorman,
+        ProfileNames.SecurityGuard,
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator));
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(institutionalTimeZone);
 builder.Services.AddSingleton<IPasswordHashService, AspNetPasswordHashService>();
 builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
@@ -162,6 +190,7 @@ builder.Services.AddScoped<IInstitutionalVehicleCatalogStore, InstitutionalVehic
 builder.Services.AddScoped<IInstitutionalDriverStore, InstitutionalDriverStore>();
 builder.Services.AddScoped<IEventAuthorizationStore, EventAuthorizationStore>();
 builder.Services.AddScoped<IAuditTrailStore, AuditTrailStore>();
+builder.Services.AddScoped<IOperationalSummaryStore, OperationalSummaryStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<CreateUserAccountService>();
@@ -173,6 +202,7 @@ builder.Services.AddScoped<InstitutionalVehicleCatalogService>();
 builder.Services.AddScoped<InstitutionalDriverService>();
 builder.Services.AddScoped<EventAuthorizationService>();
 builder.Services.AddScoped<AuditTrailService>();
+builder.Services.AddScoped<OperationalSummaryService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -230,6 +260,7 @@ app.MapInstitutionalDriverEndpoints();
 app.MapEventAuthorizationEndpoints();
 app.MapUserAccountEndpoints();
 app.MapAuditTrailEndpoints();
+app.MapOperationalSummaryEndpoints();
 
 app.MapPost("/auth/login", async (
     LoginRequest request,
