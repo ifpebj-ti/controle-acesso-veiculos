@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 2.5
+**Versão:** 2.6
 
 **Data de referência:** 31 de agosto de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102 e #104
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104 e #106
 
 ## Objetivo e limites
 
@@ -126,7 +126,7 @@ flowchart LR
 | B3 | API para PostgreSQL | Implementado localmente |
 | B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos, incluindo eventos; consulta da trilha restrita a Administrador |
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
-| B6 | Repositório para runner e registry | CI valida Pull Requests sem publicação, executa smoke test integrado descartável e, na `main`, reconstrói, analisa e publica no GHCR com permissão mínima |
+| B6 | Repositório para runner e registry | CI valida Pull Requests sem publicação, executa smoke test integrado descartável e, na `main`, reconstrói, analisa, publica no GHCR e atesta proveniência e SBOM por digest com permissão mínima |
 | B7 | Registry para infraestrutura OCI | Não implementado |
 | B8 | API para collector OTLP | Exportação opt-in implementada; endpoint e infraestrutura externa pendentes |
 
@@ -141,7 +141,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
 | TM-03 | Tampering | Cliente altera IDs, status, horários, quilometragem, evento ou identificação de frota enviados à API | 3 | 3 | 9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor, FK e unicidade/transação — #29, #31, #47, #53, #55, #61, #65 e #82 | Associação de evento validada e imutável após a entrada; correção geral limitada a campos descritivos; correções institucionais pendentes |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67 | Ensaio local de recuperação implementado; controles de produção pendentes |
-| TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, actions fixadas, scan anterior ao push, tags por commit e proveniência assinada — #25, #90 e #104 | Parcial; publicação e proveniência verificáveis implementadas, SBOM e política de admissão pendentes |
+| TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, actions fixadas, scan anterior ao push, tags por commit, proveniência assinada e SBOM SPDX atestado — #25, #90, #104 e #106 | Parcial; artefatos verificáveis implementados, mas a política de admissão depende do ambiente de destino |
 | TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, justificativa, correlation ID e auditoria imutável suficiente — #29, #31, #47, #51, #53, #55, #57, #61 e #65 | Correção descritiva geral auditada; correções institucionais e imutabilidade por privilégios pendentes |
 | TM-07 | Information disclosure | Stack trace, log, erro ou telemetria expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, logs mínimos, OTLP limitado a métricas/traces e testes de não exposição — #31, #49 e #102 | Parcialmente mitigado; collector, retenção e revisão de atributos pendentes |
 | TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29, #31, #59, #63, #78 e #80 | Histórico geral restrito a Portaria, Vigilância, Transporte e Administração; Transporte não recebe operação ou correção; trilha de auditoria restrita a Administrador; auditar consultas e exportações permanece pendente de validação |
@@ -196,6 +196,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - backup lógico local em formato custom, fora do Git, validado por restauração completa em banco temporário isolado;
 - branch protegida, Pull Requests e CI;
 - imagens de backend e frontend reconstruídas e analisadas antes da publicação no GHCR após integração na `main`, com tag por commit, credencial efêmera de privilégio mínimo e proveniência assinada associada ao digest;
+- SBOM SPDX 2.3 gerado pelo Trivy, validado e atestado para o mesmo nome e digest de cada imagem publicada;
 - stack de PostgreSQL, API e frontend iniciada com credenciais, portas e volume descartáveis na CI, com readiness obrigatório antes da publicação;
 - testes unitários e integração PostgreSQL no PR #28;
 - auditoria de vulnerabilidades NuGet executada na #23 e #24.
