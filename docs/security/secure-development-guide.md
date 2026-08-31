@@ -121,6 +121,8 @@ Referências:
 - não confundir o ensaio local da Issue #67 com backup protegido de produção;
 - definir com a instituição retenção, criptografia, responsáveis, RPO e RTO antes
   da implantação real, conforme a Issue #30.
+- registrar decisões e exercícios no
+  [plano de retenção, backup e continuidade](../operations/data-retention-and-continuity.md).
 
 O procedimento local reproduzível está em
 [`infrastructure/database/README.md`](../../infrastructure/database/README.md).
