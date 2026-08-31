@@ -1,6 +1,7 @@
 using ControleAcessoVeiculos.API.Health;
 using ControleAcessoVeiculos.API.Endpoints;
 using ControleAcessoVeiculos.API.Middleware;
+using ControleAcessoVeiculos.API.Observability;
 using ControleAcessoVeiculos.API.Security;
 using ControleAcessoVeiculos.Application.AccessRecords;
 using ControleAcessoVeiculos.Application.Accounts;
@@ -35,6 +36,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddApiObservability(builder.Configuration);
 builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = context =>
