@@ -23,10 +23,10 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional, autorizações de eventos e resumo operacional diário |
 | Dados | PostgreSQL 16, EF Core 10, doze entidades e doze migrations versionadas |
-| Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build e scan de imagens e ensaio local de backup/restauração |
+| Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build, scan e publicação de imagens verificadas no GHCR após integração na `main`, além de ensaio local de backup/restauração |
 | Qualidade | 164 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP, auditoria transacional e consulta administrativa da trilha implementados; matriz final de perfis, retenção e imutabilidade em produção pendentes |
-| Deploy | Homologação, OCI, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
+| Deploy | Imagens OCI versionadas no GHCR pela CI; ambiente de homologação, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
 
