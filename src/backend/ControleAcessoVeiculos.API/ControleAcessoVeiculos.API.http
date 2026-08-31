@@ -193,3 +193,9 @@ Content-Type: application/json
 }
 
 ###
+
+GET {{ControleAcessoVeiculos.API_HostAddress}}/operations/daily-summary?date=2026-08-30
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
