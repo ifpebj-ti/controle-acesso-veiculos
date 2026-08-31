@@ -253,6 +253,22 @@ conta nem remover o último Administrador ativo.
 A suíte automatizada reduz regressões técnicas, mas não substitui a avaliação de
 clareza, utilidade e adequação do processo pelos usuários.
 
+### Continuidade operacional
+
+- [ ] Simular indisponibilidade e ativar o
+      [formulário de contingência](../operations/contingency-record-template.md) numerado.
+- [ ] Registrar no papel uma entrada, uma saída e um veículo ainda presente.
+- [ ] Confirmar os campos mínimos e se documento pessoal pode continuar opcional.
+- [ ] Confirmar quem aciona TI e Setor de Transporte e por qual canal.
+- [ ] Validar dupla conferência e fechamento da reconciliação pelo setor responsável.
+- [ ] Aprovar ou revisar RPO de 24 horas e RTO de 4 horas propostos.
+- [ ] Definir responsáveis nominais, retenção e descarte do formulário reconciliado.
+- [ ] Não usar os endpoints atuais para simular horários históricos; registrar a
+      necessidade do fluxo específico de reconciliação.
+
+O roteiro completo e o registro das decisões ficam no
+[plano de retenção, backup e continuidade](../operations/data-retention-and-continuity.md).
+
 ## 6. Checklist por perfil
 
 ### Porteiro

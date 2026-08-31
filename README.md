@@ -219,8 +219,9 @@ A verificação usa um banco temporário isolado e o remove ao terminar; ela nun
 substitui o banco operacional. Os dumps ficam em um diretório ignorado pelo Git,
 mas podem conter dados pessoais e não são adequados para armazenamento de
 produção sem criptografia e controle de acesso. Consulte o
-[procedimento completo](infrastructure/database/README.md) e as decisões ainda
-pendentes na Issue #30.
+[procedimento técnico](infrastructure/database/README.md), a
+[proposta de retenção e continuidade](docs/operations/data-retention-and-continuity.md)
+e as decisões institucionais ainda pendentes na Issue #30.
 
 ## Desenvolvimento local
 
