@@ -61,6 +61,7 @@ Administradores autenticados podem criar outras contas pelo endpoint `POST /user
 | `access:operate` | Porteiro, Vigilante e Administrador |
 | `access-records:review` | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `transportation:review` | Setor de Transporte e Administrador |
+| `operations:summary:read` | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `users:manage` | Administrador |
 
 Esses nomes estão centralizados e não pertencem ao Domain. A matriz do MVP foi
@@ -71,7 +72,7 @@ supervisão e conferência, sem herdar a política de operação ou correção.
 ## Evoluções após a Issue #29
 
 - validar ajustes solicitados durante a homologação da matriz da Issue #75;
-- definir conferência formal, exportação e associação das autorizações de eventos às entradas;
+- validar o resumo operacional diário durante a homologação e definir se haverá conferência formal ou exportação;
 - definir redefinição de senha, recuperação e encerramento explícito de sessões;
 - decidir se haverá integração com identidade institucional;
 - avaliar refresh token ou sessão por cookie quando o fluxo do frontend for implementado;

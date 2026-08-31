@@ -21,10 +21,10 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
-| Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional e catálogo de autorizações de eventos |
+| Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional, autorizações de eventos e resumo operacional diário |
 | Dados | PostgreSQL 16, EF Core 10, doze entidades e doze migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build e scan de imagens e ensaio local de backup/restauração |
-| Qualidade | 155 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 164 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP, auditoria transacional e consulta administrativa da trilha implementados; matriz final de perfis, retenção e imutabilidade em produção pendentes |
 | Deploy | Homologação, OCI, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
@@ -61,6 +61,7 @@ Os contratos operacionais e administrativos disponíveis são:
 | `POST /event-authorizations` | cria uma autorização de evento para `SetorTransporte` ou `Administrador` |
 | `PUT /event-authorizations/{id}` | atualiza evento e regras de veículos na mesma transação auditada |
 | `DELETE /event-authorizations/{id}` | cancela logicamente a autorização sem apagar seu histórico |
+| `GET /operations/daily-summary` | resume entradas, saídas, usos institucionais e acessos vinculados a eventos no dia local informado |
 
 A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. Vigilante e Administrador podem corrigir objetivo, categoria e observação com justificativa, sem alterar placa, condutor, horários, status ou autoria original. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
 
@@ -438,6 +439,31 @@ do tipo normalizado é consumida. O bloqueio transacional do evento impede exces
 silencioso sob concorrência. A saída não devolve a unidade consumida, e regras já
 utilizadas não podem ser substituídas. Sem o identificador, o fluxo geral continua
 inalterado. O sistema apoia a decisão da portaria e não abre o portão automaticamente.
+
+### Resumo operacional diário
+
+`Porteiro`, `Vigilante`, `SetorTransporte` e `Administrador` podem consultar um
+resumo agregado para troca de turno e conferência. A data é opcional e usa o dia
+atual da instituição quando omitida.
+
+```bash
+curl "http://localhost:5118/operations/daily-summary?date=2026-08-30" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+A resposta informa entradas e saídas gerais, partidas e retornos institucionais,
+acessos associados a eventos e quantos registros estavam abertos no começo e no
+fim do dia. `openAtStart` preserva o trabalho recebido do turno anterior;
+`openAtEnd` mostra a carga ainda pendente na virada do dia. O intervalo é
+semiaberto (`periodStartUtc` inclusivo e `periodEndUtcExclusive` exclusivo), o que
+evita contagem dupla entre dias consecutivos.
+
+O fuso padrão é `America/Recife` e pode ser alterado por
+`Institution__TimeZoneId`. O endpoint não expõe nomes, documentos, placas,
+itinerários ou observações e não classifica automaticamente atrasos ou
+irregularidades. Jornada de 12 horas, fechamento por volta das 23h e exceções
+institucionais continuam sendo regras operacionais a validar com o cliente, não
+limites rígidos do sistema.
 
 ## Migrations
 
