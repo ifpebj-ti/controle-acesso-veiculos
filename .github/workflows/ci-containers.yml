@@ -150,7 +150,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
+      attestations: write
       contents: read
+      id-token: write
       packages: write
     strategy:
       fail-fast: false
@@ -202,7 +204,29 @@ jobs:
           logout: true
 
       - name: Push verified image tags
+        id: push
         shell: bash
         run: |
           docker push "${IMAGE_NAME}:sha-${GITHUB_SHA}"
           docker push "${IMAGE_NAME}:main"
+
+          digest="$(
+            docker buildx imagetools inspect \
+              "${IMAGE_NAME}:sha-${GITHUB_SHA}" \
+              --format '{{json .Manifest.Digest}}' \
+              | tr -d '"'
+          )"
+
+          if [[ ! "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Could not resolve a valid digest for ${IMAGE_NAME}:sha-${GITHUB_SHA}" >&2
+            exit 1
+          fi
+
+          echo "digest=${digest}" >> "${GITHUB_OUTPUT}"
+
+      - name: Attest published image provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
