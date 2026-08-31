@@ -2,7 +2,11 @@
 
 ## Estado
 
-Esta página documenta a fundação de integração contínua da Issue #25. Os workflows constroem e validam o código e as imagens, mas não publicam artefatos executáveis nem realizam deploy.
+Esta página documenta a fundação de integração contínua iniciada na Issue #25 e
+ampliada pela Issue #90. Os workflows validam código e imagens em Pull Requests e
+publicam imagens verificadas no GitHub Container Registry após integração na
+`main`. A publicação no registry não realiza deploy nem torna o sistema pronto
+para produção.
 
 ## Workflows
 
@@ -10,11 +14,15 @@ Esta página documenta a fundação de integração contínua da Issue #25. Os w
 |---|---|---|
 | CI - Backend | Alterações do backend e de suas regras de formato | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura |
 | CI - Frontend | Alterações do frontend | `npm ci`, ESLint e build Vite |
-| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado das duas imagens e Trivy para vulnerabilidades HIGH/CRITICAL corrigíveis |
+| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado e Trivy nas duas imagens; após push na `main`, novo build, novo scan e publicação no GHCR |
 | CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários |
 | Dependency Review | Toda Pull Request | bloqueio de novas dependências com vulnerabilidade alta ou crítica |
 
-Todas as actions de terceiros estão fixadas por SHA de commit e acompanhadas do número da release auditada. Os jobs usam apenas `contents: read`, cancelam execuções obsoletas da mesma referência e possuem timeout.
+Todas as actions de terceiros estão fixadas por SHA de commit e acompanhadas do
+número da release auditada. Os jobs de validação usam apenas `contents: read`. O
+job de publicação, restrito a push na `main`, acrescenta `packages: write`.
+Todos os workflows cancelam execuções obsoletas da mesma referência e possuem
+timeout.
 
 Os resultados TRX e Cobertura do backend são mantidos por 14 dias. Cobertura é evidência de apoio; não substitui revisão de cenários, risco e qualidade dos testes.
 
@@ -51,22 +59,59 @@ Readiness retorna `503 Service Unavailable` quando o banco não pode ser acessad
 
 ## Análise de imagens
 
-Cada imagem é construída sem `push` e carregada apenas no runner. O Trivy falha em vulnerabilidades HIGH ou CRITICAL para as quais existe correção. Vulnerabilidades ainda sem correção permanecem visíveis no relatório, mas não bloqueiam automaticamente a pipeline para evitar um estado impossível de corrigir no repositório.
+Em Pull Requests e branches de trabalho, cada imagem é construída sem `push` e
+carregada apenas no runner. O Trivy falha em vulnerabilidades HIGH ou CRITICAL
+para as quais existe correção. Em um push na `main`, o job de publicação
+reconstrói e analisa a imagem com o nome final antes de autenticar no registry e
+enviar qualquer tag.
+
+Vulnerabilidades ainda sem correção permanecem visíveis no relatório, mas não
+bloqueiam automaticamente a pipeline para evitar um estado impossível de
+corrigir no repositório.
 
 Essa exceção deve ser reavaliada periodicamente. Uma vulnerabilidade explorável sem correção pode exigir troca da imagem base, mitigação adicional ou aceitação formal de risco.
 
 ## Publicação em registry
 
-A publicação automática foi avaliada e permanece desabilitada. Antes de enviar imagens a GHCR, OCIR ou outro registry, a equipe precisa definir:
+Depois que uma alteração é integrada à `main`, o workflow publica:
+
+| Componente | Imagem |
+|---|---|
+| Backend | `ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend` |
+| Frontend | `ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend` |
+
+Cada pacote recebe duas tags:
+
+- `sha-<commit>`: referência imutável por convenção para rastrear exatamente o
+  código que originou a imagem;
+- `main`: referência móvel para o último commit integrado e aprovado pela
+  esteira.
+
+Exemplo de download da imagem rastreável do backend:
+
+```bash
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:sha-<commit>
+```
+
+O workflow usa o `GITHUB_TOKEN` efêmero do job e autentica somente depois do
+scan. Pull Requests não executam o job de publicação e permanecem sem
+`packages: write`. Nenhum token de registry deve ser adicionado ao repositório.
+
+O primeiro push cria os packages no escopo da organização. A visibilidade do
+package é uma decisão administrativa: se a equipe precisar permitir download
+anônimo para apresentação acadêmica, um responsável da organização deverá
+alterá-la para pública nas configurações do package. Enquanto o package for
+privado, o download local exige autenticação no GHCR com permissão
+`read:packages`.
+
+Publicar uma imagem não promove a aplicação para homologação ou produção. Antes
+de qualquer deploy real, a equipe ainda precisa definir:
 
 - ambiente e responsável pela implantação;
-- autenticação por identidade de curta duração ou token com privilégio mínimo;
-- tags imutáveis por commit e política de retenção;
+- política de retenção das imagens;
 - geração de SBOM, assinatura e verificação de proveniência;
 - aprovação de promoção entre desenvolvimento, homologação e produção;
 - estratégia de rollback e resposta a vulnerabilidades.
-
-Adicionar `push: true` ou credenciais ao workflow sem essas decisões não é permitido.
 
 ## Operação e revisão
 

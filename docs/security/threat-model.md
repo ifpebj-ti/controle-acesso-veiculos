@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 2.2
+**Versão:** 2.3
 
-**Data de referência:** 30 de agosto de 2026
+**Data de referência:** 31 de agosto de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76 e #78
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78 e #90
 
 ## Objetivo e limites
 
@@ -101,7 +101,7 @@ flowchart LR
     Logs[Logs e auditoria]
     Backup[(Backup local verificável)]
     GitHub[GitHub e Actions]
-    Registry[Registry futuro]
+    Registry[GitHub Container Registry]
     Oci[OCI futura]
 
     User --> Browser
@@ -110,7 +110,7 @@ flowchart LR
     Api -->|B3 Npgsql| Db
     Api -->|B4 eventos técnicos e de negócio| Logs
     Db -->|B5 cópia protegida| Backup
-    GitHub -->|B6 build e artefatos| Registry
+    GitHub -->|B6 build, scan e publicação| Registry
     Registry -->|B7 deploy| Oci
     Oci --> Frontend
     Oci --> Api
@@ -126,7 +126,7 @@ flowchart LR
 | B3 | API para PostgreSQL | Implementado localmente |
 | B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos, incluindo eventos; consulta da trilha restrita a Administrador |
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
-| B6 | Repositório para runner e artefatos | CI inicial implementada |
+| B6 | Repositório para runner e registry | CI valida Pull Requests sem publicação; push na `main` reconstrói, analisa e publica no GHCR com permissão mínima |
 | B7 | Registry para infraestrutura OCI | Não implementado |
 
 Todo dado vindo do navegador atravessa uma fronteira não confiável. Validação no
@@ -140,7 +140,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-02 | Spoofing | Usuário acessa frontend ou API falsos em rede não confiável | 2 | 3 | 6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura | Planejado |
 | TM-03 | Tampering | Cliente altera IDs, status, horários, quilometragem, evento ou identificação de frota enviados à API | 3 | 3 | 9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor, FK e unicidade/transação — #29, #31, #47, #53, #55, #61, #65 e #82 | Associação de evento validada e imutável após a entrada; correção geral limitada a campos descritivos; correções institucionais pendentes |
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67 | Ensaio local de recuperação implementado; controles de produção pendentes |
-| TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, scanner, build e proveniência — #25 | Parcial |
+| TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, actions fixadas, scan anterior ao push, tags por commit e futura proveniência — #25 e #90 | Parcial; publicação verificada implementada, assinatura e atestação pendentes |
 | TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, justificativa, correlation ID e auditoria imutável suficiente — #29, #31, #47, #51, #53, #55, #57, #61 e #65 | Correção descritiva geral auditada; correções institucionais e imutabilidade por privilégios pendentes |
 | TM-07 | Information disclosure | Stack trace, log ou erro expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, logs mínimos e testes de não exposição — #31 e #49 | Parcialmente mitigado; auditoria e logs externos pendentes |
 | TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29, #31, #59, #63, #78 e #80 | Histórico geral restrito a Portaria, Vigilância, Transporte e Administração; Transporte não recebe operação ou correção; trilha de auditoria restrita a Administrador; auditar consultas e exportações permanece pendente de validação |
@@ -192,6 +192,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - `.env` ignorado e exemplos sem segredo real;
 - backup lógico local em formato custom, fora do Git, validado por restauração completa em banco temporário isolado;
 - branch protegida, Pull Requests e CI;
+- imagens de backend e frontend reconstruídas e analisadas antes da publicação no GHCR após integração na `main`, com tag por commit e credencial efêmera de privilégio mínimo;
 - testes unitários e integração PostgreSQL no PR #28;
 - auditoria de vulnerabilidades NuGet executada na #23 e #24.
 
