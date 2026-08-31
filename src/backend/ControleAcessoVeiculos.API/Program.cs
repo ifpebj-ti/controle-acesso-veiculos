@@ -284,14 +284,23 @@ app.MapPost("/auth/login", async (
         cancellationToken);
 
     return result.IsSuccess
-        ? Results.Ok(new LoginResponse(result.AccessToken!, result.ExpiresAtUtc!.Value))
+        ? Results.Ok(new LoginResponse(
+            result.AccessToken!,
+            result.ExpiresAtUtc!.Value,
+            new LoginUserResponse(
+                result.User!.Id,
+                result.User.Email,
+                result.User.ProfileName)))
         : Results.Json(
-            new { Message = "Credenciais inválidas." },
+            new LoginErrorResponse("Credenciais inválidas."),
             statusCode: StatusCodes.Status401Unauthorized);
 })
 .AllowAnonymous()
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
-.WithName("Login");
+.WithName("Login")
+.Produces<LoginResponse>(StatusCodes.Status200OK)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.Produces<LoginErrorResponse>(StatusCodes.Status401Unauthorized);
 
 var summaries = new[]
 {
@@ -368,4 +377,9 @@ public partial class Program
 }
 
 public sealed record LoginRequest(string Email, string Password);
-public sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
+public sealed record LoginResponse(
+    string AccessToken,
+    DateTime ExpiresAtUtc,
+    LoginUserResponse User);
+public sealed record LoginUserResponse(int Id, string Email, string ProfileName);
+public sealed record LoginErrorResponse(string Message);
