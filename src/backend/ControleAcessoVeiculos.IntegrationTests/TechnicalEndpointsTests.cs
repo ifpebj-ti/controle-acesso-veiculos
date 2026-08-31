@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -73,6 +74,40 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
         var response = await _client.GetAsync("/weatherforecast");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DevelopmentOpenApiDescribesMinimalLoginIdentity()
+    {
+        using var developmentFactory = factory.WithWebHostBuilder(builder =>
+            builder.UseEnvironment("Development"));
+        using var client = developmentFactory.CreateClient();
+
+        var response = await client.GetAsync("/openapi/v1.json");
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        response.EnsureSuccessStatusCode();
+        using var document = JsonDocument.Parse(responseContent);
+        var schemas = document.RootElement
+            .GetProperty("components")
+            .GetProperty("schemas");
+        var loginProperties = schemas
+            .GetProperty(nameof(LoginResponse))
+            .GetProperty("properties")
+            .EnumerateObject()
+            .Select(property => property.Name)
+            .Order()
+            .ToArray();
+        var userProperties = schemas
+            .GetProperty(nameof(LoginUserResponse))
+            .GetProperty("properties")
+            .EnumerateObject()
+            .Select(property => property.Name)
+            .Order()
+            .ToArray();
+
+        Assert.Equal(["accessToken", "expiresAtUtc", "user"], loginProperties);
+        Assert.Equal(["email", "id", "profileName"], userProperties);
     }
 
     private sealed record HealthResponse(string Status, DateTime Timestamp);
