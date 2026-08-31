@@ -16,6 +16,13 @@ Content-Type: application/json
   "password": "{{Password}}"
 }
 
+# Resposta 200 esperada:
+# {
+#   "accessToken": "...",
+#   "expiresAtUtc": "2026-08-31T12:15:00Z",
+#   "user": { "id": 1, "email": "admin.local@example.test", "profileName": "Administrador" }
+# }
+
 ###
 
 GET {{ControleAcessoVeiculos.API_HostAddress}}/weatherforecast
