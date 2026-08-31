@@ -28,6 +28,9 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=postgresql;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       Authentication__Jwt__SigningKey: ${JWT_SIGNING_KEY:?Defina JWT_SIGNING_KEY no arquivo .env}
+      Observability__Enabled: ${OTEL_ENABLED:-false}
+      Observability__ServiceName: ${OTEL_SERVICE_NAME:-controle-acesso-veiculos-api}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
     depends_on:
       postgresql:
         condition: service_healthy
