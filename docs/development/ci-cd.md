@@ -14,7 +14,7 @@ para produção.
 |---|---|---|
 | CI - Backend | Alterações do backend e de suas regras de formato | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura |
 | CI - Frontend | Alterações do frontend | `npm ci`, ESLint e build Vite |
-| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado e Trivy nas duas imagens; após push na `main`, novo build, novo scan e publicação no GHCR |
+| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado e Trivy nas duas imagens; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, novo build, novo scan e publicação no GHCR |
 | CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários |
 | Dependency Review | Toda Pull Request | bloqueio de novas dependências com vulnerabilidade alta ou crítica |
 
@@ -56,6 +56,27 @@ Atualizações major do toolchain frontend são deliberadas: propostas para Node
 | `GET /health/ready` | Confirmar que a instância pode receber tráfego | Conexão com PostgreSQL |
 
 Readiness retorna `503 Service Unavailable` quando o banco não pode ser acessado. A resposta expõe apenas `Healthy` ou `Unhealthy` e timestamp; exceções e detalhes da conexão não são retornados.
+
+## Smoke test integrado do Compose
+
+O job `Run integrated Compose smoke test` valida uma propriedade diferente dos
+builds isolados: confirma que o arquivo Compose versionado consegue iniciar
+PostgreSQL, API e frontend em conjunto. O job:
+
+1. gera senha de banco e chave JWT efêmeras, mascara os valores e os mantém
+   somente no ambiente do runner;
+2. usa um nome de projeto exclusivo da execução e solicita portas aleatórias ao
+   Docker, evitando colisões com outras stacks;
+3. valida a configuração sem imprimir os valores resolvidos;
+4. constrói e inicia os três serviços;
+5. exige resposta `Healthy` de `/health/ready` e o HTML esperado do frontend;
+6. mostra estado e logs somente quando há falha;
+7. remove containers, rede e volume descartáveis mesmo após erro.
+
+O job não aplica migrations, não cria usuário, não usa dados institucionais e não
+substitui testes funcionais ou homologação. A publicação no GHCR depende do smoke
+test, impedindo a distribuição automática de uma revisão cuja stack integrada
+não inicia.
 
 ## Análise de imagens
 
