@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 2.3
+**Versão:** 2.4
 
 **Data de referência:** 31 de agosto de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78 e #90
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90 e #102
 
 ## Objetivo e limites
 
@@ -26,7 +26,7 @@ Não são considerados implementados:
 - ambiente de homologação ou produção;
 - OCI, domínio, HTTPS e proxy reverso;
 - backup protegido de produção, política de recuperação e contingência;
-- observabilidade e resposta a incidentes.
+- collector, armazenamento, painéis, alertas e resposta operacional de observabilidade.
 
 O documento deve ser atualizado quando esses componentes forem projetados ou
 implementados.
@@ -128,6 +128,7 @@ flowchart LR
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
 | B6 | Repositório para runner e registry | CI valida Pull Requests sem publicação, executa smoke test integrado descartável e, na `main`, reconstrói, analisa e publica no GHCR com permissão mínima |
 | B7 | Registry para infraestrutura OCI | Não implementado |
+| B8 | API para collector OTLP | Exportação opt-in implementada; endpoint e infraestrutura externa pendentes |
 
 Todo dado vindo do navegador atravessa uma fronteira não confiável. Validação no
 frontend melhora usabilidade, mas não é controle de segurança suficiente.
@@ -142,18 +143,19 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-04 | Tampering | Acesso direto ao banco altera ou remove histórico | 2 | 3 | 6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67 | Ensaio local de recuperação implementado; controles de produção pendentes |
 | TM-05 | Tampering | Workflow, dependency ou imagem comprometida altera o artefato entregue | 2 | 3 | 6 | Branch protegida, Dependabot, lockfiles, actions fixadas, scan anterior ao push, tags por commit e futura proveniência — #25 e #90 | Parcial; publicação verificada implementada, assinatura e atestação pendentes |
 | TM-06 | Repudiation | Operador nega inclusão, correção ou encerramento de registro | 3 | 3 | 9 | Usuário autenticado, ator persistido, justificativa, correlation ID e auditoria imutável suficiente — #29, #31, #47, #51, #53, #55, #57, #61 e #65 | Correção descritiva geral auditada; correções institucionais e imutabilidade por privilégios pendentes |
-| TM-07 | Information disclosure | Stack trace, log ou erro expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, logs mínimos e testes de não exposição — #31 e #49 | Parcialmente mitigado; auditoria e logs externos pendentes |
+| TM-07 | Information disclosure | Stack trace, log, erro ou telemetria expõe documento, token ou configuração | 2 | 3 | 6 | Erros seguros, logs mínimos, OTLP limitado a métricas/traces e testes de não exposição — #31, #49 e #102 | Parcialmente mitigado; collector, retenção e revisão de atributos pendentes |
 | TM-08 | Information disclosure | Consulta ou exportação expõe histórico além da necessidade | 2 | 3 | 6 | Menor privilégio, filtros por finalidade e auditoria de consulta/exportação — #29, #31, #59, #63, #78 e #80 | Histórico geral restrito a Portaria, Vigilância, Transporte e Administração; Transporte não recebe operação ou correção; trilha de auditoria restrita a Administrador; auditar consultas e exportações permanece pendente de validação |
 | TM-09 | Information disclosure | Segredo entra no Git, imagem, artefato ou Wiki | 2 | 3 | 6 | `.gitignore`, exemplos fictícios, secret scanning e rotação — #25 | Parcial |
 | TM-10 | Information disclosure | PostgreSQL publicado em interface de rede inadequada | 2 | 3 | 6 | Não publicar banco em produção, firewall e rede privada — #25 e implantação futura | Pendente |
-| TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limite de payload, paginação, timeout, rate limiting e índices medidos — #31, #49, #59, #63, #69 e #78 | Limite global de 1 MiB, consultas paginadas, auditoria limitada a 90 dias e rate limiting por usuário/IP implementados; calibração com carga, limite distribuído e timeout permanecem pendentes |
-| TM-12 | Denial of service | Falha de rede, API ou PostgreSQL interrompe a portaria | 3 | 3 | 9 | Readiness, smoke test integrado, monitoramento, backup e contingência reconciliável — #25, #30 e #92 | Inicialização integrada verificada; plano de contingência proposto, mas reconciliação, monitoramento e validação institucional estão pendentes |
+| TM-11 | Denial of service | Payload ou consulta cara esgota API ou banco | 2 | 2 | 4 | Limite de payload, paginação, timeout, rate limiting, índices e métricas medidos — #31, #49, #59, #63, #69, #78 e #102 | Limite global de 1 MiB, consultas paginadas, auditoria limitada a 90 dias, rate limiting e métricas exportáveis implementados; calibração com carga, limite distribuído e timeout permanecem pendentes |
+| TM-12 | Denial of service | Falha de rede, API ou PostgreSQL interrompe a portaria | 3 | 3 | 9 | Readiness, smoke test integrado, telemetria OTLP, monitoramento, backup e contingência reconciliável — #25, #30, #92 e #102 | Inicialização integrada verificada e sinais exportáveis configurados; collector, alertas, reconciliação e validação institucional estão pendentes |
 | TM-13 | Elevation of privilege | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido | 3 | 3 | 9 | Políticas explícitas, deny-by-default, ciclo de contas, correção, consultas históricas, auditoria e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63, #65, #73, #78 e #83 | Catálogo de eventos separa leitura operacional de gestão por Transporte/Administração; matriz final pendente |
 | TM-14 | Elevation of privilege | Container executado como root amplia impacto de exploração | 2 | 3 | 6 | Usuário não privilegiado, filesystem e capabilities restritos — #25 | Planejado |
 | TM-15 | Information disclosure | Backup desprotegido expõe dados e histórico | 2 | 3 | 6 | Diretório fora do Git no desenvolvimento; criptografia, acesso restrito, retenção e inventário em produção — #30 e #67 | Parcialmente mitigado no desenvolvimento; produção pendente |
 | TM-16 | Information disclosure | Retenção indefinida mantém dados pessoais sem finalidade | 2 | 3 | 6 | Política de retenção, descarte e validação institucional — #30 | Inventário e prazos propostos; aprovação institucional e expurgo seguro pendentes |
 | TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup com restauração verificada, upgrade/downgrade e falha explícita — #23, #30 e #67 | Backup/restauração local e testes de migration implementados; processo de produção pendente |
 | TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, ator humano ou origem de sistema explícita, alerta e monitoramento — #31, #51, #53, #55, #57, #65, #71, #73 e #76 | Mitigado nos fluxos geral, correção descritiva, institucional, catálogos, autenticação e ciclo de contas; alerta e demais operações pendentes |
+| TM-19 | Information disclosure | Collector falso ou mal configurado recebe telemetria operacional | 2 | 3 | 6 | OTLP desabilitado por padrão, endpoint externo ao código, TLS, autenticação, menor privilégio e revisão de atributos — #102 | Base técnica implementada; identidade do collector, secret manager e rede de produção pendentes |
 
 ## Controles existentes verificados
 
@@ -180,6 +182,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - transação e índice único parcial impedem dois usos institucionais abertos para o mesmo veículo;
 - correlation ID validado ou gerado pelo servidor em todas as respostas;
 - logs HTTP estruturados com template de rota, sem valores da URL, query string, corpo ou cabeçalho de autorização;
+- métricas HTTP/runtime e traces ASP.NET Core exportáveis por OTLP somente quando habilitados, sem instrumentação de corpo, credenciais, SQL ou logs, com valores de query obrigatoriamente redigidos e health checks excluídos dos traces;
 - exceções inesperadas retornam `ProblemDetails` sem mensagem interna ou stack trace;
 - limite global de 1 MiB para corpos de requisição;
 - rate limiting em memória, sem fila, particionado por usuário autenticado ou endereço da conexão, com política específica para login e health checks isentos;
@@ -200,7 +203,11 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 ## Risco residual atual
 
 O risco residual permanece alto para ciclo de identidade, autorização definitiva,
-auditoria dos demais fluxos, imutabilidade e continuidade de produção porque esses controles ainda estão incompletos. O ensaio local de restauração reduz o risco de um dump inválido, mas não substitui armazenamento externo protegido, política institucional nem contingência. Portanto, a
+auditoria dos demais fluxos, imutabilidade e continuidade de produção porque
+esses controles ainda estão incompletos. A base OTLP não substitui collector
+protegido, painéis, alertas ou resposta operacional. O ensaio local de
+restauração reduz o risco de um dump inválido, mas não substitui armazenamento
+externo protegido, política institucional nem contingência. Portanto, a
 API atual não deve ser tratada como pronta para exposição pública ou produção.
 
 ## Responsabilidades
