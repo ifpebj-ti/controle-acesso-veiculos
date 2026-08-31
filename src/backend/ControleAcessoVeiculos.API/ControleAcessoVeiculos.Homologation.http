@@ -1,0 +1,371 @@
+# Roteiro executável complementar a docs/validation/backend-mvp-homologation.md.
+# Use somente um banco local descartável e dados fictícios.
+# Copie este modelo para ControleAcessoVeiculos.Homologation.local.http.
+# Substitua credenciais, tokens, IDs, data e janela somente na cópia ignorada.
+
+@BaseUrl = http://localhost:5118
+@DemoPassword = replace-with-private-local-value
+@AdminEmail = admin.local@example.test
+@DoormanEmail = porteiro.homologacao@example.test
+@SecurityGuardEmail = vigilante.homologacao@example.test
+@TransportationEmail = transporte.homologacao@example.test
+
+@AdminToken = replace-after-admin-login
+@DoormanToken = replace-after-doorman-login
+@SecurityGuardToken = replace-after-security-guard-login
+@TransportationToken = replace-after-transportation-login
+
+@GeneralAccessId = replace-after-general-entry
+@InstitutionalVehicleId = replace-after-vehicle-creation
+@InstitutionalDriverPersonId = replace-after-driver-authorization
+@InstitutionalUsageId = replace-after-departure
+@EventAuthorizationId = replace-after-event-creation
+@DemoLocalDate = 2026-08-30
+@EventStartsAtUtc = replace-with-utc-before-the-demo
+@EventEndsAtUtc = replace-with-utc-after-the-demo
+
+### 1. Readiness — esperado: 200 Healthy
+
+GET {{BaseUrl}}/health/ready
+Accept: application/json
+
+### 2. Endpoint protegido sem token — esperado: 401
+
+GET {{BaseUrl}}/access-records/open
+Accept: application/json
+
+### 3. Login do Administrador — copie accessToken para AdminToken
+
+POST {{BaseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{AdminEmail}}",
+  "password": "{{DemoPassword}}"
+}
+
+### 4. Criar conta fictícia de Porteiro — esperado: 201
+
+POST {{BaseUrl}}/users
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "name": "Porteiro de Homologação",
+  "email": "{{DoormanEmail}}",
+  "password": "{{DemoPassword}}",
+  "profileName": "Porteiro"
+}
+
+### 5. Criar conta fictícia de Vigilante — esperado: 201
+
+POST {{BaseUrl}}/users
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "name": "Vigilante de Homologação",
+  "email": "{{SecurityGuardEmail}}",
+  "password": "{{DemoPassword}}",
+  "profileName": "Vigilante"
+}
+
+### 6. Criar conta fictícia do Setor de Transporte — esperado: 201
+
+POST {{BaseUrl}}/users
+Authorization: Bearer {{AdminToken}}
+Content-Type: application/json
+
+{
+  "name": "Transporte de Homologação",
+  "email": "{{TransportationEmail}}",
+  "password": "{{DemoPassword}}",
+  "profileName": "SetorTransporte"
+}
+
+### 7. Login do Porteiro — copie accessToken para DoormanToken
+
+POST {{BaseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{DoormanEmail}}",
+  "password": "{{DemoPassword}}"
+}
+
+### 8. Login do Vigilante — copie accessToken para SecurityGuardToken
+
+POST {{BaseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{SecurityGuardEmail}}",
+  "password": "{{DemoPassword}}"
+}
+
+### 9. Login do Transporte — copie accessToken para TransportationToken
+
+POST {{BaseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{TransportationEmail}}",
+  "password": "{{DemoPassword}}"
+}
+
+### 10. Entrada geral pelo Porteiro — copie id para GeneralAccessId
+
+POST {{BaseUrl}}/access-records/entries
+Authorization: Bearer {{DoormanToken}}
+Content-Type: application/json
+
+{
+  "driverName": "Condutor Geral Fictício",
+  "plate": "HML-1A01",
+  "objective": "Visita de homologação",
+  "categoryName": "Visitante",
+  "vehicleType": "Automóvel",
+  "color": "Prata"
+}
+
+### 11. Listar acessos abertos pelo Vigilante — esperado: 200 e placa normalizada
+
+GET {{BaseUrl}}/access-records/open
+Authorization: Bearer {{SecurityGuardToken}}
+Accept: application/json
+
+### 12. Transporte consulta o histórico geral — esperado: 200
+
+GET {{BaseUrl}}/access-records/history?plate=HML-1A01&page=1&pageSize=25
+Authorization: Bearer {{TransportationToken}}
+Accept: application/json
+
+### 13. Transporte tenta operar o fluxo geral — esperado: 403
+
+POST {{BaseUrl}}/access-records/entries
+Authorization: Bearer {{TransportationToken}}
+Content-Type: application/json
+
+{
+  "driverName": "Operação Não Autorizada",
+  "plate": "NEG-0A01",
+  "objective": "Teste negativo",
+  "categoryName": "Teste",
+  "vehicleType": "Automóvel"
+}
+
+### 14. Registrar saída pelo Porteiro — esperado: 200
+
+POST {{BaseUrl}}/access-records/{{GeneralAccessId}}/exit
+Authorization: Bearer {{DoormanToken}}
+
+### 15. Correção descritiva pelo Vigilante — esperado: 200
+
+PUT {{BaseUrl}}/access-records/{{GeneralAccessId}}/correction
+Authorization: Bearer {{SecurityGuardToken}}
+Content-Type: application/json
+
+{
+  "objective": "Entrega autorizada em homologação",
+  "categoryName": "Entrega",
+  "observation": "Informação exclusivamente fictícia.",
+  "justification": "Categoria e objetivo ajustados durante o cenário de homologação."
+}
+
+### 16. Cadastrar veículo institucional pelo Transporte — copie id
+
+POST {{BaseUrl}}/institutional-vehicles
+Authorization: Bearer {{TransportationToken}}
+Content-Type: application/json
+
+{
+  "plate": "HMI-2B02",
+  "identification": "HOMOLOGACAO-001",
+  "vehicleType": "Van",
+  "brand": "Marca fictícia",
+  "model": "Modelo de demonstração",
+  "color": "Branco",
+  "year": 2026
+}
+
+### 17. Autorizar motorista institucional pelo Transporte — copie personId
+
+POST {{BaseUrl}}/institutional-drivers
+Authorization: Bearer {{TransportationToken}}
+Content-Type: application/json
+
+{
+  "name": "Motorista Institucional Fictício",
+  "documentType": "ID",
+  "documentNumber": "HOMOLOGACAO-001"
+}
+
+### 17.1. Porteiro consulta a frota — esperado: 200
+
+GET {{BaseUrl}}/institutional-vehicles
+Authorization: Bearer {{DoormanToken}}
+Accept: application/json
+
+### 17.2. Porteiro consulta motoristas autorizados — esperado: 200
+
+GET {{BaseUrl}}/institutional-drivers
+Authorization: Bearer {{DoormanToken}}
+Accept: application/json
+
+### 17.3. Porteiro tenta cadastrar veículo institucional — esperado: 403
+
+POST {{BaseUrl}}/institutional-vehicles
+Authorization: Bearer {{DoormanToken}}
+Content-Type: application/json
+
+{
+  "plate": "NEG-0B02",
+  "identification": "NAO-AUTORIZADO",
+  "vehicleType": "Automóvel"
+}
+
+### 18. Registrar saída institucional pelo Porteiro — copie id do uso
+
+POST {{BaseUrl}}/institutional-vehicle-usages/departures
+Authorization: Bearer {{DoormanToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{InstitutionalVehicleId}},
+  "driverId": {{InstitutionalDriverPersonId}},
+  "departureMileage": 1000,
+  "itinerary": "Campus - destino fictício"
+}
+
+### 19. Vigilante consulta usos abertos — esperado: 200
+
+GET {{BaseUrl}}/institutional-vehicle-usages/open
+Authorization: Bearer {{SecurityGuardToken}}
+Accept: application/json
+
+### 20. Registrar retorno institucional pelo Vigilante — esperado: 200
+
+POST {{BaseUrl}}/institutional-vehicle-usages/{{InstitutionalUsageId}}/returns
+Authorization: Bearer {{SecurityGuardToken}}
+Content-Type: application/json
+
+{
+  "returnMileage": 1042
+}
+
+### 21. Transporte consulta histórico institucional — esperado: 200
+
+GET {{BaseUrl}}/institutional-vehicle-usages/history?vehicleId={{InstitutionalVehicleId}}&page=1&pageSize=25
+Authorization: Bearer {{TransportationToken}}
+Accept: application/json
+
+### 22. Criar evento vigente pelo Transporte — copie id
+
+POST {{BaseUrl}}/event-authorizations
+Authorization: Bearer {{TransportationToken}}
+Content-Type: application/json
+
+{
+  "name": "Evento Fictício de Homologação",
+  "responsible": "Coordenação Fictícia",
+  "startsAtUtc": "{{EventStartsAtUtc}}",
+  "endsAtUtc": "{{EventEndsAtUtc}}",
+  "area": "Área de demonstração",
+  "overnightAllowed": true,
+  "vehicleRules": [
+    {
+      "vehicleType": "Automóvel",
+      "quantity": 1,
+      "plate": "HME-3C03"
+    },
+    {
+      "vehicleType": "Van",
+      "quantity": 2
+    }
+  ],
+  "notes": "Informação exclusivamente fictícia."
+}
+
+### 23. Porteiro consulta eventos — esperado: 200
+
+GET {{BaseUrl}}/event-authorizations?active=true&page=1&pageSize=25
+Authorization: Bearer {{DoormanToken}}
+Accept: application/json
+
+### 24. Porteiro tenta criar evento — esperado: 403
+
+POST {{BaseUrl}}/event-authorizations
+Authorization: Bearer {{DoormanToken}}
+Content-Type: application/json
+
+{
+  "name": "Evento Não Autorizado",
+  "responsible": "Teste negativo",
+  "startsAtUtc": "{{EventStartsAtUtc}}",
+  "endsAtUtc": "{{EventEndsAtUtc}}",
+  "area": "Área de teste",
+  "overnightAllowed": false,
+  "vehicleRules": [
+    {
+      "vehicleType": "Automóvel",
+      "quantity": 1
+    }
+  ]
+}
+
+### 25. Entrada vinculada ao evento pelo Porteiro — esperado: 201
+
+POST {{BaseUrl}}/access-records/entries
+Authorization: Bearer {{DoormanToken}}
+Content-Type: application/json
+
+{
+  "driverName": "Condutor de Evento Fictício",
+  "plate": "HME-3C03",
+  "objective": "Participação no evento de homologação",
+  "categoryName": "Evento",
+  "vehicleType": "Automóvel",
+  "eventAuthorizationId": {{EventAuthorizationId}}
+}
+
+### 26. Resumo diário pelo Porteiro — esperado: 200, somente agregados
+
+GET {{BaseUrl}}/operations/daily-summary?date={{DemoLocalDate}}
+Authorization: Bearer {{DoormanToken}}
+Accept: application/json
+
+### 27. Resumo diário pelo Transporte — esperado: 200
+
+GET {{BaseUrl}}/operations/daily-summary?date={{DemoLocalDate}}
+Authorization: Bearer {{TransportationToken}}
+Accept: application/json
+
+### 27.1. Resumo diário pelo Vigilante — esperado: 200
+
+GET {{BaseUrl}}/operations/daily-summary?date={{DemoLocalDate}}
+Authorization: Bearer {{SecurityGuardToken}}
+Accept: application/json
+
+### 27.2. Resumo diário pelo Administrador — esperado: 200
+
+GET {{BaseUrl}}/operations/daily-summary?date={{DemoLocalDate}}
+Authorization: Bearer {{AdminToken}}
+Accept: application/json
+
+### 28. Transporte tenta consultar auditoria — esperado: 403
+
+GET {{BaseUrl}}/audits?page=1&pageSize=25
+Authorization: Bearer {{TransportationToken}}
+Accept: application/json
+
+### 29. Administrador consulta auditoria — esperado: 200
+
+GET {{BaseUrl}}/audits?systemOnly=false&page=1&pageSize=25
+Authorization: Bearer {{AdminToken}}
+Accept: application/json
+
+### 30. Administrador pesquisa contas fictícias — esperado: 200 sem hash
+
+GET {{BaseUrl}}/users?search=homologacao&page=1&pageSize=25
+Authorization: Bearer {{AdminToken}}
+Accept: application/json
