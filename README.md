@@ -544,6 +544,7 @@ As decisões e pendências da fundação de login estão em [autenticação e au
 - [Wiki do projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki): visão, processo, requisitos, arc42, dados, segurança, testes, operação e status.
 - [Convenções de commit](docs/development/commit-conventions.md).
 - [CI/CD e segurança de containers](docs/development/ci-cd.md).
+- [Roteiro de homologação do backend do MVP](docs/validation/backend-mvp-homologation.md).
 - [Possibilidades de evolução acadêmica](docs/research/academic-evolution-options.md) — material exploratório para uma futura conversa com professores; não integra o escopo atual.
 - [Modelagem de ameaças](docs/security/threat-model.md).
 - [Guia de desenvolvimento seguro](docs/security/secure-development-guide.md).
