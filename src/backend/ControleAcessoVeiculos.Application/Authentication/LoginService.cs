@@ -60,6 +60,11 @@ public sealed class LoginService(
             authenticationUser.User.Email,
             authenticationUser.ProfileName);
 
-        return LoginResult.Success(token);
+        return LoginResult.Success(
+            token,
+            new LoginUser(
+                authenticationUser.User.Id,
+                authenticationUser.User.Email,
+                authenticationUser.ProfileName));
     }
 }

@@ -20,15 +20,37 @@ public sealed class AuthenticationTests(ApiFactory factory)
     {
         const string password = "Test-only-password-123!";
         var email = await CreateUserAsync(ProfileNames.Administrator, password);
+        var userId = await GetUserIdAsync(email);
         using var client = factory.CreateClient();
 
-        var login = await client.PostAsJsonAsync("/auth/login", new { email, password });
-        var body = await login.Content.ReadFromJsonAsync<LoginResponse>();
+        var login = await client.PostAsJsonAsync("/auth/login", new
+        {
+            email = $"  {email.ToUpperInvariant()}  ",
+            password
+        });
+        var responseContent = await login.Content.ReadAsStringAsync();
+        var body = JsonSerializer.Deserialize<LoginResponse>(
+            responseContent,
+            JsonSerializerOptions.Web);
 
         login.EnsureSuccessStatusCode();
         Assert.NotNull(body);
         Assert.False(string.IsNullOrWhiteSpace(body.AccessToken));
         Assert.True(body.ExpiresAtUtc > DateTime.UtcNow);
+        Assert.Equal(userId, body.User.Id);
+        Assert.Equal(email, body.User.Email);
+        Assert.Equal(ProfileNames.Administrator, body.User.ProfileName);
+
+        using (var responseJson = JsonDocument.Parse(responseContent))
+        {
+            var userProperties = responseJson.RootElement
+                .GetProperty("user")
+                .EnumerateObject()
+                .Select(property => property.Name)
+                .Order()
+                .ToArray();
+            Assert.Equal(["email", "id", "profileName"], userProperties);
+        }
 
         var audit = await GetSingleAuthenticationAuditAsync(email);
         Assert.Equal(TipoAcaoAuditoria.Login, audit.TipoAcao);
@@ -420,7 +442,11 @@ public sealed class AuthenticationTests(ApiFactory factory)
             """);
     }
 
-    private sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
+    private sealed record LoginResponse(
+        string AccessToken,
+        DateTime ExpiresAtUtc,
+        LoginUserResponse User);
+    private sealed record LoginUserResponse(int Id, string Email, string ProfileName);
     private sealed record CreateUserResponse(int Id, string Email, string ProfileName);
     private sealed record ErrorResponse(string Message);
 }

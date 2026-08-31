@@ -12,6 +12,7 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - Cinco senhas incorretas bloqueiam a conta por 15 minutos.
 - O login também possui limite padrão de 30 requisições por minuto por endereço da conexão, sem fila; excesso retorna HTTP 429 sem revelar a existência da conta.
 - O login válido zera as tentativas anteriores.
+- A resposta de login válido expõe somente JWT, expiração, identificador, e-mail normalizado e perfil ativo; nome, hash, bloqueio e demais estados internos da conta não fazem parte do contrato.
 - O access token é assinado com HMAC-SHA256 e expira em 15 minutos.
 - O token contém apenas identificador do usuário, e-mail, perfil e identificador único do token.
 - A política global exige autenticação. Login, health checks e OpenAPI em desenvolvimento são exceções explícitas.
@@ -24,7 +25,7 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - Desativação e reativação são auditadas atomicamente sem duplicar nome ou e-mail.
 - Criação administrativa registra o Administrador como ator; o bootstrap registra origem `Bootstrap` com ator nulo, pois ainda não existe usuário autenticado.
 
-Não existem refresh token, lista geral de revogação ou logout no servidor neste incremento. A desativação da conta, porém, invalida seus tokens na próxima requisição protegida. Até a decisão sobre sessões, o frontend deve manter o access token somente em memória e solicitar novo login após a expiração. Não armazenar token em `localStorage`, logs ou mensagens de erro. A auditoria de autenticação não guarda e-mail, senha, hash, token, IP ou tentativas para usuário inexistente. Se a auditoria obrigatória de um login válido falhar, a API não emite o token.
+Não existem refresh token, lista geral de revogação ou logout no servidor neste incremento. A desativação da conta, porém, invalida seus tokens na próxima requisição protegida. Até a decisão sobre sessões, o frontend deve manter o access token somente em memória e solicitar novo login após a expiração. Não armazenar token em `localStorage`, logs ou mensagens de erro. A identidade retornada ajuda a montar a interface, mas o frontend não decide autorização: cada operação continua sendo validada pelas políticas da API. A auditoria de autenticação não guarda e-mail, senha, hash, token, IP ou tentativas para usuário inexistente. Se a auditoria obrigatória de um login válido falhar, a API não emite o token.
 
 ## Configuração
 
@@ -81,4 +82,4 @@ supervisão e conferência, sem herdar a política de operação ou correção.
 
 ## Validação automatizada
 
-Os testes cobrem login válido, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.
+Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. Dados, senhas e chaves usados nos testes são fictícios e exclusivos do ambiente temporário.

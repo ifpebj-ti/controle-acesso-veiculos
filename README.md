@@ -15,7 +15,7 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 
 ## Estado atual
 
-> Atualizado em 30 de agosto de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
+> Atualizado em 31 de agosto de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
 
 | Área | Estado |
 |---|---|
@@ -24,7 +24,7 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional, autorizações de eventos e resumo operacional diário |
 | Dados | PostgreSQL 16, EF Core 10, doze entidades e doze migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build, scan, smoke test integrado e publicação de imagens verificadas no GHCR após integração na `main`, além de ensaio local de backup/restauração |
-| Qualidade | 164 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 165 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP, auditoria transacional e consulta administrativa da trilha implementados; matriz final de perfis, retenção e imutabilidade em produção pendentes |
 | Deploy | Imagens OCI versionadas no GHCR pela CI; ambiente de homologação, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
 
@@ -34,7 +34,7 @@ Os contratos operacionais e administrativos disponíveis são:
 
 | Método e rota | Finalidade |
 |---|---|
-| `POST /auth/login` | autentica uma conta ativa e emite um JWT de curta duração |
+| `POST /auth/login` | autentica uma conta ativa e retorna JWT, expiração e identidade mínima (`id`, e-mail e perfil) |
 | `GET /users` | pesquisa contas por nome/e-mail e estado, com paginação restrita a Administrador |
 | `POST /users` | cria uma conta individual para um dos perfis preliminares do MVP |
 | `DELETE /users/{id}` | desativa uma conta, revoga seus JWTs na próxima requisição e preserva o histórico |
