@@ -3,10 +3,11 @@
 ## Estado
 
 Esta página documenta a fundação de integração contínua iniciada na Issue #25 e
-ampliada pela Issue #90. Os workflows validam código e imagens em Pull Requests e
-publicam imagens verificadas no GitHub Container Registry após integração na
-`main`. A publicação no registry não realiza deploy nem torna o sistema pronto
-para produção.
+ampliada pelas Issues #90 e #104. Os workflows validam código e imagens em Pull
+Requests e publicam imagens verificadas no GitHub Container Registry após
+integração na `main`. Cada digest publicado recebe proveniência assinada. A
+publicação no registry não realiza deploy nem torna o sistema pronto para
+produção.
 
 ## Workflows
 
@@ -14,13 +15,16 @@ para produção.
 |---|---|---|
 | CI - Backend | Alterações do backend e de suas regras de formato | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura |
 | CI - Frontend | Alterações do frontend | `npm ci`, ESLint e build Vite |
-| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado e Trivy nas duas imagens; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, novo build, novo scan e publicação no GHCR |
+| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado e Trivy nas duas imagens; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, novo build, novo scan, publicação no GHCR e atestação de proveniência |
 | CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários |
 | Dependency Review | Toda Pull Request | bloqueio de novas dependências com vulnerabilidade alta ou crítica |
 
 Todas as actions de terceiros estão fixadas por SHA de commit e acompanhadas do
 número da release auditada. Os jobs de validação usam apenas `contents: read`. O
-job de publicação, restrito a push na `main`, acrescenta `packages: write`.
+job de publicação, restrito a push na `main`, acrescenta `packages: write`,
+`id-token: write` e `attestations: write`. O token OIDC é efêmero e usado pela
+action oficial do GitHub para assinar a atestação; Pull Requests não recebem
+essas permissões.
 Todos os workflows cancelam execuções obsoletas da mesma referência e possuem
 timeout.
 
@@ -118,6 +122,24 @@ O workflow usa o `GITHUB_TOKEN` efêmero do job e autentica somente depois do
 scan. Pull Requests não executam o job de publicação e permanecem sem
 `packages: write`. Nenhum token de registry deve ser adicionado ao repositório.
 
+Depois do push, o workflow resolve o digest da tag `sha-<commit>`, exige o formato
+`sha256:<64 caracteres hexadecimais>` e usa `actions/attest` fixada por SHA para
+gerar proveniência SLSA assinada. A atestação é associada ao repositório no GitHub
+e anexada ao artefato OCI no GHCR. Uma tag móvel, como `main`, não deve ser usada
+como única evidência; prefira a tag por commit ou o digest.
+
+Após autenticar no GHCR, verifique uma imagem com GitHub CLI:
+
+```bash
+gh attestation verify \
+  oci://ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:sha-<commit> \
+  --repo ifpebj-ti/controle-acesso-veiculos
+```
+
+Repita para `controle-acesso-veiculos-frontend`. A verificação confirma digest,
+assinatura e identidade do repositório produtor; não substitui análise de
+vulnerabilidades, revisão do Dockerfile ou política de admissão no ambiente.
+
 O primeiro push cria os packages no escopo da organização. A visibilidade do
 package é uma decisão administrativa: se a equipe precisar permitir download
 anônimo para apresentação acadêmica, um responsável da organização deverá
@@ -130,7 +152,7 @@ de qualquer deploy real, a equipe ainda precisa definir:
 
 - ambiente e responsável pela implantação;
 - política de retenção das imagens;
-- geração de SBOM, assinatura e verificação de proveniência;
+- geração e atestação de SBOM; a proveniência assinada já é gerada pela CI;
 - aprovação de promoção entre desenvolvimento, homologação e produção;
 - estratégia de rollback e resposta a vulnerabilidades.
 
@@ -149,6 +171,7 @@ Antes do merge:
 - [ASP.NET Core health checks](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/health-checks?view=aspnetcore-10.0)
 - [.NET container images and non-root user](https://learn.microsoft.com/en-us/dotnet/core/docker/container-images#non-root-user)
 - [GitHub Actions workflow permissions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions)
+- [GitHub artifact attestations](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations)
 - [Dependabot options](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference)
 - [NGINX unprivileged image](https://github.com/nginx/docker-nginx-unprivileged)
 - [Trivy Action](https://github.com/aquasecurity/trivy-action)
