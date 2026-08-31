@@ -147,8 +147,10 @@ O middleware registra somente o tipo da exceção, nunca o objeto ou sua mensage
 Entrada, saída, uso institucional e cadastro da frota geram auditoria de negócio
 na mesma transação, com falha fechada e sem duplicar dados pessoais, placa,
 identificação patrimonial ou itinerário. Leitura e gestão da frota usam políticas
-separadas. Auditoria dos demais casos de uso, privilégios separados para outros
-recursos e observabilidade externa continuam pendentes.
+separadas. Auditoria dos demais casos de uso e privilégios separados para outros
+recursos continuam pendentes. A Issue #102 adiciona exportação OTLP opcional de
+métricas e traces; collector, armazenamento, painéis, alertas e resposta
+operacional ainda dependem da infraestrutura real.
 
 Login bem-sucedido e bloqueio temporário de conta também usam falha fechada na
 Issue #71: a alteração do usuário e a auditoria são persistidas juntas, e nenhum
@@ -202,6 +204,27 @@ responsável, área, observação e placa não são duplicados.
 
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
+
+## Telemetria e observabilidade
+
+- manter a exportação desabilitada até existir collector confiável;
+- exportar somente sinais necessários e revisar atributos antes de cada nova
+  instrumentação;
+- não capturar corpo, token, credencial, connection string, SQL ou dados pessoais;
+- manter a redação dos valores de query string obrigatória e revisar até os nomes
+  dos parâmetros antes de criar novas rotas;
+- excluir health checks dos traces para evitar ruído e custo artificial;
+- usar TLS e autenticação para OTLP fora de rede local confiável;
+- fornecer headers de autenticação somente por mecanismo de segredos;
+- restringir acesso e definir retenção para métricas e traces;
+- impedir que falha do collector derrube o fluxo operacional;
+- validar cardinalidade, sampling, custo, painéis e alertas em homologação.
+
+A Issue #102 instrumenta requisições ASP.NET Core e runtime e exporta métricas e
+traces por OTLP somente quando `Observability:Enabled` está ativo. Logs continuam
+fora desse exporter. Endpoints de saúde não geram traces. A configuração e o
+roteiro de verificação estão no
+[guia de observabilidade](../operations/observability.md).
 
 ## Limites e disponibilidade
 

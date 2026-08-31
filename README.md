@@ -23,10 +23,10 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional, autorizações de eventos e resumo operacional diário |
 | Dados | PostgreSQL 16, EF Core 10, doze entidades e doze migrations versionadas |
-| Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build, scan, smoke test integrado e publicação de imagens verificadas no GHCR após integração na `main`, além de ensaio local de backup/restauração |
-| Qualidade | 165 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build, scan, smoke test integrado e publicação de imagens verificadas no GHCR após integração na `main`, além de ensaio local de backup/restauração e exportação OpenTelemetry configurável |
+| Qualidade | 175 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP, auditoria transacional e consulta administrativa da trilha implementados; matriz final de perfis, retenção e imutabilidade em produção pendentes |
-| Deploy | Imagens OCI versionadas no GHCR pela CI; ambiente de homologação, HTTPS, backup protegido de produção, observabilidade e deploy ainda não configurados |
+| Deploy | Imagens OCI versionadas no GHCR pela CI e base OTLP implementada; ambiente de homologação, HTTPS, collector, painéis, alertas, backup protegido e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
 
@@ -514,6 +514,24 @@ curl -i http://localhost:5118/weatherforecast
 
 `/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível. `/weatherforecast` retorna HTTP 401 sem token e pode ser usado para verificar uma autenticação local.
 
+### Observabilidade opcional
+
+A API exporta métricas HTTP/runtime e traces ASP.NET Core por OTLP quando
+`OTEL_ENABLED=true`. O recurso permanece desabilitado por padrão e o projeto não
+inclui um collector. Antes de habilitar, disponibilize um receiver acessível e
+configure `OTEL_EXPORTER_OTLP_ENDPOINT`; health checks são excluídos dos traces.
+
+```dotenv
+OTEL_ENABLED=true
+OTEL_SERVICE_NAME=controle-acesso-veiculos-api
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+```
+
+Não coloque token em URL, Compose ou arquivo versionado. Se o collector exigir
+headers de autenticação, injete `OTEL_EXPORTER_OTLP_HEADERS` por secret manager.
+Consulte o [guia de observabilidade](docs/operations/observability.md) para
+validação, privacidade, alertas propostos e pendências de produção.
+
 ## Configuração e segurança
 
 - Toda resposta inclui `X-Correlation-ID`; somente UUIDs válidos enviados pelo cliente são reutilizados.
@@ -545,6 +563,7 @@ As decisões e pendências da fundação de login estão em [autenticação e au
 - [Wiki do projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki): visão, processo, requisitos, arc42, dados, segurança, testes, operação e status.
 - [Convenções de commit](docs/development/commit-conventions.md).
 - [CI/CD e segurança de containers](docs/development/ci-cd.md).
+- [Observabilidade da API](docs/operations/observability.md).
 - [Roteiro de homologação do backend do MVP](docs/validation/backend-mvp-homologation.md).
 - [Possibilidades de evolução acadêmica](docs/research/academic-evolution-options.md) — material exploratório para uma futura conversa com professores; não integra o escopo atual.
 - [Modelagem de ameaças](docs/security/threat-model.md).
