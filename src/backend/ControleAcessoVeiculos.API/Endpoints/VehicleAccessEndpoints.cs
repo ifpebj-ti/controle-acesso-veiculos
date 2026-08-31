@@ -54,7 +54,8 @@ public static class VehicleAccessEndpoints
                 request.Model,
                 request.Color,
                 request.Year,
-                request.Observation),
+                request.Observation,
+                request.EventAuthorizationId),
             actorUserId,
             cancellationToken);
 
@@ -184,7 +185,8 @@ public sealed record RegisterVehicleEntryRequest(
     string? Model = null,
     string? Color = null,
     int? Year = null,
-    string? Observation = null);
+    string? Observation = null,
+    int? EventAuthorizationId = null);
 
 public sealed record SearchVehicleAccessesRequest(
     string? Plate = null,

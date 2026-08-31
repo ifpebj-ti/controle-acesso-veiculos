@@ -39,7 +39,8 @@ public sealed class VehicleAccessServiceTests
                 "  Visita técnica  ",
                 "visitante",
                 " cpf ",
-                " 12345678900 "),
+                " 12345678900 ",
+                EventAuthorizationId: 12),
             actorUserId: 7);
 
         Assert.Equal(RegisterVehicleEntryStatus.Success, result.Status);
@@ -49,8 +50,29 @@ public sealed class VehicleAccessServiceTests
         Assert.Equal("ABC1D23", store.LastEntry.Plate);
         Assert.Equal("Visitante", store.LastEntry.CategoryName);
         Assert.Equal("CPF", store.LastEntry.DocumentType);
+        Assert.Equal(12, store.LastEntry.EventAuthorizationId);
         Assert.Equal(FixedNow.UtcDateTime, store.LastEntryAtUtc);
         Assert.Equal(7, store.LastActorUserId);
+    }
+
+    [Fact]
+    public async Task RegisterEntryAsync_ShouldRejectInvalidEventAuthorizationId()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.RegisterEntryAsync(
+            new RegisterVehicleEntryCommand(
+                "Condutor",
+                "ABC1D23",
+                "Evento",
+                AccessCategoryNames.Event,
+                EventAuthorizationId: 0),
+            actorUserId: 7);
+
+        Assert.Equal(RegisterVehicleEntryStatus.Invalid, result.Status);
+        Assert.Contains("eventAuthorizationId", result.Errors.Keys);
+        Assert.Equal(0, store.RegisterCalls);
     }
 
     [Fact]

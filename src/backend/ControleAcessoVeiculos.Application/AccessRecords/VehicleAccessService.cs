@@ -34,7 +34,8 @@ public sealed class VehicleAccessService(
             NormalizeOptional(command.Model),
             NormalizeOptional(command.Color),
             command.Year,
-            NormalizeOptional(command.Observation));
+            NormalizeOptional(command.Observation),
+            command.EventAuthorizationId);
 
         var stored = await vehicleAccessStore.TryRegisterEntryAsync(
             entry,
@@ -42,10 +43,23 @@ public sealed class VehicleAccessService(
             timeProvider.GetUtcNow().UtcDateTime,
             cancellationToken);
 
-        return stored.Status == VehicleAccessStoreRegistrationStatus.Success
-            ? RegisterVehicleEntryResult.Success(stored.AccessRecord!)
-            : RegisterVehicleEntryResult.Conflict(
-                "O veículo já possui um acesso aberto ou os dados informados estão inativos.");
+        return stored.Status switch
+        {
+            VehicleAccessStoreRegistrationStatus.Success =>
+                RegisterVehicleEntryResult.Success(stored.AccessRecord!),
+            VehicleAccessStoreRegistrationStatus.EventNotFound =>
+                RegisterVehicleEntryResult.Conflict("A autorização de evento não foi encontrada."),
+            VehicleAccessStoreRegistrationStatus.EventInactive =>
+                RegisterVehicleEntryResult.Conflict("A autorização de evento está cancelada."),
+            VehicleAccessStoreRegistrationStatus.EventOutsideWindow =>
+                RegisterVehicleEntryResult.Conflict("A entrada está fora da janela autorizada do evento."),
+            VehicleAccessStoreRegistrationStatus.EventVehicleNotAuthorized =>
+                RegisterVehicleEntryResult.Conflict("A placa ou o tipo do veículo não está autorizado para o evento."),
+            VehicleAccessStoreRegistrationStatus.EventQuotaExceeded =>
+                RegisterVehicleEntryResult.Conflict("A cota de veículos do evento foi atingida."),
+            _ => RegisterVehicleEntryResult.Conflict(
+                "O veículo já possui um acesso aberto ou os dados informados estão inativos.")
+        };
     }
 
     public Task<IReadOnlyList<VehicleAccessRecord>> ListOpenAsync(
@@ -214,6 +228,12 @@ public sealed class VehicleAccessService(
         ValidateOptional(command.Model, 100, "model", errors);
         ValidateOptional(command.Color, 40, "color", errors);
         ValidateOptional(command.Observation, 1000, "observation", errors);
+
+        if (command.EventAuthorizationId is <= 0)
+        {
+            errors["eventAuthorizationId"] =
+                ["O identificador da autorização de evento deve ser positivo."];
+        }
 
         if (command.Year is <= 0 || command.Year > currentYear + 1)
         {

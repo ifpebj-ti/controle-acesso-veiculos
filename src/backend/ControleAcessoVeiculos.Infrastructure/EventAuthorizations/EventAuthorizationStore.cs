@@ -90,11 +90,15 @@ public sealed class EventAuthorizationStore(
         var rules = await LoadRulesAsync(
             entities.Select(entity => entity.Id).ToArray(),
             cancellationToken);
+        var consumedQuantities = await LoadConsumedQuantitiesAsync(
+            rules.Values.SelectMany(items => items).Select(rule => rule.Id).ToArray(),
+            cancellationToken);
 
         return new(
             entities.Select(entity => Map(
                 entity,
-                rules.GetValueOrDefault(entity.Id, []))).ToArray(),
+                rules.GetValueOrDefault(entity.Id, []),
+                consumedQuantities)).ToArray(),
             criteria.Page,
             criteria.PageSize,
             totalCount,
@@ -128,6 +132,16 @@ public sealed class EventAuthorizationStore(
                 .Where(rule => rule.EventoAcessoId == eventId)
                 .OrderBy(rule => rule.Id)
                 .ToListAsync(cancellationToken);
+            var consumedQuantities = await LoadConsumedQuantitiesAsync(
+                currentRules.Select(rule => rule.Id).ToArray(),
+                cancellationToken);
+            var rulesChanged = !RulesMatch(currentRules, data.VehicleRules);
+
+            if (rulesChanged && consumedQuantities.Values.Any(count => count > 0))
+            {
+                return new(EventAuthorizationStoreStatus.Conflict, null);
+            }
+
             var eventChanged = entity.Atualizar(
                 data.Name,
                 data.Responsible,
@@ -138,11 +152,12 @@ public sealed class EventAuthorizationStore(
                 data.Notes,
                 actorUserId,
                 occurredAtUtc);
-            var rulesChanged = !RulesMatch(currentRules, data.VehicleRules);
 
             if (!eventChanged && !rulesChanged)
             {
-                return new(EventAuthorizationStoreStatus.Success, Map(entity, currentRules));
+                return new(
+                    EventAuthorizationStoreStatus.Success,
+                    Map(entity, currentRules, consumedQuantities));
             }
 
             IReadOnlyList<AutorizacaoVeiculoEvento> resultingRules = currentRules;
@@ -183,7 +198,7 @@ public sealed class EventAuthorizationStore(
 
             return new(
                 EventAuthorizationStoreStatus.Success,
-                Map(entity, resultingRules));
+                Map(entity, resultingRules, consumedQuantities));
         }
         catch (DbUpdateException exception) when (IsConstraintViolation(exception))
         {
@@ -268,6 +283,24 @@ public sealed class EventAuthorizationStore(
             rule.Quantity,
             rule.Plate)).ToArray();
 
+    private async Task<Dictionary<int, int>> LoadConsumedQuantitiesAsync(
+        IReadOnlyCollection<int> ruleIds,
+        CancellationToken cancellationToken)
+    {
+        if (ruleIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await dbContext.RegistrosAcesso
+            .AsNoTracking()
+            .Where(record => record.AutorizacaoVeiculoEventoId.HasValue &&
+                ruleIds.Contains(record.AutorizacaoVeiculoEventoId.Value))
+            .GroupBy(record => record.AutorizacaoVeiculoEventoId!.Value)
+            .Select(group => new { RuleId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.RuleId, item => item.Count, cancellationToken);
+    }
+
     private static bool RulesMatch(
         IReadOnlyCollection<AutorizacaoVeiculoEvento> current,
         IReadOnlyCollection<EventVehicleRuleData> requested)
@@ -293,7 +326,8 @@ public sealed class EventAuthorizationStore(
 
     private static EventAuthorizationRecord Map(
         EventoAcesso entity,
-        IEnumerable<AutorizacaoVeiculoEvento> rules) =>
+        IEnumerable<AutorizacaoVeiculoEvento> rules,
+        IReadOnlyDictionary<int, int>? consumedQuantities = null) =>
         new(
             entity.Id,
             entity.Nome,
@@ -312,7 +346,13 @@ public sealed class EventAuthorizationStore(
                 rule.Id,
                 rule.TipoVeiculo,
                 rule.Quantidade,
-                rule.Placa)).ToArray());
+                rule.Placa,
+                consumedQuantities?.GetValueOrDefault(rule.Id, 0) ?? 0,
+                Math.Max(
+                    0,
+                    rule.Quantidade -
+                        (consumedQuantities?.GetValueOrDefault(rule.Id, 0) ?? 0))))
+                .ToArray());
 
     private static Auditoria CreateAudit(
         EventoAcesso entity,

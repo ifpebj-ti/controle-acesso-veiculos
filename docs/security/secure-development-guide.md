@@ -188,7 +188,15 @@ alteram e cancelam. Período e quantidade possuem limites, placas são normaliza
 e constraints do PostgreSQL impedem regras duplicadas. Evento, regras e auditoria
 são persistidos atomicamente. A trilha não copia nome, responsável, área,
 observação ou placa. A associação com entradas e o consumo concorrente de cotas
-permanecem fora deste recorte e são rastreados pela Issue #82.
+permanecem fora desse recorte e são rastreados pela Issue #82.
+
+Na Issue #82, a associação opcional passa a ser feita dentro da mesma transação da
+entrada. O backend bloqueia a linha do evento, valida estado e janela, prioriza a
+placa específica e depois a cota por tipo, e conta registros já associados antes
+de persistir. A saída não reduz esse total. Essa serialização evita exceder a cota
+em requisições concorrentes e o vínculo não pode ser alterado pela correção
+descritiva. Identificadores do evento e da regra podem constar na auditoria; nome,
+responsável, área, observação e placa não são duplicados.
 
 Referência:
 [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html).
