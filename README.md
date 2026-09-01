@@ -292,6 +292,23 @@ Remove-Item Env:BootstrapAdmin__Name, Env:BootstrapAdmin__Email, Env:BootstrapAd
 
 O comando funciona somente enquanto não existir nenhum usuário. Ele cria a primeira conta fora da API HTTP. Depois disso, um Administrador autenticado pode consultar, criar, desativar e reativar contas em `/users`. A API impede auto-desativação e preserva ao menos um Administrador ativo. Não use dados ou senhas reais nos exemplos e não versione essas variáveis.
 
+### Dados fictícios para demonstração
+
+Com a API local saudável e o Administrador criado, prepare um conjunto
+representativo sem acessar o banco diretamente:
+
+```powershell
+./infrastructure/demo/Initialize-DemoData.ps1 `
+  -ApiBaseUrl http://127.0.0.1:5118
+```
+
+Para a API exposta pelo Compose, omita `-ApiBaseUrl` ou use a porta local
+configurada. O script aceita somente loopback, solicita as credenciais do
+Administrador e três senhas temporárias distintas por prompt protegido, e não
+imprime senha ou token. Ele cria contas e cenários fictícios abertos e
+encerrados pelos endpoints normais da API. Consulte o
+[guia dos dados de demonstração](infrastructure/demo/README.md) antes de executar.
+
 ### Consultar a trilha de auditoria
 
 Com um token de Administrador:

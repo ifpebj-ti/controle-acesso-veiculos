@@ -2,7 +2,7 @@
 
 **Status:** roteiro técnico preliminar para validação com usuários<br>
 **Escopo:** backend, PostgreSQL, infraestrutura local e QA<br>
-**Rastreabilidade:** Issue #88
+**Rastreabilidade:** Issues #88 e #108
 
 Este documento transforma as funcionalidades já integradas à `main` em uma
 sessão reproduzível de validação. Ele não comprova aceitação institucional e não
@@ -83,7 +83,7 @@ docker compose up -d postgresql
 Set-Location ../..
 ```
 
-Resultado esperado: formatação e build sem erros, 164 testes aprovados e
+Resultado esperado: formatação e build sem erros, 175 testes aprovados e
 PostgreSQL saudável. Os testes de integração exigem acesso ao Docker porque usam
 PostgreSQL real e descartável via Testcontainers.
 
@@ -130,6 +130,28 @@ Invoke-RestMethod http://localhost:5118/health/ready
 Resultado esperado: `status` igual a `Healthy`. Para usar a API pelo Compose,
 substitua a URL do arquivo HTTP por `http://localhost:8080` e confirme primeiro
 que as migrations já foram aplicadas.
+
+### 3.5. Dados fictícios representativos
+
+Para preparar previamente contas e cenários visíveis na demonstração, execute em
+outro terminal:
+
+```powershell
+./infrastructure/demo/Initialize-DemoData.ps1 `
+  -ApiBaseUrl http://127.0.0.1:5118
+```
+
+O script aceita somente uma API em loopback e solicita interativamente a conta
+administrativa e três senhas temporárias distintas. Ele usa os endpoints normais
+para preservar autorização, validações e auditoria e deixa exemplos abertos e
+encerrados. Não projete os prompts durante a reunião. Em uma segunda execução,
+informe as mesmas senhas para comprovar que os dados não são duplicados.
+
+José Ernandes é o responsável técnico provisório pelo ambiente local enquanto
+mantiver vínculo com o campus. Isso não o torna autoridade para aprovar política
+institucional de retenção, proteção de dados ou produção. Antes da transferência
+do projeto, o responsável sucessor e o procedimento de entrega devem ser
+registrados.
 
 ## 4. Ordem da demonstração
 
