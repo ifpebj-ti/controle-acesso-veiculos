@@ -58,6 +58,26 @@ temporárias para confirmar que o conjunto não é duplicado. Como a API ainda n
 possui redefinição administrativa de senha, uma senha diferente fará a validação
 da respectiva conta falhar sem alterar a credencial existente.
 
+## Validação automatizada
+
+O workflow `.github/workflows/ci-demo-data.yml` protege este procedimento contra
+alterações incompatíveis no backend, no Compose ou no próprio inicializador. Em
+um ambiente inteiramente descartável, ele:
+
+1. gera e mascara credenciais efêmeras;
+2. constrói a imagem backend e inicia somente o PostgreSQL;
+3. aplica as migrations versionadas;
+4. provisiona o primeiro Administrador por `--bootstrap-admin`;
+5. inicia a API e exige readiness saudável;
+6. executa o inicializador duas vezes com as mesmas credenciais;
+7. compara o resultado observável e falha se houver divergência;
+8. remove containers, rede e volume mesmo quando uma etapa falha.
+
+O job possui somente permissão de leitura no repositório, não publica imagem ou
+banco e não usa ambiente compartilhado. Seu sucesso comprova repetibilidade
+técnica com dados fictícios; não comprova aceitação de campos, regras, perfis ou
+usabilidade pelos usuários do campus.
+
 ## Limpeza
 
 Não existe exclusão física do conjunto pela API porque o histórico e a auditoria

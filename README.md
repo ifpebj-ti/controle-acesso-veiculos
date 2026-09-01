@@ -315,6 +315,11 @@ imprime senha ou token. Ele cria contas e cenários fictícios abertos e
 encerrados pelos endpoints normais da API. Consulte o
 [guia dos dados de demonstração](infrastructure/demo/README.md) antes de executar.
 
+O workflow `CI - Demo data` executa esse mesmo conjunto duas vezes contra API e
+PostgreSQL descartáveis quando o backend, o Compose ou o inicializador mudam. A
+barreira detecta incompatibilidades e duplicação antes da demonstração, mas não
+substitui avaliação de usabilidade nem homologação com os perfis reais.
+
 ### Consultar a trilha de auditoria
 
 Com um token de Administrador:

@@ -2,7 +2,7 @@
 
 **Status:** roteiro técnico preliminar para validação com usuários<br>
 **Escopo:** backend, PostgreSQL, infraestrutura local e QA<br>
-**Rastreabilidade:** Issues #88 e #108
+**Rastreabilidade:** Issues #88, #108 e #112
 
 Este documento transforma as funcionalidades já integradas à `main` em uma
 sessão reproduzível de validação. Ele não comprova aceitação institucional e não
@@ -146,6 +146,11 @@ administrativa e três senhas temporárias distintas. Ele usa os endpoints norma
 para preservar autorização, validações e auditoria e deixa exemplos abertos e
 encerrados. Não projete os prompts durante a reunião. Em uma segunda execução,
 informe as mesmas senhas para comprovar que os dados não são duplicados.
+
+A CI repete automaticamente esse preparo em infraestrutura descartável sempre
+que seus contratos técnicos mudam. Mesmo com o workflow aprovado, execute este
+roteiro manual durante a preparação da sessão: automação detecta regressões, mas
+não observa compreensão, esforço, dúvidas ou adequação do fluxo aos usuários.
 
 José Ernandes é o responsável técnico provisório pelo ambiente local enquanto
 mantiver vínculo com o campus. Isso não o torna autoridade para aprovar política
