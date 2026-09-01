@@ -1,7 +1,20 @@
-
 # Frontend
 
 Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jardim.
+
+## Protótipo navegável
+
+A versão atual inclui um protótipo local para validação de fluxo com o cliente. Ele usa somente dados fictícios mantidos em memória e identifica explicitamente o modo demonstração.
+
+Fluxo sugerido para a apresentação:
+
+1. acessar `/login` e escolher o perfil de demonstração;
+2. comparar a navegação de Transporte, Porteiro, Vigilante e Administrador;
+3. como Porteiro ou Vigilante, simular uma entrada em `/acessos/novo`;
+4. consultar `/acessos/abertos` e simular a saída;
+5. como Transporte, explorar a visão geral, o histórico, a frota e os eventos.
+
+O protótipo não autentica, não aplica autorização real, não chama a API e não representa homologação para produção. A seleção de perfil serve somente para validar arquitetura de informação e responsabilidades.
 
 ## Tecnologias
 
@@ -46,7 +59,8 @@ No ambiente Docker, o Nginx aplica o mesmo contrato e encaminha `/api/*` para o
 container backend. Essa estratégia evita expor uma segunda origem ao navegador e
 dispensa uma política CORS ampla no MVP.
 
-Não inclua tokens, senhas ou credenciais em variáveis expostas ao frontend.
+O protótipo atual ainda não realiza chamadas aos endpoints de negócio. Não
+inclua tokens, senhas ou credenciais em variáveis expostas ao frontend.
 
 ## Estrutura de diretórios
 
@@ -55,6 +69,7 @@ src/
 ├── components/
 │   ├── layout/       # Layouts compartilhados.
 │   └── ui/           # Componentes visuais reutilizáveis.
+├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── pages/            # Componentes associados às páginas.
 ├── routes/           # Configuração central das rotas.
 ├── services/         # Cliente HTTP e integrações externas.
@@ -63,32 +78,30 @@ src/
 ├── utils/            # Funções utilitárias puras.
 ├── App.tsx           # Composição principal.
 ├── main.tsx          # Ponto de entrada do React.
-└── index.css         # Estilos globais e importação do Tailwind.
+└── index.css         # Tokens, estilos globais e Tailwind.
 ```
 
 ## Convenções
 
 - Use TypeScript em todo código novo.
 - Use Tailwind CSS 4 para estilização.
-- Evite CSS manual quando as classes utilitárias forem suficientes.
 - Mantenha componentes com uma responsabilidade clara.
 - Não coloque regras de negócio em componentes visuais.
 - Não faça chamadas HTTP diretamente em componentes de apresentação.
-- Centralize chamadas HTTP em `services/`.
+- Centralize futuras chamadas HTTP em `services/`.
 - Use PascalCase para componentes React.
 - Use branches específicas para cada alteração.
 - Não adicione bibliotecas sem justificar sua necessidade.
 
-## Fora do escopo desta etapa
+## Fora do escopo do protótipo
 
-- autenticação;
-- autorização;
-- gerenciamento de tokens;
-- telas funcionais do MVP;
-- chamadas reais de endpoints;
-- gerenciamento global de estado;
-- testes automatizados;
-- integração com PostgreSQL.
+- autenticação e autorização reais;
+- gerenciamento ou persistência de tokens;
+- chamadas de endpoints de negócio;
+- persistência dos dados demonstrativos;
+- integração com PostgreSQL;
+- garantia de segurança baseada na seleção de perfil;
+- homologação do cliente ou prontidão para produção.
 
 ## Validação
 
