@@ -10,9 +10,26 @@ Fluxo sugerido para a apresentação:
 
 1. acessar `/login` e escolher o perfil de demonstração;
 2. comparar a navegação de Transporte, Porteiro, Vigilante e Administrador;
-3. como Porteiro ou Vigilante, simular uma entrada em `/acessos/novo`;
-4. consultar `/acessos/abertos` e simular a saída;
-5. como Transporte, explorar a visão geral, o histórico, a frota e os eventos.
+3. como Porteiro ou Vigilante, registrar uma entrada fictícia em `/acessos/novo`;
+4. conferir o alerta de permanência em `/acessos/abertos` e registrar a saída;
+5. como Transporte, explorar o histórico, a frota e os eventos;
+6. como Administrador, filtrar o histórico por período, revisar a demonstração de
+   retenção e gerenciar contas fictícias em `/administracao`.
+
+No fluxo proposto, Porteiro e Vigilante possuem a mesma navegação operacional.
+O Setor de Transporte mantém frota e eventos, enquanto o Administrador consulta o
+histórico e gerencia contas e permissões sem registrar entradas ou saídas.
+
+O formulário de entrada adapta os campos ao contexto: visitante exige conferência
+de documento; o motivo “Levar ou buscar estudante” sugere dez minutos e gera um
+alerta quando a saída não é registrada; veículos institucionais recuperam a placa
+do catálogo e exigem somente conferência. Nenhum prazo encerra o acesso
+automaticamente.
+
+A notificação de descarte após cinco anos é uma hipótese visual solicitada para a
+homologação. Ela não exclui dados, não possui endpoint no backend e não substitui
+a aprovação institucional de finalidade, retenção, bloqueios e descarte descrita
+em `../../docs/operations/data-retention-and-continuity.md`.
 
 O protótipo não autentica, não aplica autorização real, não chama a API e não representa homologação para produção. A seleção de perfil serve somente para validar arquitetura de informação e responsabilidades.
 
