@@ -88,12 +88,23 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
   const { accountName, profile } = useDemo();
   const location = useLocation();
   const navigate = useNavigate();
-  const activeSection = navigation.find((section) =>
-    section.items?.some((item) => location.pathname === item.to),
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    () => new Set(),
   );
-  const [expandedSection, setExpandedSection] = useState<string | null>(
-    activeSection?.label ?? null,
-  );
+
+  function toggleSection(sectionLabel: string) {
+    setCollapsedSections((currentSections) => {
+      const nextSections = new Set(currentSections);
+
+      if (nextSections.has(sectionLabel)) {
+        nextSections.delete(sectionLabel);
+      } else {
+        nextSections.add(sectionLabel);
+      }
+
+      return nextSections;
+    });
+  }
 
   function handleLogout() {
     closeMenu?.();
@@ -129,7 +140,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
             const items = section.items?.filter(
               (item) => !item.profiles || item.profiles.includes(profile),
             );
-            const isExpanded = expandedSection === section.label;
+            const isExpanded = !collapsedSections.has(section.label);
             const hasActiveItem = items?.some(
               (item) => location.pathname === item.to,
             );
@@ -162,9 +173,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                             ? "bg-white/40 text-ink"
                             : "text-ink/85 hover:bg-white/45 hover:text-ink"
                       }`}
-                      onClick={() =>
-                        setExpandedSection(isExpanded ? null : section.label)
-                      }
+                      onClick={() => toggleSection(section.label)}
                       type="button"
                     >
                       <Icon name={section.icon} size={20} />
