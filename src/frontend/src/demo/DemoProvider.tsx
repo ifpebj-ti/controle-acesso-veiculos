@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import {
   DemoContext,
@@ -11,11 +6,11 @@ import {
   profileLabels,
   type DemoProfile,
   type NewDemoAccess,
-} from './DemoContext';
+} from "./DemoContext";
 
 export function DemoProvider({ children }: { children: ReactNode }) {
-  const [accountName, setAccountName] = useState('Administrador demonstrativo');
-  const [profile, setProfile] = useState<DemoProfile>('administrador');
+  const [accountName, setAccountName] = useState("Administrador demonstrativo");
+  const [profile, setProfile] = useState<DemoProfile>("administrador");
   const [records, setRecords] = useState(initialRecords);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -28,16 +23,22 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   );
 
   const registerAccess = useCallback((record: NewDemoAccess) => {
+    const entryAt = new Date();
     setRecords((current) => [
       {
         ...record,
         id: Date.now(),
-        entryAt: new Date().toISOString(),
+        entryAt: entryAt.toISOString(),
+        expectedExitAt: record.expectedDurationMinutes
+          ? new Date(
+              entryAt.getTime() + record.expectedDurationMinutes * 60_000,
+            ).toISOString()
+          : undefined,
         plate: record.plate.trim().toUpperCase(),
       },
       ...current,
     ]);
-    setNotice('Entrada adicionada ao protótipo. Nenhum dado foi enviado.');
+    setNotice("Entrada adicionada ao protótipo. Nenhum dado foi enviado.");
   }, []);
 
   const closeAccess = useCallback((id: number) => {
@@ -48,7 +49,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           : record,
       ),
     );
-    setNotice('Saída simulada com sucesso. Nenhum dado foi enviado.');
+    setNotice("Saída simulada com sucesso. Nenhum dado foi enviado.");
   }, []);
 
   const value = useMemo(

@@ -1,8 +1,9 @@
-export { DemoProvider } from './DemoProvider';
-export { profileLabels } from './DemoContext';
+export { DemoProvider } from "./DemoProvider";
+export { institutionalVehicles, profileLabels } from "./DemoContext";
 export type {
   DemoAccessRecord,
+  DemoInstitutionalVehicle,
   DemoProfile,
   NewDemoAccess,
-} from './DemoContext';
-export { useDemo } from './useDemo';
+} from "./DemoContext";
+export { useDemo } from "./useDemo";

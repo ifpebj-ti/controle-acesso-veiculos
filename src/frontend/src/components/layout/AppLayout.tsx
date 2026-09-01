@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { useDemo, type DemoProfile } from '../../demo';
-import { Brand } from '../ui/Brand';
-import { Icon, type IconName } from '../ui/Icon';
+import { useDemo, type DemoProfile } from "../../demo";
+import { Brand } from "../ui/Brand";
+import { Icon, type IconName } from "../ui/Icon";
 
 interface NavigationItem {
   label: string;
@@ -20,64 +20,67 @@ interface NavigationSection {
   to?: string;
 }
 
-const operationalProfiles: DemoProfile[] = [
-  'porteiro',
-  'vigilante',
-  'administrador',
-];
+const operationalProfiles: DemoProfile[] = ["porteiro", "vigilante"];
 
-const transportProfiles: DemoProfile[] = ['transporte', 'administrador'];
+const fleetProfiles: DemoProfile[] = ["porteiro", "vigilante", "transporte"];
+const registryProfiles: DemoProfile[] = ["porteiro", "vigilante", "transporte"];
 
 const accessLabels: Record<DemoProfile, string> = {
-  administrador: 'ADM',
-  porteiro: 'Porteiro',
-  transporte: 'Transporte',
-  vigilante: 'Vigilante',
+  administrador: "ADM",
+  porteiro: "Porteiro",
+  transporte: "Transporte",
+  vigilante: "Vigilante",
 };
 
 const navigation: NavigationSection[] = [
   {
-    icon: 'dashboard',
-    label: 'Visão geral',
-    to: '/visao-geral',
+    icon: "dashboard",
+    label: "Visão geral",
+    to: "/visao-geral",
   },
   {
-    icon: 'history',
-    label: 'Movimentações',
+    icon: "history",
+    label: "Movimentações",
     items: [
       {
-        icon: 'plus',
-        label: 'Registrar entrada',
+        icon: "plus",
+        label: "Registrar entrada",
         profiles: operationalProfiles,
-        to: '/acessos/novo',
+        to: "/acessos/novo",
       },
       {
-        icon: 'clock',
-        label: 'Acessos em aberto',
+        icon: "clock",
+        label: "Acessos em aberto",
         profiles: operationalProfiles,
-        to: '/acessos/abertos',
+        to: "/acessos/abertos",
       },
-      { icon: 'history', label: 'Histórico', to: '/acessos/historico' },
+      { icon: "history", label: "Histórico", to: "/acessos/historico" },
     ],
   },
   {
-    icon: 'clipboard',
-    label: 'Cadastros',
+    icon: "clipboard",
+    label: "Cadastros",
+    profiles: registryProfiles,
     items: [
       {
-        icon: 'bus',
-        label: 'Frota institucional',
-        profiles: transportProfiles,
-        to: '/frota',
+        icon: "bus",
+        label: "Frota institucional",
+        profiles: fleetProfiles,
+        to: "/frota",
       },
-      { icon: 'calendar', label: 'Eventos e autorizações', to: '/eventos' },
+      {
+        icon: "calendar",
+        label: "Eventos e autorizações",
+        profiles: registryProfiles,
+        to: "/eventos",
+      },
     ],
   },
   {
-    icon: 'users',
-    label: 'Usuários e permissões',
-    profiles: ['administrador'],
-    to: '/administracao',
+    icon: "users",
+    label: "Usuários e permissões",
+    profiles: ["administrador"],
+    to: "/administracao",
   },
 ];
 
@@ -94,7 +97,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
 
   function handleLogout() {
     closeMenu?.();
-    navigate('/login');
+    navigate("/login");
   }
 
   return (
@@ -138,8 +141,8 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                     className={({ isActive }) =>
                       `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-l-2xl px-4 py-3 font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 ${
                         isActive
-                          ? 'sidebar-primary-item--active bg-cream text-ink'
-                          : 'text-ink/85 hover:bg-white/45 hover:text-ink'
+                          ? "sidebar-primary-item--active bg-cream text-ink"
+                          : "text-ink/85 hover:bg-white/45 hover:text-ink"
                       }`
                     }
                     onClick={closeMenu}
@@ -154,10 +157,10 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                       aria-expanded={isExpanded}
                       className={`sidebar-primary-item flex min-h-12 w-full items-center gap-3 rounded-l-2xl px-4 py-3 text-left font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 ${
                         hasActiveItem
-                          ? 'sidebar-primary-item--active bg-cream text-ink'
+                          ? "sidebar-primary-item--active bg-cream text-ink"
                           : isExpanded
-                            ? 'bg-white/40 text-ink'
-                          : 'text-ink/85 hover:bg-white/45 hover:text-ink'
+                            ? "bg-white/40 text-ink"
+                            : "text-ink/85 hover:bg-white/45 hover:text-ink"
                       }`}
                       onClick={() =>
                         setExpandedSection(isExpanded ? null : section.label)
@@ -167,7 +170,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                       <Icon name={section.icon} size={20} />
                       <span className="flex-1">{section.label}</span>
                       <Icon
-                        className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
                         name="chevron-down"
                         size={17}
                       />
@@ -181,8 +184,8 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                               className={({ isActive }) =>
                                 `flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 ${
                                   isActive
-                                    ? 'bg-cream font-semibold text-ink shadow-sm'
-                                    : 'text-ink/70 hover:bg-white/45 hover:text-ink'
+                                    ? "bg-cream font-semibold text-ink shadow-sm"
+                                    : "text-ink/70 hover:bg-white/45 hover:text-ink"
                                 }`
                               }
                               onClick={closeMenu}
@@ -222,11 +225,11 @@ export function AppLayout() {
     if (!menuOpen) return;
 
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setMenuOpen(false);
+      if (event.key === "Escape") setMenuOpen(false);
     }
 
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
   }, [menuOpen]);
 
   return (
@@ -287,7 +290,8 @@ export function AppLayout() {
         tabIndex={-1}
       >
         <div className="border-b border-amber-300/60 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-950 sm:text-sm lg:px-8">
-          Modo demonstração — dados fictícios, sem autenticação e sem envio à API.
+          Modo demonstração — dados fictícios, sem autenticação e sem envio à
+          API.
         </div>
         <div className="mx-auto min-w-0 w-full max-w-[94rem] px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
           <Outlet />
