@@ -1,0 +1,219 @@
+name: CI - Demo data
+
+on:
+  push:
+    paths:
+      - ".dockerignore"
+      - ".github/workflows/ci-demo-data.yml"
+      - "infrastructure/demo/**"
+      - "infrastructure/docker/backend/**"
+      - "infrastructure/docker/docker-compose.yml"
+      - "src/backend/**"
+  pull_request:
+    paths:
+      - ".dockerignore"
+      - ".github/workflows/ci-demo-data.yml"
+      - "infrastructure/demo/**"
+      - "infrastructure/docker/backend/**"
+      - "infrastructure/docker/docker-compose.yml"
+      - "src/backend/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-data-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+  COMPOSE_PROJECT_NAME: cav-demo-${{ github.run_id }}-${{ github.run_attempt }}
+  POSTGRES_DB: cav_demo
+  POSTGRES_USER: cav_demo
+  POSTGRES_PORT: "0"
+  API_PORT: "0"
+  FRONTEND_PORT: "0"
+
+jobs:
+  initialize-twice:
+    name: Initialize fictional data twice
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Generate ephemeral credentials
+        shell: bash
+        run: |
+          generate_password() {
+            printf '%s!aA1' "$(openssl rand -base64 36 | tr -d '\n')"
+          }
+
+          postgres_password="$(openssl rand -hex 24)"
+          jwt_signing_key="$(openssl rand -base64 48 | tr -d '\n')"
+          bootstrap_password="$(generate_password)"
+          doorman_password="$(generate_password)"
+          guard_password="$(generate_password)"
+          transportation_password="$(generate_password)"
+
+          for secret in \
+            "${postgres_password}" \
+            "${jwt_signing_key}" \
+            "${bootstrap_password}" \
+            "${doorman_password}" \
+            "${guard_password}" \
+            "${transportation_password}"
+          do
+            echo "::add-mask::${secret}"
+          done
+
+          {
+            echo "POSTGRES_PASSWORD=${postgres_password}"
+            echo "JWT_SIGNING_KEY=${jwt_signing_key}"
+            echo "BOOTSTRAP_ADMIN_PASSWORD=${bootstrap_password}"
+            echo "DEMO_DOORMAN_PASSWORD=${doorman_password}"
+            echo "DEMO_GUARD_PASSWORD=${guard_password}"
+            echo "DEMO_TRANSPORTATION_PASSWORD=${transportation_password}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Validate Compose configuration
+        working-directory: infrastructure/docker
+        run: docker compose config --quiet
+
+      - name: Build disposable backend image
+        working-directory: infrastructure/docker
+        run: docker compose build backend
+
+      - name: Restore backend and install EF tool
+        shell: bash
+        run: |
+          dotnet restore \
+            src/backend/ControleAcessoVeiculos.API/ControleAcessoVeiculos.API.csproj
+          dotnet tool install \
+            --tool-path .tools \
+            dotnet-ef \
+            --version 10.0.11
+
+      - name: Build migration startup project
+        run: >-
+          dotnet build
+          src/backend/ControleAcessoVeiculos.API/ControleAcessoVeiculos.API.csproj
+          --configuration Release
+          --no-restore
+          -warnaserror
+
+      - name: Start disposable PostgreSQL
+        working-directory: infrastructure/docker
+        run: docker compose up --detach --wait postgresql
+
+      - name: Apply versioned migrations
+        shell: bash
+        run: |
+          database_port="$(
+            docker compose \
+              --file infrastructure/docker/docker-compose.yml \
+              port postgresql 5432 \
+              | sed 's/.*://'
+          )"
+          export ConnectionStrings__DefaultConnection="Host=127.0.0.1;Port=${database_port};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable"
+          export Authentication__Jwt__SigningKey="${JWT_SIGNING_KEY}"
+
+          ./.tools/dotnet-ef database update \
+            --project src/backend/ControleAcessoVeiculos.Infrastructure \
+            --startup-project src/backend/ControleAcessoVeiculos.API \
+            --configuration Release \
+            --no-build
+
+      - name: Bootstrap disposable administrator
+        working-directory: infrastructure/docker
+        shell: bash
+        run: |
+          export BootstrapAdmin__Name='Administrator Demo CI'
+          export BootstrapAdmin__Email='admin.demo-ci@example.test'
+          export BootstrapAdmin__Password="${BOOTSTRAP_ADMIN_PASSWORD}"
+
+          docker compose run --rm \
+            -e BootstrapAdmin__Name \
+            -e BootstrapAdmin__Email \
+            -e BootstrapAdmin__Password \
+            backend --bootstrap-admin
+
+      - name: Start disposable API
+        working-directory: infrastructure/docker
+        run: docker compose up --detach backend
+
+      - name: Resolve API address and verify readiness
+        working-directory: infrastructure/docker
+        shell: bash
+        run: |
+          api_port="$(docker compose port backend 8080 | sed 's/.*://')"
+          api_base_url="http://127.0.0.1:${api_port}"
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 30 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            "${api_base_url}/health/ready" \
+            | jq --exit-status '.status == "Healthy"'
+
+          echo "API_BASE_URL=${api_base_url}" >> "${GITHUB_ENV}"
+
+      - name: Initialize fictional data twice
+        shell: pwsh
+        run: |
+          $administrator = [PSCredential]::new(
+            'admin.demo-ci@example.test',
+            (ConvertTo-SecureString $env:BOOTSTRAP_ADMIN_PASSWORD -AsPlainText -Force))
+          $doormanPassword = ConvertTo-SecureString `
+            $env:DEMO_DOORMAN_PASSWORD -AsPlainText -Force
+          $guardPassword = ConvertTo-SecureString `
+            $env:DEMO_GUARD_PASSWORD -AsPlainText -Force
+          $transportationPassword = ConvertTo-SecureString `
+            $env:DEMO_TRANSPORTATION_PASSWORD -AsPlainText -Force
+
+          $parameters = @{
+            ApiBaseUrl = $env:API_BASE_URL
+            AdministratorCredential = $administrator
+            DoormanPassword = $doormanPassword
+            SecurityGuardPassword = $guardPassword
+            TransportationPassword = $transportationPassword
+          }
+
+          $first = & ./infrastructure/demo/Initialize-DemoData.ps1 @parameters
+          $second = & ./infrastructure/demo/Initialize-DemoData.ps1 @parameters
+          $firstText = $first -join "`n"
+          $secondText = $second -join "`n"
+
+          if ($firstText -notmatch 'Fictional local demonstration data is ready') {
+            throw 'The initializer did not report a completed fictional data set.'
+          }
+
+          if ($firstText -ne $secondText) {
+            throw 'The second initialization produced a different observable result.'
+          }
+
+          $first | Write-Output
+          Write-Output 'DEMO_DATA_IDEMPOTENCY_OK'
+
+      - name: Show disposable stack diagnostics
+        if: failure()
+        working-directory: infrastructure/docker
+        run: |
+          docker compose ps --all
+          docker compose logs --no-color --timestamps postgresql backend
+
+      - name: Remove disposable stack
+        if: always()
+        working-directory: infrastructure/docker
+        run: docker compose down --volumes --remove-orphans --timeout 10
