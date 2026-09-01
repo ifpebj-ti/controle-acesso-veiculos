@@ -239,16 +239,22 @@ O arquivo `src/backend/ControleAcessoVeiculos.API/appsettings.Development.json` 
 PowerShell:
 
 ```powershell
-$env:ConnectionStrings__DefaultConnection = 'Host=localhost;Port=5432;Database=controle_acesso;Username=controle_acesso_app;Password=change_this_local_password'
+$env:ConnectionStrings__DefaultConnection = 'Host=localhost;Port=5432;Database=controle_acesso;Username=controle_acesso_app;Password=change_this_local_password;GSS Encryption Mode=Disable'
 ```
 
 Bash:
 
 ```bash
-export ConnectionStrings__DefaultConnection='Host=localhost;Port=5432;Database=controle_acesso;Username=controle_acesso_app;Password=change_this_local_password'
+export ConnectionStrings__DefaultConnection='Host=localhost;Port=5432;Database=controle_acesso;Username=controle_acesso_app;Password=change_this_local_password;GSS Encryption Mode=Disable'
 ```
 
-Os valores acima correspondem ao exemplo local e devem ser substituídos fora do ambiente de desenvolvimento.
+Os valores acima correspondem ao exemplo local e devem ser substituídos fora do
+ambiente de desenvolvimento. O modo GSS fica desabilitado localmente porque o
+PostgreSQL usa autenticação por senha e não há Kerberos configurado. Isso evita
+o aviso inofensivo de biblioteca GSSAPI ausente introduzido pelo Npgsql 10 e não
+substitui criptografia de transporte. Em ambiente compartilhado ou de produção,
+configure `SSL Mode=VerifyFull` com uma autoridade certificadora confiável ou
+GSSAPI/Kerberos conforme a infraestrutura institucional.
 
 Gere uma chave JWT local sem versioná-la. No PowerShell:
 
