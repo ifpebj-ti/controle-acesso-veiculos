@@ -182,6 +182,18 @@ de qualquer deploy real, a equipe ainda precisa definir:
 - aprovação de promoção entre desenvolvimento, homologação e produção;
 - estratégia de rollback e resposta a vulnerabilidades.
 
+### Imagem de runtime do frontend
+
+O frontend usa a variante oficial `stable-alpine-slim` do NGINX sem privilégios,
+fixada pelo digest do manifesto multiplataforma. A variante reduzida é suficiente
+para servir os arquivos estáticos e evita ferramentas de uso geral que não são
+necessárias em runtime e ampliam a superfície de vulnerabilidades.
+
+O `apk upgrade --no-cache` permanece como defesa adicional. A atualização semanal
+do digest é monitorada pelo Dependabot; quando o digest da base muda, o cache da
+camada de atualização é invalidado. Toda alteração da base continua sujeita ao
+build, ao Trivy, à geração do SBOM e ao smoke test integrado antes do merge.
+
 ## Operação e revisão
 
 Antes do merge:
