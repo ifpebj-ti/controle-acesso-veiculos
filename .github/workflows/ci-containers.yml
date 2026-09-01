@@ -160,6 +160,21 @@ jobs:
             "http://127.0.0.1:${frontend_port}/" \
             | grep --fixed-strings --quiet '<div id="root"></div>'
 
+      - name: Verify frontend API reverse proxy
+        working-directory: infrastructure/docker
+        shell: bash
+        run: |
+          frontend_port="$(docker compose port frontend 8080 | sed 's/.*://')"
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 30 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            "http://127.0.0.1:${frontend_port}/api/health/ready" \
+            | jq --exit-status '.status == "Healthy"'
+
       - name: Show Compose diagnostics
         if: failure()
         working-directory: infrastructure/docker

@@ -347,7 +347,11 @@ npm run dev
 
 O Vite informará a URL de desenvolvimento, normalmente `http://localhost:5173`.
 
-O cliente HTTP do frontend está preparado para uma futura API sob `/api`, mas ainda não existe integração com endpoints de negócio. Para testar os endpoints técnicos, acesse a API diretamente.
+O cliente HTTP usa `/api` na mesma origem. Em desenvolvimento, o Vite encaminha
+as requisições para `http://127.0.0.1:5118`; no Docker, o Nginx encaminha para o
+container backend. Nos dois casos, o proxy remove somente o prefixo `/api`, pois
+os endpoints da API estão publicados na raiz, como `/auth/login` e
+`/access-records/open`.
 
 ### Testar o fluxo geral de acesso
 

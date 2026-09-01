@@ -24,17 +24,27 @@ npm run dev
 
 ## Variáveis de ambiente
 
-Crie um arquivo `.env.local` quando precisar configurar a URL da API:
+Por padrão, o cliente usa o caminho de mesma origem `/api`. Durante o
+desenvolvimento, o Vite encaminha esse caminho para a API local em
+`http://127.0.0.1:5118` e remove o prefixo `/api` antes de a requisição chegar
+ao backend.
+
+Crie um arquivo `.env.local` somente quando precisar substituir a URL usada pelo
+cliente:
 
 ```env
-VITE_API_BASE_URL=http://localhost:5000/api
+VITE_API_BASE_URL=/api
 ```
 
 Se a variável não estiver definida, o cliente HTTP utilizará:
 
 ```text
-http://localhost:5000/api
+/api
 ```
+
+No ambiente Docker, o Nginx aplica o mesmo contrato e encaminha `/api/*` para o
+container backend. Essa estratégia evita expor uma segunda origem ao navegador e
+dispensa uma política CORS ampla no MVP.
 
 Não inclua tokens, senhas ou credenciais em variáveis expostas ao frontend.
 
