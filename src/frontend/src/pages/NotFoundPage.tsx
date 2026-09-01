@@ -1,32 +1,17 @@
 import { Link } from 'react-router-dom';
 
+import { Brand } from '../components/ui/Brand';
+
 export function NotFoundPage() {
   return (
-    <section
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
-      aria-labelledby="not-found-title"
-    >
-      <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
-        Erro 404
-      </p>
-
-      <h2
-        id="not-found-title"
-        className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl"
-      >
-        Página não encontrada
-      </h2>
-
-      <p className="mt-4 max-w-2xl leading-7 text-slate-600">
-        A rota informada não existe na versão atual do frontend.
-      </p>
-
-      <Link
-        className="mt-6 inline-flex rounded-md bg-cyan-800 px-4 py-3 font-semibold text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
-        to="/"
-      >
-        Voltar para a página inicial
-      </Link>
-    </section>
+    <main className="grid min-h-svh place-items-center bg-cream px-4 py-10 text-center text-ink">
+      <div className="max-w-lg">
+        <Brand className="mx-auto w-fit max-w-xs" />
+        <p className="mt-10 text-xs font-bold uppercase tracking-[0.16em] text-brand-dark">Erro 404</p>
+        <h1 className="mt-2 font-display text-4xl">Página não encontrada</h1>
+        <p className="mt-3 leading-7 text-ink/65">O endereço informado não faz parte dos fluxos disponíveis neste protótipo.</p>
+        <Link className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-ink px-6 font-bold text-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/35" to="/visao-geral">Voltar à visão geral</Link>
+      </div>
+    </main>
   );
 }
