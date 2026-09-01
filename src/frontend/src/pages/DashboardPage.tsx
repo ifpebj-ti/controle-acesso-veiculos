@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Icon, type IconName } from "../components/ui/Icon";
+import { Icon } from "../components/ui/Icon";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { useDemo } from "../demo";
 
@@ -23,13 +23,6 @@ const clockFormatter = new Intl.DateTimeFormat("pt-BR", {
   minute: "2-digit",
   second: "2-digit",
 });
-
-interface QuickAction {
-  description: string;
-  icon: IconName;
-  label: string;
-  to: string;
-}
 
 function capitalize(value: string) {
   return value.charAt(0).toLocaleUpperCase("pt-BR") + value.slice(1);
@@ -68,64 +61,6 @@ export function DashboardPage() {
       new Date(record.exitAt).getTime() <= retentionLimit.getTime(),
   );
   const firstName = accountName.split(" ")[0];
-
-  const quickActions: QuickAction[] =
-    profile === "administrador"
-      ? [
-          {
-            description: "Consulte movimentações por período e situação.",
-            icon: "history",
-            label: "Histórico de acessos",
-            to: "/acessos/historico",
-          },
-          {
-            description: "Crie contas e defina o perfil de cada funcionário.",
-            icon: "users",
-            label: "Usuários e permissões",
-            to: "/administracao",
-          },
-        ]
-      : profile === "transporte"
-        ? [
-            {
-              description: "Consulte veículos e motoristas institucionais.",
-              icon: "bus",
-              label: "Frota institucional",
-              to: "/frota",
-            },
-            {
-              description: "Confira eventos e autorizações previstas.",
-              icon: "calendar",
-              label: "Eventos autorizados",
-              to: "/eventos",
-            },
-            {
-              description: "Pesquise entradas e saídas já registradas.",
-              icon: "history",
-              label: "Histórico de acessos",
-              to: "/acessos/historico",
-            },
-          ]
-        : [
-            {
-              description: "Inicie o registro de entrada de um veículo.",
-              icon: "plus",
-              label: "Registrar entrada",
-              to: "/acessos/novo",
-            },
-            {
-              description: "Veja quem ainda permanece dentro do campus.",
-              icon: "clock",
-              label: "Acessos em aberto",
-              to: "/acessos/abertos",
-            },
-            {
-              description: "Pesquise entradas e saídas já registradas.",
-              icon: "history",
-              label: "Histórico de acessos",
-              to: "/acessos/historico",
-            },
-          ];
 
   const indicators = [
     {
@@ -352,47 +287,6 @@ export function DashboardPage() {
         </section>
 
         <aside className="space-y-6">
-          <section
-            className="rounded-[2rem] bg-[#B8C9A4] p-5 sm:p-6"
-            aria-labelledby="quick-actions-title"
-          >
-            <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink/60">
-              Atalhos
-            </p>
-            <h2
-              className="mt-1 font-display text-2xl text-ink"
-              id="quick-actions-title"
-            >
-              O que você precisa fazer?
-            </h2>
-            <div className="mt-5 space-y-2">
-              {quickActions.map((action) => (
-                <Link
-                  className="group flex items-center gap-3 rounded-2xl bg-cream/85 p-3.5 transition hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/25"
-                  key={action.to}
-                  to={action.to}
-                >
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-ink">
-                    <Icon name={action.icon} size={19} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <strong className="block text-sm text-ink">
-                      {action.label}
-                    </strong>
-                    <span className="mt-0.5 block text-xs leading-4 text-ink/55">
-                      {action.description}
-                    </span>
-                  </span>
-                  <Icon
-                    className="shrink-0 transition-transform group-hover:translate-x-1"
-                    name="arrow-right"
-                    size={17}
-                  />
-                </Link>
-              ))}
-            </div>
-          </section>
-
           <section
             aria-labelledby="shift-notes-title"
             className="rounded-[2rem] border border-[#EFD780] bg-[#EFD780]/35 p-5 sm:p-6"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { useDemo, type DemoProfile } from "../../demo";
 import { Brand } from "../ui/Brand";
@@ -86,7 +86,6 @@ const navigation: NavigationSection[] = [
 
 function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
   const { accountName, profile } = useDemo();
-  const location = useLocation();
   const navigate = useNavigate();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     () => new Set(),
@@ -141,9 +140,6 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
               (item) => !item.profiles || item.profiles.includes(profile),
             );
             const isExpanded = !collapsedSections.has(section.label);
-            const hasActiveItem = items?.some(
-              (item) => location.pathname === item.to,
-            );
 
             return (
               <li key={section.label}>
@@ -166,13 +162,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                   <>
                     <button
                       aria-expanded={isExpanded}
-                      className={`sidebar-primary-item flex min-h-12 w-full items-center gap-3 rounded-l-2xl px-4 py-3 text-left font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 ${
-                        hasActiveItem
-                          ? "sidebar-primary-item--active bg-cream text-ink"
-                          : isExpanded
-                            ? "bg-white/40 text-ink"
-                            : "text-ink/85 hover:bg-white/45 hover:text-ink"
-                      }`}
+                      className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-ink/85 transition-colors hover:text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
                       onClick={() => toggleSection(section.label)}
                       type="button"
                     >
