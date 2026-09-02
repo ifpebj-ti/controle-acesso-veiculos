@@ -4,6 +4,7 @@ import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { useDemo, type DemoAccessRecord } from "../demo";
+import { useAuthenticatedSession } from "../features/authentication";
 
 type PeriodPreset = "7" | "30" | "90" | "365" | "all" | "custom" | "retention";
 
@@ -41,7 +42,8 @@ function stayDuration(record: DemoAccessRecord) {
 }
 
 export function HistoryPage() {
-  const { profile, records } = useDemo();
+  const { records } = useDemo();
+  const { user } = useAuthenticatedSession();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("todos");
   const [type, setType] = useState("todos");
@@ -52,7 +54,7 @@ export function HistoryPage() {
     number[]
   >([]);
   const [notice, setNotice] = useState<string | null>(null);
-  const isAdministrator = profile === "administrador";
+  const isAdministrator = user.profileName === "Administrador";
 
   const retentionRecords = records.filter(isRetentionEligible);
 

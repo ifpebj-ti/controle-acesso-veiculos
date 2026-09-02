@@ -15,12 +15,12 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 
 ## Estado atual
 
-> Atualizado em 31 de agosto de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
+> Atualizado em 2 de setembro de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
 
 | Área | Estado |
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
-| Frontend | Estrutura React criada, com layout, rotas, cliente HTTP e página inicial; telas operacionais pendentes |
+| Frontend | Protótipo responsivo com autenticação real, sessão JWT somente em memória, rotas protegidas e navegação por perfil; telas de negócio ainda usam dados fictícios e aguardam integração |
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional, autorizações de eventos e resumo operacional diário |
 | Dados | PostgreSQL 16, EF Core 10, doze entidades e doze migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build, scan, smoke test integrado, publicação no GHCR, proveniência assinada e SBOM SPDX atestado por digest após integração na `main`, além de ensaio local de backup/restauração e exportação OpenTelemetry configurável |

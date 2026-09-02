@@ -1,12 +1,15 @@
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from "react-router-dom";
 
-import { DemoProvider } from './demo';
-import { router } from './routes';
+import { DemoProvider } from "./demo";
+import { SessionProvider } from "./features/authentication";
+import { router } from "./routes";
 
 export default function App() {
   return (
-    <DemoProvider>
-      <RouterProvider router={router} />
-    </DemoProvider>
+    <SessionProvider>
+      <DemoProvider>
+        <RouterProvider router={router} />
+      </DemoProvider>
+    </SessionProvider>
   );
 }

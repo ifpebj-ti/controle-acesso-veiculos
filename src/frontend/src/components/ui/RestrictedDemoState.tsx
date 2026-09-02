@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
-import { Icon } from './Icon';
+import { Icon } from "./Icon";
 
 interface RestrictedDemoStateProps {
   message: string;
@@ -12,10 +12,11 @@ export function RestrictedDemoState({ message }: RestrictedDemoStateProps) {
       <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-soft/65 text-ink">
         <Icon name="shield" size={27} />
       </span>
-      <h1 className="mt-5 font-display text-3xl text-ink">Fora das atribuições deste perfil</h1>
+      <h1 className="mt-5 font-display text-3xl text-ink">Acesso negado</h1>
       <p className="mt-3 leading-7 text-ink/70">{message}</p>
       <p className="mt-2 text-sm text-ink/55">
-        No protótipo, você pode trocar o perfil no menu lateral para comparar a navegação.
+        A interface oculta ações incompatíveis, e a API continua validando cada
+        permissão.
       </p>
       <Link
         className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-5 font-bold text-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/40"

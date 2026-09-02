@@ -27,6 +27,42 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 
 Não existem refresh token, lista geral de revogação ou logout no servidor neste incremento. A desativação da conta, porém, invalida seus tokens na próxima requisição protegida. Até a decisão sobre sessões, o frontend deve manter o access token somente em memória e solicitar novo login após a expiração. Não armazenar token em `localStorage`, logs ou mensagens de erro. A identidade retornada ajuda a montar a interface, mas o frontend não decide autorização: cada operação continua sendo validada pelas políticas da API. A auditoria de autenticação não guarda e-mail, senha, hash, token, IP ou tentativas para usuário inexistente. Se a auditoria obrigatória de um login válido falhar, a API não emite o token.
 
+## Integração do frontend
+
+A Issue #117 aplica essa decisão no frontend React. O formulário usa e-mail e
+senha porque esse é o contrato vigente de `POST /auth/login`; a preferência
+visual anterior por nome de usuário não altera silenciosamente a API. A resposta
+é validada antes de criar a sessão, e somente `id`, e-mail, perfil e expiração
+compõem a identidade local.
+
+O access token fica em uma variável de módulo e no contexto React apenas durante
+a aba aberta. Ele é anexado pelo interceptor do Axios, nunca é colocado em URL,
+estado de rota, log, mensagem de erro, `localStorage` ou `sessionStorage`. Logout,
+expiração e resposta 401 limpam token, identidade e temporizador. Atualizar a
+página perde a memória e exige novo login; esse comportamento é uma limitação
+deliberada enquanto não existir um contrato de sessão persistente.
+
+A interface filtra rotas e navegação usando exclusivamente `profileName`
+devolvido pela API. A filtragem reduz confusão, mas não é autorização. A matriz
+do servidor continua prevalecendo, inclusive no acesso operacional excepcional
+do Administrador. Essas ações ficam fora de seu menu rotineiro, mas uma rota
+compatível não contradiz a política do backend.
+
+Foram consideradas e rejeitadas neste incremento as seguintes alternativas:
+
+- `localStorage`, por manter o JWT disponível a scripts após recarregamentos e
+  ampliar a janela de exposição em um incidente de XSS;
+- `sessionStorage`, por continuar disponível a scripts durante toda a aba;
+- refresh token, por não existir contrato correspondente na API;
+- cookie `HttpOnly`, `Secure` e `SameSite`, que reduziria o acesso do JavaScript
+  ao segredo, mas exige endpoints, proteção CSRF, rotação e encerramento no
+  backend antes de ser adotado.
+
+Credencial incorreta, conta inativa e bloqueio temporário permanecem
+indistinguíveis na interface porque a API retorna o mesmo 401 por segurança. O
+frontend não tenta inferir o motivo. Respostas 403 exibem acesso negado sem dados
+do recurso, e indisponibilidade não gera confirmação falsa de login.
+
 ## Configuração
 
 Os valores públicos de emissor, audiência e validade ficam em `appsettings.json`. A chave de assinatura é obrigatória, deve possuir pelo menos 32 caracteres e deve ser fornecida por secret manager ou variável de ambiente:
