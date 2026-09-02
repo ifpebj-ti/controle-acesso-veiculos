@@ -14,17 +14,22 @@ Fluxo sugerido para a apresentação:
 4. conferir o alerta de permanência em `/acessos/abertos` e registrar a saída;
 5. como Transporte, explorar o histórico, a frota e os eventos;
 6. como Administrador, filtrar o histórico por período, revisar a demonstração de
-   retenção e gerenciar contas fictícias em `/administracao`.
+   retenção e gerenciar separadamente pessoas autorizadas e contas fictícias em
+   `/administracao`.
 
 No fluxo proposto, Porteiro e Vigilante possuem a mesma navegação operacional.
 O Setor de Transporte mantém frota e eventos, enquanto o Administrador consulta o
-histórico e gerencia contas e permissões sem registrar entradas ou saídas.
+histórico e gerencia pessoas autorizadas, contas e permissões sem registrar
+entradas ou saídas.
 
-O formulário de entrada adapta os campos ao contexto: visitante exige conferência
-de documento; o motivo “Levar ou buscar estudante” sugere dez minutos e gera um
-alerta quando a saída não é registrada; veículos institucionais recuperam a placa
-do catálogo e exigem somente conferência. Nenhum prazo encerra o acesso
-automaticamente.
+O formulário de entrada possui abas separadas para Servidor, Terceirizado,
+Cadastrado, Visitante e Moto táxi. As três primeiras recuperam nome e placa dos
+cadastros mantidos pelo Administrador e exigem somente conferência. Visitante
+exige documento, destino e previsão; o motivo “Levar ou buscar estudante” sugere
+dez minutos. Moto táxi usa um fluxo rápido de embarque ou desembarque, também com
+uma previsão demonstrativa de dez minutos. O atraso gera alerta, mas nenhum prazo
+encerra o acesso automaticamente. A placa da frota institucional continua sendo
+recuperada de cadastro prévio.
 
 A notificação de descarte após cinco anos é uma hipótese visual solicitada para a
 homologação. Ela não exclui dados, não possui endpoint no backend e não substitui

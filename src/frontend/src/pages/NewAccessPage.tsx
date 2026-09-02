@@ -1,54 +1,109 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Icon } from "../components/ui/Icon";
+import { Icon, type IconName } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RestrictedDemoState } from "../components/ui/RestrictedDemoState";
-import { institutionalVehicles, useDemo, type DemoAccessRecord } from "../demo";
+import { shiftForDate, useDemo, type DemoAuthorizedPerson } from "../demo";
 
 const operationalProfiles = ["porteiro", "vigilante"];
+const fieldClass =
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
-const purposes: Record<DemoAccessRecord["type"], string[]> = {
-  Institucional: ["Deslocamento institucional"],
-  Serviço: [
-    "Entrega rápida",
-    "Prestação de serviço autorizada",
-    "Manutenção",
-    "Outro serviço autorizado",
-  ],
-  Visitante: [
-    "Levar ou buscar estudante",
-    "Atendimento agendado",
-    "Visita a setor",
-    "Participação em evento",
-    "Outro acesso autorizado",
-  ],
-};
+type AccessTab =
+  "Servidor" | "Terceirizado" | "Cadastrado" | "Visitante" | "Moto táxi";
+
+const registeredTabs: DemoAuthorizedPerson["category"][] = [
+  "Servidor",
+  "Terceirizado",
+  "Cadastrado",
+];
+
+const tabs: Array<{
+  description: string;
+  icon: IconName;
+  label: AccessTab;
+}> = [
+  { description: "Vínculo institucional", icon: "user", label: "Servidor" },
+  { description: "Empresa prestadora", icon: "users", label: "Terceirizado" },
+  { description: "Autorização prévia", icon: "shield", label: "Cadastrado" },
+  { description: "Documento e destino", icon: "clipboard", label: "Visitante" },
+  { description: "Embarque rápido", icon: "motorcycle", label: "Moto táxi" },
+];
+
+const visitorPurposes = [
+  "Levar ou buscar estudante",
+  "Atendimento agendado",
+  "Visita a setor",
+  "Participação em evento",
+  "Outro acesso autorizado",
+];
 
 const durationOptions = [
-  { label: "Sem previsão definida", value: 0 },
-  { label: "10 minutos", value: 10 },
-  { label: "20 minutos", value: 20 },
-  { label: "30 minutos", value: 30 },
-  { label: "1 hora", value: 60 },
-  { label: "2 horas", value: 120 },
-];
+  [0, "Sem previsão definida"],
+  [10, "10 minutos"],
+  [20, "20 minutos"],
+  [30, "30 minutos"],
+  [60, "1 hora"],
+  [120, "2 horas"],
+] as const;
+
+function FieldLabel({
+  children,
+  htmlFor,
+}: {
+  children: ReactNode;
+  htmlFor: string;
+}) {
+  return (
+    <label className="text-sm font-semibold text-ink" htmlFor={htmlFor}>
+      {children}
+    </label>
+  );
+}
 
 export function NewAccessPage() {
   const navigate = useNavigate();
-  const { profile, registerAccess } = useDemo();
-  const [accessType, setAccessType] =
-    useState<DemoAccessRecord["type"]>("Visitante");
-  const [purpose, setPurpose] = useState(purposes.Visitante[0]);
-  const [duration, setDuration] = useState(10);
-  const [vehicleCode, setVehicleCode] = useState(institutionalVehicles[0].code);
-
-  const selectedVehicle = useMemo(
-    () =>
-      institutionalVehicles.find((vehicle) => vehicle.code === vehicleCode) ??
-      institutionalVehicles[0],
-    [vehicleCode],
+  const { authorizedPeople, profile, records, registerAccess } = useDemo();
+  const firstServer =
+    authorizedPeople.find(
+      (person) =>
+        person.category === "Servidor" &&
+        !records.some(
+          (record) => record.authorizedPersonId === person.id && !record.exitAt,
+        ),
+    ) ?? authorizedPeople.find((person) => person.category === "Servidor");
+  const [activeTab, setActiveTab] = useState<AccessTab>("Servidor");
+  const [personId, setPersonId] = useState(firstServer?.id ?? "");
+  const [personVehiclePlate, setPersonVehiclePlate] = useState(
+    firstServer?.vehicles[0]?.plate ?? "",
   );
+  const [visitorPurpose, setVisitorPurpose] = useState(visitorPurposes[0]);
+  const [visitorDuration, setVisitorDuration] = useState(10);
+
+  const isRegisteredTab = registeredTabs.includes(
+    activeTab as DemoAuthorizedPerson["category"],
+  );
+  const eligiblePeople = useMemo(
+    () =>
+      authorizedPeople.filter(
+        (person) => person.active && person.category === activeTab,
+      ),
+    [activeTab, authorizedPeople],
+  );
+  const selectedPerson =
+    eligiblePeople.find((person) => person.id === personId) ??
+    eligiblePeople[0];
+  const selectedPersonVehicle =
+    selectedPerson?.vehicles.find(
+      (vehicle) => vehicle.plate === personVehiclePlate,
+    ) ?? selectedPerson?.vehicles[0];
+  const selectedPersonOpenRecord = isRegisteredTab
+    ? records.find(
+        (record) =>
+          record.authorizedPersonId === selectedPerson?.id && !record.exitAt,
+      )
+    : undefined;
 
   if (!operationalProfiles.includes(profile)) {
     return (
@@ -56,55 +111,87 @@ export function NewAccessPage() {
     );
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const isInstitutional = accessType === "Institucional";
-    const requiresDocument = accessType === "Visitante";
-
-    registerAccess({
-      destination: String(data.get("destination")),
-      documentType: requiresDocument
-        ? String(data.get("documentType"))
-        : undefined,
-      documentVerified: requiresDocument
-        ? Boolean(String(data.get("documentNumber")).trim())
-        : undefined,
-      driver: String(data.get("driver")),
-      expectedDurationMinutes: duration || undefined,
-      institutionalVehicleCode: isInstitutional
-        ? selectedVehicle.code
-        : undefined,
-      plate: isInstitutional
-        ? selectedVehicle.plate
-        : String(data.get("plate")),
-      purpose,
-      type: accessType,
-    });
-    navigate("/acessos/abertos");
-  }
-
-  function changeAccessType(type: DemoAccessRecord["type"]) {
-    const nextPurpose = purposes[type][0];
-    setAccessType(type);
-    setPurpose(nextPurpose);
-    setDuration(nextPurpose === "Levar ou buscar estudante" ? 10 : 0);
-  }
-
-  function changePurpose(nextPurpose: string) {
-    setPurpose(nextPurpose);
-    if (nextPurpose === "Levar ou buscar estudante") {
-      setDuration(10);
+  function changeTab(nextTab: AccessTab) {
+    setActiveTab(nextTab);
+    if (registeredTabs.includes(nextTab as DemoAuthorizedPerson["category"])) {
+      const nextPerson = authorizedPeople.find(
+        (person) => person.active && person.category === nextTab,
+      );
+      setPersonId(nextPerson?.id ?? "");
+      setPersonVehiclePlate(nextPerson?.vehicles[0]?.plate ?? "");
     }
   }
 
-  const fieldClass =
-    "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
+  function changePerson(nextPersonId: string) {
+    const nextPerson = authorizedPeople.find(
+      (person) => person.id === nextPersonId,
+    );
+    setPersonId(nextPersonId);
+    setPersonVehiclePlate(nextPerson?.vehicles[0]?.plate ?? "");
+  }
+
+  function changeVisitorPurpose(nextPurpose: string) {
+    setVisitorPurpose(nextPurpose);
+    if (nextPurpose === "Levar ou buscar estudante") setVisitorDuration(10);
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+
+    if (isRegisteredTab) {
+      if (!selectedPerson || !selectedPersonVehicle || selectedPersonOpenRecord)
+        return;
+      registerAccess({
+        authorizedPersonId: selectedPerson.id,
+        destination: selectedPerson.sector,
+        driver: selectedPerson.name,
+        plate: selectedPersonVehicle.plate,
+        purpose:
+          activeTab === "Servidor"
+            ? "Expediente no campus"
+            : activeTab === "Terceirizado"
+              ? "Atividade terceirizada"
+              : "Acesso previamente autorizado",
+        type: activeTab as DemoAuthorizedPerson["category"],
+        vehicleVerified: true,
+      });
+    } else if (activeTab === "Visitante") {
+      registerAccess({
+        destination: String(data.get("visitorDestination")),
+        documentType: String(data.get("documentType")),
+        documentVerified: Boolean(String(data.get("documentNumber")).trim()),
+        driver: String(data.get("visitorName")),
+        expectedDurationMinutes: visitorDuration || undefined,
+        plate: String(data.get("visitorPlate")),
+        purpose: visitorPurpose,
+        type: "Visitante",
+        vehicleVerified: true,
+      });
+    } else {
+      registerAccess({
+        destination: "Área de embarque e desembarque",
+        driver: String(data.get("motoTaxiName")),
+        expectedDurationMinutes: 10,
+        plate: String(data.get("motoTaxiPlate")),
+        purpose: String(data.get("motoTaxiPurpose")),
+        type: "Moto táxi",
+        vehicleVerified: true,
+      });
+    }
+    navigate("/acessos/abertos");
+  }
+
+  const submitDisabled =
+    isRegisteredTab &&
+    (!selectedPerson ||
+      !selectedPersonVehicle ||
+      Boolean(selectedPersonOpenRecord));
 
   return (
     <div>
       <PageHeader
-        description="Registre apenas o necessário para identificar o veículo, o responsável e o motivo da permanência no campus."
+        description="Escolha a categoria antes de registrar. Servidores, terceirizados e cadastrados usam dados existentes; visitantes e moto táxis possuem fluxos próprios."
         eyebrow="Operação da portaria"
         title="Registrar entrada"
       />
@@ -114,296 +201,385 @@ export function NewAccessPage() {
         onSubmit={handleSubmit}
       >
         <section className="overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_14px_40px_rgba(1,36,40,0.06)]">
-          <div className="border-b border-ink/8 bg-[#B8C9A4]/25 px-5 py-5 sm:px-7">
+          <div className="border-b border-ink/8 bg-[#B8C9A4]/20 px-4 pt-5 sm:px-7">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-              Etapa única
+              Categoria da entrada
             </p>
-            <h2 className="mt-1 font-display text-2xl text-ink">
-              Identificação e permanência
-            </h2>
+            <div
+              aria-label="Tipos de entrada"
+              className="mt-4 flex gap-1 overflow-x-auto lg:grid lg:grid-cols-5 lg:overflow-visible"
+              role="tablist"
+            >
+              {tabs.map((tab) => {
+                const selected = activeTab === tab.label;
+                return (
+                  <button
+                    aria-controls="access-tab-panel"
+                    aria-selected={selected}
+                    className={`min-w-36 shrink-0 rounded-t-2xl border-b-4 px-4 py-3 text-left transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25 lg:min-w-0 ${
+                      selected
+                        ? tab.label === "Moto táxi"
+                          ? "border-[#EFD780] bg-white text-ink"
+                          : "border-brand bg-white text-ink"
+                        : "border-transparent text-ink/60 hover:bg-white/55 hover:text-ink"
+                    }`}
+                    id={`access-tab-${tab.label}`}
+                    key={tab.label}
+                    onClick={() => changeTab(tab.label)}
+                    role="tab"
+                    type="button"
+                  >
+                    <span className="flex items-center gap-2 text-sm font-bold">
+                      <Icon name={tab.icon} size={18} /> {tab.label}
+                    </span>
+                    <span className="mt-1 block text-[0.68rem] font-medium text-ink/50">
+                      {tab.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="space-y-7 p-5 sm:p-7">
-            <fieldset>
-              <legend className="text-sm font-bold text-ink">
-                Qual é o tipo de acesso?
-              </legend>
-              <div className="mt-3 grid gap-3 md:grid-cols-3">
-                {(["Visitante", "Serviço", "Institucional"] as const).map(
-                  (type) => (
-                    <label
-                      className={`flex min-h-20 cursor-pointer items-center gap-3 rounded-2xl border p-4 transition focus-within:ring-3 focus-within:ring-brand/25 ${
-                        accessType === type
-                          ? "border-brand-dark bg-[#B8C9A4]/35 shadow-sm"
-                          : "border-ink/12 bg-cream/25 hover:bg-cream/55"
-                      }`}
-                      key={type}
-                    >
-                      <input
-                        checked={accessType === type}
-                        className="size-4 accent-[#236d2a]"
-                        name="accessType"
-                        onChange={() => changeAccessType(type)}
-                        type="radio"
-                        value={type}
-                      />
-                      <span>
-                        <strong className="block text-sm text-ink">
-                          {type}
-                        </strong>
-                        <span className="mt-1 block text-xs leading-4 text-ink/55">
-                          {type === "Visitante"
-                            ? "Documento obrigatório"
-                            : type === "Institucional"
-                              ? "Placa já cadastrada"
-                              : "Serviço ou entrega"}
+          <div
+            aria-labelledby={`access-tab-${activeTab}`}
+            className="space-y-7 p-5 sm:p-7"
+            id="access-tab-panel"
+            role="tabpanel"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
+                  {activeTab}
+                </p>
+                <h2 className="mt-1 font-display text-2xl text-ink">
+                  {isRegisteredTab
+                    ? "Localizar e conferir cadastro"
+                    : activeTab === "Moto táxi"
+                      ? "Registro rápido de moto táxi"
+                      : "Identificação do visitante"}
+                </h2>
+              </div>
+              <span className="rounded-full bg-[#B8C9A4]/35 px-3 py-1.5 text-xs font-bold text-brand-dark">
+                Turno: {shiftForDate()}
+              </span>
+            </div>
+
+            {isRegisteredTab && (
+              <div>
+                <FieldLabel htmlFor="authorizedPerson">
+                  Buscar por nome
+                </FieldLabel>
+                <select
+                  className={fieldClass}
+                  id="authorizedPerson"
+                  onChange={(event) => changePerson(event.target.value)}
+                  required
+                  value={selectedPerson?.id ?? ""}
+                >
+                  {eligiblePeople.length === 0 && (
+                    <option value="">Nenhum cadastro ativo</option>
+                  )}
+                  {eligiblePeople.map((person) => {
+                    const isInside = records.some(
+                      (record) =>
+                        record.authorizedPersonId === person.id &&
+                        !record.exitAt,
+                    );
+                    return (
+                      <option key={person.id} value={person.id}>
+                        {person.name}
+                        {isInside ? " — no campus" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                {selectedPerson && selectedPersonVehicle ? (
+                  <div className="mt-4 rounded-2xl border border-brand-dark/15 bg-[#B8C9A4]/25 p-4 sm:p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-ink">
+                          <Icon name="user" />
                         </span>
+                        <div>
+                          <p className="font-bold text-ink">
+                            {selectedPerson.name}
+                          </p>
+                          <p className="mt-1 text-sm text-ink/65">
+                            {selectedPerson.category} • {selectedPerson.sector}
+                          </p>
+                          <p className="mt-1 text-xs text-ink/50">
+                            Identificação: {selectedPerson.registration}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="w-fit rounded-full bg-white px-3 py-1.5 text-xs font-bold text-brand-dark">
+                        Cadastro ativo
                       </span>
-                    </label>
-                  ),
+                    </div>
+                    <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                      <div>
+                        <FieldLabel htmlFor="registeredVehicle">
+                          Veículo previamente cadastrado
+                        </FieldLabel>
+                        <select
+                          className={fieldClass}
+                          id="registeredVehicle"
+                          onChange={(event) =>
+                            setPersonVehiclePlate(event.target.value)
+                          }
+                          value={selectedPersonVehicle.plate}
+                        >
+                          {selectedPerson.vehicles.map((vehicle) => (
+                            <option key={vehicle.plate} value={vehicle.plate}>
+                              {vehicle.plate} — {vehicle.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <label className="flex min-h-12 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-ink">
+                        <input
+                          className="size-4 accent-[#236d2a]"
+                          disabled={Boolean(selectedPersonOpenRecord)}
+                          required
+                          type="checkbox"
+                        />
+                        Nome e placa conferidos
+                      </label>
+                    </div>
+                    {selectedPersonOpenRecord && (
+                      <div
+                        className="mt-4 flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between"
+                        role="status"
+                      >
+                        <p>
+                          Esta pessoa já possui entrada em aberto. Registre a
+                          saída antes de uma nova entrada.
+                        </p>
+                        <button
+                          className="min-h-10 shrink-0 rounded-xl bg-ink px-4 font-bold text-white"
+                          onClick={() => navigate("/acessos/abertos")}
+                          type="button"
+                        >
+                          Ir para saída
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                    O Administrador precisa cadastrar uma pessoa e seu veículo
+                    nesta categoria antes da operação.
+                  </p>
                 )}
               </div>
-            </fieldset>
+            )}
 
-            <div className="grid gap-5 md:grid-cols-2">
-              {accessType === "Institucional" ? (
-                <div className="md:col-span-2">
-                  <label
-                    className="text-sm font-semibold text-ink"
-                    htmlFor="institutionalVehicle"
-                  >
-                    Veículo institucional
-                  </label>
-                  <select
-                    className={fieldClass}
-                    id="institutionalVehicle"
-                    onChange={(event) => setVehicleCode(event.target.value)}
-                    value={vehicleCode}
-                  >
-                    {institutionalVehicles.map((vehicle) => (
-                      <option key={vehicle.code} value={vehicle.code}>
-                        {vehicle.code} — {vehicle.label}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="mt-3 flex flex-col gap-4 rounded-2xl border border-brand-dark/15 bg-[#B8C9A4]/25 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="grid size-11 place-items-center rounded-xl bg-white text-ink">
-                        <Icon name="bus" />
-                      </span>
-                      <div>
-                        <p className="font-bold text-ink">
-                          {selectedVehicle.plate}
-                        </p>
-                        <p className="text-xs text-ink/60">
-                          Placa recuperada do cadastro da frota
-                        </p>
-                      </div>
-                    </div>
-                    <label className="flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-ink">
-                      <input
-                        className="size-4 accent-[#236d2a]"
-                        required
-                        type="checkbox"
-                      />
-                      Placa conferida
-                    </label>
-                  </div>
-                </div>
-              ) : (
+            {activeTab === "Visitante" && (
+              <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label
-                    className="text-sm font-semibold text-ink"
-                    htmlFor="plate"
-                  >
-                    Placa do veículo{" "}
-                    <span aria-hidden="true" className="text-red-700">
-                      *
-                    </span>
-                  </label>
+                  <FieldLabel htmlFor="visitorName">
+                    Nome do visitante
+                  </FieldLabel>
+                  <input
+                    className={fieldClass}
+                    id="visitorName"
+                    name="visitorName"
+                    placeholder="Pessoa demonstrativa"
+                    required
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="visitorPlate">
+                    Placa do veículo
+                  </FieldLabel>
                   <input
                     autoCapitalize="characters"
                     className={fieldClass}
-                    id="plate"
+                    id="visitorPlate"
                     maxLength={8}
-                    name="plate"
-                    placeholder="Ex.: DEM-1234"
+                    name="visitorPlate"
+                    placeholder="DEM-0000"
                     required
                   />
                 </div>
-              )}
-
-              <div
-                className={
-                  accessType === "Institucional" ? "md:col-span-2" : ""
-                }
-              >
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="driver"
-                >
-                  {accessType === "Institucional"
-                    ? "Motorista autorizado"
-                    : "Nome do condutor"}{" "}
-                  <span aria-hidden="true" className="text-red-700">
-                    *
-                  </span>
-                </label>
-                {accessType === "Institucional" ? (
+                <div>
+                  <FieldLabel htmlFor="documentType">
+                    Tipo de documento
+                  </FieldLabel>
                   <select
                     className={fieldClass}
-                    id="driver"
-                    name="driver"
+                    id="documentType"
+                    name="documentType"
                     required
                   >
-                    <option>Motorista institucional 01</option>
-                    <option>Motorista institucional 02</option>
+                    <option>Documento oficial com foto</option>
+                    <option>Documento funcional</option>
+                    <option>Outro documento autorizado</option>
                   </select>
-                ) : (
+                </div>
+                <div>
+                  <FieldLabel htmlFor="documentNumber">
+                    Número do documento
+                  </FieldLabel>
                   <input
                     autoComplete="off"
                     className={fieldClass}
-                    id="driver"
-                    name="driver"
-                    placeholder="Ex.: Pessoa de demonstração"
+                    id="documentNumber"
+                    maxLength={30}
+                    name="documentNumber"
+                    placeholder="Use apenas dado fictício"
                     required
                   />
-                )}
+                  <p className="mt-1.5 text-xs text-ink/55">
+                    O número não aparece nas listagens deste protótipo.
+                  </p>
+                </div>
+                <div>
+                  <FieldLabel htmlFor="visitorPurpose">
+                    Motivo da entrada
+                  </FieldLabel>
+                  <select
+                    className={fieldClass}
+                    id="visitorPurpose"
+                    onChange={(event) =>
+                      changeVisitorPurpose(event.target.value)
+                    }
+                    value={visitorPurpose}
+                  >
+                    {visitorPurposes.map((purpose) => (
+                      <option key={purpose}>{purpose}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel htmlFor="visitorDuration">
+                    Previsão de permanência
+                  </FieldLabel>
+                  <select
+                    className={fieldClass}
+                    disabled={visitorPurpose === "Levar ou buscar estudante"}
+                    id="visitorDuration"
+                    onChange={(event) =>
+                      setVisitorDuration(Number(event.target.value))
+                    }
+                    value={visitorDuration}
+                  >
+                    {durationOptions.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1.5 text-xs text-ink/55">
+                    A previsão gera alerta, mas nunca registra saída
+                    automaticamente.
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <FieldLabel htmlFor="visitorDestination">
+                    Destino no campus
+                  </FieldLabel>
+                  <input
+                    className={fieldClass}
+                    id="visitorDestination"
+                    name="visitorDestination"
+                    placeholder="Ex.: Bloco acadêmico"
+                    required
+                  />
+                </div>
+                <label className="md:col-span-2 flex min-h-12 items-center gap-2 rounded-xl border border-ink/10 bg-[#B8C9A4]/20 px-4 text-sm font-semibold text-ink">
+                  <input
+                    className="size-4 accent-[#236d2a]"
+                    required
+                    type="checkbox"
+                  />{" "}
+                  Documento e placa conferidos
+                </label>
               </div>
+            )}
 
-              {accessType === "Visitante" && (
-                <>
+            {activeTab === "Moto táxi" && (
+              <div className="rounded-2xl border border-[#EFD780] bg-[#EFD780]/20 p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#FFE67C] text-ink">
+                    <Icon name="motorcycle" />
+                  </span>
                   <div>
-                    <label
-                      className="text-sm font-semibold text-ink"
-                      htmlFor="documentType"
-                    >
-                      Tipo de documento{" "}
-                      <span aria-hidden="true" className="text-red-700">
-                        *
-                      </span>
-                    </label>
-                    <select
-                      className={fieldClass}
-                      id="documentType"
-                      name="documentType"
-                      required
-                    >
-                      <option>Documento oficial com foto</option>
-                      <option>Documento funcional</option>
-                      <option>Outro documento autorizado</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      className="text-sm font-semibold text-ink"
-                      htmlFor="documentNumber"
-                    >
-                      Número do documento{" "}
-                      <span aria-hidden="true" className="text-red-700">
-                        *
-                      </span>
-                    </label>
-                    <input
-                      autoComplete="off"
-                      className={fieldClass}
-                      id="documentNumber"
-                      maxLength={30}
-                      name="documentNumber"
-                      placeholder="Use apenas dado fictício"
-                      required
-                    />
-                    <p className="mt-1.5 text-xs text-ink/55">
-                      O número não aparece nas listagens deste protótipo.
+                    <h3 className="font-bold text-ink">Permanência rápida</h3>
+                    <p className="mt-1 text-sm leading-5 text-ink/65">
+                      O prazo sugerido é de 10 minutos para embarque ou
+                      desembarque. Sem saída registrada, a portaria recebe um
+                      alerta.
                     </p>
                   </div>
-                </>
-              )}
-
-              <div>
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="purpose"
-                >
-                  Motivo da entrada{" "}
-                  <span aria-hidden="true" className="text-red-700">
-                    *
-                  </span>
-                </label>
-                <select
-                  className={fieldClass}
-                  id="purpose"
-                  name="purpose"
-                  onChange={(event) => changePurpose(event.target.value)}
-                  value={purpose}
-                >
-                  {purposes[accessType].map((option) => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
+                </div>
+                <div className="mt-5 grid gap-5 md:grid-cols-2">
+                  <div>
+                    <FieldLabel htmlFor="motoTaxiName">
+                      Nome ou identificação do mototaxista
+                    </FieldLabel>
+                    <input
+                      className={fieldClass}
+                      id="motoTaxiName"
+                      name="motoTaxiName"
+                      placeholder="Mototaxista demonstrativo"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel htmlFor="motoTaxiPlate">
+                      Placa da motocicleta
+                    </FieldLabel>
+                    <input
+                      autoCapitalize="characters"
+                      className={fieldClass}
+                      id="motoTaxiPlate"
+                      maxLength={8}
+                      name="motoTaxiPlate"
+                      placeholder="DEM-0000"
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <FieldLabel htmlFor="motoTaxiPurpose">Operação</FieldLabel>
+                    <select
+                      className={fieldClass}
+                      id="motoTaxiPurpose"
+                      name="motoTaxiPurpose"
+                      required
+                    >
+                      <option>Buscar passageiro</option>
+                      <option>Deixar passageiro</option>
+                    </select>
+                  </div>
+                  <label className="md:col-span-2 flex min-h-12 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-ink">
+                    <input
+                      className="size-4 accent-[#236d2a]"
+                      required
+                      type="checkbox"
+                    />{" "}
+                    Placa conferida
+                  </label>
+                </div>
               </div>
-
-              <div>
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="duration"
-                >
-                  Previsão de permanência
-                </label>
-                <select
-                  className={fieldClass}
-                  disabled={purpose === "Levar ou buscar estudante"}
-                  id="duration"
-                  onChange={(event) => setDuration(Number(event.target.value))}
-                  value={duration}
-                >
-                  {durationOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1.5 text-xs text-ink/55">
-                  {purpose === "Levar ou buscar estudante"
-                    ? "Este motivo usa a previsão operacional de 10 minutos."
-                    : "A previsão gera um alerta, mas não registra saída automaticamente."}
-                </p>
-              </div>
-
-              <div className="md:col-span-2">
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="destination"
-                >
-                  Destino no campus{" "}
-                  <span aria-hidden="true" className="text-red-700">
-                    *
-                  </span>
-                </label>
-                <input
-                  autoComplete="off"
-                  className={fieldClass}
-                  id="destination"
-                  name="destination"
-                  placeholder="Ex.: Bloco acadêmico"
-                  required
-                />
-              </div>
-            </div>
+            )}
 
             <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-6 sm:flex-row sm:justify-end">
               <button
-                className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
+                className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream"
                 onClick={() => navigate("/visao-geral")}
                 type="button"
               >
                 Cancelar
               </button>
               <button
-                className="min-h-12 rounded-xl bg-brand px-7 font-bold text-white shadow-sm hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
+                className="min-h-12 rounded-xl bg-brand px-7 font-bold text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-45"
+                disabled={submitDisabled}
                 type="submit"
               >
-                Registrar entrada
+                Marcar entrada de {activeTab.toLocaleLowerCase("pt-BR")}
               </button>
             </div>
           </div>
@@ -412,31 +588,34 @@ export function NewAccessPage() {
         <aside className="h-fit space-y-4 xl:sticky xl:top-8">
           <section className="rounded-[2rem] bg-[#B8C9A4] p-6">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink/55">
-              Conferência rápida
+              Fluxo do turno
             </p>
+            <h2 className="mt-1 font-display text-2xl text-ink">
+              Entrada e saída
+            </h2>
             <ol className="mt-5 space-y-4 text-sm leading-6 text-ink/75">
               <li className="flex gap-3">
                 <strong>1.</strong>
-                <span>Confirme a placa com o veículo.</span>
+                <span>Escolha a categoria correta.</span>
               </li>
               <li className="flex gap-3">
                 <strong>2.</strong>
-                <span>
-                  Confira o documento quando o acesso for de visitante.
-                </span>
+                <span>Confira a pessoa, a placa e os dados solicitados.</span>
               </li>
               <li className="flex gap-3">
                 <strong>3.</strong>
-                <span>Informe motivo, destino e previsão de permanência.</span>
+                <span>
+                  Na saída, localize o registro em “Acessos em aberto”.
+                </span>
               </li>
             </ol>
           </section>
           <section className="rounded-[2rem] border border-[#EFD780] bg-[#EFD780]/35 p-5">
-            <p className="text-sm font-bold text-ink">Sobre o prazo</p>
+            <p className="text-sm font-bold text-ink">Atenção ao moto táxi</p>
             <p className="mt-2 text-xs leading-5 text-ink/65">
-              Ao ultrapassar a previsão sem saída registrada, o acesso ganha
-              destaque para Porteiros e Vigilantes. A saída nunca é encerrada
-              automaticamente.
+              O protótipo usa 10 minutos como hipótese operacional. Confirme com
+              o cliente se o prazo e os dados exigidos serão os mesmos para
+              todos os mototaxistas.
             </p>
           </section>
         </aside>
