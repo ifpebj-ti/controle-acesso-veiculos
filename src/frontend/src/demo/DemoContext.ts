@@ -1,16 +1,15 @@
 import { createContext } from "react";
 
+import type { GeneralAccessCategory } from "../features/access-records/model/accessCategories";
+
 export interface DemoAccessRecord {
   id: number;
   plate: string;
   driver: string;
-  destination: string;
-  type: "Visitante" | "Serviço" | "Institucional";
-  purpose: string;
-  documentType?: string;
-  documentVerified?: boolean;
-  expectedExitAt?: string;
-  institutionalVehicleCode?: string;
+  category: GeneralAccessCategory;
+  objective: string;
+  vehicleType?: string;
+  observation?: string;
   entryAt: string;
   exitAt?: string;
 }
@@ -18,13 +17,10 @@ export interface DemoAccessRecord {
 export interface NewDemoAccess {
   plate: string;
   driver: string;
-  destination: string;
-  type: DemoAccessRecord["type"];
-  purpose: string;
-  documentType?: string;
-  documentVerified?: boolean;
-  expectedDurationMinutes?: number;
-  institutionalVehicleCode?: string;
+  category: GeneralAccessCategory;
+  objective: string;
+  vehicleType?: string;
+  observation?: string;
 }
 
 export interface DemoInstitutionalVehicle {
@@ -69,33 +65,27 @@ export const initialRecords: DemoAccessRecord[] = [
     id: 1001,
     plate: "DEM-0101",
     driver: "Pessoa de demonstração 01",
-    destination: "Bloco acadêmico",
-    type: "Visitante",
-    purpose: "Levar ou buscar estudante",
-    documentType: "Documento oficial com foto",
-    documentVerified: true,
+    category: "Visitante",
+    objective: "Atendimento no bloco acadêmico",
+    vehicleType: "Automóvel",
     entryAt: minutesAgo(14),
-    expectedExitAt: minutesAgo(4),
   },
   {
     id: 1002,
     plate: "DEM-0202",
     driver: "Pessoa de demonstração 02",
-    destination: "Manutenção",
-    type: "Serviço",
-    purpose: "Prestação de serviço autorizada",
-    documentType: "Documento funcional",
-    documentVerified: true,
+    category: "Prestador de serviço",
+    objective: "Manutenção preventiva autorizada",
+    vehicleType: "Utilitário",
     entryAt: minutesAgo(42),
   },
   {
     id: 1003,
-    plate: "IFD-0303",
-    driver: "Motorista institucional 01",
-    destination: "Campus Pesqueira",
-    type: "Institucional",
-    purpose: "Deslocamento institucional",
-    institutionalVehicleCode: "IFPE-03",
+    plate: "DEM-0303",
+    driver: "Pessoa de demonstração 03",
+    category: "Entrega",
+    objective: "Entrega de material ao almoxarifado",
+    vehicleType: "Furgão",
     entryAt: minutesAgo(185),
     exitAt: minutesAgo(145),
   },
@@ -103,11 +93,9 @@ export const initialRecords: DemoAccessRecord[] = [
     id: 1004,
     plate: "DEM-0404",
     driver: "Pessoa de demonstração histórica",
-    destination: "Setor de atendimento",
-    type: "Visitante",
-    purpose: "Atendimento agendado",
-    documentType: "Documento oficial com foto",
-    documentVerified: true,
+    category: "Visitante",
+    objective: "Atendimento agendado",
+    vehicleType: "Automóvel",
     entryAt: yearsAgo(5, 2),
     exitAt: new Date(
       new Date(yearsAgo(5, 2)).getTime() + 35 * 60_000,

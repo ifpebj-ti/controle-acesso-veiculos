@@ -7,17 +7,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null);
 
   const registerAccess = useCallback((record: NewDemoAccess) => {
-    const entryAt = new Date();
     setRecords((current) => [
       {
         ...record,
         id: Date.now(),
-        entryAt: entryAt.toISOString(),
-        expectedExitAt: record.expectedDurationMinutes
-          ? new Date(
-              entryAt.getTime() + record.expectedDurationMinutes * 60_000,
-            ).toISOString()
-          : undefined,
+        entryAt: new Date().toISOString(),
         plate: record.plate.trim().toUpperCase(),
       },
       ...current,

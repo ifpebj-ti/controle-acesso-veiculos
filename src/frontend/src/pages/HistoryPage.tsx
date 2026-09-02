@@ -4,27 +4,14 @@ import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { useDemo, type DemoAccessRecord } from "../demo";
-import { useAuthenticatedSession } from "../features/authentication";
+import { generalAccessCategories } from "../features/access-records/model/accessCategories";
 
-type PeriodPreset = "7" | "30" | "90" | "365" | "all" | "custom" | "retention";
+type PeriodPreset = "7" | "30" | "90" | "365" | "all" | "custom";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
 });
-
-function retentionLimit(reference = new Date()) {
-  const limit = new Date(reference);
-  limit.setFullYear(limit.getFullYear() - 5);
-  return limit;
-}
-
-function isRetentionEligible(record: DemoAccessRecord) {
-  return Boolean(
-    record.exitAt &&
-    new Date(record.exitAt).getTime() <= retentionLimit().getTime(),
-  );
-}
 
 function stayDuration(record: DemoAccessRecord) {
   if (!record.exitAt) return "Em andamento";
@@ -43,21 +30,12 @@ function stayDuration(record: DemoAccessRecord) {
 
 export function HistoryPage() {
   const { records } = useDemo();
-  const { user } = useAuthenticatedSession();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("todos");
-  const [type, setType] = useState("todos");
+  const [category, setCategory] = useState("todos");
   const [period, setPeriod] = useState<PeriodPreset>("30");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [authorizedRetentionIds, setAuthorizedRetentionIds] = useState<
-    number[]
-  >([]);
-  const [notice, setNotice] = useState<string | null>(null);
-  const isAdministrator = user.profileName === "Administrador";
-
-  const retentionRecords = records.filter(isRetentionEligible);
-
   const filteredRecords = useMemo(() => {
     const now = new Date();
     const selectedDays = Number(period);
@@ -74,9 +52,8 @@ export function HistoryPage() {
         const matchesQuery = [
           record.plate,
           record.driver,
-          record.destination,
-          record.purpose,
-          record.type,
+          record.objective,
+          record.category,
         ].some((value) =>
           value.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
         );
@@ -84,45 +61,34 @@ export function HistoryPage() {
           status === "todos" ||
           (status === "aberto" && !record.exitAt) ||
           (status === "concluido" && Boolean(record.exitAt));
-        const matchesType = type === "todos" || record.type === type;
+        const matchesCategory =
+          category === "todos" || record.category === category;
         const entryDate = new Date(record.entryAt);
         const matchesPeriod =
           period === "all" ||
-          (period === "retention" && isRetentionEligible(record)) ||
           (period === "custom" &&
             (!customStart || entryDate >= customStart) &&
             (!customEnd || entryDate <= customEnd)) ||
           (presetStart !== null && entryDate >= presetStart);
 
-        return matchesQuery && matchesStatus && matchesType && matchesPeriod;
+        return (
+          matchesQuery && matchesStatus && matchesCategory && matchesPeriod
+        );
       })
       .sort(
         (first, second) =>
           new Date(second.entryAt).getTime() -
           new Date(first.entryAt).getTime(),
       );
-  }, [fromDate, period, query, records, status, toDate, type]);
+  }, [category, fromDate, period, query, records, status, toDate]);
 
   function clearFilters() {
     setQuery("");
     setStatus("todos");
-    setType("todos");
+    setCategory("todos");
     setPeriod("30");
     setFromDate("");
     setToDate("");
-  }
-
-  function authorizeRetention(record: DemoAccessRecord) {
-    if (
-      window.confirm(
-        `Autorizar, somente nesta demonstração, o encaminhamento do registro ${record.id} para descarte institucional?`,
-      )
-    ) {
-      setAuthorizedRetentionIds((current) => [...current, record.id]);
-      setNotice(
-        `Autorização simulada registrada para o acesso ${record.id}. Nenhum dado foi excluído.`,
-      );
-    }
   }
 
   const fieldClass =
@@ -131,50 +97,10 @@ export function HistoryPage() {
   return (
     <div>
       <PageHeader
-        description="Consulte entradas e saídas por período, situação, tipo de acesso, placa, condutor, destino ou motivo."
+        description="Consulte entradas e saídas por período, situação, categoria, placa, condutor ou objetivo."
         eyebrow="Consulta e rastreabilidade"
         title="Histórico de acessos"
       />
-
-      {isAdministrator && retentionRecords.length > 0 && (
-        <section className="mt-7 grid gap-5 rounded-[1.75rem] border border-[#EFD780] bg-[#EFD780]/30 p-5 lg:grid-cols-[auto_1fr_auto] lg:items-center">
-          <span className="grid size-12 place-items-center rounded-2xl bg-[#FFE67C] text-ink">
-            <Icon name="history" />
-          </span>
-          <div>
-            <p className="font-bold text-ink">
-              {retentionRecords.length} registro(s) completaram cinco anos
-            </p>
-            <p className="mt-1 text-sm leading-5 text-ink/65">
-              Revise a finalidade e eventuais bloqueios antes de autorizar o
-              descarte. Nenhum registro é apagado automaticamente.
-            </p>
-          </div>
-          <button
-            className="min-h-11 rounded-xl bg-ink px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
-            onClick={() => setPeriod("retention")}
-            type="button"
-          >
-            Revisar retenção
-          </button>
-        </section>
-      )}
-
-      {notice && (
-        <div
-          className="mt-5 flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
-          role="status"
-        >
-          <p>{notice}</p>
-          <button
-            className="font-bold underline underline-offset-4"
-            onClick={() => setNotice(null)}
-            type="button"
-          >
-            Fechar
-          </button>
-        </div>
-      )}
 
       <section className="mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]">
         <div className="border-b border-ink/8 bg-[#B8C9A4]/20 px-5 py-5 sm:px-6">
@@ -272,20 +198,20 @@ export function HistoryPage() {
             <div>
               <label
                 className="text-sm font-semibold text-ink"
-                htmlFor="history-type"
+                htmlFor="history-category"
               >
-                Tipo de acesso
+                Categoria
               </label>
               <select
                 className={fieldClass}
-                id="history-type"
-                onChange={(event) => setType(event.target.value)}
-                value={type}
+                id="history-category"
+                onChange={(event) => setCategory(event.target.value)}
+                value={category}
               >
-                <option value="todos">Todos</option>
-                <option>Visitante</option>
-                <option>Serviço</option>
-                <option>Institucional</option>
+                <option value="todos">Todas</option>
+                {generalAccessCategories.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -335,9 +261,6 @@ export function HistoryPage() {
                 navegador.
               </p>
             </div>
-            {period === "retention" && (
-              <StatusBadge label="Revisão de retenção" tone="warning" />
-            )}
           </div>
 
           {filteredRecords.length === 0 && (
@@ -359,7 +282,7 @@ export function HistoryPage() {
                   <div>
                     <strong className="block text-ink">{record.plate}</strong>
                     <span className="text-xs text-ink/60">
-                      {record.type} • #{record.id}
+                      {record.category} • #{record.id}
                     </span>
                   </div>
                   <StatusBadge
@@ -370,9 +293,7 @@ export function HistoryPage() {
                 <p className="mt-3 text-sm font-semibold text-ink/80">
                   {record.driver}
                 </p>
-                <p className="mt-1 text-sm text-ink/60">
-                  {record.purpose} • {record.destination}
-                </p>
+                <p className="mt-1 text-sm text-ink/60">{record.objective}</p>
                 <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-ink/8 pt-3 text-xs">
                   <div>
                     <dt className="font-bold uppercase tracking-wider text-ink/50">
@@ -389,18 +310,6 @@ export function HistoryPage() {
                     <dd className="mt-1 text-ink/75">{stayDuration(record)}</dd>
                   </div>
                 </dl>
-                {isAdministrator && isRetentionEligible(record) && (
-                  <button
-                    className="mt-4 min-h-10 w-full rounded-xl border border-amber-500/40 bg-amber-50 px-3 text-sm font-bold text-amber-950 disabled:opacity-60"
-                    disabled={authorizedRetentionIds.includes(record.id)}
-                    onClick={() => authorizeRetention(record)}
-                    type="button"
-                  >
-                    {authorizedRetentionIds.includes(record.id)
-                      ? "Autorização simulada"
-                      : "Autorizar descarte"}
-                  </button>
-                )}
               </article>
             ))}
           </div>
@@ -419,7 +328,7 @@ export function HistoryPage() {
                     Condutor
                   </th>
                   <th className="px-3 py-3" scope="col">
-                    Motivo e destino
+                    Objetivo
                   </th>
                   <th className="px-3 py-3" scope="col">
                     Permanência
@@ -427,11 +336,6 @@ export function HistoryPage() {
                   <th className="px-3 py-3" scope="col">
                     Situação
                   </th>
-                  {isAdministrator && (
-                    <th className="px-3 py-3 text-right" scope="col">
-                      Retenção
-                    </th>
-                  )}
                 </tr>
               </thead>
               <tbody>
@@ -446,22 +350,14 @@ export function HistoryPage() {
                         {dateFormatter.format(new Date(record.entryAt))}
                       </span>
                       <span className="mt-1 block text-[0.68rem] font-bold uppercase tracking-wider text-brand-dark">
-                        {record.type}
+                        {record.category}
                       </span>
                     </td>
                     <td className="px-3 py-4 text-ink/75">
                       <span className="font-medium">{record.driver}</span>
-                      {record.documentVerified && (
-                        <span className="mt-1 block text-xs text-ink/50">
-                          Documento conferido
-                        </span>
-                      )}
                     </td>
                     <td className="px-3 py-4 text-ink/75">
-                      <span className="font-medium">{record.purpose}</span>
-                      <span className="mt-1 block text-xs text-ink/55">
-                        {record.destination}
-                      </span>
+                      <span className="font-medium">{record.objective}</span>
                     </td>
                     <td className="px-3 py-4 text-ink/70">
                       {stayDuration(record)}
@@ -477,28 +373,6 @@ export function HistoryPage() {
                         tone={record.exitAt ? "success" : "warning"}
                       />
                     </td>
-                    {isAdministrator && (
-                      <td className="px-3 py-4 text-right">
-                        {isRetentionEligible(record) ? (
-                          <button
-                            className="min-h-9 rounded-xl border border-amber-500/40 bg-amber-50 px-3 text-xs font-bold text-amber-950 disabled:opacity-60"
-                            disabled={authorizedRetentionIds.includes(
-                              record.id,
-                            )}
-                            onClick={() => authorizeRetention(record)}
-                            type="button"
-                          >
-                            {authorizedRetentionIds.includes(record.id)
-                              ? "Autorizado"
-                              : "Autorizar descarte"}
-                          </button>
-                        ) : (
-                          <span className="text-xs text-ink/45">
-                            Dentro do prazo
-                          </span>
-                        )}
-                      </td>
-                    )}
                   </tr>
                 ))}
               </tbody>

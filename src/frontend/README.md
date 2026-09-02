@@ -14,26 +14,26 @@ Fluxo sugerido para validação local:
 1. iniciar a API e acessar `/login` com uma conta individual local;
 2. confirmar que e-mail e perfil exibidos vieram da resposta da API;
 3. como Porteiro ou Vigilante, registrar uma entrada fictícia em `/acessos/novo`;
-4. conferir o alerta de permanência em `/acessos/abertos` e registrar a saída;
+4. localizar o veículo em `/acessos/abertos` e registrar a saída;
 5. como Transporte, explorar o histórico, a frota e os eventos;
-6. como Administrador, filtrar o histórico por período, revisar a demonstração de
-   retenção e gerenciar contas fictícias em `/administracao`.
+6. como Administrador, filtrar o histórico e gerenciar contas fictícias em
+   `/administracao`.
 
 Porteiro e Vigilante possuem a mesma navegação operacional. O Setor de Transporte
 mantém frota e eventos. O Administrador gerencia contas, frota e eventos e possui
 o acesso operacional excepcional permitido pelo backend, embora entrada e saída
 continuem ocultas de seu menu rotineiro.
 
-O formulário de entrada adapta os campos ao contexto: visitante exige conferência
-de documento; o motivo “Levar ou buscar estudante” sugere dez minutos e gera um
-alerta quando a saída não é registrada; veículos institucionais recuperam a placa
-do catálogo e exigem somente conferência. Nenhum prazo encerra o acesso
-automaticamente.
+O formulário demonstrativo segue o fluxo geral documentado: nome do condutor,
+placa, objetivo e categoria são obrigatórios; tipo do veículo e observação são
+opcionais. Categoria e objetivo permanecem distintos. Documento não é exigido
+por decisão apenas visual, e horário, autorização e duplicidade continuam sob
+responsabilidade da API na integração real.
 
-A notificação de descarte após cinco anos é uma hipótese visual solicitada para a
-homologação. Ela não exclui dados, não possui endpoint no backend e não substitui
-a aprovação institucional de finalidade, retenção, bloqueios e descarte descrita
-em `../../docs/operations/data-retention-and-continuity.md`.
+Saída, retorno, quilometragem e motorista de veículos institucionais pertencem ao
+fluxo próprio da frota. Previsão de permanência, alertas baseados em prazo e
+descarte por período não são apresentados enquanto seus contratos e políticas
+institucionais permanecerem pendentes.
 
 O login autentica e as rotas são filtradas pela identidade devolvida pela API.
 Isso não transforma a interface em controle de autorização: o backend continua
@@ -124,6 +124,7 @@ src/
 │   └── ui/           # Componentes visuais reutilizáveis.
 ├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── features/
+│   ├── access-records/ # Modelo de apresentação do fluxo geral de acessos.
 │   └── authentication/ # Formulário, service, sessão e tipos de autenticação.
 ├── pages/            # Componentes associados às páginas.
 ├── routes/           # Configuração central das rotas.
