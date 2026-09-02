@@ -6,9 +6,9 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 2.6
+**Versão:** 2.7
 
-**Data de referência:** 31 de agosto de 2026
+**Data de referência:** 2 de setembro de 2026
 
 **Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104 e #106
 
@@ -122,7 +122,7 @@ flowchart LR
 | Fronteira | Mudança de confiança | Estado |
 |---|---|---|
 | B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
-| B2 | Código executado no navegador para API | JWT, contratos operacionais, consultas históricas e catálogos de frota, motoristas e eventos implementados; matriz final e frontend pendentes |
+| B2 | Código executado no navegador para API | Login do frontend, JWT somente em memória, rotas protegidas e contratos operacionais implementados; integração das telas de negócio e matriz final pendentes |
 | B3 | API para PostgreSQL | Implementado localmente |
 | B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos, incluindo eventos; consulta da trilha restrita a Administrador |
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
@@ -163,6 +163,11 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - EF Core restrito à Infrastructure/API;
 - migrations versionadas e sem execução automática no startup;
 - autenticação JWT com validade curta, chave externa e validação de emissor e audiência;
+- frontend valida a resposta de login, mantém o JWT somente em memória, encerra a
+  sessão por logout, expiração ou 401 e deriva a navegação apenas do perfil
+  retornado pela API;
+- rotas do frontend exigem sessão e apresentam acesso negado para perfil
+  incompatível, sem substituir a autorização do backend;
 - hash de senha com salt e derivação, bloqueio temporário e resposta uniforme de login;
 - login bem-sucedido e bloqueio temporário auditados atomicamente sem credenciais, token, e-mail ou IP, com emissão de token impedida quando a auditoria falha;
 - consulta de contas paginada e restrita a Administrador, sem exposição de hash;

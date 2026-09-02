@@ -2,23 +2,27 @@
 
 Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jardim.
 
-## Protótipo navegável
+## Estado atual
 
-A versão atual inclui um protótipo local para validação de fluxo com o cliente. Ele usa somente dados fictícios mantidos em memória e identifica explicitamente o modo demonstração.
+A versão atual integra autenticação real e sessão em memória ao endpoint
+`POST /auth/login`. As telas de negócio continuam sendo um protótipo para
+validação de fluxo: usam somente dados fictícios mantidos em memória e são
+identificadas explicitamente como demonstração.
 
-Fluxo sugerido para a apresentação:
+Fluxo sugerido para validação local:
 
-1. acessar `/login` e escolher o perfil de demonstração;
-2. comparar a navegação de Transporte, Porteiro, Vigilante e Administrador;
+1. iniciar a API e acessar `/login` com uma conta individual local;
+2. confirmar que e-mail e perfil exibidos vieram da resposta da API;
 3. como Porteiro ou Vigilante, registrar uma entrada fictícia em `/acessos/novo`;
 4. conferir o alerta de permanência em `/acessos/abertos` e registrar a saída;
 5. como Transporte, explorar o histórico, a frota e os eventos;
 6. como Administrador, filtrar o histórico por período, revisar a demonstração de
    retenção e gerenciar contas fictícias em `/administracao`.
 
-No fluxo proposto, Porteiro e Vigilante possuem a mesma navegação operacional.
-O Setor de Transporte mantém frota e eventos, enquanto o Administrador consulta o
-histórico e gerencia contas e permissões sem registrar entradas ou saídas.
+Porteiro e Vigilante possuem a mesma navegação operacional. O Setor de Transporte
+mantém frota e eventos. O Administrador gerencia contas, frota e eventos e possui
+o acesso operacional excepcional permitido pelo backend, embora entrada e saída
+continuem ocultas de seu menu rotineiro.
 
 O formulário de entrada adapta os campos ao contexto: visitante exige conferência
 de documento; o motivo “Levar ou buscar estudante” sugere dez minutos e gera um
@@ -31,7 +35,39 @@ homologação. Ela não exclui dados, não possui endpoint no backend e não sub
 a aprovação institucional de finalidade, retenção, bloqueios e descarte descrita
 em `../../docs/operations/data-retention-and-continuity.md`.
 
-O protótipo não autentica, não aplica autorização real, não chama a API e não representa homologação para produção. A seleção de perfil serve somente para validar arquitetura de informação e responsabilidades.
+O login autentica e as rotas são filtradas pela identidade devolvida pela API.
+Isso não transforma a interface em controle de autorização: o backend continua
+validando cada operação. As telas de negócio ainda não chamam seus endpoints e
+não representam homologação para produção.
+
+## Sessão e segurança
+
+A estratégia implementada na Issue #117 mantém o access token somente na memória
+do processo JavaScript:
+
+- o token é anexado pelo cliente Axios centralizado e nunca aparece em URL;
+- `localStorage` e `sessionStorage` não são usados, pois prolongariam a exposição
+  do token em caso de XSS;
+- atualizar ou fechar a página encerra a sessão e exige novo login;
+- a expiração informada por `expiresAtUtc` encerra a sessão localmente;
+- uma resposta 401 em requisição autenticada limpa a sessão;
+- resposta 403 e tentativa de abrir uma rota incompatível apresentam acesso
+  negado sem revelar dados;
+- logout limpa token, identidade e temporizador locais.
+
+O backend usa resposta 401 genérica para credencial incorreta, conta inativa e
+bloqueio temporário. O frontend preserva essa indistinguibilidade para não ajudar
+na enumeração de contas. Não existem refresh token ou logout no servidor.
+
+Alternativas avaliadas:
+
+- `localStorage`: rejeitado para este incremento por persistir o JWT e ampliar a
+  janela de exposição a XSS;
+- `sessionStorage`: rejeitado pelo mesmo motivo, embora limitado à aba;
+- cookie `HttpOnly`, `Secure` e `SameSite`: opção preferível para uma sessão
+  persistente futura, mas exige contrato de backend, proteção contra CSRF,
+  encerramento e rotação próprios;
+- refresh token: não implementado porque a API não possui esse contrato.
 
 ## Tecnologias
 
@@ -48,7 +84,7 @@ O protótipo não autentica, não aplica autorização real, não chama a API e 
 Na pasta `src/frontend`:
 
 ```powershell
-npm install
+npm ci
 npm run dev
 ```
 
@@ -76,8 +112,8 @@ No ambiente Docker, o Nginx aplica o mesmo contrato e encaminha `/api/*` para o
 container backend. Essa estratégia evita expor uma segunda origem ao navegador e
 dispensa uma política CORS ampla no MVP.
 
-O protótipo atual ainda não realiza chamadas aos endpoints de negócio. Não
-inclua tokens, senhas ou credenciais em variáveis expostas ao frontend.
+Somente a autenticação realiza chamada de negócio nesta etapa. Não inclua tokens,
+senhas ou credenciais em variáveis expostas ao frontend.
 
 ## Estrutura de diretórios
 
@@ -87,6 +123,8 @@ src/
 │   ├── layout/       # Layouts compartilhados.
 │   └── ui/           # Componentes visuais reutilizáveis.
 ├── demo/             # Estado e dados exclusivamente demonstrativos.
+├── features/
+│   └── authentication/ # Formulário, service, sessão e tipos de autenticação.
 ├── pages/            # Componentes associados às páginas.
 ├── routes/           # Configuração central das rotas.
 ├── services/         # Cliente HTTP e integrações externas.
@@ -112,12 +150,13 @@ src/
 
 ## Fora do escopo do protótipo
 
-- autenticação e autorização reais;
-- gerenciamento ou persistência de tokens;
-- chamadas de endpoints de negócio;
+- refresh token ou persistência de sessão;
+- logout, revogação ou renovação no servidor;
+- recuperação e redefinição de senha;
+- chamadas aos endpoints operacionais e administrativos;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
-- garantia de segurança baseada na seleção de perfil;
+- garantia de autorização baseada somente na interface;
 - homologação do cliente ou prontidão para produção.
 
 ## Validação
@@ -127,4 +166,5 @@ Na pasta `src/frontend`:
 ```powershell
 npm run lint
 npm run build
+npm test
 ```
