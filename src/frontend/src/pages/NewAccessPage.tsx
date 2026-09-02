@@ -5,8 +5,9 @@ import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RestrictedDemoState } from "../components/ui/RestrictedDemoState";
 import { institutionalVehicles, useDemo, type DemoAccessRecord } from "../demo";
+import { useAuthenticatedSession } from "../features/authentication";
 
-const operationalProfiles = ["porteiro", "vigilante"];
+const operationalProfiles = ["Porteiro", "Vigilante", "Administrador"];
 
 const purposes: Record<DemoAccessRecord["type"], string[]> = {
   Institucional: ["Deslocamento institucional"],
@@ -36,7 +37,8 @@ const durationOptions = [
 
 export function NewAccessPage() {
   const navigate = useNavigate();
-  const { profile, registerAccess } = useDemo();
+  const { registerAccess } = useDemo();
+  const { user } = useAuthenticatedSession();
   const [accessType, setAccessType] =
     useState<DemoAccessRecord["type"]>("Visitante");
   const [purpose, setPurpose] = useState(purposes.Visitante[0]);
@@ -50,9 +52,9 @@ export function NewAccessPage() {
     [vehicleCode],
   );
 
-  if (!operationalProfiles.includes(profile)) {
+  if (!operationalProfiles.includes(user.profileName)) {
     return (
-      <RestrictedDemoState message="Entradas e saídas são registradas somente por Porteiros e Vigilantes. Administração e Transporte acompanham os dados pelas consultas permitidas." />
+      <RestrictedDemoState message="Seu perfil não possui permissão para registrar entradas e saídas." />
     );
   }
 

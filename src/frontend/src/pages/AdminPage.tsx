@@ -4,7 +4,7 @@ import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RestrictedDemoState } from "../components/ui/RestrictedDemoState";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { useDemo } from "../demo";
+import { useAuthenticatedSession } from "../features/authentication";
 
 interface DemoAccount {
   id: number;
@@ -59,12 +59,12 @@ const permissionRows = [
 ];
 
 export function AdminPage() {
-  const { profile } = useDemo();
+  const { user } = useAuthenticatedSession();
   const [accounts, setAccounts] = useState(initialAccounts);
   const [formOpen, setFormOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  if (profile !== "administrador") {
+  if (user.profileName !== "Administrador") {
     return (
       <RestrictedDemoState message="Gestão de usuários e permissões é uma área exclusiva do perfil Administrador." />
     );

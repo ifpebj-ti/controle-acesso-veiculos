@@ -1,8 +1,5 @@
 import { createContext } from "react";
 
-export type DemoProfile =
-  "porteiro" | "vigilante" | "transporte" | "administrador";
-
 export interface DemoAccessRecord {
   id: number;
   plate: string;
@@ -36,13 +33,6 @@ export interface DemoInstitutionalVehicle {
   plate: string;
   status: "Disponível" | "Em viagem" | "Manutenção";
 }
-
-export const profileLabels: Record<DemoProfile, string> = {
-  administrador: "Administrador",
-  porteiro: "Porteiro",
-  transporte: "Setor de Transporte",
-  vigilante: "Vigilante",
-};
 
 const demoNow = Date.now();
 const minutesAgo = (minutes: number) =>
@@ -126,12 +116,8 @@ export const initialRecords: DemoAccessRecord[] = [
 ];
 
 export interface DemoContextValue {
-  accountName: string;
-  profile: DemoProfile;
-  profileLabel: string;
   records: DemoAccessRecord[];
   notice: string | null;
-  setDemoAccount: (profile: DemoProfile, accountName: string) => void;
   registerAccess: (record: NewDemoAccess) => void;
   closeAccess: (id: number) => void;
   clearNotice: () => void;

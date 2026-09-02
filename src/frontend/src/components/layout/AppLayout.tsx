@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
-import { useDemo, type DemoProfile } from "../../demo";
+import {
+  profileLabels,
+  useAuthenticatedSession,
+  type ProfileName,
+} from "../../features/authentication";
 import { Brand } from "../ui/Brand";
 import { Icon, type IconName } from "../ui/Icon";
 
@@ -9,28 +13,25 @@ interface NavigationItem {
   label: string;
   icon: IconName;
   to: string;
-  profiles?: DemoProfile[];
+  profiles?: ProfileName[];
 }
 
 interface NavigationSection {
   label: string;
   icon: IconName;
   items?: NavigationItem[];
-  profiles?: DemoProfile[];
+  profiles?: ProfileName[];
   to?: string;
 }
 
-const operationalProfiles: DemoProfile[] = ["porteiro", "vigilante"];
+const operationalProfiles: ProfileName[] = ["Porteiro", "Vigilante"];
 
-const fleetProfiles: DemoProfile[] = ["porteiro", "vigilante", "transporte"];
-const registryProfiles: DemoProfile[] = ["porteiro", "vigilante", "transporte"];
-
-const accessLabels: Record<DemoProfile, string> = {
-  administrador: "ADM",
-  porteiro: "Porteiro",
-  transporte: "Transporte",
-  vigilante: "Vigilante",
-};
+const registryProfiles: ProfileName[] = [
+  "Porteiro",
+  "Vigilante",
+  "SetorTransporte",
+  "Administrador",
+];
 
 const navigation: NavigationSection[] = [
   {
@@ -65,7 +66,7 @@ const navigation: NavigationSection[] = [
       {
         icon: "bus",
         label: "Frota institucional",
-        profiles: fleetProfiles,
+        profiles: registryProfiles,
         to: "/frota",
       },
       {
@@ -79,13 +80,13 @@ const navigation: NavigationSection[] = [
   {
     icon: "users",
     label: "Usuários e permissões",
-    profiles: ["administrador"],
+    profiles: ["Administrador"],
     to: "/administracao",
   },
 ];
 
 function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
-  const { accountName, profile } = useDemo();
+  const { logout, user } = useAuthenticatedSession();
   const navigate = useNavigate();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     () => new Set(),
@@ -106,6 +107,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
   }
 
   function handleLogout() {
+    logout();
     closeMenu?.();
     navigate("/login");
   }
@@ -122,9 +124,11 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
           <Icon name="user" size={25} />
         </span>
         <div className="min-w-0">
-          <p className="truncate font-semibold text-ink">{accountName}</p>
+          <p className="truncate font-semibold text-ink" title={user.email}>
+            {user.email}
+          </p>
           <p className="mt-0.5 truncate text-xs font-bold text-brand-dark">
-            {accessLabels[profile]}
+            {profileLabels[user.profileName]}
           </p>
         </div>
       </div>
@@ -132,12 +136,16 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
       <nav aria-label="Navegação principal" className="mt-20 flex-1">
         <ul className="space-y-2">
           {navigation.map((section) => {
-            if (section.profiles && !section.profiles.includes(profile)) {
+            if (
+              section.profiles &&
+              !section.profiles.includes(user.profileName)
+            ) {
               return null;
             }
 
             const items = section.items?.filter(
-              (item) => !item.profiles || item.profiles.includes(profile),
+              (item) =>
+                !item.profiles || item.profiles.includes(user.profileName),
             );
             const isExpanded = !collapsedSections.has(section.label);
 
@@ -289,8 +297,8 @@ export function AppLayout() {
         tabIndex={-1}
       >
         <div className="border-b border-amber-300/60 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-950 sm:text-sm lg:px-8">
-          Modo demonstração — dados fictícios, sem autenticação e sem envio à
-          API.
+          Sessão autenticada pela API — os dados operacionais desta etapa ainda
+          são fictícios e não são enviados.
         </div>
         <div className="mx-auto min-w-0 w-full max-w-[94rem] px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
           <Outlet />

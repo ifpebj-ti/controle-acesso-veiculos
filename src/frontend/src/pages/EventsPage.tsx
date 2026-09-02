@@ -2,7 +2,7 @@ import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RestrictedDemoState } from "../components/ui/RestrictedDemoState";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { useDemo } from "../demo";
+import { useAuthenticatedSession } from "../features/authentication";
 
 const events = [
   {
@@ -20,15 +20,21 @@ const events = [
 ];
 
 export function EventsPage() {
-  const { profile } = useDemo();
+  const { user } = useAuthenticatedSession();
+  const profile = user.profileName;
 
-  if (!["porteiro", "vigilante", "transporte"].includes(profile)) {
+  if (
+    !["Porteiro", "Vigilante", "SetorTransporte", "Administrador"].includes(
+      profile,
+    )
+  ) {
     return (
       <RestrictedDemoState message="Autorizações de eventos são mantidas pelo Setor de Transporte e consultadas por Porteiros e Vigilantes durante a operação." />
     );
   }
 
-  const canManageEvents = profile === "transporte";
+  const canManageEvents =
+    profile === "SetorTransporte" || profile === "Administrador";
 
   return (
     <div>

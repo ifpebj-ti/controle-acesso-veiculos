@@ -4,6 +4,10 @@ import { Link } from "react-router-dom";
 import { Icon } from "../components/ui/Icon";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { useDemo } from "../demo";
+import {
+  profileLabels,
+  useAuthenticatedSession,
+} from "../features/authentication";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
@@ -35,7 +39,9 @@ function greetingForHour(hour: number) {
 }
 
 export function DashboardPage() {
-  const { accountName, profile, records } = useDemo();
+  const { records } = useDemo();
+  const { user } = useAuthenticatedSession();
+  const profile = user.profileName;
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -60,7 +66,7 @@ export function DashboardPage() {
       record.exitAt &&
       new Date(record.exitAt).getTime() <= retentionLimit.getTime(),
   );
-  const firstName = accountName.split(" ")[0];
+  const profileLabel = profileLabels[profile];
 
   const indicators = [
     {
@@ -83,25 +89,25 @@ export function DashboardPage() {
     },
     {
       detail:
-        profile === "administrador"
+        profile === "Administrador"
           ? "Registros aguardando decisão administrativa"
-          : profile === "transporte"
+          : profile === "SetorTransporte"
             ? "Autorizações previstas no dia"
             : "Saídas não registradas após a previsão",
       label:
-        profile === "administrador"
+        profile === "Administrador"
           ? "Revisão de retenção"
-          : profile === "transporte"
+          : profile === "SetorTransporte"
             ? "Eventos ativos"
             : "Prazos excedidos",
       surface:
-        profile === "administrador" || overdueRecords.length > 0
+        profile === "Administrador" || overdueRecords.length > 0
           ? "bg-[#EFD780]/45"
           : "bg-[#C8CE72]/35",
       value:
-        profile === "administrador"
+        profile === "Administrador"
           ? retentionRecords.length
-          : profile === "transporte"
+          : profile === "SetorTransporte"
             ? 2
             : overdueRecords.length,
     },
@@ -115,7 +121,7 @@ export function DashboardPage() {
             Controle de acesso • Campus Belo Jardim
           </p>
           <h1 className="mt-2 font-display text-4xl leading-tight text-ink sm:text-5xl">
-            {greetingForHour(now.getHours())}, {firstName}.
+            {greetingForHour(now.getHours())}, {profileLabel}.
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-ink/65 sm:text-base">
             Acompanhe a movimentação do campus e encontre rapidamente o que
@@ -313,7 +319,7 @@ export function DashboardPage() {
                   aria-hidden="true"
                   className="mt-1.5 size-2 shrink-0 rounded-full bg-[#c90f11]"
                 />
-                {profile === "administrador"
+                {profile === "Administrador"
                   ? `${retentionRecords.length} registro(s) aguardam revisão de retenção.`
                   : `${openRecords.length} acessos permanecem sem registro de saída.`}
               </li>
@@ -322,7 +328,7 @@ export function DashboardPage() {
                   aria-hidden="true"
                   className="mt-1.5 size-2 shrink-0 rounded-full bg-brand"
                 />
-                {profile === "administrador"
+                {profile === "Administrador"
                   ? "Contas devem ser individuais e vinculadas ao perfil correto."
                   : `${overdueRecords.length} acesso(s) ultrapassaram a previsão.`}
               </li>

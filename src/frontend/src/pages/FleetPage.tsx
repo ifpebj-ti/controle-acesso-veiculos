@@ -2,20 +2,28 @@ import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RestrictedDemoState } from "../components/ui/RestrictedDemoState";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { institutionalVehicles, useDemo } from "../demo";
+import { institutionalVehicles } from "../demo";
+import { useAuthenticatedSession } from "../features/authentication";
 
-const fleetProfiles = ["porteiro", "vigilante", "transporte"];
+const fleetProfiles = [
+  "Porteiro",
+  "Vigilante",
+  "SetorTransporte",
+  "Administrador",
+];
 
 export function FleetPage() {
-  const { profile } = useDemo();
+  const { user } = useAuthenticatedSession();
+  const profile = user.profileName;
 
   if (!fleetProfiles.includes(profile)) {
     return (
-      <RestrictedDemoState message="A frota institucional é mantida pelo Setor de Transporte e consultada por Porteiros e Vigilantes para conferência. Administração não opera este cadastro no fluxo proposto." />
+      <RestrictedDemoState message="Seu perfil não possui acesso ao catálogo de frota institucional." />
     );
   }
 
-  const canManageFleet = profile === "transporte";
+  const canManageFleet =
+    profile === "SetorTransporte" || profile === "Administrador";
 
   return (
     <div>

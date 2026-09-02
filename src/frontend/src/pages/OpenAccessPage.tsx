@@ -6,8 +6,9 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { RestrictedDemoState } from "../components/ui/RestrictedDemoState";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { useDemo, type DemoAccessRecord } from "../demo";
+import { useAuthenticatedSession } from "../features/authentication";
 
-const operationalProfiles = ["porteiro", "vigilante"];
+const operationalProfiles = ["Porteiro", "Vigilante", "Administrador"];
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
@@ -39,7 +40,8 @@ function overdueLabel(record: DemoAccessRecord, now: Date) {
 }
 
 export function OpenAccessPage() {
-  const { clearNotice, closeAccess, notice, profile, records } = useDemo();
+  const { clearNotice, closeAccess, notice, records } = useDemo();
+  const { user } = useAuthenticatedSession();
   const [query, setQuery] = useState("");
   const [now, setNow] = useState(() => new Date());
 
@@ -76,7 +78,7 @@ export function OpenAccessPage() {
     (record) => !isOverdue(record, now),
   );
 
-  if (!operationalProfiles.includes(profile)) {
+  if (!operationalProfiles.includes(user.profileName)) {
     return (
       <RestrictedDemoState message="A conferência de acessos abertos e o registro de saída são tarefas exclusivas de Porteiros e Vigilantes. Os demais perfis consultam o histórico." />
     );
