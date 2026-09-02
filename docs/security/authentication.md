@@ -61,6 +61,7 @@ Administradores autenticados podem criar outras contas pelo endpoint `POST /user
 |---|---|
 | `access:operate` | Porteiro, Vigilante e Administrador |
 | `access-records:review` | Porteiro, Vigilante, Setor de Transporte e Administrador |
+| `access-records:correct` | Porteiro, Vigilante e Administrador |
 | `transportation:review` | Setor de Transporte e Administrador |
 | `operations:summary:read` | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `users:manage` | Administrador |
@@ -68,7 +69,9 @@ Administradores autenticados podem criar outras contas pelo endpoint `POST /user
 Esses nomes estão centralizados e não pertencem ao Domain. A matriz do MVP foi
 registrada na Issue #75 e continua revisável durante a homologação. O Setor de
 Transporte possui leitura do histórico geral por sua responsabilidade de
-supervisão e conferência, sem herdar a política de operação ou correção.
+supervisão e conferência, sem herdar a política de operação ou correção. Porteiro
+e Vigilante possuem as mesmas permissões operacionais porque o Vigilante apenas
+substitui o Porteiro quando necessário.
 
 ## Evoluções após a Issue #29
 
