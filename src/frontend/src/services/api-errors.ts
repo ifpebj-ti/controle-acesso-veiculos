@@ -22,6 +22,24 @@ interface ApiErrorBody {
   title?: unknown;
 }
 
+export function getApiValidationErrors(error: unknown) {
+  if (!axios.isAxiosError(error) || !error.response) return {};
+
+  const body = error.response.data;
+  if (!body || typeof body !== "object" || !("errors" in body)) return {};
+
+  const errors = (body as ApiErrorBody).errors;
+  if (!errors || typeof errors !== "object") return {};
+
+  return Object.fromEntries(
+    Object.entries(errors).flatMap(([field, messages]) => {
+      if (!Array.isArray(messages)) return [];
+      const message = messages.find((item) => typeof item === "string");
+      return typeof message === "string" ? [[field, message]] : [];
+    }),
+  );
+}
+
 function firstValidationMessage(errors: unknown) {
   if (!errors || typeof errors !== "object") return null;
 
