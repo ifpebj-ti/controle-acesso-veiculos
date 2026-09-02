@@ -35,10 +35,11 @@
 ## Regras funcionais conhecidas
 
 - Porteiro e vigilante compartilham o fluxo operacional normal de entradas e saídas. O setor de Transporte acompanha a operação. O administrador gerencia contas e permissões e consulta históricos; operações excepcionais dependem de regra confirmada.
-- Servidores, terceirizados e veículos institucionais podem estar previamente cadastrados. A interface deve favorecer seleção e conferência, evitando redigitação desnecessária.
-- Visitantes exigem identificação e finalidade conforme regra validada. Pessoa, vínculo, motivo, veículo e serviço de transporte são conceitos distintos.
-- A saída é registrada manualmente. Tempo esperado pode gerar alerta, mas não deve encerrar automaticamente um acesso. O exemplo de dez minutos continua sendo hipótese até validação formal.
-- Fluxos de mototáxi devem permanecer distinguíveis dos demais acessos conforme solicitação do cliente, sem pressupor campos ou políticas ainda não documentados.
+- O fluxo geral de veículos registra nome do condutor, placa, objetivo e categoria. Documento e detalhes complementares permanecem opcionais no contrato atual.
+- Categoria, objetivo, pessoa, vínculo e veículo são conceitos distintos. Não transforme formulários de pessoas fora do núcleo do MVP em abas do registro geral.
+- O uso de veículo institucional possui fluxo próprio de saída, quilometragem, motorista e retorno; não o apresente como categoria da entrada geral.
+- A saída de um acesso geral é registrada manualmente. Não crie previsão, alerta por prazo, encerramento automático ou política de retenção sem contrato e validação institucional.
+- O backend impede acessos gerais simultâneos para o mesmo veículo. Não amplie essa regra para pessoa ou vínculo somente no frontend.
 
 ## Validação e apresentação
 
