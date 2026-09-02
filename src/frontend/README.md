@@ -4,16 +4,17 @@ Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jard
 
 ## Estado atual
 
-A versão atual integra autenticação real e sessão em memória ao endpoint
-`POST /auth/login`. As telas de negócio continuam sendo um protótipo para
-validação de fluxo: usam somente dados fictícios mantidos em memória e são
-identificadas explicitamente como demonstração.
+A versão atual integra autenticação e sessão em memória ao endpoint
+`POST /auth/login`. O fluxo geral de veículos também consome a API para registrar
+entrada, listar acessos em aberto, registrar saída e consultar o histórico. As
+áreas de visão geral, frota, eventos e administração ainda contêm dados locais
+de demonstração e não devem ser tratadas como operação real.
 
 Fluxo sugerido para validação local:
 
 1. iniciar a API e acessar `/login` com uma conta individual local;
 2. confirmar que e-mail e perfil exibidos vieram da resposta da API;
-3. como Porteiro ou Vigilante, registrar uma entrada fictícia em `/acessos/novo`;
+3. como Porteiro ou Vigilante, registrar uma entrada de homologação em `/acessos/novo`;
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
 5. como Transporte, explorar o histórico, a frota e os eventos;
 6. como Administrador, filtrar o histórico e gerenciar contas fictícias em
@@ -24,11 +25,11 @@ mantém frota e eventos. O Administrador gerencia contas, frota e eventos e poss
 o acesso operacional excepcional permitido pelo backend, embora entrada e saída
 continuem ocultas de seu menu rotineiro.
 
-O formulário demonstrativo segue o fluxo geral documentado: nome do condutor,
+O formulário integrado segue o fluxo geral documentado: nome do condutor,
 placa, objetivo e categoria são obrigatórios; tipo do veículo e observação são
 opcionais. Categoria e objetivo permanecem distintos. Documento não é exigido
 por decisão apenas visual, e horário, autorização e duplicidade continuam sob
-responsabilidade da API na integração real.
+responsabilidade da API.
 
 Saída, retorno, quilometragem e motorista de veículos institucionais pertencem ao
 fluxo próprio da frota. Previsão de permanência, alertas baseados em prazo e
@@ -37,8 +38,9 @@ institucionais permanecerem pendentes.
 
 O login autentica e as rotas são filtradas pela identidade devolvida pela API.
 Isso não transforma a interface em controle de autorização: o backend continua
-validando cada operação. As telas de negócio ainda não chamam seus endpoints e
-não representam homologação para produção.
+validando cada operação. Falhas de validação, rede, conflito e acesso negado são
+apresentadas sem produzir confirmação falsa. A integração não representa
+homologação para produção.
 
 ## Sessão e segurança
 
@@ -112,8 +114,8 @@ No ambiente Docker, o Nginx aplica o mesmo contrato e encaminha `/api/*` para o
 container backend. Essa estratégia evita expor uma segunda origem ao navegador e
 dispensa uma política CORS ampla no MVP.
 
-Somente a autenticação realiza chamada de negócio nesta etapa. Não inclua tokens,
-senhas ou credenciais em variáveis expostas ao frontend.
+Autenticação e movimentações gerais utilizam o cliente HTTP centralizado. Não
+inclua tokens, senhas ou credenciais em variáveis expostas ao frontend.
 
 ## Estrutura de diretórios
 
@@ -124,7 +126,7 @@ src/
 │   └── ui/           # Componentes visuais reutilizáveis.
 ├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── features/
-│   ├── access-records/ # Modelo de apresentação do fluxo geral de acessos.
+│   ├── access-records/ # Contratos, validação e serviços do fluxo geral.
 │   └── authentication/ # Formulário, service, sessão e tipos de autenticação.
 ├── pages/            # Componentes associados às páginas.
 ├── routes/           # Configuração central das rotas.
@@ -149,12 +151,13 @@ src/
 - Use branches específicas para cada alteração.
 - Não adicione bibliotecas sem justificar sua necessidade.
 
-## Fora do escopo do protótipo
+## Limites atuais
 
 - refresh token ou persistência de sessão;
 - logout, revogação ou renovação no servidor;
 - recuperação e redefinição de senha;
-- chamadas aos endpoints operacionais e administrativos;
+- integração dos endpoints de frota, eventos e administração;
+- integração da visão geral ao resumo operacional da API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
 - garantia de autorização baseada somente na interface;
