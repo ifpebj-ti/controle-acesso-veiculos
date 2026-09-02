@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Icon } from "../components/ui/Icon";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { useDemo } from "../demo";
+import { institutionalVehicles, useDemo } from "../demo";
 import {
   profileLabels,
   useAuthenticatedSession,
@@ -51,21 +51,12 @@ export function DashboardPage() {
 
   const openRecords = records.filter((record) => !record.exitAt);
   const completedRecords = records.filter((record) => record.exitAt);
-  const institutionalRecords = records.filter(
-    (record) => record.type === "Institucional",
+  const institutionalRecords = institutionalVehicles.filter(
+    (vehicle) => vehicle.status === "Em viagem",
   );
-  const overdueRecords = openRecords.filter(
-    (record) =>
-      record.expectedExitAt &&
-      new Date(record.expectedExitAt).getTime() < now.getTime(),
-  );
-  const retentionLimit = new Date(now);
-  retentionLimit.setFullYear(retentionLimit.getFullYear() - 5);
-  const retentionRecords = records.filter(
-    (record) =>
-      record.exitAt &&
-      new Date(record.exitAt).getTime() <= retentionLimit.getTime(),
-  );
+  const representedCategories = new Set(
+    records.map((record) => record.category),
+  ).size;
   const profileLabel = profileLabels[profile];
 
   const indicators = [
@@ -88,28 +79,10 @@ export function DashboardPage() {
       value: institutionalRecords.length,
     },
     {
-      detail:
-        profile === "Administrador"
-          ? "Registros aguardando decisão administrativa"
-          : profile === "SetorTransporte"
-            ? "Autorizações previstas no dia"
-            : "Saídas não registradas após a previsão",
-      label:
-        profile === "Administrador"
-          ? "Revisão de retenção"
-          : profile === "SetorTransporte"
-            ? "Eventos ativos"
-            : "Prazos excedidos",
-      surface:
-        profile === "Administrador" || overdueRecords.length > 0
-          ? "bg-[#EFD780]/45"
-          : "bg-[#C8CE72]/35",
-      value:
-        profile === "Administrador"
-          ? retentionRecords.length
-          : profile === "SetorTransporte"
-            ? 2
-            : overdueRecords.length,
+      detail: "Classificações preliminares presentes nos registros",
+      label: "Categorias registradas",
+      surface: "bg-[#EFD780]/45",
+      value: representedCategories,
     },
   ];
 
@@ -231,7 +204,7 @@ export function DashboardPage() {
                   />
                 </div>
                 <p className="mt-3 border-t border-ink/8 pt-3 text-xs leading-5 text-ink/65">
-                  {record.destination} •{" "}
+                  {record.objective} •{" "}
                   {dateTimeFormatter.format(new Date(record.entryAt))}
                 </p>
               </article>
@@ -252,7 +225,7 @@ export function DashboardPage() {
                     Condutor
                   </th>
                   <th className="px-3 py-3 font-bold" scope="col">
-                    Destino
+                    Objetivo
                   </th>
                   <th className="px-3 py-3 font-bold" scope="col">
                     Entrada
@@ -270,11 +243,13 @@ export function DashboardPage() {
                   >
                     <td className="px-3 py-4">
                       <strong className="block text-ink">{record.plate}</strong>
-                      <span className="text-xs text-ink/55">{record.type}</span>
+                      <span className="text-xs text-ink/55">
+                        {record.category}
+                      </span>
                     </td>
                     <td className="px-3 py-4 text-ink/70">{record.driver}</td>
                     <td className="px-3 py-4 text-ink/70">
-                      {record.destination}
+                      {record.objective}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-ink/70">
                       {dateTimeFormatter.format(new Date(record.entryAt))}
@@ -320,7 +295,7 @@ export function DashboardPage() {
                   className="mt-1.5 size-2 shrink-0 rounded-full bg-[#c90f11]"
                 />
                 {profile === "Administrador"
-                  ? `${retentionRecords.length} registro(s) aguardam revisão de retenção.`
+                  ? "Políticas de retenção permanecem pendentes de validação institucional."
                   : `${openRecords.length} acessos permanecem sem registro de saída.`}
               </li>
               <li className="flex gap-3">
@@ -330,7 +305,7 @@ export function DashboardPage() {
                 />
                 {profile === "Administrador"
                   ? "Contas devem ser individuais e vinculadas ao perfil correto."
-                  : `${overdueRecords.length} acesso(s) ultrapassaram a previsão.`}
+                  : "Confira placa e condutor antes de registrar cada saída."}
               </li>
               <li className="flex gap-3">
                 <span
