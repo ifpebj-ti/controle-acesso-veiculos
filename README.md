@@ -24,7 +24,7 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional, autorizações de eventos e resumo operacional diário |
 | Dados | PostgreSQL 16, EF Core 10, doze entidades e doze migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build, scan, smoke test integrado, publicação no GHCR, proveniência assinada e SBOM SPDX atestado por digest após integração na `main`, além de ensaio local de backup/restauração e exportação OpenTelemetry configurável |
-| Qualidade | 175 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
+| Qualidade | 176 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
 | Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP, auditoria transacional e consulta administrativa da trilha implementados; matriz final de perfis, retenção e imutabilidade em produção pendentes |
 | Deploy | Imagens OCI versionadas no GHCR pela CI e base OTLP implementada; ambiente de homologação, HTTPS, collector, painéis, alertas, backup protegido e deploy ainda não configurados |
 
@@ -44,7 +44,7 @@ Os contratos operacionais e administrativos disponíveis são:
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
 | `GET /access-records/history` | pesquisa acessos por período, placa, condutor, categoria ou status para Portaria, Vigilância, Transporte e Administração |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
-| `PUT /access-records/{id}/correction` | corrige objetivo, categoria e observação com justificativa para Vigilância e Administração |
+| `PUT /access-records/{id}/correction` | corrige objetivo, categoria e observação com justificativa para Porteiro, Vigilante e Administrador |
 | `GET /institutional-vehicles` | lista a frota institucional ativa para operação e conferência |
 | `POST /institutional-vehicles` | cadastra veículo institucional para `SetorTransporte` ou `Administrador` |
 | `PUT /institutional-vehicles/{id}` | atualiza os dados da frota com auditoria transacional |
@@ -63,14 +63,16 @@ Os contratos operacionais e administrativos disponíveis são:
 | `DELETE /event-authorizations/{id}` | cancela logicamente a autorização sem apagar seu histórico |
 | `GET /operations/daily-summary` | resume entradas, saídas, usos institucionais e acessos vinculados a eventos no dia local informado |
 
-A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. Vigilante e Administrador podem corrigir objetivo, categoria e observação com justificativa, sem alterar placa, condutor, horários, status ou autoria original. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
+A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. Porteiro, Vigilante e Administrador podem corrigir objetivo, categoria e observação com justificativa, sem alterar placa, condutor, horários, status ou autoria original. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
 
 No processo confirmado para o MVP, dois Porteiros se revezam em jornadas de 12
-horas e o Vigilante assume integralmente a operação quando não há Porteiro. Cada
-pessoa usa sua própria conta; registros abertos garantem continuidade sem trocar
-a autoria original. O Setor de Transporte supervisiona a portaria e consulta os
-históricos geral e institucional, mas não registra, encerra nem corrige acessos
-gerais. O fechamento por volta das 23h é uma regra operacional: o sistema não
+horas e o Vigilante assume integralmente a operação, com as mesmas permissões,
+quando não há Porteiro. Cada pessoa usa sua própria conta; registros abertos
+garantem continuidade sem trocar a autoria original. Porteiro e Vigilante podem
+corrigir apenas dados descritivos, sempre com justificativa e auditoria. O Setor
+de Transporte supervisiona a portaria e consulta os históricos geral e
+institucional, mas não registra, encerra nem corrige acessos gerais. O fechamento
+por volta das 23h é uma regra operacional: o sistema não
 bloqueia automaticamente o horário porque residentes e acessos previamente
 autorizados podem constituir exceções.
 

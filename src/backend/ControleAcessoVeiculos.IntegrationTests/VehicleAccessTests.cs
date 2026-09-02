@@ -242,15 +242,18 @@ public sealed class VehicleAccessTests(ApiFactory factory)
                 item.Entidade == nameof(RegistroAcesso) && item.RegistroId == entry.Id));
     }
 
-    [Fact]
-    public async Task AuthorizedUserCanCorrectClosedAccessWithoutRewritingHistory()
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    public async Task GateOperatorCanCorrectClosedAccessWithoutRewritingHistory(
+        string correctorProfile)
     {
         const string password = "Test-only-password-123!";
         var (creatorUserId, creatorEmail) = await CreateUserAsync(
             ProfileNames.Doorman,
             password);
         var (correctorUserId, correctorEmail) = await CreateUserAsync(
-            ProfileNames.SecurityGuard,
+            correctorProfile,
             password);
         var suffix = Guid.NewGuid().ToString("N");
         var plate = suffix[..7].ToUpperInvariant();
@@ -275,7 +278,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         exitResponse.EnsureSuccessStatusCode();
         Assert.NotNull(closed);
 
-        const string justification = "Categoria e objetivo conferidos pelo vigilante.";
+        const string justification = "Categoria e objetivo conferidos pelo operador.";
         using var correctorClient = factory.CreateClient();
         await AuthenticateClientAsync(correctorClient, correctorEmail, password);
         var correctionResponse = await correctorClient.PutAsJsonAsync(
@@ -358,20 +361,15 @@ public sealed class VehicleAccessTests(ApiFactory factory)
             (await anonymousClient.PutAsJsonAsync(
                 "/access-records/1/correction", request)).StatusCode);
 
-        foreach (var profileName in new[]
-                 {
-                     ProfileNames.Doorman,
-                     ProfileNames.TransportationDepartment
-                 })
-        {
-            var (_, email) = await CreateUserAsync(profileName, password);
-            using var client = factory.CreateClient();
-            await AuthenticateClientAsync(client, email, password);
-            Assert.Equal(
-                HttpStatusCode.Forbidden,
-                (await client.PutAsJsonAsync(
-                    "/access-records/1/correction", request)).StatusCode);
-        }
+        var (_, email) = await CreateUserAsync(
+            ProfileNames.TransportationDepartment,
+            password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await client.PutAsJsonAsync(
+                "/access-records/1/correction", request)).StatusCode);
     }
 
     [Fact]

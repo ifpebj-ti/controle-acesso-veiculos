@@ -83,7 +83,7 @@ docker compose up -d postgresql
 Set-Location ../..
 ```
 
-Resultado esperado: formatação e build sem erros, 175 testes aprovados e
+Resultado esperado: formatação e build sem erros, 176 testes aprovados e
 PostgreSQL saudável. Os testes de integração exigem acesso ao Docker porque usam
 PostgreSQL real e descartável via Testcontainers.
 
@@ -188,12 +188,13 @@ O Administrador cria contas fictícias para `Porteiro`, `Vigilante` e
 | Campo | Valor |
 |---|---|
 | Perfil | Porteiro; depois Vigilante |
-| Ação | registrar entrada, listar abertos, consultar histórico, registrar saída e corrigir descrição com justificativa |
+| Ação | com cada perfil, registrar entrada, listar abertos, consultar histórico, registrar saída e corrigir descrição com justificativa |
 | Esperado | horário e ator definidos no servidor; placa normalizada; um único acesso aberto; saída preserva autoria; correção não altera placa, pessoa ou horários |
 | Pergunta | os campos e a lista de abertos são suficientes para a troca de turno? |
 
-O Vigilante usa a própria conta ao assumir a portaria. Não simule transferência
-de autoria do registro original.
+O Vigilante usa a própria conta ao assumir a portaria e possui as mesmas
+permissões operacionais do Porteiro. Não simule transferência de autoria do
+registro original.
 
 ### Cenário 3 — fronteira do Setor de Transporte
 
@@ -304,6 +305,7 @@ O roteiro completo e o registro das decisões ficam no
 - [ ] Entende os campos obrigatórios da entrada.
 - [ ] Localiza registros abertos sem consultar papel.
 - [ ] Registra saída sem reescrever o registro.
+- [ ] Corrige somente dados descritivos, com justificativa e auditoria.
 - [ ] Consulta frota, motoristas e eventos sem gerenciá-los.
 - [ ] Entende o resumo diário.
 - [ ] Confirma que o fluxo é viável em horário de pico.
@@ -312,7 +314,8 @@ O roteiro completo e o registro das decisões ficam no
 
 - [ ] Assume o fluxo com a própria conta.
 - [ ] Enxerga os registros deixados pelo turno anterior.
-- [ ] Consegue corrigir somente dados descritivos com justificativa.
+- [ ] Possui as mesmas permissões operacionais do Porteiro.
+- [ ] Corrige somente dados descritivos, com justificativa e auditoria.
 - [ ] Não consegue gerenciar contas, frota, motoristas ou eventos.
 - [ ] Confirma as exceções após o fechamento operacional da portaria.
 

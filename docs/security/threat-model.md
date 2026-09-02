@@ -174,7 +174,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - políticas distintas para consultar e gerenciar a frota institucional;
 - políticas distintas para consultar e gerenciar autorizações de eventos;
 - políticas distintas para o histórico geral e o histórico institucional;
-- política de correção separada da operação e da consulta, limitada a Vigilante e Administrador;
+- política de correção separada da operação e da consulta, limitada aos operadores Porteiro e Vigilante e ao acesso excepcional do Administrador;
 - contratos operacionais e catálogo inicial protegidos, com validação no servidor e erros previsíveis;
 - data/hora de entrada e saída definidas pelo servidor e vinculadas ao usuário autenticado;
 - transação e índice único parcial impedem dois acessos abertos para o mesmo veículo;
