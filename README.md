@@ -13,6 +13,18 @@ Sistema web para digitalizar o registro, a consulta e a auditoria da movimentaç
 
 </div>
 
+## Materiais acadêmicos e de acompanhamento
+
+| Material | Finalidade | Acesso |
+|---|---|---|
+| Wiki do projeto | Visão, requisitos, arquitetura, segurança, testes, operação e andamento do projeto | [Acessar a Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki) |
+| Protótipo no Figma | Fluxos, telas e validações de UX/UI do sistema | [Abrir o protótipo](https://www.figma.com/design/N6EOkXw8Ex7cZayyh4MJfY/Propotipagem?node-id=56-64&t=xA090z9jSE17HXUq-1) |
+| Slides das weeklies | Apresentações semanais de acompanhamento do Projeto Integrador | [Ver no Canva](https://canva.link/tjsp5iu5c5iwbdp) |
+
+Esses materiais apoiam o acompanhamento acadêmico. Decisões técnicas e
+históricas que afetem o projeto devem continuar registradas no repositório e na
+Wiki para preservar a rastreabilidade.
+
 ## Estado atual
 
 > Atualizado em 2 de setembro de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
@@ -594,7 +606,7 @@ As decisões e pendências da fundação de login estão em [autenticação e au
 
 ## Documentação
 
-- [Wiki do projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki): visão, processo, requisitos, arc42, dados, segurança, testes, operação e status.
+- [Materiais acadêmicos e de acompanhamento](#materiais-acadêmicos-e-de-acompanhamento).
 - [Convenções de commit](docs/development/commit-conventions.md).
 - [CI/CD e segurança de containers](docs/development/ci-cd.md).
 - [Observabilidade da API](docs/operations/observability.md).
@@ -602,8 +614,6 @@ As decisões e pendências da fundação de login estão em [autenticação e au
 - [Possibilidades de evolução acadêmica](docs/research/academic-evolution-options.md) — material exploratório para uma futura conversa com professores; não integra o escopo atual.
 - [Modelagem de ameaças](docs/security/threat-model.md).
 - [Guia de desenvolvimento seguro](docs/security/secure-development-guide.md).
-- [Protótipo no Figma](https://www.figma.com/design/N6EOkXw8Ex7cZayyh4MJfY/Propotipagem?node-id=0-1&t=hWlwxlusfhqN3ZTP-1).
-- [Sprint report / Weekly 1](https://canva.link/tjsp5iu5c5iwbdp).
 
 A Wiki abrange o projeto completo, não apenas o backend. Documentos acadêmicos e decisões históricas devem ser atualizados de forma aditiva, preservando contexto e rastreabilidade.
 
