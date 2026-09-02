@@ -255,6 +255,9 @@ export function OpenAccessPage() {
                       </dt>
                       <dd className="mt-1 text-ink/75">
                         {dateFormatter.format(new Date(record.entryAt))}
+                        <span className="mt-1 block text-xs font-semibold text-brand-dark">
+                          Turno {record.shift.toLocaleLowerCase("pt-BR")}
+                        </span>
                       </dd>
                     </div>
                     <div>
@@ -276,9 +279,13 @@ export function OpenAccessPage() {
                       <dd className="mt-1 text-ink/75">
                         {record.documentVerified
                           ? "Documento conferido"
-                          : record.type === "Institucional"
-                            ? "Placa cadastrada"
-                            : "Não se aplica"}
+                          : record.authorizedPersonId
+                            ? "Cadastro e placa conferidos"
+                            : record.type === "Moto táxi"
+                              ? "Placa conferida • prazo de 10 min"
+                              : record.type === "Institucional"
+                                ? "Placa cadastrada"
+                                : "Não se aplica"}
                       </dd>
                     </div>
                   </dl>

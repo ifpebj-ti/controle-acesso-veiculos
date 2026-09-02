@@ -45,6 +45,7 @@ export function HistoryPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("todos");
   const [type, setType] = useState("todos");
+  const [shift, setShift] = useState("todos");
   const [period, setPeriod] = useState<PeriodPreset>("30");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -75,6 +76,7 @@ export function HistoryPage() {
           record.destination,
           record.purpose,
           record.type,
+          record.shift,
         ].some((value) =>
           value.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
         );
@@ -83,6 +85,7 @@ export function HistoryPage() {
           (status === "aberto" && !record.exitAt) ||
           (status === "concluido" && Boolean(record.exitAt));
         const matchesType = type === "todos" || record.type === type;
+        const matchesShift = shift === "todos" || record.shift === shift;
         const entryDate = new Date(record.entryAt);
         const matchesPeriod =
           period === "all" ||
@@ -92,19 +95,26 @@ export function HistoryPage() {
             (!customEnd || entryDate <= customEnd)) ||
           (presetStart !== null && entryDate >= presetStart);
 
-        return matchesQuery && matchesStatus && matchesType && matchesPeriod;
+        return (
+          matchesQuery &&
+          matchesStatus &&
+          matchesType &&
+          matchesShift &&
+          matchesPeriod
+        );
       })
       .sort(
         (first, second) =>
           new Date(second.entryAt).getTime() -
           new Date(first.entryAt).getTime(),
       );
-  }, [fromDate, period, query, records, status, toDate, type]);
+  }, [fromDate, period, query, records, shift, status, toDate, type]);
 
   function clearFilters() {
     setQuery("");
     setStatus("todos");
     setType("todos");
+    setShift("todos");
     setPeriod("30");
     setFromDate("");
     setToDate("");
@@ -226,7 +236,7 @@ export function HistoryPage() {
         </div>
 
         <div className="p-5 sm:p-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <div className="md:col-span-2">
               <label
                 className="text-sm font-semibold text-ink"
@@ -284,6 +294,29 @@ export function HistoryPage() {
                 <option>Visitante</option>
                 <option>Serviço</option>
                 <option>Institucional</option>
+                <option>Servidor</option>
+                <option>Terceirizado</option>
+                <option>Cadastrado</option>
+                <option>Moto táxi</option>
+              </select>
+            </div>
+            <div>
+              <label
+                className="text-sm font-semibold text-ink"
+                htmlFor="history-shift"
+              >
+                Turno da entrada
+              </label>
+              <select
+                className={fieldClass}
+                id="history-shift"
+                onChange={(event) => setShift(event.target.value)}
+                value={shift}
+              >
+                <option value="todos">Todos</option>
+                <option>Manhã</option>
+                <option>Tarde</option>
+                <option>Noite</option>
               </select>
             </div>
           </div>
@@ -378,6 +411,9 @@ export function HistoryPage() {
                     </dt>
                     <dd className="mt-1 text-ink/75">
                       {dateFormatter.format(new Date(record.entryAt))}
+                      <span className="mt-1 block text-[0.68rem] font-bold uppercase tracking-wider text-brand-dark">
+                        Turno {record.shift.toLocaleLowerCase("pt-BR")}
+                      </span>
                     </dd>
                   </div>
                   <div>
@@ -444,7 +480,7 @@ export function HistoryPage() {
                         {dateFormatter.format(new Date(record.entryAt))}
                       </span>
                       <span className="mt-1 block text-[0.68rem] font-bold uppercase tracking-wider text-brand-dark">
-                        {record.type}
+                        {record.type} • {record.shift}
                       </span>
                     </td>
                     <td className="px-3 py-4 text-ink/75">

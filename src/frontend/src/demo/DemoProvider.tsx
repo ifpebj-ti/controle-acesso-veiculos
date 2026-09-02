@@ -2,9 +2,12 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import {
   DemoContext,
+  initialAuthorizedPeople,
   initialRecords,
   profileLabels,
+  shiftForDate,
   type DemoProfile,
+  type NewDemoAuthorizedPerson,
   type NewDemoAccess,
 } from "./DemoContext";
 
@@ -12,6 +15,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [accountName, setAccountName] = useState("Administrador demonstrativo");
   const [profile, setProfile] = useState<DemoProfile>("administrador");
   const [records, setRecords] = useState(initialRecords);
+  const [authorizedPeople, setAuthorizedPeople] = useState(
+    initialAuthorizedPeople,
+  );
   const [notice, setNotice] = useState<string | null>(null);
 
   const setDemoAccount = useCallback(
@@ -29,6 +35,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         ...record,
         id: Date.now(),
         entryAt: entryAt.toISOString(),
+        shift: shiftForDate(entryAt),
         expectedExitAt: record.expectedDurationMinutes
           ? new Date(
               entryAt.getTime() + record.expectedDurationMinutes * 60_000,
@@ -39,6 +46,21 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       ...current,
     ]);
     setNotice("Entrada adicionada ao protótipo. Nenhum dado foi enviado.");
+  }, []);
+
+  const addAuthorizedPerson = useCallback((person: NewDemoAuthorizedPerson) => {
+    setAuthorizedPeople((current) => [
+      ...current,
+      { ...person, active: true, id: `person-${Date.now()}` },
+    ]);
+  }, []);
+
+  const toggleAuthorizedPerson = useCallback((id: string) => {
+    setAuthorizedPeople((current) =>
+      current.map((person) =>
+        person.id === id ? { ...person, active: !person.active } : person,
+      ),
+    );
   }, []);
 
   const closeAccess = useCallback((id: number) => {
@@ -55,6 +77,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       accountName,
+      addAuthorizedPerson,
+      authorizedPeople,
       clearNotice: () => setNotice(null),
       closeAccess,
       notice,
@@ -63,15 +87,19 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       records,
       registerAccess,
       setDemoAccount,
+      toggleAuthorizedPerson,
     }),
     [
       accountName,
+      addAuthorizedPerson,
+      authorizedPeople,
       closeAccess,
       notice,
       profile,
       records,
       registerAccess,
       setDemoAccount,
+      toggleAuthorizedPerson,
     ],
   );
 
