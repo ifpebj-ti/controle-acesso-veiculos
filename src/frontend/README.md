@@ -79,7 +79,40 @@ Alternativas avaliadas:
 - Tailwind CSS 4;
 - React Router;
 - Axios;
-- ESLint.
+- ESLint;
+- Vitest e Testing Library;
+- axe-core para auditoria automatizada de acessibilidade.
+
+## Testes e acessibilidade
+
+A suíte usa Vitest com JSDOM e Testing Library. Os testes consultam elementos por
+papel e nome acessível e cobrem autenticação, restrição visual por perfil,
+movimentações gerais, estados de carregamento, vazio, falha e acesso negado.
+
+As auditorias com axe-core abrangem login, layout autenticado, registro de
+entrada, acessos em aberto e histórico. Violações classificadas como sérias ou
+críticas fazem os testes falharem. O menu móvel também possui testes de abertura,
+fechamento por `Escape`, contenção do foco por teclado e devolução do foco ao
+botão que abriu o diálogo.
+
+Na pasta `src/frontend`, execute:
+
+```powershell
+npm test
+```
+
+A CI executa instalação bloqueada, lint, testes e build em toda alteração do
+frontend. Os testes são determinísticos, usam somente dados fictícios e não
+dependem da API ou de acesso à rede.
+
+A auditoria automatizada não comprova conformidade completa com a WCAG nem
+substitui testes com usuários. O JSDOM não calcula layout e contraste como um
+navegador real; por isso, as regras `color-contrast` e `link-in-text-block` são
+desativadas apenas nessa auditoria e continuam exigindo revisão manual em
+aproximadamente 390 px e 1440 px. Essa limitação é documentada pelo
+[axe-core](https://github.com/dequelabs/axe-core/tree/develop/doc/examples/jest_react),
+e o gerenciamento do foco do menu segue o
+[padrão de diálogo modal do W3C](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
 
 ## Executar localmente
 
