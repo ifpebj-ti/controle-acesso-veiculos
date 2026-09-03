@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import {
@@ -227,16 +227,55 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
 
 export function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuDialogRef = useRef<HTMLElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
 
+    const previouslyFocusedElement = document.activeElement;
+    const menuTrigger = menuTriggerRef.current;
+    menuCloseRef.current?.focus();
+
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenuOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements =
+        menuDialogRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+
+      if (!focusableElements?.length) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
     }
 
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+
+      if (previouslyFocusedElement instanceof HTMLElement) {
+        previouslyFocusedElement.focus();
+      } else {
+        menuTrigger?.focus();
+      }
+    };
   }, [menuOpen]);
 
   return (
@@ -258,6 +297,7 @@ export function AppLayout() {
           aria-label="Abrir menu"
           className="grid size-11 place-items-center rounded-xl border border-ink/15 bg-white text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
           onClick={() => setMenuOpen(true)}
+          ref={menuTriggerRef}
           type="button"
         >
           <Icon name="menu" />
@@ -269,19 +309,25 @@ export function AppLayout() {
       {menuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <button
+            aria-hidden="true"
             aria-label="Fechar menu"
             className="absolute inset-0 bg-ink/45"
             onClick={() => setMenuOpen(false)}
+            tabIndex={-1}
             type="button"
           />
           <aside
-            aria-label="Menu"
+            aria-label="Menu principal"
+            aria-modal="true"
             className="absolute inset-y-0 left-0 w-[min(86vw,20rem)] overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft shadow-2xl"
+            ref={menuDialogRef}
+            role="dialog"
           >
             <button
               aria-label="Fechar menu"
               className="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-full bg-white/65 text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
               onClick={() => setMenuOpen(false)}
+              ref={menuCloseRef}
               type="button"
             >
               <Icon name="x" />
