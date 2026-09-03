@@ -9,6 +9,7 @@ import {
   type AccessRecord,
 } from "../features/access-records";
 import { describeApiError } from "../services/api-errors";
+import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { OpenAccessPage } from "./OpenAccessPage";
 
 vi.mock("../features/access-records", async () => {
@@ -149,5 +150,13 @@ describe("OpenAccessPage", () => {
       await screen.findByRole("heading", { name: "Acesso negado" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Perfil sem permissão.")).toBeInTheDocument();
+  });
+
+  it("has no serious accessibility violations in the empty state", async () => {
+    vi.mocked(listOpenAccessRecords).mockResolvedValue([]);
+    const { container } = renderPage();
+
+    await screen.findByText("Nenhum acesso aberto encontrado");
+    await expectNoSeriousAccessibilityViolations(container);
   });
 });

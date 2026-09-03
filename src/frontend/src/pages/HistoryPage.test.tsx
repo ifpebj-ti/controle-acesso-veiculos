@@ -9,6 +9,7 @@ import {
 } from "../features/access-records";
 import { searchAccessHistory } from "../features/access-records/services/accessRecordsService";
 import { describeApiError } from "../services/api-errors";
+import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { HistoryPage } from "./HistoryPage";
 
 vi.mock("../features/access-records/services/accessRecordsService", () => ({
@@ -163,5 +164,13 @@ describe("HistoryPage", () => {
       ),
     );
     expect(await screen.findByText("Página 2 de 2")).toBeInTheDocument();
+  });
+
+  it("has no serious accessibility violations in the empty state", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
+    const { container } = renderPage();
+
+    await screen.findByText("Nenhum registro encontrado");
+    await expectNoSeriousAccessibilityViolations(container);
   });
 });

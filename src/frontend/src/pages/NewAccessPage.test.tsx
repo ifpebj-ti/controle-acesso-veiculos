@@ -7,6 +7,7 @@ import {
   registerAccessEntry,
   type AccessRecord,
 } from "../features/access-records";
+import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { NewAccessPage } from "./NewAccessPage";
 
 vi.mock("../features/access-records", async () => {
@@ -91,5 +92,11 @@ describe("NewAccessPage", () => {
       screen.getByText("Informe o objetivo do acesso."),
     ).toBeInTheDocument();
     expect(registerAccessEntry).not.toHaveBeenCalled();
+  });
+
+  it("has no serious automated accessibility violations", async () => {
+    const { container } = renderPage();
+
+    await expectNoSeriousAccessibilityViolations(container);
   });
 });
