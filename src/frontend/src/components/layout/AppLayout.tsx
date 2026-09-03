@@ -235,6 +235,7 @@ export function AppLayout() {
     if (!menuOpen) return;
 
     const previouslyFocusedElement = document.activeElement;
+    const menuTrigger = menuTriggerRef.current;
     menuCloseRef.current?.focus();
 
     function closeOnEscape(event: KeyboardEvent) {
@@ -272,7 +273,7 @@ export function AppLayout() {
       if (previouslyFocusedElement instanceof HTMLElement) {
         previouslyFocusedElement.focus();
       } else {
-        menuTriggerRef.current?.focus();
+        menuTrigger?.focus();
       }
     };
   }, [menuOpen]);
