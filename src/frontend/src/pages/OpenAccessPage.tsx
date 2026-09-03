@@ -36,6 +36,7 @@ export function OpenAccessPage() {
 
   const loadRecords = useCallback(async () => {
     setStatus("loading");
+    setRecords([]);
     setErrorMessage(null);
 
     try {
@@ -43,6 +44,7 @@ export function OpenAccessPage() {
       setStatus("ready");
     } catch (error) {
       const description = describeApiError(error);
+      setRecords([]);
       setStatus(description.kind === "access-denied" ? "denied" : "error");
       setErrorMessage(description.message);
     }
@@ -60,6 +62,7 @@ export function OpenAccessPage() {
       .catch((error: unknown) => {
         if (!active) return;
         const description = describeApiError(error);
+        setRecords([]);
         setStatus(description.kind === "access-denied" ? "denied" : "error");
         setErrorMessage(description.message);
       });

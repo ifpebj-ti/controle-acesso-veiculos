@@ -81,6 +81,7 @@ export function useAccessHistory() {
       .catch((error: unknown) => {
         if (!active) return;
         const description = describeApiError(error);
+        setResult(null);
         setErrorMessage(description.message);
         setRequestStatus(
           description.kind === "access-denied" ? "denied" : "error",
@@ -94,6 +95,7 @@ export function useAccessHistory() {
 
   function startRequest(nextFilters: AccessHistoryFilters) {
     setRequestStatus("loading");
+    setResult(null);
     setErrorMessage(null);
     setFilters(nextFilters);
   }
