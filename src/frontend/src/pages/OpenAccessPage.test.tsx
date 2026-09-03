@@ -102,11 +102,37 @@ describe("OpenAccessPage", () => {
     renderPage();
 
     expect(await screen.findByText("Falha de rede.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Nenhum acesso aberto encontrado"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "Resumo dos acessos abertos" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("0 registro(s)")).not.toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(
       await screen.findByText("Nenhum acesso aberto encontrado"),
     ).toBeInTheDocument();
     expect(listOpenAccessRecords).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears previous open accesses when a refresh fails", async () => {
+    vi.mocked(listOpenAccessRecords)
+      .mockResolvedValueOnce([record])
+      .mockRejectedValueOnce(new Error("network"));
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByText("DEM1A23")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Atualizar lista" }));
+
+    expect(await screen.findByText("Falha de rede.")).toBeInTheDocument();
+    expect(screen.queryByText("DEM1A23")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Nenhum acesso aberto encontrado"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("0 registro(s)")).not.toBeInTheDocument();
   });
 
   it("renders the explicit access denied state for a 403 response", async () => {

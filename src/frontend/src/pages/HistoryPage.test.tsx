@@ -69,19 +69,57 @@ describe("HistoryPage", () => {
 
   it("clears previous results when a new request fails", async () => {
     vi.mocked(searchAccessHistory)
-      .mockResolvedValueOnce(pageResult([record]))
+      .mockResolvedValueOnce(pageResult([record], 1, 2))
       .mockRejectedValueOnce(new Error("network"));
     const user = userEvent.setup();
     renderPage();
 
     expect(await screen.findAllByText("DEM1A23")).not.toHaveLength(0);
+    expect(screen.getByRole("button", { name: "2" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 
     expect(
       await screen.findByText("Não foi possível consultar o histórico."),
     ).toBeInTheDocument();
     expect(screen.queryByText("DEM1A23")).not.toBeInTheDocument();
+    expect(screen.queryByText("0 registro(s)")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Nenhum registro encontrado"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "2" })).not.toBeInTheDocument();
+  });
+
+  it("shows the empty state only after a successful empty response", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Nenhum registro encontrado"),
+    ).toBeInTheDocument();
     expect(screen.getByText("0 registro(s)")).toBeInTheDocument();
+  });
+
+  it("retries a failed history request", async () => {
+    vi.mocked(searchAccessHistory)
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(pageResult([]));
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(
+      await screen.findByText("Não foi possível consultar o histórico."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Nenhum registro encontrado"),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+    expect(
+      await screen.findByText("Nenhum registro encontrado"),
+    ).toBeInTheDocument();
+    expect(searchAccessHistory).toHaveBeenCalledTimes(2);
   });
 
   it("sends only the filters supported by the history endpoint", async () => {

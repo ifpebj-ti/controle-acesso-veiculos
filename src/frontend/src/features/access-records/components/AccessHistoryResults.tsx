@@ -46,17 +46,14 @@ export function AccessHistoryResults({
     return Array.from({ length: end - start + 1 }, (_, index) => start + index);
   }, [result]);
 
-  return (
-    <div
-      className="border-t border-ink/8 p-5 sm:p-6"
-      aria-busy={requestStatus === "loading"}
-    >
-      {errorMessage && requestStatus === "error" && (
+  if (requestStatus === "error") {
+    return (
+      <div className="border-t border-ink/8 p-5 sm:p-6">
         <div
-          className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
           role="alert"
         >
-          <p>{errorMessage}</p>
+          <p>{errorMessage ?? "Não foi possível consultar o histórico."}</p>
           <button
             className="min-h-10 rounded-xl border border-red-300 px-4 font-bold"
             onClick={onRetry}
@@ -65,8 +62,22 @@ export function AccessHistoryResults({
             Tentar novamente
           </button>
         </div>
-      )}
+      </div>
+    );
+  }
 
+  if (requestStatus === "loading") {
+    return (
+      <div className="border-t border-ink/8 p-5 sm:p-6" aria-busy="true">
+        <div className="rounded-2xl bg-cream/35 p-8 text-center" role="status">
+          Carregando histórico…
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-t border-ink/8 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-bold text-ink">
@@ -78,14 +89,7 @@ export function AccessHistoryResults({
         </div>
       </div>
 
-      {requestStatus === "loading" ? (
-        <div
-          className="mt-5 rounded-2xl bg-cream/35 p-8 text-center"
-          role="status"
-        >
-          Carregando histórico…
-        </div>
-      ) : records.length === 0 ? (
+      {records.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-8 text-center">
           <p className="font-bold text-ink">Nenhum registro encontrado</p>
           <p className="mt-1 text-sm text-ink/60">
@@ -211,7 +215,7 @@ export function AccessHistoryResults({
         >
           <button
             className="min-h-10 rounded-xl border border-ink/15 px-3 text-sm font-bold disabled:opacity-40"
-            disabled={result.page <= 1 || requestStatus === "loading"}
+            disabled={result.page <= 1}
             onClick={() => onPageChange(result.page - 1)}
             type="button"
           >
@@ -230,9 +234,7 @@ export function AccessHistoryResults({
           ))}
           <button
             className="min-h-10 rounded-xl border border-ink/15 px-3 text-sm font-bold disabled:opacity-40"
-            disabled={
-              result.page >= result.totalPages || requestStatus === "loading"
-            }
+            disabled={result.page >= result.totalPages}
             onClick={() => onPageChange(result.page + 1)}
             type="button"
           >

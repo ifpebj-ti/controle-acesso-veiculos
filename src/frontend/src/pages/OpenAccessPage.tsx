@@ -163,26 +163,28 @@ export function OpenAccessPage() {
         </div>
       )}
 
-      <section
-        aria-label="Resumo dos acessos abertos"
-        className="mt-6 grid gap-3 sm:grid-cols-3"
-      >
-        {[
-          ["Total em aberto", records.length, "bg-[#BDD8F1]/45"],
-          ["Categorias", representedCategories, "bg-[#C8CE72]/30"],
-          ["Resultados da busca", filteredRecords.length, "bg-[#B8C9A4]/45"],
-        ].map(([label, value, surface]) => (
-          <article
-            className={`rounded-2xl border border-ink/8 p-4 ${surface}`}
-            key={label}
-          >
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink/55">
-              {label}
-            </p>
-            <p className="mt-2 font-display text-3xl text-ink">{value}</p>
-          </article>
-        ))}
-      </section>
+      {status === "ready" && (
+        <section
+          aria-label="Resumo dos acessos abertos"
+          className="mt-6 grid gap-3 sm:grid-cols-3"
+        >
+          {[
+            ["Total em aberto", records.length, "bg-[#BDD8F1]/45"],
+            ["Categorias", representedCategories, "bg-[#C8CE72]/30"],
+            ["Resultados da busca", filteredRecords.length, "bg-[#B8C9A4]/45"],
+          ].map(([label, value, surface]) => (
+            <article
+              className={`rounded-2xl border border-ink/8 p-4 ${surface}`}
+              key={label}
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink/55">
+                {label}
+              </p>
+              <p className="mt-2 font-display text-3xl text-ink">{value}</p>
+            </article>
+          ))}
+        </section>
+      )}
 
       <section
         className="mt-6 rounded-[2rem] border border-ink/10 bg-white p-5 shadow-[0_12px_35px_rgba(1,36,40,0.05)] sm:p-6"
@@ -211,9 +213,23 @@ export function OpenAccessPage() {
               />
             </div>
           </div>
-          <p aria-live="polite" className="text-sm font-semibold text-ink/60">
-            {filteredRecords.length} registro(s)
-          </p>
+          {status === "ready" && (
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                className="min-h-10 rounded-xl border border-ink/15 px-4 text-sm font-bold text-ink hover:bg-cream/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
+                onClick={() => void loadRecords()}
+                type="button"
+              >
+                Atualizar lista
+              </button>
+              <p
+                aria-live="polite"
+                className="text-sm font-semibold text-ink/60"
+              >
+                {filteredRecords.length} registro(s)
+              </p>
+            </div>
+          )}
         </div>
 
         {status === "loading" ? (
@@ -223,7 +239,7 @@ export function OpenAccessPage() {
           >
             Carregando acessos em aberto…
           </div>
-        ) : filteredRecords.length === 0 ? (
+        ) : status === "error" ? null : filteredRecords.length === 0 ? (
           <div className="my-10 rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-8 text-center">
             <p className="font-bold text-ink">
               Nenhum acesso aberto encontrado
