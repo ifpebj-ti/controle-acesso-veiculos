@@ -1,57 +1,116 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
+import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
-import { RestrictedDemoState } from "../components/ui/RestrictedDemoState";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { useDemo } from "../demo";
-import { useAuthenticatedSession } from "../features/authentication";
+import {
+  closeAccessRecord,
+  listOpenAccessRecords,
+  type AccessRecord,
+} from "../features/access-records";
+import { describeApiError } from "../services/api-errors";
 
-const operationalProfiles = ["Porteiro", "Vigilante", "Administrador"];
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
 });
 
+interface LocationState {
+  notice?: string;
+}
+
 export function OpenAccessPage() {
-  const { clearNotice, closeAccess, notice, records } = useDemo();
-  const { user } = useAuthenticatedSession();
+  const location = useLocation();
+  const [records, setRecords] = useState<AccessRecord[]>([]);
   const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<
+    "loading" | "ready" | "error" | "denied"
+  >("loading");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState(
+    (location.state as LocationState | null)?.notice ?? null,
+  );
+  const [closingId, setClosingId] = useState<number | null>(null);
 
-  const openRecords = useMemo(() => {
-    const normalizedQuery = query.toLocaleLowerCase("pt-BR");
+  const loadRecords = useCallback(async () => {
+    setStatus("loading");
+    setRecords([]);
+    setErrorMessage(null);
 
-    return records
-      .filter(
-        (record) =>
-          !record.exitAt &&
-          [record.plate, record.driver, record.category, record.objective].some(
-            (value) =>
-              value.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
-          ),
-      )
-      .sort(
-        (first, second) =>
-          new Date(first.entryAt).getTime() -
-          new Date(second.entryAt).getTime(),
-      );
+    try {
+      setRecords(await listOpenAccessRecords());
+      setStatus("ready");
+    } catch (error) {
+      const description = describeApiError(error);
+      setRecords([]);
+      setStatus(description.kind === "access-denied" ? "denied" : "error");
+      setErrorMessage(description.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    void listOpenAccessRecords()
+      .then((response) => {
+        if (!active) return;
+        setRecords(response);
+        setStatus("ready");
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        const description = describeApiError(error);
+        setRecords([]);
+        setStatus(description.kind === "access-denied" ? "denied" : "error");
+        setErrorMessage(description.message);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filteredRecords = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
+    return records.filter((record) =>
+      [
+        record.plate,
+        record.driverName,
+        record.categoryName,
+        record.objective,
+      ].some((value) =>
+        value.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
+      ),
+    );
   }, [query, records]);
 
   const representedCategories = new Set(
-    openRecords.map((record) => record.category),
+    filteredRecords.map((record) => record.categoryName),
   ).size;
 
-  if (!operationalProfiles.includes(user.profileName)) {
-    return (
-      <RestrictedDemoState message="Seu perfil não possui permissão para operar acessos em aberto." />
-    );
+  async function confirmExit(record: AccessRecord) {
+    if (!window.confirm(`Confirmar a saída do veículo ${record.plate}?`))
+      return;
+
+    setClosingId(record.id);
+    setErrorMessage(null);
+    try {
+      await closeAccessRecord(record.id);
+      setRecords((current) => current.filter((item) => item.id !== record.id));
+      setNotice(`Saída do veículo ${record.plate} registrada com sucesso.`);
+    } catch (error) {
+      const description = describeApiError(error);
+      if (description.kind === "access-denied") setStatus("denied");
+      setErrorMessage(description.message);
+    } finally {
+      setClosingId(null);
+    }
   }
 
-  function confirmExit(id: number, plate: string) {
-    if (window.confirm(`Confirmar a saída simulada do veículo ${plate}?`)) {
-      closeAccess(id);
-    }
+  if (status === "denied") {
+    return <AccessDeniedState message={errorMessage ?? undefined} />;
   }
 
   return (
@@ -62,8 +121,7 @@ export function OpenAccessPage() {
             className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
             to="/acessos/novo"
           >
-            <Icon name="plus" size={18} />
-            Nova entrada
+            <Icon name="plus" size={18} /> Nova entrada
           </Link>
         }
         description="Localize veículos que ainda não registraram saída e encerre o acesso após a conferência manual."
@@ -79,7 +137,7 @@ export function OpenAccessPage() {
           <p>{notice}</p>
           <button
             className="shrink-0 rounded-md font-bold underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
-            onClick={clearNotice}
+            onClick={() => setNotice(null)}
             type="button"
           >
             Fechar
@@ -87,28 +145,51 @@ export function OpenAccessPage() {
         </div>
       )}
 
-      <section
-        aria-label="Resumo dos acessos abertos"
-        className="mt-6 grid gap-3 sm:grid-cols-3"
-      >
-        {[
-          ["Total em aberto", openRecords.length, "bg-[#BDD8F1]/45"],
-          ["Categorias", representedCategories, "bg-[#C8CE72]/30"],
-          ["Resultados da busca", openRecords.length, "bg-[#B8C9A4]/45"],
-        ].map(([label, value, surface]) => (
-          <article
-            className={`rounded-2xl border border-ink/8 p-4 ${surface}`}
-            key={label}
-          >
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink/55">
-              {label}
-            </p>
-            <p className="mt-2 font-display text-3xl text-ink">{value}</p>
-          </article>
-        ))}
-      </section>
+      {errorMessage && status !== "loading" && (
+        <div
+          className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+          role="alert"
+        >
+          <p>{errorMessage}</p>
+          {status === "error" && (
+            <button
+              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold"
+              onClick={() => void loadRecords()}
+              type="button"
+            >
+              Tentar novamente
+            </button>
+          )}
+        </div>
+      )}
 
-      <section className="mt-6 rounded-[2rem] border border-ink/10 bg-white p-5 shadow-[0_12px_35px_rgba(1,36,40,0.05)] sm:p-6">
+      {status === "ready" && (
+        <section
+          aria-label="Resumo dos acessos abertos"
+          className="mt-6 grid gap-3 sm:grid-cols-3"
+        >
+          {[
+            ["Total em aberto", records.length, "bg-[#BDD8F1]/45"],
+            ["Categorias", representedCategories, "bg-[#C8CE72]/30"],
+            ["Resultados da busca", filteredRecords.length, "bg-[#B8C9A4]/45"],
+          ].map(([label, value, surface]) => (
+            <article
+              className={`rounded-2xl border border-ink/8 p-4 ${surface}`}
+              key={label}
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink/55">
+                {label}
+              </p>
+              <p className="mt-2 font-display text-3xl text-ink">{value}</p>
+            </article>
+          ))}
+        </section>
+      )}
+
+      <section
+        className="mt-6 rounded-[2rem] border border-ink/10 bg-white p-5 shadow-[0_12px_35px_rgba(1,36,40,0.05)] sm:p-6"
+        aria-busy={status === "loading"}
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="w-full max-w-xl">
             <label
@@ -132,12 +213,33 @@ export function OpenAccessPage() {
               />
             </div>
           </div>
-          <p aria-live="polite" className="text-sm font-semibold text-ink/60">
-            {openRecords.length} registro(s)
-          </p>
+          {status === "ready" && (
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                className="min-h-10 rounded-xl border border-ink/15 px-4 text-sm font-bold text-ink hover:bg-cream/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
+                onClick={() => void loadRecords()}
+                type="button"
+              >
+                Atualizar lista
+              </button>
+              <p
+                aria-live="polite"
+                className="text-sm font-semibold text-ink/60"
+              >
+                {filteredRecords.length} registro(s)
+              </p>
+            </div>
+          )}
         </div>
 
-        {openRecords.length === 0 ? (
+        {status === "loading" ? (
+          <div
+            className="my-10 rounded-2xl bg-cream/35 p-8 text-center"
+            role="status"
+          >
+            Carregando acessos em aberto…
+          </div>
+        ) : status === "error" ? null : filteredRecords.length === 0 ? (
           <div className="my-10 rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-8 text-center">
             <p className="font-bold text-ink">
               Nenhum acesso aberto encontrado
@@ -148,7 +250,7 @@ export function OpenAccessPage() {
           </div>
         ) : (
           <div className="mt-6 grid gap-4 xl:grid-cols-2">
-            {openRecords.map((record) => (
+            {filteredRecords.map((record) => (
               <article
                 className="rounded-2xl border border-ink/10 bg-cream/25 p-5"
                 key={record.id}
@@ -159,40 +261,30 @@ export function OpenAccessPage() {
                       {record.plate}
                     </p>
                     <p className="mt-1 text-sm font-medium text-ink/70">
-                      {record.driver}
+                      {record.driverName}
                     </p>
                   </div>
                   <StatusBadge label="Em aberto" tone="warning" />
                 </div>
-
                 <p className="mt-4 rounded-xl bg-white/75 px-3 py-2 text-sm font-semibold text-ink/75">
                   {record.objective}
                 </p>
-
                 <dl className="mt-4 grid gap-4 border-t border-ink/10 pt-4 text-sm sm:grid-cols-2">
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wider text-ink/50">
                       Categoria
                     </dt>
-                    <dd className="mt-1 text-ink/75">{record.category}</dd>
+                    <dd className="mt-1 text-ink/75">{record.categoryName}</dd>
                   </div>
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wider text-ink/50">
                       Entrada
                     </dt>
                     <dd className="mt-1 text-ink/75">
-                      {dateFormatter.format(new Date(record.entryAt))}
+                      {dateFormatter.format(new Date(record.entryAtUtc))}
                     </dd>
                   </div>
-                  <div>
-                    <dt className="text-xs font-bold uppercase tracking-wider text-ink/50">
-                      Tipo do veículo
-                    </dt>
-                    <dd className="mt-1 text-ink/75">
-                      {record.vehicleType ?? "Não informado"}
-                    </dd>
-                  </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <dt className="text-xs font-bold uppercase tracking-wider text-ink/50">
                       Observação
                     </dt>
@@ -201,13 +293,15 @@ export function OpenAccessPage() {
                     </dd>
                   </div>
                 </dl>
-
                 <button
-                  className="mt-5 min-h-11 w-full rounded-xl bg-ink px-4 font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/35"
-                  onClick={() => confirmExit(record.id, record.plate)}
+                  className="mt-5 min-h-11 w-full rounded-xl bg-ink px-4 font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/35 disabled:cursor-wait disabled:opacity-65"
+                  disabled={closingId !== null}
+                  onClick={() => void confirmExit(record)}
                   type="button"
                 >
-                  Registrar saída
+                  {closingId === record.id
+                    ? "Registrando saída…"
+                    : "Registrar saída"}
                 </button>
               </article>
             ))}
