@@ -6,9 +6,10 @@ Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jard
 
 A versão atual integra autenticação e sessão em memória ao endpoint
 `POST /auth/login`. O fluxo geral de veículos também consome a API para registrar
-entrada, listar acessos em aberto, registrar saída e consultar o histórico. As
-áreas de visão geral, frota, eventos e administração ainda contêm dados locais
-de demonstração e não devem ser tratadas como operação real.
+entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
+catálogo de frota também lista, cria, edita e desativa veículos institucionais
+pela API. As áreas de visão geral, eventos e administração ainda contêm dados
+locais de demonstração e não devem ser tratadas como operação real.
 
 Fluxo sugerido para validação local:
 
@@ -16,7 +17,8 @@ Fluxo sugerido para validação local:
 2. confirmar que e-mail e perfil exibidos vieram da resposta da API;
 3. como Porteiro ou Vigilante, registrar uma entrada de homologação em `/acessos/novo`;
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
-5. como Transporte, explorar o histórico, a frota e os eventos;
+5. como Transporte, consultar e manter o catálogo ativo da frota e explorar os
+   eventos demonstrativos;
 6. como Administrador, filtrar o histórico e gerenciar contas fictícias em
    `/administracao`.
 
@@ -35,6 +37,13 @@ Saída, retorno, quilometragem e motorista de veículos institucionais pertencem
 fluxo próprio da frota. Previsão de permanência, alertas baseados em prazo e
 descarte por período não são apresentados enquanto seus contratos e políticas
 institucionais permanecerem pendentes.
+
+O catálogo integrado usa `GET`, `POST`, `PUT` e `DELETE` em
+`/institutional-vehicles`. Porteiro e Vigilante apenas consultam; Setor de
+Transporte e Administrador podem criar, editar e desativar. A lista da API contém
+somente veículos ativos. Embora o backend possua uma operação de reativação, o
+frontend não oferece essa ação enquanto não existir contrato para consultar os
+veículos inativos. A desativação preserva viagens e histórico no servidor.
 
 O login autentica e as rotas são filtradas pela identidade devolvida pela API.
 Isso não transforma a interface em controle de autorização: o backend continua
@@ -147,7 +156,7 @@ No ambiente Docker, o Nginx aplica o mesmo contrato e encaminha `/api/*` para o
 container backend. Essa estratégia evita expor uma segunda origem ao navegador e
 dispensa uma política CORS ampla no MVP.
 
-Autenticação e movimentações gerais utilizam o cliente HTTP centralizado. Não
+Autenticação, movimentações gerais e catálogo institucional utilizam o cliente HTTP centralizado. Não
 inclua tokens, senhas ou credenciais em variáveis expostas ao frontend.
 
 ## Estrutura de diretórios
@@ -160,7 +169,8 @@ src/
 ├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── features/
 │   ├── access-records/ # Contratos, validação e serviços do fluxo geral.
-│   └── authentication/ # Formulário, service, sessão e tipos de autenticação.
+│   ├── authentication/ # Formulário, service, sessão e tipos de autenticação.
+│   └── institutional-vehicles/ # Contratos, formulário e serviços da frota.
 ├── pages/            # Componentes associados às páginas.
 ├── routes/           # Configuração central das rotas.
 ├── services/         # Cliente HTTP e integrações externas.
@@ -189,7 +199,7 @@ src/
 - refresh token ou persistência de sessão;
 - logout, revogação ou renovação no servidor;
 - recuperação e redefinição de senha;
-- integração dos endpoints de frota, eventos e administração;
+- integração de motoristas, utilizações institucionais, eventos e administração;
 - integração da visão geral ao resumo operacional da API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
