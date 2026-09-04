@@ -34,6 +34,12 @@ const vehicleFieldNames: Record<string, InstitutionalVehicleField> = {
 type FormState =
   { mode: "create" } | { mode: "edit"; vehicle: InstitutionalVehicle } | null;
 
+function isSameFormState(current: FormState, expected: NonNullable<FormState>) {
+  if (!current || current.mode !== expected.mode) return false;
+  if (current.mode === "create") return true;
+  return expected.mode === "edit" && current.vehicle.id === expected.vehicle.id;
+}
+
 export function FleetPage() {
   const { user } = useAuthenticatedSession();
   const canManageFleet = manageableProfiles.includes(user.profileName);
@@ -55,6 +61,9 @@ export function FleetPage() {
     setStatus("loading");
     setVehicles([]);
     setErrorMessage(null);
+    setNotice(null);
+    setFormError(null);
+    setServerErrors({});
 
     try {
       setVehicles(await listInstitutionalVehicles());
@@ -109,6 +118,10 @@ export function FleetPage() {
   }, [query, vehicles]);
 
   function openForm(nextState: FormState) {
+    if (pendingAction) return;
+
+    setErrorMessage(null);
+    setNotice(null);
     setFormError(null);
     setServerErrors({});
     setFormState(nextState);
@@ -116,19 +129,22 @@ export function FleetPage() {
 
   async function saveVehicle(input: InstitutionalVehicleInput) {
     if (!formState || pendingAction) return;
+    const operationForm = formState;
 
     setPendingAction("save");
+    setErrorMessage(null);
+    setNotice(null);
     setFormError(null);
     setServerErrors({});
 
     try {
-      if (formState.mode === "create") {
+      if (operationForm.mode === "create") {
         const created = await createInstitutionalVehicle(input);
         setVehicles((current) => [created, ...current]);
         setNotice("Veículo institucional cadastrado com sucesso.");
       } else {
         const updated = await updateInstitutionalVehicle(
-          formState.vehicle.id,
+          operationForm.vehicle.id,
           input,
         );
         setVehicles((current) =>
@@ -138,7 +154,9 @@ export function FleetPage() {
         );
         setNotice("Dados do veículo atualizados com sucesso.");
       }
-      setFormState(null);
+      setFormState((current) =>
+        isSameFormState(current, operationForm) ? null : current,
+      );
     } catch (error) {
       const validationErrors = getApiValidationErrors(error);
       const nextServerErrors: Partial<
@@ -178,7 +196,10 @@ export function FleetPage() {
       return;
 
     setPendingAction(`deactivate-${vehicle.id}`);
+    setNotice(null);
     setErrorMessage(null);
+    setFormError(null);
+    setServerErrors({});
     try {
       await deactivateInstitutionalVehicle(vehicle.id);
       setVehicles((current) =>
@@ -207,7 +228,8 @@ export function FleetPage() {
         action={
           canManageFleet ? (
             <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 disabled:cursor-wait disabled:opacity-60"
+              disabled={pendingAction !== null}
               onClick={() => openForm({ mode: "create" })}
               type="button"
             >
@@ -275,7 +297,7 @@ export function FleetPage() {
             </div>
           )}
           <InstitutionalVehicleForm
-            busy={pendingAction === "save"}
+            busy={pendingAction !== null}
             key={
               formState.mode === "create"
                 ? "create"
