@@ -127,7 +127,7 @@ describe("FleetPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("blocks duplicate submissions while a vehicle is being created", async () => {
+  it("blocks form switches and duplicate actions while a request is pending", async () => {
     let resolveCreation: ((value: InstitutionalVehicle) => void) | undefined;
     vi.mocked(createInstitutionalVehicle).mockReturnValue(
       new Promise((resolve) => {
@@ -149,12 +149,62 @@ describe("FleetPage", () => {
       name: "Salvando…",
     });
     expect(pendingButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Novo veículo" })).toBeDisabled();
+    const editButton = screen.getByRole("button", { name: "Editar" });
+    expect(editButton).toBeDisabled();
+
+    await user.click(editButton);
+
+    expect(
+      screen.getByRole("heading", { name: "Cadastrar veículo" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Editar veículo" }),
+    ).not.toBeInTheDocument();
     expect(createInstitutionalVehicle).toHaveBeenCalledTimes(1);
+    expect(updateInstitutionalVehicle).not.toHaveBeenCalled();
 
     resolveCreation?.({ ...vehicle, id: 5, identification: "VEICULO 05" });
     expect(
       await screen.findByText("Veículo institucional cadastrado com sucesso."),
     ).toBeInTheDocument();
+  });
+
+  it("removes an earlier success message before a later operation fails", async () => {
+    const created = { ...vehicle, id: 5, identification: "VEICULO 05" };
+    vi.mocked(createInstitutionalVehicle)
+      .mockResolvedValueOnce(created)
+      .mockRejectedValueOnce(new Error("network"));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("DEM1A23");
+
+    await user.click(screen.getByRole("button", { name: "Novo veículo" }));
+    await user.type(
+      screen.getByLabelText("Identificação institucional"),
+      "VEICULO 05",
+    );
+    await user.click(screen.getByRole("button", { name: "Cadastrar veículo" }));
+    expect(
+      await screen.findByText("Veículo institucional cadastrado com sucesso."),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Novo veículo" }));
+    expect(
+      screen.queryByText("Veículo institucional cadastrado com sucesso."),
+    ).not.toBeInTheDocument();
+    await user.type(
+      screen.getByLabelText("Identificação institucional"),
+      "VEICULO 06",
+    );
+    await user.click(screen.getByRole("button", { name: "Cadastrar veículo" }));
+
+    expect(
+      await screen.findByText("Não foi possível consultar a frota."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Veículo institucional cadastrado com sucesso."),
+    ).not.toBeInTheDocument();
   });
 
   it("edits and deactivates vehicles with explicit confirmation", async () => {
@@ -229,12 +279,44 @@ describe("FleetPage", () => {
     );
     await user.click(screen.getByRole("button", { name: "Cadastrar veículo" }));
 
+    const identificationError = await screen.findByText(
+      "A identificação informada já está em uso.",
+    );
+    expect(identificationError).toHaveAttribute(
+      "id",
+      "fleet-identification-error",
+    );
     expect(
-      await screen.findByText("A identificação informada já está em uso."),
-    ).toBeInTheDocument();
+      screen.getByLabelText("Identificação institucional"),
+    ).toHaveAttribute("aria-describedby", identificationError.id);
     expect(
       screen.getByText("Revise os campos destacados e tente novamente."),
     ).toBeInTheDocument();
+  });
+
+  it("associates local validation errors with their fields", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("DEM1A23");
+
+    await user.click(screen.getByRole("button", { name: "Novo veículo" }));
+    await user.click(screen.getByRole("button", { name: "Cadastrar veículo" }));
+
+    const identificationField = screen.getByLabelText(
+      "Identificação institucional",
+    );
+    const identificationError = await screen.findByText(
+      "Informe a placa ou a identificação do veículo.",
+    );
+    expect(identificationField).toHaveAttribute("aria-invalid", "true");
+    expect(identificationField).toHaveAttribute(
+      "aria-describedby",
+      identificationError.id,
+    );
+    expect(identificationError).toHaveAttribute(
+      "id",
+      "fleet-identification-error",
+    );
   });
 
   it("shows an explicit access-denied barrier", async () => {
