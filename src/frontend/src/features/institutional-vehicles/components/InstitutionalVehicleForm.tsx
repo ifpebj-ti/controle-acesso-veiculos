@@ -41,9 +41,17 @@ function initialValues(
   };
 }
 
-function FieldError({ message }: { message?: string }) {
+function errorId(field: InstitutionalVehicleField) {
+  return `fleet-${field}-error`;
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
-  return <p className="mt-1.5 text-sm text-red-800">{message}</p>;
+  return (
+    <p className="mt-1.5 text-sm text-red-800" id={id}>
+      {message}
+    </p>
+  );
 }
 
 export function InstitutionalVehicleForm({
@@ -122,6 +130,7 @@ export function InstitutionalVehicleForm({
             Placa
           </label>
           <input
+            aria-describedby={errorFor("plate") ? errorId("plate") : undefined}
             aria-invalid={Boolean(errorFor("plate"))}
             autoCapitalize="characters"
             className={fieldClass}
@@ -130,7 +139,7 @@ export function InstitutionalVehicleForm({
             placeholder="Ex.: DEM-1A23"
             {...register("plate")}
           />
-          <FieldError message={errorFor("plate")} />
+          <FieldError id={errorId("plate")} message={errorFor("plate")} />
         </div>
 
         <div>
@@ -141,6 +150,9 @@ export function InstitutionalVehicleForm({
             Identificação institucional
           </label>
           <input
+            aria-describedby={
+              errorFor("identification") ? errorId("identification") : undefined
+            }
             aria-invalid={Boolean(errorFor("identification"))}
             className={fieldClass}
             id="fleet-identification"
@@ -148,7 +160,10 @@ export function InstitutionalVehicleForm({
             placeholder="Ex.: VEÍCULO 01"
             {...register("identification")}
           />
-          <FieldError message={errorFor("identification")} />
+          <FieldError
+            id={errorId("identification")}
+            message={errorFor("identification")}
+          />
         </div>
 
         <div>
@@ -159,6 +174,9 @@ export function InstitutionalVehicleForm({
             Tipo <span className="font-normal text-ink/50">(opcional)</span>
           </label>
           <input
+            aria-describedby={
+              errorFor("vehicleType") ? errorId("vehicleType") : undefined
+            }
             aria-invalid={Boolean(errorFor("vehicleType"))}
             className={fieldClass}
             id="fleet-type"
@@ -166,7 +184,10 @@ export function InstitutionalVehicleForm({
             placeholder="Ex.: Automóvel"
             {...register("vehicleType")}
           />
-          <FieldError message={errorFor("vehicleType")} />
+          <FieldError
+            id={errorId("vehicleType")}
+            message={errorFor("vehicleType")}
+          />
         </div>
 
         <div>
@@ -177,13 +198,14 @@ export function InstitutionalVehicleForm({
             Marca <span className="font-normal text-ink/50">(opcional)</span>
           </label>
           <input
+            aria-describedby={errorFor("brand") ? errorId("brand") : undefined}
             aria-invalid={Boolean(errorFor("brand"))}
             className={fieldClass}
             id="fleet-brand"
             maxLength={80}
             {...register("brand")}
           />
-          <FieldError message={errorFor("brand")} />
+          <FieldError id={errorId("brand")} message={errorFor("brand")} />
         </div>
 
         <div>
@@ -194,13 +216,14 @@ export function InstitutionalVehicleForm({
             Modelo <span className="font-normal text-ink/50">(opcional)</span>
           </label>
           <input
+            aria-describedby={errorFor("model") ? errorId("model") : undefined}
             aria-invalid={Boolean(errorFor("model"))}
             className={fieldClass}
             id="fleet-model"
             maxLength={100}
             {...register("model")}
           />
-          <FieldError message={errorFor("model")} />
+          <FieldError id={errorId("model")} message={errorFor("model")} />
         </div>
 
         <div>
@@ -211,13 +234,14 @@ export function InstitutionalVehicleForm({
             Cor <span className="font-normal text-ink/50">(opcional)</span>
           </label>
           <input
+            aria-describedby={errorFor("color") ? errorId("color") : undefined}
             aria-invalid={Boolean(errorFor("color"))}
             className={fieldClass}
             id="fleet-color"
             maxLength={40}
             {...register("color")}
           />
-          <FieldError message={errorFor("color")} />
+          <FieldError id={errorId("color")} message={errorFor("color")} />
         </div>
 
         <div>
@@ -228,6 +252,7 @@ export function InstitutionalVehicleForm({
             Ano <span className="font-normal text-ink/50">(opcional)</span>
           </label>
           <input
+            aria-describedby={errorFor("year") ? errorId("year") : undefined}
             aria-invalid={Boolean(errorFor("year"))}
             className={fieldClass}
             id="fleet-year"
@@ -236,7 +261,7 @@ export function InstitutionalVehicleForm({
             placeholder="Ex.: 2024"
             {...register("year")}
           />
-          <FieldError message={errorFor("year")} />
+          <FieldError id={errorId("year")} message={errorFor("year")} />
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:col-span-2 sm:flex-row sm:justify-end lg:col-span-3">
