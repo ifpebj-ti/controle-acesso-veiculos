@@ -332,6 +332,44 @@ describe("InstitutionalUsagesPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("applies catalog filters and paginates the institutional history", async () => {
+    vi.mocked(searchInstitutionalUsageHistory).mockResolvedValue({
+      ...historyPage,
+      totalCount: 26,
+      totalPages: 2,
+    });
+    const user = userEvent.setup();
+    renderPage("SetorTransporte");
+    await screen.findAllByText(openUsage.driverName);
+    await user.type(screen.getByLabelText("Placa"), vehicle.plate ?? "");
+    await user.selectOptions(
+      screen.getByLabelText("Veículo ativo"),
+      String(vehicle.id),
+    );
+    await user.selectOptions(
+      screen.getByLabelText("Motorista ativo"),
+      String(driver.personId),
+    );
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+
+    await waitFor(() =>
+      expect(searchInstitutionalUsageHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          driverId: driver.personId,
+          page: 1,
+          plate: vehicle.plate,
+          vehicleId: vehicle.id,
+        }),
+      ),
+    );
+    await user.click(screen.getByRole("button", { name: "Próxima" }));
+    await waitFor(() =>
+      expect(searchInstitutionalUsageHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 2 }),
+      ),
+    );
+  });
+
   it("distinguishes a history request failure from an empty response", async () => {
     vi.mocked(searchInstitutionalUsageHistory)
       .mockRejectedValueOnce(new Error("network"))
@@ -350,6 +388,25 @@ describe("InstitutionalUsagesPage", () => {
     expect(
       screen.getByText("Nenhuma utilização encontrada"),
     ).toBeInTheDocument();
+  });
+
+  it("shows an explicit barrier when the API denies an operation", async () => {
+    vi.mocked(listOpenInstitutionalUsages).mockRejectedValue(
+      new Error("forbidden"),
+    );
+    vi.mocked(describeApiError).mockReturnValue({
+      kind: "access-denied",
+      message: "Seu perfil não possui permissão para esta operação.",
+    });
+
+    renderPage("Porteiro");
+
+    expect(
+      await screen.findByRole("heading", { name: "Acesso negado" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Seu perfil não possui permissão para esta operação.",
+    );
   });
 
   it("retries a failed refresh without repeating a saved departure", async () => {
