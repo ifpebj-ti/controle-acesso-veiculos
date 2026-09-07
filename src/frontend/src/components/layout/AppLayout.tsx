@@ -349,8 +349,9 @@ export function AppLayout() {
         tabIndex={-1}
       >
         <div className="border-b border-amber-300/60 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-950 sm:text-sm lg:px-8">
-          Sessão autenticada pela API — movimentações gerais integradas; demais
-          módulos permanecem em demonstração.
+          Sessão autenticada pela API — movimentações gerais, catálogos e
+          eventos integrados; visão geral e administração permanecem em
+          demonstração.
         </div>
         <div className="mx-auto min-w-0 w-full max-w-[94rem] px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
           <Outlet />
