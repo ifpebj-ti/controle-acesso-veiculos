@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -212,6 +212,38 @@ describe("EventsPage", () => {
     expect(error).toHaveAttribute("id", "event-name-error");
   });
 
+  it("associates backend rule errors with the rule and its relevant controls", async () => {
+    vi.mocked(createEventAuthorization).mockRejectedValue(
+      new Error("validation"),
+    );
+    vi.mocked(getApiValidationErrors).mockReturnValue({
+      "vehicleRules[0]":
+        "O tipo é obrigatório, deve possuir até 50 caracteres e a quantidade deve estar entre 1 e 1000.",
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(authorization.name);
+    await user.click(screen.getByRole("button", { name: "Nova autorização" }));
+    await fillRequiredForm(user);
+    await user.click(screen.getByRole("button", { name: "Criar autorização" }));
+
+    const rule = await screen.findByRole("group", { name: "Regra 1" });
+    const ruleError = screen.getByText(
+      "O tipo é obrigatório, deve possuir até 50 caracteres e a quantidade deve estar entre 1 e 1000.",
+    );
+    expect(ruleError).toHaveAttribute("id", "event-rule-0-error");
+    expect(rule).toHaveAttribute("aria-describedby", "event-rule-0-error");
+    expect(screen.getByLabelText("Tipo do veículo")).toHaveAttribute(
+      "aria-describedby",
+      expect.stringContaining("event-rule-0-error"),
+    );
+    expect(screen.getByLabelText("Quantidade")).toHaveAttribute(
+      "aria-describedby",
+      expect.stringContaining("event-rule-0-error"),
+    );
+    expect(screen.getAllByText(ruleError.textContent ?? "")).toHaveLength(1);
+  });
+
   it("creates an authorization through the real feature boundary", async () => {
     vi.mocked(createEventAuthorization).mockResolvedValue({
       ...authorization,
@@ -285,6 +317,35 @@ describe("EventsPage", () => {
     );
   });
 
+  it("keeps valid results when the draft period is invalid", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(authorization.name);
+    const start = screen.getByLabelText("Início do período");
+    const end = screen.getByLabelText("Fim do período");
+    fireEvent.change(start, { target: { value: "2030-06-11T08:00" } });
+    fireEvent.change(end, { target: { value: "2030-06-10T08:00" } });
+    await user.click(screen.getByRole("button", { name: "Aplicar" }));
+
+    const error = screen.getByText(/início anterior ao fim/);
+    expect(error).toHaveAttribute("id", "event-filter-period-error");
+    expect(start).toHaveAttribute("aria-invalid", "true");
+    expect(end).toHaveAttribute("aria-invalid", "true");
+    expect(start).toHaveAttribute(
+      "aria-describedby",
+      expect.stringContaining("event-filter-period-error"),
+    );
+    expect(end).toHaveAttribute(
+      "aria-describedby",
+      expect.stringContaining("event-filter-period-error"),
+    );
+    expect(screen.getByText(authorization.name)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Tentar novamente" }),
+    ).not.toBeInTheDocument();
+    expect(searchEventAuthorizations).toHaveBeenCalledTimes(1);
+  });
+
   it("blocks other actions while a creation is pending", async () => {
     let resolveCreation: ((value: EventAuthorization) => void) | undefined;
     vi.mocked(createEventAuthorization).mockReturnValue(
@@ -330,6 +391,59 @@ describe("EventsPage", () => {
     expect(
       await screen.findByText(/cancelada com sucesso/),
     ).toBeInTheDocument();
+  });
+
+  it("reports a saved creation when only the list refresh fails", async () => {
+    vi.mocked(searchEventAuthorizations)
+      .mockResolvedValueOnce(populatedPage)
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(populatedPage);
+    vi.mocked(createEventAuthorization).mockResolvedValue({
+      ...authorization,
+      id: 11,
+      name: "Encontro de Teste",
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(authorization.name);
+    await user.click(screen.getByRole("button", { name: "Nova autorização" }));
+    await fillRequiredForm(user);
+    await user.click(screen.getByRole("button", { name: "Criar autorização" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "A autorização foi criada, mas não foi possível recarregar a lista.",
+    );
+    expect(
+      screen.queryByText("Autorização criada com sucesso."),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByText(authorization.name)).toBeInTheDocument();
+    expect(createEventAuthorization).toHaveBeenCalledTimes(1);
+    expect(searchEventAuthorizations).toHaveBeenCalledTimes(3);
+  });
+
+  it("reports a saved cancellation and retries only the list refresh", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(searchEventAuthorizations)
+      .mockResolvedValueOnce(populatedPage)
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(populatedPage);
+    vi.mocked(cancelEventAuthorization).mockResolvedValue();
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(authorization.name);
+    await user.click(
+      screen.getByRole("button", { name: "Cancelar autorização" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "foi cancelada, mas não foi possível recarregar a lista.",
+    );
+    expect(screen.queryByText(/cancelada com sucesso/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(await screen.findByText(authorization.name)).toBeInTheDocument();
+    expect(cancelEventAuthorization).toHaveBeenCalledTimes(1);
+    expect(searchEventAuthorizations).toHaveBeenCalledTimes(3);
   });
 
   it("has no serious or critical automated accessibility violations", async () => {
