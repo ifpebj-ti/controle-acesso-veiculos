@@ -6,6 +6,7 @@ import { DashboardPage } from "../pages/DashboardPage";
 import { EventsPage } from "../pages/EventsPage";
 import { FleetPage } from "../pages/FleetPage";
 import { HistoryPage } from "../pages/HistoryPage";
+import { InstitutionalDriversPage } from "../pages/InstitutionalDriversPage";
 import { LoginPage } from "../pages/LoginPage";
 import { NewAccessPage } from "../pages/NewAccessPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
             children: [
               { path: "/acessos/historico", element: <HistoryPage /> },
               { path: "/frota", element: <FleetPage /> },
+              {
+                path: "/motoristas-institucionais",
+                element: <InstitutionalDriversPage />,
+              },
               { path: "/eventos", element: <EventsPage /> },
             ],
           },
