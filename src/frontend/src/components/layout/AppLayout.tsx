@@ -70,6 +70,12 @@ const navigation: NavigationSection[] = [
         to: "/frota",
       },
       {
+        icon: "users",
+        label: "Motoristas autorizados",
+        profiles: registryProfiles,
+        to: "/motoristas-institucionais",
+      },
+      {
         icon: "calendar",
         label: "Eventos e autorizações",
         profiles: registryProfiles,
