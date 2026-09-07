@@ -8,8 +8,9 @@ A versão atual integra autenticação e sessão em memória ao endpoint
 `POST /auth/login`. O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
-o catálogo de motoristas lista, autoriza e desativa autorizações pela API. As
-áreas de visão geral, eventos e administração ainda contêm dados
+o catálogo de motoristas lista, autoriza e desativa autorizações pela API. A
+área de eventos também consulta, cria, edita e cancela autorizações antecipadas.
+As áreas de visão geral e administração ainda contêm dados
 locais de demonstração e não devem ser tratadas como operação real.
 
 Fluxo sugerido para validação local:
@@ -19,7 +20,7 @@ Fluxo sugerido para validação local:
 3. como Porteiro ou Vigilante, registrar uma entrada de homologação em `/acessos/novo`;
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
 5. como Transporte, consultar e manter os catálogos ativos da frota e de
-   motoristas e explorar os eventos demonstrativos;
+   motoristas e manter as autorizações de eventos;
 6. como Administrador, filtrar o histórico e gerenciar contas fictícias em
    `/administracao`.
 
@@ -53,6 +54,22 @@ ativos; somente Setor de Transporte e Administrador autorizam ou desativam. Nome
 juntos; esses dados não retornam no catálogo nem são mantidos pela interface. O
 backend não oferece edição ou consulta de autorizações inativas, portanto o
 frontend não inventa essas operações.
+
+Autorizações de eventos usam `GET`, `POST`, `PUT` e `DELETE` em
+`/event-authorizations`. Os quatro perfis autenticados consultam; somente Setor
+de Transporte e Administrador criam, editam e cancelam. A interface separa a
+vigência da autorização, a quantidade prevista nas regras, as entradas já
+consumidas e a quantidade restante. Placa específica representa exatamente um
+veículo; cota por tipo pode representar de 1 a 1000 veículos. Cancelamento é
+lógico, exige confirmação e não é descrito como exclusão do histórico.
+
+Os períodos são preenchidos com controles nativos de data e hora e possuem uma
+instrução textual associada. Essa escolha evita introduzir um calendário
+customizado sem suporte de teclado comprovado e segue as recomendações de
+descrição de formato do
+[W3C APG](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)
+e os testes de intervalo do
+[U.S. Web Design System](https://designsystem.digital.gov/components/date-range-picker/accessibility-tests/).
 
 O login autentica e as rotas são filtradas pela identidade devolvida pela API.
 Isso não transforma a interface em controle de autorização: o backend continua
@@ -180,6 +197,7 @@ src/
 ├── features/
 │   ├── access-records/ # Contratos, validação e serviços do fluxo geral.
 │   ├── authentication/ # Formulário, service, sessão e tipos de autenticação.
+│   ├── event-authorizations/ # Consulta e manutenção de autorizações de eventos.
 │   ├── institutional-drivers/ # Contratos, formulário e catálogo de motoristas.
 │   └── institutional-vehicles/ # Contratos, formulário e serviços da frota.
 ├── pages/            # Componentes associados às páginas.
@@ -210,7 +228,7 @@ src/
 - refresh token ou persistência de sessão;
 - logout, revogação ou renovação no servidor;
 - recuperação e redefinição de senha;
-- integração de utilizações institucionais, eventos e administração;
+- integração de utilizações institucionais e administração;
 - integração da visão geral ao resumo operacional da API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
