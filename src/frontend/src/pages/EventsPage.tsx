@@ -117,6 +117,7 @@ export function EventsPage() {
           onApply={events.applyFilters}
           onChange={events.setDraft}
           onClear={events.clearFilters}
+          periodError={events.filterError}
         />
         <EventAuthorizationCatalog
           canManage={canManage}

@@ -73,6 +73,7 @@ export function useEventAuthorizations() {
   const [status, setStatus] =
     useState<EventAuthorizationRequestStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [filterError, setFilterError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventAuthorization | null>(
     null,
@@ -84,7 +85,11 @@ export function useEventAuthorizations() {
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const loadEvents = useCallback(
-    async (filters: EventAuthorizationFilters, clearNotice = true) => {
+    async (
+      filters: EventAuthorizationFilters,
+      clearNotice = true,
+      refreshFailureMessage?: string,
+    ) => {
       const currentRequest = ++requestId.current;
       setStatus("loading");
       setPage(null);
@@ -103,7 +108,11 @@ export function useEventAuthorizations() {
         const description = describeApiError(error);
         setPage(null);
         setStatus(description.kind === "access-denied" ? "denied" : "error");
-        setErrorMessage(description.message);
+        setErrorMessage(
+          description.kind === "access-denied"
+            ? description.message
+            : (refreshFailureMessage ?? description.message),
+        );
         return false;
       }
     },
@@ -132,14 +141,13 @@ export function useEventAuthorizations() {
 
   function applyFilters() {
     if (!hasValidPeriod(draft)) {
-      setErrorMessage(
+      setFilterError(
         "O período deve ter início anterior ao fim e possuir no máximo 366 dias.",
       );
-      setStatus("error");
-      setPage(null);
       return;
     }
     const next = { ...draft, page: 1 };
+    setFilterError(null);
     setDraft(next);
     setApplied(next);
     void loadEvents(next);
@@ -147,6 +155,7 @@ export function useEventAuthorizations() {
 
   function clearFilters() {
     const next = initialFilters();
+    setFilterError(null);
     setDraft(next);
     setApplied(next);
     void loadEvents(next);
@@ -184,12 +193,14 @@ export function useEventAuthorizations() {
       else await createEventAuthorization(input);
       setFormOpen(false);
       setSelectedEvent(null);
-      await loadEvents(applied, false);
-      setNotice(
-        eventBeingEdited
-          ? "Autorização atualizada com sucesso."
-          : "Autorização criada com sucesso.",
-      );
+      const successMessage = eventBeingEdited
+        ? "Autorização atualizada com sucesso."
+        : "Autorização criada com sucesso.";
+      const refreshFailureMessage = eventBeingEdited
+        ? "A autorização foi atualizada, mas não foi possível recarregar a lista. Tente novamente para atualizar a consulta; não repita a alteração."
+        : "A autorização foi criada, mas não foi possível recarregar a lista. Tente novamente para atualizar a consulta; não repita o cadastro.";
+      const refreshed = await loadEvents(applied, false, refreshFailureMessage);
+      if (refreshed) setNotice(successMessage);
     } catch (error) {
       const description = describeApiError(error);
       const validationErrors = getApiValidationErrors(error);
@@ -222,8 +233,13 @@ export function useEventAuthorizations() {
     setErrorMessage(null);
     try {
       await cancelEventAuthorization(event.id);
-      await loadEvents(applied, false);
-      setNotice(`Autorização “${event.name}” cancelada com sucesso.`);
+      const refreshed = await loadEvents(
+        applied,
+        false,
+        `A autorização “${event.name}” foi cancelada, mas não foi possível recarregar a lista. Tente novamente para atualizar a consulta; não repita o cancelamento.`,
+      );
+      if (refreshed)
+        setNotice(`Autorização “${event.name}” cancelada com sucesso.`);
     } catch (error) {
       const description = describeApiError(error);
       if (description.kind === "access-denied") setStatus("denied");
@@ -244,6 +260,11 @@ export function useEventAuthorizations() {
     void loadEvents(applied);
   }
 
+  function updateDraft(next: EventAuthorizationFilters) {
+    setFilterError(null);
+    setDraft(next);
+  }
+
   return {
     applyFilters,
     cancelAuthorization,
@@ -251,6 +272,7 @@ export function useEventAuthorizations() {
     closeForm,
     draft,
     errorMessage,
+    filterError,
     formError,
     formOpen,
     goToPage,
@@ -262,7 +284,7 @@ export function useEventAuthorizations() {
     saveEvent,
     selectedEvent,
     serverErrors,
-    setDraft,
+    setDraft: updateDraft,
     setNotice,
     status,
   };

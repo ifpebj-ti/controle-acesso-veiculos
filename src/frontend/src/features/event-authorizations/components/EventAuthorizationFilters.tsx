@@ -3,6 +3,7 @@ import type { EventAuthorizationFilters as Filters } from "../types";
 interface EventAuthorizationFilterFormProps {
   disabled: boolean;
   draft: Filters;
+  periodError: string | null;
   onApply: () => void;
   onChange: (next: Filters) => void;
   onClear: () => void;
@@ -14,10 +15,15 @@ const fieldClass =
 export function EventAuthorizationFilterForm({
   disabled,
   draft,
+  periodError,
   onApply,
   onChange,
   onClear,
 }: EventAuthorizationFilterFormProps) {
+  const periodDescription = periodError
+    ? "event-filter-period-hint event-filter-period-error"
+    : "event-filter-period-hint";
+
   return (
     <form
       className="grid gap-4 border-b border-ink/10 bg-brand-soft/20 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-[1.2fr_1fr_1fr_.7fr_auto] xl:items-end"
@@ -52,7 +58,8 @@ export function EventAuthorizationFilterForm({
           Início do período
         </label>
         <input
-          aria-describedby="event-filter-period-hint"
+          aria-describedby={periodDescription}
+          aria-invalid={Boolean(periodError)}
           className={fieldClass}
           disabled={disabled}
           id="event-filter-from"
@@ -71,7 +78,8 @@ export function EventAuthorizationFilterForm({
           Fim do período
         </label>
         <input
-          aria-describedby="event-filter-period-hint"
+          aria-describedby={periodDescription}
+          aria-invalid={Boolean(periodError)}
           className={fieldClass}
           disabled={disabled}
           id="event-filter-to"
@@ -130,6 +138,15 @@ export function EventAuthorizationFilterForm({
         O período considera data e hora locais e pode abranger no máximo 366
         dias.
       </p>
+      {periodError && (
+        <p
+          className="text-sm font-semibold text-red-800 sm:col-span-2 xl:col-span-5"
+          id="event-filter-period-error"
+          role="alert"
+        >
+          {periodError}
+        </p>
+      )}
     </form>
   );
 }

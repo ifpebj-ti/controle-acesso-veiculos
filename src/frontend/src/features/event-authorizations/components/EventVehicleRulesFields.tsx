@@ -30,6 +30,11 @@ function ErrorMessage({ id, message }: { id: string; message?: string }) {
   ) : null;
 }
 
+function describedBy(...ids: Array<string | false | undefined>) {
+  const value = ids.filter(Boolean).join(" ");
+  return value || undefined;
+}
+
 export function EventVehicleRulesFields({
   control,
   disabled,
@@ -43,15 +48,36 @@ export function EventVehicleRulesFields({
     name: "vehicleRules",
   });
   const watchedRules = useWatch({ control, name: "vehicleRules" });
-  const errorFor = (field: string, localMessage?: string) =>
-    localMessage ?? serverErrors[field];
+  const rulesMessage =
+    typeof errors.vehicleRules?.message === "string"
+      ? errors.vehicleRules.message
+      : serverErrors.vehicleRules;
+
+  function errorFor(
+    index: number,
+    field: "vehicleType" | "quantity" | "plate",
+    localMessage?: string,
+  ) {
+    return (
+      localMessage ??
+      serverErrors[`vehicleRules.${index}.${field}`] ??
+      serverErrors[`vehicleRules[${index}].${field}`]
+    );
+  }
 
   return (
-    <fieldset className="rounded-2xl border border-ink/10 bg-cream/25 p-4 sm:p-5">
+    <fieldset
+      aria-describedby={describedBy(
+        "event-rules-hint",
+        rulesMessage && "event-rules-error",
+      )}
+      aria-invalid={Boolean(rulesMessage)}
+      className="rounded-2xl border border-ink/10 bg-cream/25 p-4 sm:p-5"
+    >
       <legend className="px-2 text-lg font-bold text-ink">
         Regras de veículos
       </legend>
-      <p className="mb-4 text-sm text-ink/65">
+      <p className="mb-4 text-sm text-ink/65" id="event-rules-hint">
         Use placa para um veículo específico ou cota para uma quantidade por
         tipo.
       </p>
@@ -59,23 +85,28 @@ export function EventVehicleRulesFields({
         {fields.map((field, index) => {
           const ruleErrors = errors.vehicleRules?.[index];
           const mode = watchedRules?.[index]?.mode ?? "quota";
-          const prefix = `vehicleRules.${index}`;
           const broadServerError = serverErrors[`vehicleRules[${index}]`];
-          const typeMessage =
-            errorFor(
-              `${prefix}.vehicleType`,
-              ruleErrors?.vehicleType?.message,
-            ) ?? broadServerError;
+          const broadErrorId = `event-rule-${index}-error`;
+          const typeMessage = errorFor(
+            index,
+            "vehicleType",
+            ruleErrors?.vehicleType?.message,
+          );
           const quantityMessage = errorFor(
-            `${prefix}.quantity`,
+            index,
+            "quantity",
             ruleErrors?.quantity?.message,
           );
-          const plateMessage =
-            errorFor(`${prefix}.plate`, ruleErrors?.plate?.message) ??
-            broadServerError;
+          const plateMessage = errorFor(
+            index,
+            "plate",
+            ruleErrors?.plate?.message,
+          );
 
           return (
             <fieldset
+              aria-describedby={broadServerError ? broadErrorId : undefined}
+              aria-invalid={Boolean(broadServerError)}
               className="rounded-2xl border border-ink/10 bg-white p-4"
               key={field.id}
             >
@@ -89,6 +120,10 @@ export function EventVehicleRulesFields({
                     key={value}
                   >
                     <input
+                      aria-describedby={
+                        broadServerError ? broadErrorId : undefined
+                      }
+                      aria-invalid={Boolean(broadServerError)}
                       disabled={disabled}
                       type="radio"
                       value={value}
@@ -113,10 +148,11 @@ export function EventVehicleRulesFields({
                     Tipo do veículo
                   </label>
                   <input
-                    aria-describedby={
-                      typeMessage ? `event-rule-${index}-type-error` : undefined
-                    }
-                    aria-invalid={Boolean(typeMessage)}
+                    aria-describedby={describedBy(
+                      typeMessage && `event-rule-${index}-type-error`,
+                      broadServerError && broadErrorId,
+                    )}
+                    aria-invalid={Boolean(typeMessage || broadServerError)}
                     className={fieldClass}
                     disabled={disabled}
                     id={`event-rule-${index}-type`}
@@ -137,12 +173,11 @@ export function EventVehicleRulesFields({
                     Quantidade
                   </label>
                   <input
-                    aria-describedby={
-                      quantityMessage
-                        ? `event-rule-${index}-quantity-error`
-                        : undefined
-                    }
-                    aria-invalid={Boolean(quantityMessage)}
+                    aria-describedby={describedBy(
+                      quantityMessage && `event-rule-${index}-quantity-error`,
+                      broadServerError && broadErrorId,
+                    )}
+                    aria-invalid={Boolean(quantityMessage || broadServerError)}
                     className={fieldClass}
                     disabled={disabled || mode === "plate"}
                     id={`event-rule-${index}-quantity`}
@@ -169,12 +204,11 @@ export function EventVehicleRulesFields({
                     )}
                   </label>
                   <input
-                    aria-describedby={
-                      plateMessage
-                        ? `event-rule-${index}-plate-error`
-                        : undefined
-                    }
-                    aria-invalid={Boolean(plateMessage)}
+                    aria-describedby={describedBy(
+                      plateMessage && `event-rule-${index}-plate-error`,
+                      broadServerError && broadErrorId,
+                    )}
+                    aria-invalid={Boolean(plateMessage || broadServerError)}
                     className={fieldClass}
                     disabled={disabled || mode === "quota"}
                     id={`event-rule-${index}-plate`}
@@ -196,6 +230,7 @@ export function EventVehicleRulesFields({
                   Remover
                 </button>
               </div>
+              <ErrorMessage id={broadErrorId} message={broadServerError} />
             </fieldset>
           );
         })}
@@ -210,14 +245,7 @@ export function EventVehicleRulesFields({
       >
         Adicionar regra
       </button>
-      <ErrorMessage
-        id="event-rules-error"
-        message={
-          typeof errors.vehicleRules?.message === "string"
-            ? errors.vehicleRules.message
-            : serverErrors.vehicleRules
-        }
-      />
+      <ErrorMessage id="event-rules-error" message={rulesMessage} />
     </fieldset>
   );
 }
