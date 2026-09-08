@@ -41,6 +41,19 @@ function renderLayout(profileName: ProfileName = "Porteiro") {
 }
 
 describe("AppLayout", () => {
+  it("distinguishes the integrated MVP from pending institutional approval", () => {
+    renderLayout();
+
+    expect(
+      screen.getByText(
+        "MVP integrado à API — homologação institucional e liberação para produção permanecem pendentes.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/auditoria e homologação institucional permanecem/),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens the mobile menu, contains keyboard focus and restores the trigger", async () => {
     const user = userEvent.setup();
     renderLayout();
