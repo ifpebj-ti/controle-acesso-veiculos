@@ -1,8 +1,8 @@
-# Homologação do backend do MVP
+# Homologação integrada do MVP
 
 **Status:** roteiro técnico preliminar para validação com usuários<br>
-**Escopo:** backend, PostgreSQL, infraestrutura local e QA<br>
-**Rastreabilidade:** Issues #88, #108 e #112
+**Escopo:** frontend, backend, PostgreSQL, infraestrutura local, UX e QA<br>
+**Rastreabilidade:** Issues #88, #108, #112 e #162; PR #164
 
 Este documento transforma as funcionalidades já integradas à `main` em uma
 sessão reproduzível de validação. Ele não comprova aceitação institucional e não
@@ -38,13 +38,13 @@ de cada commit.
 
 ## 2. Participantes e responsabilidades
 
-| Participante | O que deve validar |
-|---|---|
-| Porteiro | rapidez do registro, dados necessários, consulta de abertos, saída e continuidade do turno |
-| Vigilante | substituição do Porteiro, consulta e correção descritiva justificada |
-| Setor de Transporte | supervisão, históricos, frota, motoristas, eventos e resumo diário |
-| Administrador | contas, trilha de auditoria e acesso excepcional |
-| Equipe | comportamento técnico, evidências, dúvidas e decisões sem induzir respostas |
+| Participante        | O que deve validar                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| Porteiro            | rapidez do registro, dados necessários, consulta de abertos, saída e continuidade do turno |
+| Vigilante           | substituição do Porteiro, consulta e correção descritiva justificada                       |
+| Setor de Transporte | supervisão, históricos, frota, motoristas, eventos e resumo diário                         |
+| Administrador       | contas, trilha de auditoria e acesso excepcional                                           |
+| Equipe              | comportamento técnico, evidências, dúvidas e decisões sem induzir respostas                |
 
 Uma pessoa pode representar mais de um papel na reunião, mas a avaliação deve
 continuar separada por perfil.
@@ -81,11 +81,20 @@ docker compose config
 docker compose build backend
 docker compose up -d postgresql
 Set-Location ../..
+
+Set-Location src/frontend
+npm ci
+npm test -- --run
+npm run lint
+npm run build
+Set-Location ../..
 ```
 
-Resultado esperado: formatação e build sem erros, 176 testes aprovados e
-PostgreSQL saudável. Os testes de integração exigem acesso ao Docker porque usam
-PostgreSQL real e descartável via Testcontainers.
+Resultado esperado: formatação e builds sem erros, 176 testes backend, 129
+testes frontend em 21 arquivos e PostgreSQL saudável. Os testes de integração
+exigem acesso ao Docker porque usam PostgreSQL real e descartável via
+Testcontainers. Registre a contagem efetivamente observada se a `main` evoluir;
+não copie estes números como evidência sem executar os comandos.
 
 ### 3.3. Migrations e administrador inicial
 
@@ -158,6 +167,36 @@ institucional de retenção, proteção de dados ou produção. Antes da transfe
 do projeto, o responsável sucessor e o procedimento de entrega devem ser
 registrados.
 
+### 3.6. Inicialização e conferência do frontend
+
+Com a API disponível em `http://127.0.0.1:5118`, execute em outro terminal:
+
+```powershell
+Set-Location src/frontend
+npm run dev
+```
+
+Abra o endereço informado pelo Vite, normalmente `http://localhost:5173`. O
+proxy de desenvolvimento encaminha `/api` para a API local; não exponha token ou
+credencial na URL, em capturas ou nas ferramentas do navegador.
+
+Antes da chegada dos participantes:
+
+- autentique uma vez com cada perfil usando somente contas fictícias;
+- confirme que o menu muda conforme o perfil e que uma rota incompatível exibe
+  acesso negado;
+- teste aproximadamente 390 px e 1440 px de largura, sem classificar a adaptação
+  como aprovada antes da sessão;
+- percorra ao menos um cenário apenas com teclado, observando foco visível,
+  ordem de navegação e retorno do foco;
+- confira carregamento, lista vazia e falha controlada sem desligar serviços que
+  possam conter dados ou trabalho de outra pessoa;
+- registre o SHA de `main`, navegador, sistema operacional e resolução usados.
+
+Se o Docker, a API, o banco ou o frontend não estiverem disponíveis, interrompa
+a sessão e registre uma falha de ambiente. Não peça ao participante para avaliar
+uma tela parcialmente carregada como se fosse o produto funcionando.
+
 ## 4. Ordem da demonstração
 
 Antes de iniciar, substitua na cópia `*.local.http`:
@@ -173,10 +212,10 @@ valores não forem mais necessários.
 
 ### Cenário 1 — disponibilidade e autenticação
 
-| Campo | Valor |
-|---|---|
-| Perfil | Anônimo e Administrador |
-| Ação | consultar readiness, autenticar e acessar endpoint protegido |
+| Campo    | Valor                                                               |
+| -------- | ------------------------------------------------------------------- |
+| Perfil   | Anônimo e Administrador                                             |
+| Ação     | consultar readiness, autenticar e acessar endpoint protegido        |
 | Esperado | readiness 200; login válido 200; requisição protegida sem token 401 |
 | Pergunta | contas individuais e troca de operador representam o processo real? |
 
@@ -185,12 +224,12 @@ O Administrador cria contas fictícias para `Porteiro`, `Vigilante` e
 
 ### Cenário 2 — acesso geral e troca de turno
 
-| Campo | Valor |
-|---|---|
-| Perfil | Porteiro; depois Vigilante |
-| Ação | com cada perfil, registrar entrada, listar abertos, consultar histórico, registrar saída e corrigir descrição com justificativa |
+| Campo    | Valor                                                                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Perfil   | Porteiro; depois Vigilante                                                                                                                             |
+| Ação     | com cada perfil, registrar entrada, listar abertos, consultar histórico, registrar saída e corrigir descrição com justificativa                        |
 | Esperado | horário e ator definidos no servidor; placa normalizada; um único acesso aberto; saída preserva autoria; correção não altera placa, pessoa ou horários |
-| Pergunta | os campos e a lista de abertos são suficientes para a troca de turno? |
+| Pergunta | os campos e a lista de abertos são suficientes para a troca de turno?                                                                                  |
 
 O Vigilante usa a própria conta ao assumir a portaria e possui as mesmas
 permissões operacionais do Porteiro. Não simule transferência de autoria do
@@ -198,11 +237,11 @@ registro original.
 
 ### Cenário 3 — fronteira do Setor de Transporte
 
-| Campo | Valor |
-|---|---|
-| Perfil | SetorTransporte |
-| Ação | consultar histórico e resumo; tentar registrar entrada geral |
-| Esperado | consultas 200; tentativa de operação geral 403 |
+| Campo    | Valor                                                                            |
+| -------- | -------------------------------------------------------------------------------- |
+| Perfil   | SetorTransporte                                                                  |
+| Ação     | consultar histórico e resumo; tentar registrar entrada geral                     |
+| Esperado | consultas 200; tentativa de operação geral 403                                   |
 | Pergunta | supervisão sem alteração do fluxo geral corresponde à responsabilidade do setor? |
 
 Se o cliente disser que o setor também opera a portaria, registre a observação;
@@ -210,36 +249,36 @@ não altere a permissão durante a sessão.
 
 ### Cenário 4 — frota e motoristas autorizados
 
-| Campo | Valor |
-|---|---|
-| Perfil | SetorTransporte para cadastros; Porteiro para saída e retorno |
-| Ação | cadastrar veículo, autorizar motorista, registrar saída, listar uso aberto, registrar retorno e consultar histórico |
+| Campo    | Valor                                                                                                                   |
+| -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Perfil   | SetorTransporte para cadastros; Porteiro para saída e retorno                                                           |
+| Ação     | cadastrar veículo, autorizar motorista, registrar saída, listar uso aberto, registrar retorno e consultar histórico     |
 | Esperado | apenas motorista explicitamente autorizado inicia viagem; retorno exige quilometragem válida; histórico fica preservado |
-| Pergunta | quem deve registrar saída e retorno e quais dados realmente ajudam na conferência? |
+| Pergunta | quem deve registrar saída e retorno e quais dados realmente ajudam na conferência?                                      |
 
 Documento do motorista é opcional no MVP. Não use essa demonstração para
 decidir CNH, categoria, validade ou escala sem o responsável institucional.
 
 ### Cenário 5 — autorização de evento
 
-| Campo | Valor |
-|---|---|
-| Perfil | SetorTransporte para gestão; Porteiro para consulta e entrada |
-| Ação | criar evento vigente, consultar, registrar entrada vinculada e verificar consumo da regra |
+| Campo    | Valor                                                                                                             |
+| -------- | ----------------------------------------------------------------------------------------------------------------- |
+| Perfil   | SetorTransporte para gestão; Porteiro para consulta e entrada                                                     |
+| Ação     | criar evento vigente, consultar, registrar entrada vinculada e verificar consumo da regra                         |
 | Esperado | evento ativo e vigente; placa específica tem precedência; cota não é excedida; saída não devolve a vaga consumida |
-| Pergunta | o setor normalmente conhece placas, tipos/quantidades ou ambos? |
+| Pergunta | o setor normalmente conhece placas, tipos/quantidades ou ambos?                                                   |
 
 Pernoite informa uma autorização administrativa, mas não abre portão
 automaticamente nem cria um bloqueio fixo às 23h.
 
 ### Cenário 6 — resumo operacional diário
 
-| Campo | Valor |
-|---|---|
-| Perfil | os quatro perfis |
-| Ação | consultar a data local da demonstração |
+| Campo    | Valor                                                                                                                              |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Perfil   | os quatro perfis                                                                                                                   |
+| Ação     | consultar a data local da demonstração                                                                                             |
 | Esperado | totais gerais, institucionais e de evento; `openAtStart` e `openAtEnd`; nenhuma pessoa, documento, placa, itinerário ou observação |
-| Pergunta | os totais ajudam a troca de turno e a conferência? Os nomes dos campos são compreensíveis? |
+| Pergunta | os totais ajudam a troca de turno e a conferência? Os nomes dos campos são compreensíveis?                                         |
 
 O resumo não classifica atraso ou irregularidade e não representa assinatura de
 fechamento. Essas possibilidades só entram no backlog se forem solicitadas e
@@ -247,12 +286,12 @@ justificadas.
 
 ### Cenário 7 — contas e auditoria
 
-| Campo | Valor |
-|---|---|
-| Perfil | Administrador |
-| Ação | pesquisar contas e consultar auditoria por período, entidade e ator |
+| Campo    | Valor                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------ |
+| Perfil   | Administrador                                                                                          |
+| Ação     | pesquisar contas e consultar auditoria por período, entidade e ator                                    |
 | Esperado | somente Administrador; sem hash, senha, token ou dados pessoais duplicados; ações críticas rastreáveis |
-| Pergunta | quem exercerá a administração e quem poderá revisar a trilha no ambiente real? |
+| Pergunta | quem exercerá a administração e quem poderá revisar a trilha no ambiente real?                         |
 
 Desativação e reativação podem ser demonstradas somente em conta fictícia que
 não será usada nos demais cenários. O Administrador não pode desativar a própria
@@ -260,23 +299,23 @@ conta nem remover o último Administrador ativo.
 
 ## 5. Matriz de rastreabilidade
 
-| Capacidade do MVP | Contratos principais | Evidência automatizada |
-|---|---|---|
-| Saúde técnica | `GET /health`, `/health/live`, `/health/ready` | `TechnicalEndpointsTests` |
-| Login e bloqueio | `POST /auth/login` | `AuthenticationTests`, `UsuarioTests` |
-| Administração de contas | `GET/POST/DELETE /users`, reativação | `UserAccountLifecycleTests`, `CreateUserAccountServiceTests`, `UserAccountLifecycleServiceTests` |
-| Entrada, abertos e saída geral | `/access-records/entries`, `/open`, `/{id}/exit` | `VehicleAccessTests`, `VehicleAccessServiceTests`, `RegistroAcessoTests` |
-| Histórico e correção geral | `/access-records/history`, `/{id}/correction` | `VehicleAccessTests`, `VehicleAccessServiceTests` |
-| Catálogo de frota | `/institutional-vehicles` | `InstitutionalVehicleCatalogTests`, `InstitutionalVehicleCatalogServiceTests`, `VeiculoTests` |
-| Motoristas autorizados | `/institutional-drivers` | `InstitutionalDriverTests`, `InstitutionalDriverServiceTests`, `MotoristaInstitucionalTests` |
-| Uso institucional | `/institutional-vehicle-usages` | `InstitutionalVehicleUsageTests`, `InstitutionalVehicleUsageServiceTests`, `UsoVeiculoInstitucionalTests` |
-| Autorizações de eventos | `/event-authorizations` | `EventAuthorizationTests`, `EventAuthorizationServiceTests`, `EventoAcessoTests` |
-| Entrada vinculada ao evento | `POST /access-records/entries` com `eventAuthorizationId` | `EventAccessAssociationTests` |
-| Resumo diário | `GET /operations/daily-summary` | `OperationalSummaryTests`, `OperationalSummaryServiceTests` |
-| Auditoria administrativa | `GET /audits` | `AuditTrailTests`, `AuditTrailServiceTests`, `AuditoriaTests` |
-| Segurança das requisições | middleware, Problem Details e rate limiting | `RequestSafetyTests`, `RateLimitingTests` |
-| PostgreSQL e migrations | schema `dbo`, constraints e índices | `PostgreSqlPersistenceTests`, setup de `ApiFactory` |
-| Fronteiras arquiteturais | dependências entre projetos | `ArchitectureTests` |
+| Capacidade do MVP              | Contratos principais                                      | Evidência automatizada                                                                                    |
+| ------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Saúde técnica                  | `GET /health`, `/health/live`, `/health/ready`            | `TechnicalEndpointsTests`                                                                                 |
+| Login e bloqueio               | `POST /auth/login`                                        | `AuthenticationTests`, `UsuarioTests`                                                                     |
+| Administração de contas        | `GET/POST/DELETE /users`, reativação                      | `UserAccountLifecycleTests`, `CreateUserAccountServiceTests`, `UserAccountLifecycleServiceTests`          |
+| Entrada, abertos e saída geral | `/access-records/entries`, `/open`, `/{id}/exit`          | `VehicleAccessTests`, `VehicleAccessServiceTests`, `RegistroAcessoTests`                                  |
+| Histórico e correção geral     | `/access-records/history`, `/{id}/correction`             | `VehicleAccessTests`, `VehicleAccessServiceTests`                                                         |
+| Catálogo de frota              | `/institutional-vehicles`                                 | `InstitutionalVehicleCatalogTests`, `InstitutionalVehicleCatalogServiceTests`, `VeiculoTests`             |
+| Motoristas autorizados         | `/institutional-drivers`                                  | `InstitutionalDriverTests`, `InstitutionalDriverServiceTests`, `MotoristaInstitucionalTests`              |
+| Uso institucional              | `/institutional-vehicle-usages`                           | `InstitutionalVehicleUsageTests`, `InstitutionalVehicleUsageServiceTests`, `UsoVeiculoInstitucionalTests` |
+| Autorizações de eventos        | `/event-authorizations`                                   | `EventAuthorizationTests`, `EventAuthorizationServiceTests`, `EventoAcessoTests`                          |
+| Entrada vinculada ao evento    | `POST /access-records/entries` com `eventAuthorizationId` | `EventAccessAssociationTests`                                                                             |
+| Resumo diário                  | `GET /operations/daily-summary`                           | `OperationalSummaryTests`, `OperationalSummaryServiceTests`                                               |
+| Auditoria administrativa       | `GET /audits`                                             | `AuditTrailTests`, `AuditTrailServiceTests`, `AuditoriaTests`                                             |
+| Segurança das requisições      | middleware, Problem Details e rate limiting               | `RequestSafetyTests`, `RateLimitingTests`                                                                 |
+| PostgreSQL e migrations        | schema `dbo`, constraints e índices                       | `PostgreSqlPersistenceTests`, setup de `ApiFactory`                                                       |
+| Fronteiras arquiteturais       | dependências entre projetos                               | `ArchitectureTests`                                                                                       |
 
 A suíte automatizada reduz regressões técnicas, mas não substitui a avaliação de
 clareza, utilidade e adequação do processo pelos usuários.
@@ -338,11 +377,30 @@ O roteiro completo e o registro das decisões ficam no
 
 ## 7. Registro do feedback
 
-Copie uma linha por observação durante ou imediatamente após a sessão:
+Registre primeiro o contexto da sessão, sem nomes pessoais quando o perfil for
+suficiente:
 
-| Data | Perfil | Cenário | Resultado | Observação | Decisão | Prioridade | Responsável | Issue |
-|---|---|---|---|---|---|---|---|---|
-| AAAA-MM-DD | Porteiro | Acesso geral | Aceito/Ajustar/Rejeitado/Pendente | descrição objetiva, sem dado pessoal | decisão ou pergunta | Alta/Média/Baixa | nome ou setor | `#NN` |
+| Campo                    | Valor observado                                 |
+| ------------------------ | ----------------------------------------------- |
+| Data e horário           | AAAA-MM-DD HH:mm                                |
+| Commit demonstrado       | SHA completo de `main`                          |
+| Ambiente                 | Local ou homologação isolada                    |
+| Navegador e sistema      | Nome e versão observados                        |
+| Larguras verificadas     | Aproximadamente 390 px e 1440 px                |
+| Perfis representados     | Porteiro, Vigilante, Transporte e Administrador |
+| Volume de pico combinado | Quantidade definida com Portaria/Vigilância     |
+| Uso somente por teclado  | Sim/Não; cenário executado                      |
+
+Copie uma linha por tarefa durante ou imediatamente após a sessão. Meça o tempo
+como diagnóstico e não como meta arbitrária de aprovação:
+
+| Perfil   | Cenário e tarefa           | Conclusão | Ajuda               | Tempo observado | Erros ou retornos  | Consulta ao papel/repetição | Interrupção e retomada | Resultado                         | Prioridade       | Issue |
+| -------- | -------------------------- | --------- | ------------------- | --------------- | ------------------ | --------------------------- | ---------------------- | --------------------------------- | ---------------- | ----- |
+| Porteiro | Registrar entrada fictícia | Sim/Não   | Sem ajuda/Com ajuda | mm:ss           | descrição objetiva | Sim/Não; o quê              | descrição objetiva     | Aceito/Ajustar/Rejeitado/Pendente | Alta/Média/Baixa | `#NN` |
+
+Uma observação pode explicar o problema, mas não substitui a decisão. Registre
+separadamente o que a pessoa fez, o que disse e o que foi decidido para evitar
+transformar interpretação da equipe em requisito institucional.
 
 Perguntas que precisam de resposta explícita:
 
