@@ -20,7 +20,9 @@ Fluxo sugerido para validação local:
 
 1. iniciar a API e acessar `/login` com uma conta individual local;
 2. confirmar que e-mail e perfil exibidos vieram da resposta da API;
-3. como Porteiro ou Vigilante, registrar uma entrada de homologação em `/acessos/novo`;
+3. como Porteiro ou Vigilante, registrar entradas consecutivas em
+   `/acessos/novo` e confirmar que a ação de continuidade reinicia o formulário
+   com foco na placa;
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
 5. como Transporte, consultar e manter os catálogos ativos da frota e de
    motoristas e manter as autorizações de eventos;
@@ -37,6 +39,12 @@ placa, objetivo e categoria são obrigatórios; tipo do veículo e observação 
 opcionais. Categoria e objetivo permanecem distintos. Documento não é exigido
 por decisão apenas visual, e horário, autorização e duplicidade continuam sob
 responsabilidade da API.
+
+Após uma resposta bem-sucedida, o operador pode continuar na mesma tela para
+registrar o próximo veículo ou abrir a lista de acessos. A continuidade limpa os
+dados concluídos, anuncia o sucesso e restaura o foco na placa; falhas preservam
+os valores para correção. Esse atalho é uma hipótese de UX para atendimento em
+horário de pico e ainda depende da homologação da Issue #162.
 
 Saída, retorno, quilometragem e motorista de veículos institucionais pertencem ao
 fluxo próprio da frota. Previsão de permanência, alertas baseados em prazo e
