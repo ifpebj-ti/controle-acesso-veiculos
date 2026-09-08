@@ -13,8 +13,8 @@ o catálogo de motoristas lista, autoriza e desativa autorizações pela API. A
 A área de utilizações institucionais registra saídas e retornos e consulta usos
 abertos e histórico conforme o perfil autenticado.
 A visão geral consulta o resumo operacional diário agregado da API. A área de
-administração ainda contém dados locais de demonstração e não deve ser tratada
-como operação real.
+administração consulta, cria, desativa e reativa contas pela API; a auditoria
+administrativa ainda não possui tela integrada.
 
 Fluxo sugerido para validação local:
 
@@ -128,6 +128,8 @@ papel e nome acessível e cobrem autenticação, restrição visual por perfil,
 movimentações gerais, estados de carregamento, vazio, falha e acesso negado.
 O resumo operacional possui cobertura de contrato, perfis, seleção de data,
 falha com nova tentativa e resposta diária sem movimentações.
+A administração de contas possui cobertura de contrato, filtros, criação segura,
+mudanças de estado, conflitos, falha de recarga e acessibilidade.
 
 As auditorias com axe-core abrangem login, layout autenticado, registro de
 entrada, acessos em aberto e histórico. Violações classificadas como sérias ou
@@ -206,7 +208,8 @@ src/
 │   ├── institutional-drivers/ # Contratos, formulário e catálogo de motoristas.
 │   ├── institutional-usages/ # Saídas, retornos e histórico da frota institucional.
 │   ├── institutional-vehicles/ # Contratos, formulário e serviços da frota.
-│   └── operational-summary/ # Contrato, consulta e apresentação do resumo diário.
+│   ├── operational-summary/ # Contrato, consulta e apresentação do resumo diário.
+│   └── user-accounts/ # Consulta e ciclo administrativo de contas.
 ├── pages/            # Componentes associados às páginas.
 ├── routes/           # Configuração central das rotas.
 ├── services/         # Cliente HTTP e integrações externas.
@@ -235,7 +238,7 @@ src/
 - refresh token ou persistência de sessão;
 - logout, revogação ou renovação no servidor;
 - recuperação e redefinição de senha;
-- integração da administração de usuários e permissões;
+- integração da consulta administrativa da auditoria;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
 - garantia de autorização baseada somente na interface;
