@@ -312,6 +312,69 @@ describe("InstitutionalUsagesPage", () => {
     );
   });
 
+  it("does not confirm or submit a return with a lower mileage", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(registerInstitutionalReturn).mockResolvedValue({
+      ...openUsage,
+      returnAtUtc: "2030-06-10T13:00:00Z",
+      returnMileage: 12540,
+      status: "Concluido",
+      updatedById: 3,
+    });
+    const user = userEvent.setup();
+    renderPage("Vigilante");
+    await screen.findByText(openUsage.driverName);
+    await user.click(screen.getByRole("button", { name: "Registrar retorno" }));
+    const mileage = screen.getByLabelText("Quilometragem no retorno");
+    await user.clear(mileage);
+    await user.type(mileage, "12499");
+    await user.click(screen.getByRole("button", { name: "Confirmar retorno" }));
+
+    expect(
+      await screen.findByText(
+        "A quilometragem de retorno não pode ser inferior à de saída.",
+      ),
+    ).toBeInTheDocument();
+    expect(confirm).not.toHaveBeenCalled();
+    expect(registerInstitutionalReturn).not.toHaveBeenCalled();
+
+    await user.clear(mileage);
+    await user.type(mileage, "12540");
+    await user.click(screen.getByRole("button", { name: "Confirmar retorno" }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(registerInstitutionalReturn).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it("associates an API return mileage error with its field", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(registerInstitutionalReturn).mockRejectedValue(
+      new Error("validation"),
+    );
+    vi.mocked(getApiValidationErrors).mockReturnValue({
+      returnMileage: "A quilometragem informada não é válida.",
+    });
+    const user = userEvent.setup();
+    renderPage("Vigilante");
+    await screen.findByText(openUsage.driverName);
+    await user.click(screen.getByRole("button", { name: "Registrar retorno" }));
+    const mileage = screen.getByLabelText("Quilometragem no retorno");
+    await user.clear(mileage);
+    await user.type(mileage, "12540");
+    await user.click(screen.getByRole("button", { name: "Confirmar retorno" }));
+
+    const message = await screen.findByText(
+      "A quilometragem informada não é válida.",
+    );
+    expect(mileage).toHaveAttribute("aria-invalid", "true");
+    expect(mileage).toHaveAttribute(
+      "aria-describedby",
+      expect.stringContaining("usage-return-12-error"),
+    );
+    expect(message).toHaveAttribute("id", "usage-return-12-error");
+  });
+
   it("keeps history results when the local period is invalid", async () => {
     const user = userEvent.setup();
     renderPage("SetorTransporte");
@@ -368,6 +431,56 @@ describe("InstitutionalUsagesPage", () => {
         expect.objectContaining({ page: 2 }),
       ),
     );
+  });
+
+  it("associates history validation errors and clears them after editing", async () => {
+    const validationProblem = {
+      response: {
+        data: { errors: { plate: ["A placa informada não é válida."] } },
+        status: 400,
+      },
+    };
+    vi.mocked(searchInstitutionalUsageHistory)
+      .mockResolvedValueOnce(historyPage)
+      .mockRejectedValueOnce(validationProblem);
+    vi.mocked(describeApiError).mockReturnValueOnce({
+      kind: "validation",
+      message: "Revise os filtros informados.",
+      status: 400,
+    });
+    vi.mocked(getApiValidationErrors).mockReturnValueOnce({
+      plate: "A placa informada não é válida.",
+    });
+    const user = userEvent.setup();
+    renderPage("SetorTransporte");
+    await screen.findAllByText(openUsage.driverName);
+    const plate = screen.getByLabelText("Placa");
+    await user.type(plate, "INVALIDA");
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+
+    const message = await screen.findByText("A placa informada não é válida.");
+    expect(plate).toHaveAttribute("aria-invalid", "true");
+    expect(plate).toHaveAttribute(
+      "aria-describedby",
+      "usage-history-plate-error",
+    );
+    expect(message).toHaveAttribute("id", "usage-history-plate-error");
+    expect(
+      screen.queryByText("Nenhuma utilização encontrada"),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText(openUsage.driverName)).not.toHaveLength(0);
+    expect(
+      screen.queryByRole("button", { name: "Tentar novamente" }),
+    ).not.toBeInTheDocument();
+    expect(searchInstitutionalUsageHistory).toHaveBeenCalledTimes(2);
+
+    await user.clear(plate);
+    await user.type(plate, "TST1A23");
+    expect(
+      screen.queryByText("A placa informada não é válida."),
+    ).not.toBeInTheDocument();
+    expect(plate).toHaveAttribute("aria-invalid", "false");
+    expect(searchInstitutionalUsageHistory).toHaveBeenCalledTimes(2);
   });
 
   it("distinguishes a history request failure from an empty response", async () => {
