@@ -197,6 +197,12 @@ describe("AdminPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Conta criada com sucesso. Porém, não foi possível atualizar a lista.",
     );
+    expect(createUserAccount).toHaveBeenCalledWith({
+      email: "nova.pessoa@example.test",
+      name: "Nova Pessoa",
+      password: "Senha-ficticia-2030",
+      profileName: "SetorTransporte",
+    });
     expect(
       screen.queryByText("Nenhuma conta encontrada"),
     ).not.toBeInTheDocument();
@@ -232,6 +238,27 @@ describe("AdminPage", () => {
     );
     await waitFor(() => expect(reactivateUserAccount).toHaveBeenCalledWith(9));
     expect(deactivateUserAccount).not.toHaveBeenCalled();
+  });
+
+  it("presents a backend state conflict without a false success", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.mocked(deactivateUserAccount).mockRejectedValue(new Error("conflict"));
+    vi.mocked(describeApiError).mockReturnValue({
+      kind: "conflict",
+      message: "Um administrador não pode desativar a própria conta.",
+      status: 409,
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await user.click(screen.getAllByRole("button", { name: "Desativar" })[0]);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Um administrador não pode desativar a própria conta.",
+    );
+    expect(
+      screen.queryByText(/desativada com sucesso/),
+    ).not.toBeInTheDocument();
   });
 
   it("paginates using the last applied filters", async () => {
