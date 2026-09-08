@@ -10,8 +10,11 @@ entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
 o catálogo de motoristas lista, autoriza e desativa autorizações pela API. A
 área de eventos também consulta, cria, edita e cancela autorizações antecipadas.
-As áreas de visão geral e administração ainda contêm dados
-locais de demonstração e não devem ser tratadas como operação real.
+A área de utilizações institucionais registra saídas e retornos e consulta usos
+abertos e histórico conforme o perfil autenticado.
+A visão geral consulta o resumo operacional diário agregado da API. A área de
+administração ainda contém dados locais de demonstração e não deve ser tratada
+como operação real.
 
 Fluxo sugerido para validação local:
 
@@ -123,6 +126,8 @@ Alternativas avaliadas:
 A suíte usa Vitest com JSDOM e Testing Library. Os testes consultam elementos por
 papel e nome acessível e cobrem autenticação, restrição visual por perfil,
 movimentações gerais, estados de carregamento, vazio, falha e acesso negado.
+O resumo operacional possui cobertura de contrato, perfis, seleção de data,
+falha com nova tentativa e resposta diária sem movimentações.
 
 As auditorias com axe-core abrangem login, layout autenticado, registro de
 entrada, acessos em aberto e histórico. Violações classificadas como sérias ou
@@ -200,7 +205,8 @@ src/
 │   ├── event-authorizations/ # Consulta e manutenção de autorizações de eventos.
 │   ├── institutional-drivers/ # Contratos, formulário e catálogo de motoristas.
 │   ├── institutional-usages/ # Saídas, retornos e histórico da frota institucional.
-│   └── institutional-vehicles/ # Contratos, formulário e serviços da frota.
+│   ├── institutional-vehicles/ # Contratos, formulário e serviços da frota.
+│   └── operational-summary/ # Contrato, consulta e apresentação do resumo diário.
 ├── pages/            # Componentes associados às páginas.
 ├── routes/           # Configuração central das rotas.
 ├── services/         # Cliente HTTP e integrações externas.
@@ -230,7 +236,6 @@ src/
 - logout, revogação ou renovação no servidor;
 - recuperação e redefinição de senha;
 - integração da administração de usuários e permissões;
-- integração da visão geral ao resumo operacional da API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
 - garantia de autorização baseada somente na interface;
