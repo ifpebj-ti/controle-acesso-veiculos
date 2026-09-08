@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { profileNames } from "../../authentication";
+import { profileNames } from "../../authentication/types";
 
 const validInstant = z
   .string()

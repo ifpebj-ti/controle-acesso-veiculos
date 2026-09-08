@@ -31,7 +31,9 @@ export function AdminPage() {
         action={
           <button
             className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 disabled:cursor-wait disabled:opacity-60"
-            disabled={accounts.pendingAction !== null}
+            disabled={
+              accounts.pendingAction !== null || accounts.status !== "ready"
+            }
             onClick={accounts.openForm}
             type="button"
           >

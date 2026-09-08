@@ -206,6 +206,7 @@ describe("AdminPage", () => {
     expect(
       screen.queryByText("Nenhuma conta encontrada"),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nova conta" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(await screen.findAllByText(activeAccount.name)).not.toHaveLength(0);
     expect(createUserAccount).toHaveBeenCalledTimes(1);
@@ -340,6 +341,7 @@ describe("AdminPage", () => {
     expect(
       screen.queryByText("Nenhuma conta encontrada"),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nova conta" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(
       await screen.findByText("Nenhuma conta encontrada"),

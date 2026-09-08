@@ -141,7 +141,7 @@ export function useUserAccounts(enabled = true) {
   }
 
   function openForm() {
-    if (pendingAction) return;
+    if (pendingAction || status !== "ready") return;
     setNotice(null);
     setErrorMessage(null);
     setFormError(null);
