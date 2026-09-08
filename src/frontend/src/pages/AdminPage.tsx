@@ -18,9 +18,7 @@ export function AdminPage() {
   const [activeArea, setActiveArea] = useState<"accounts" | "audit">(
     "accounts",
   );
-  const accounts = useUserAccounts(
-    isAdministrator && activeArea === "accounts",
-  );
+  const accounts = useUserAccounts(isAdministrator);
 
   if (!isAdministrator || accounts.status === "denied") {
     return (

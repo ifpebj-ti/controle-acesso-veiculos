@@ -384,6 +384,43 @@ describe("AdminPage", () => {
     );
   });
 
+  it("preserves account filters and results across administrative areas", async () => {
+    vi.mocked(searchUserAccounts)
+      .mockResolvedValueOnce(accountPage)
+      .mockResolvedValueOnce({
+        ...accountPage,
+        items: [activeAccount],
+        totalCount: 1,
+      });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+
+    await user.type(screen.getByLabelText("Nome ou e-mail"), "porteiro");
+    await user.selectOptions(screen.getByLabelText("Situação"), "true");
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    await waitFor(() => expect(searchUserAccounts).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(inactiveAccount.name)).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Trilha de auditoria" }),
+    );
+    await screen.findByRole("heading", { name: "Alteração" });
+    await user.click(screen.getByRole("button", { name: "Contas de acesso" }));
+
+    expect(screen.getByLabelText("Nome ou e-mail")).toHaveValue("porteiro");
+    expect(screen.getByLabelText("Situação")).toHaveValue("true");
+    expect(screen.getAllByText(activeAccount.name)).not.toHaveLength(0);
+    expect(screen.queryByText(inactiveAccount.name)).not.toBeInTheDocument();
+    expect(searchUserAccounts).toHaveBeenCalledTimes(2);
+    expect(searchUserAccounts).toHaveBeenLastCalledWith({
+      active: true,
+      page: 1,
+      pageSize: 25,
+      search: "porteiro",
+    });
+  });
+
   it("clears the password and associates an API error with its field", async () => {
     vi.mocked(createUserAccount).mockRejectedValue(new Error("validation"));
     vi.mocked(describeApiError).mockReturnValue({
