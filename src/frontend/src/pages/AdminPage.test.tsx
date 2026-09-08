@@ -89,9 +89,9 @@ function renderPage(profileName: ProfileName = "Administrador") {
 
 async function fillAccountForm(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "Nova conta" }));
-  await user.type(screen.getByLabelText("Nome do funcionário"), "Nova Pessoa");
+  await user.type(screen.getByLabelText("Nome da pessoa"), "Nova Pessoa");
   await user.type(
-    screen.getByLabelText("E-mail institucional"),
+    screen.getByLabelText("E-mail de acesso"),
     "nova.pessoa@example.test",
   );
   await user.type(

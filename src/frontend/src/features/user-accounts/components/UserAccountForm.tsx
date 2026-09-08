@@ -114,7 +114,7 @@ export function UserAccountForm({
             className="text-sm font-semibold text-ink"
             htmlFor="account-name"
           >
-            Nome do funcionário
+            Nome da pessoa
           </label>
           <input
             aria-describedby={errorFor("name") ? errorId("name") : undefined}
@@ -134,7 +134,7 @@ export function UserAccountForm({
             className="text-sm font-semibold text-ink"
             htmlFor="account-email"
           >
-            E-mail institucional
+            E-mail de acesso
           </label>
           <input
             aria-describedby={errorFor("email") ? errorId("email") : undefined}

@@ -63,7 +63,7 @@ export function UserAccountCatalog({
           <thead>
             <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink/50">
               <th className="px-6 py-3" scope="col">
-                Funcionário
+                Usuário
               </th>
               <th className="px-4 py-3" scope="col">
                 Perfil
