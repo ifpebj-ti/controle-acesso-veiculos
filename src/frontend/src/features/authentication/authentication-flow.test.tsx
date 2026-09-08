@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -179,32 +173,39 @@ describe("authentication flow", () => {
   });
 
   it("ends the in-memory session when the token reaches its expiration", async () => {
-    vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("Vigilante", 60),
-    });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
-    renderAuthenticationFlow();
-    fireEvent.change(screen.getByLabelText("E-mail:"), {
-      target: { value: "operator@example.test" },
-    });
-    fireEvent.change(screen.getByLabelText("Senha:"), {
-      target: { value: "test-only-password" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    try {
+      vi.spyOn(api, "post").mockResolvedValue({
+        data: sessionFor("Vigilante", 60_000),
+      });
 
-    expect(
-      await screen.findByText("operator@example.test — Vigilante"),
-    ).toBeInTheDocument();
+      renderAuthenticationFlow();
+      fireEvent.change(screen.getByLabelText("E-mail:"), {
+        target: { value: "operator@example.test" },
+      });
+      fireEvent.change(screen.getByLabelText("Senha:"), {
+        target: { value: "test-only-password" },
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+      });
 
-    await act(async () => {
-      await new Promise((resolve) => window.setTimeout(resolve, 80));
-    });
+      expect(
+        screen.getByText("operator@example.test — Vigilante"),
+      ).toBeInTheDocument();
 
-    await waitFor(() =>
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+
       expect(screen.getByRole("alert")).toHaveTextContent(
         "Sua sessão expirou. Entre novamente para continuar.",
-      ),
-    );
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("notifies the session when an authenticated request returns 401", async () => {
