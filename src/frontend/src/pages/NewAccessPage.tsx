@@ -28,33 +28,47 @@ const fieldNames: Record<string, keyof AccessEntryFormValues> = {
   observation: "observation",
 };
 
-function FieldError({ message }: { message?: string }) {
+const defaultValues: AccessEntryFormValues = {
+  categoryName: generalAccessCategories[0],
+  driverName: "",
+  objective: "",
+  observation: "",
+  plate: "",
+  vehicleType: "",
+};
+
+type SubmitIntent = "continue" | "review";
+
+function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
-  return <p className="mt-1.5 text-sm text-red-800">{message}</p>;
+  return (
+    <p className="mt-1.5 text-sm text-red-800" id={id}>
+      {message}
+    </p>
+  );
 }
 
 export function NewAccessPage() {
   const navigate = useNavigate();
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  const [pendingIntent, setPendingIntent] = useState<SubmitIntent | null>(null);
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
     register,
+    reset,
     setError,
+    setFocus,
   } = useForm<AccessEntryFormValues>({
-    defaultValues: {
-      categoryName: generalAccessCategories[0],
-      driverName: "",
-      objective: "",
-      observation: "",
-      plate: "",
-      vehicleType: "",
-    },
+    defaultValues,
     resolver: zodResolver(accessEntryFormSchema),
   });
 
-  async function submit(values: AccessEntryFormValues) {
+  async function submit(values: AccessEntryFormValues, intent: SubmitIntent) {
     setRequestError(null);
+    setSuccessNotice(null);
+    setPendingIntent(intent);
 
     try {
       await registerAccessEntry({
@@ -62,9 +76,18 @@ export function NewAccessPage() {
         observation: values.observation || undefined,
         vehicleType: values.vehicleType || undefined,
       });
-      navigate("/acessos/abertos", {
-        state: { notice: "Entrada registrada com sucesso." },
-      });
+      if (intent === "review") {
+        navigate("/acessos/abertos", {
+          state: { notice: "Entrada registrada com sucesso." },
+        });
+        return;
+      }
+
+      reset(defaultValues);
+      setSuccessNotice(
+        "Entrada registrada. O formulário está pronto para o próximo veículo.",
+      );
+      window.requestAnimationFrame(() => setFocus("plate"));
     } catch (error) {
       const validationErrors = getApiValidationErrors(error);
       let hasFieldError = false;
@@ -82,8 +105,24 @@ export function NewAccessPage() {
           ? "Revise os campos destacados e tente novamente."
           : description.message,
       );
+    } finally {
+      setPendingIntent(null);
     }
   }
+
+  function handleInvalidSubmission() {
+    setRequestError(null);
+    setSuccessNotice(null);
+  }
+
+  const submitAndContinue = handleSubmit(
+    (values) => submit(values, "continue"),
+    handleInvalidSubmission,
+  );
+  const submitAndReview = handleSubmit(
+    (values) => submit(values, "review"),
+    handleInvalidSubmission,
+  );
 
   return (
     <div>
@@ -92,6 +131,15 @@ export function NewAccessPage() {
         eyebrow="Operação da portaria"
         title="Registrar entrada"
       />
+
+      {successNotice && (
+        <div
+          className="mt-6 rounded-2xl border border-brand/30 bg-brand/10 p-4 text-sm font-semibold text-brand-dark"
+          role="status"
+        >
+          {successNotice}
+        </div>
+      )}
 
       {requestError && (
         <div
@@ -105,7 +153,7 @@ export function NewAccessPage() {
       <form
         className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]"
         noValidate
-        onSubmit={handleSubmit(submit)}
+        onSubmit={submitAndContinue}
       >
         <section className="overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_14px_40px_rgba(1,36,40,0.06)]">
           <div className="border-b border-ink/8 bg-[#B8C9A4]/25 px-5 py-5 sm:px-7">
@@ -127,7 +175,9 @@ export function NewAccessPage() {
                   Placa do veículo <span className="text-red-700">*</span>
                 </label>
                 <input
+                  aria-describedby={errors.plate ? "plate-error" : undefined}
                   aria-invalid={Boolean(errors.plate)}
+                  autoFocus
                   autoCapitalize="characters"
                   className={fieldClass}
                   id="plate"
@@ -135,7 +185,7 @@ export function NewAccessPage() {
                   placeholder="Ex.: DEM-1A23"
                   {...register("plate")}
                 />
-                <FieldError message={errors.plate?.message} />
+                <FieldError id="plate-error" message={errors.plate?.message} />
               </div>
 
               <div>
@@ -146,6 +196,9 @@ export function NewAccessPage() {
                   Nome do condutor <span className="text-red-700">*</span>
                 </label>
                 <input
+                  aria-describedby={
+                    errors.driverName ? "driverName-error" : undefined
+                  }
                   aria-invalid={Boolean(errors.driverName)}
                   autoComplete="off"
                   className={fieldClass}
@@ -154,7 +207,10 @@ export function NewAccessPage() {
                   placeholder="Ex.: Pessoa de demonstração"
                   {...register("driverName")}
                 />
-                <FieldError message={errors.driverName?.message} />
+                <FieldError
+                  id="driverName-error"
+                  message={errors.driverName?.message}
+                />
               </div>
 
               <div>
@@ -165,6 +221,9 @@ export function NewAccessPage() {
                   Categoria do acesso <span className="text-red-700">*</span>
                 </label>
                 <select
+                  aria-describedby={
+                    errors.categoryName ? "categoryName-error" : undefined
+                  }
                   aria-invalid={Boolean(errors.categoryName)}
                   className={fieldClass}
                   id="categoryName"
@@ -174,7 +233,10 @@ export function NewAccessPage() {
                     <option key={option}>{option}</option>
                   ))}
                 </select>
-                <FieldError message={errors.categoryName?.message} />
+                <FieldError
+                  id="categoryName-error"
+                  message={errors.categoryName?.message}
+                />
               </div>
 
               <div>
@@ -186,6 +248,9 @@ export function NewAccessPage() {
                   <span className="font-normal text-ink/50">(opcional)</span>
                 </label>
                 <input
+                  aria-describedby={
+                    errors.vehicleType ? "vehicleType-error" : undefined
+                  }
                   aria-invalid={Boolean(errors.vehicleType)}
                   className={fieldClass}
                   id="vehicleType"
@@ -193,7 +258,10 @@ export function NewAccessPage() {
                   placeholder="Ex.: Automóvel"
                   {...register("vehicleType")}
                 />
-                <FieldError message={errors.vehicleType?.message} />
+                <FieldError
+                  id="vehicleType-error"
+                  message={errors.vehicleType?.message}
+                />
               </div>
 
               <div className="md:col-span-2">
@@ -204,6 +272,9 @@ export function NewAccessPage() {
                   Objetivo do acesso <span className="text-red-700">*</span>
                 </label>
                 <textarea
+                  aria-describedby={
+                    errors.objective ? "objective-error" : undefined
+                  }
                   aria-invalid={Boolean(errors.objective)}
                   className={`${fieldClass} min-h-28 py-3`}
                   id="objective"
@@ -211,7 +282,10 @@ export function NewAccessPage() {
                   placeholder="Descreva de forma objetiva a finalidade da entrada."
                   {...register("objective")}
                 />
-                <FieldError message={errors.objective?.message} />
+                <FieldError
+                  id="objective-error"
+                  message={errors.objective?.message}
+                />
               </div>
 
               <div className="md:col-span-2">
@@ -223,6 +297,9 @@ export function NewAccessPage() {
                   <span className="font-normal text-ink/50">(opcional)</span>
                 </label>
                 <textarea
+                  aria-describedby={
+                    errors.observation ? "observation-error" : undefined
+                  }
                   aria-invalid={Boolean(errors.observation)}
                   className={`${fieldClass} min-h-24 py-3`}
                   id="observation"
@@ -230,11 +307,14 @@ export function NewAccessPage() {
                   placeholder="Inclua somente informação necessária para a operação."
                   {...register("observation")}
                 />
-                <FieldError message={errors.observation?.message} />
+                <FieldError
+                  id="observation-error"
+                  message={errors.observation?.message}
+                />
               </div>
             </div>
 
-            <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-6 sm:flex-row sm:justify-end">
+            <div className="flex flex-col gap-3 border-t border-ink/10 pt-6 sm:flex-row sm:flex-wrap sm:justify-end">
               <button
                 className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
                 disabled={isSubmitting}
@@ -248,7 +328,19 @@ export function NewAccessPage() {
                 disabled={isSubmitting}
                 type="submit"
               >
-                {isSubmitting ? "Registrando…" : "Registrar entrada"}
+                {isSubmitting && pendingIntent === "continue"
+                  ? "Registrando…"
+                  : "Registrar e continuar"}
+              </button>
+              <button
+                className="min-h-12 rounded-xl border border-brand-dark px-5 font-bold text-brand-dark hover:bg-brand/10 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25 disabled:cursor-wait disabled:opacity-65"
+                disabled={isSubmitting}
+                onClick={() => void submitAndReview()}
+                type="button"
+              >
+                {isSubmitting && pendingIntent === "review"
+                  ? "Registrando…"
+                  : "Registrar e ver acessos"}
               </button>
             </div>
           </div>
