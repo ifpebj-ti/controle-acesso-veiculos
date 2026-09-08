@@ -90,11 +90,11 @@ npm run build
 Set-Location ../..
 ```
 
-Resultado esperado: formatação e builds sem erros, 176 testes backend, 129
-testes frontend em 21 arquivos e PostgreSQL saudável. Os testes de integração
-exigem acesso ao Docker porque usam PostgreSQL real e descartável via
-Testcontainers. Registre a contagem efetivamente observada se a `main` evoluir;
-não copie estes números como evidência sem executar os comandos.
+Resultado esperado: formatação, builds e todas as suítes sem erros, além do
+PostgreSQL saudável. Os testes de integração exigem acesso ao Docker porque usam
+PostgreSQL real e descartável via Testcontainers. Registre no relatório a
+contagem efetivamente observada em cada suíte e o SHA demonstrado; não copie uma
+contagem histórica como evidência sem executar os comandos.
 
 ### 3.3. Migrations e administrador inicial
 
