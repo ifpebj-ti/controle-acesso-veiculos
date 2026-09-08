@@ -13,8 +13,8 @@ o catálogo de motoristas lista, autoriza e desativa autorizações pela API. A
 A área de utilizações institucionais registra saídas e retornos e consulta usos
 abertos e histórico conforme o perfil autenticado.
 A visão geral consulta o resumo operacional diário agregado da API. A área de
-administração consulta, cria, desativa e reativa contas pela API; a auditoria
-administrativa ainda não possui tela integrada.
+administração consulta, cria, desativa e reativa contas pela API e também
+consulta a trilha de auditoria em uma área separada da mesma tela.
 
 Fluxo sugerido para validação local:
 
@@ -24,8 +24,8 @@ Fluxo sugerido para validação local:
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
 5. como Transporte, consultar e manter os catálogos ativos da frota e de
    motoristas e manter as autorizações de eventos;
-6. como Administrador, filtrar o histórico e gerenciar contas fictícias em
-   `/administracao`.
+6. como Administrador, filtrar o histórico, gerenciar contas fictícias e
+   consultar a trilha de auditoria em `/administracao`.
 
 Porteiro e Vigilante possuem a mesma navegação operacional. O Setor de Transporte
 mantém frota e eventos. O Administrador gerencia contas, frota e eventos e possui
@@ -130,6 +130,9 @@ O resumo operacional possui cobertura de contrato, perfis, seleção de data,
 falha com nova tentativa e resposta diária sem movimentações.
 A administração de contas possui cobertura de contrato, filtros, criação segura,
 mudanças de estado, conflitos, falha de recarga e acessibilidade.
+A auditoria administrativa possui cobertura de contrato, restrição por perfil,
+filtros locais e da API, paginação, estados vazio e indisponível, nova tentativa
+e renderização segura de detalhes e estados JSON.
 
 As auditorias com axe-core abrangem login, layout autenticado, registro de
 entrada, acessos em aberto e histórico. Violações classificadas como sérias ou
@@ -203,6 +206,7 @@ src/
 ├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── features/
 │   ├── access-records/ # Contratos, validação e serviços do fluxo geral.
+│   ├── audit-trail/ # Consulta administrativa e segura da trilha de auditoria.
 │   ├── authentication/ # Formulário, service, sessão e tipos de autenticação.
 │   ├── event-authorizations/ # Consulta e manutenção de autorizações de eventos.
 │   ├── institutional-drivers/ # Contratos, formulário e catálogo de motoristas.
@@ -238,7 +242,6 @@ src/
 - refresh token ou persistência de sessão;
 - logout, revogação ou renovação no servidor;
 - recuperação e redefinição de senha;
-- integração da consulta administrativa da auditoria;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
 - garantia de autorização baseada somente na interface;
