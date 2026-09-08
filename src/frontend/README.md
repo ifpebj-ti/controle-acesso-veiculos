@@ -182,9 +182,9 @@ No ambiente Docker, o Nginx aplica o mesmo contrato e encaminha `/api/*` para o
 container backend. Essa estratégia evita expor uma segunda origem ao navegador e
 dispensa uma política CORS ampla no MVP.
 
-Autenticação, movimentações gerais e catálogos institucionais utilizam o cliente
-HTTP centralizado. Não inclua tokens, senhas ou credenciais em variáveis expostas
-ao frontend.
+Autenticação, movimentações gerais, utilizações da frota, autorizações de eventos
+e catálogos institucionais utilizam o cliente HTTP centralizado. Não inclua
+tokens, senhas ou credenciais em variáveis expostas ao frontend.
 
 ## Estrutura de diretórios
 
@@ -199,6 +199,7 @@ src/
 │   ├── authentication/ # Formulário, service, sessão e tipos de autenticação.
 │   ├── event-authorizations/ # Consulta e manutenção de autorizações de eventos.
 │   ├── institutional-drivers/ # Contratos, formulário e catálogo de motoristas.
+│   ├── institutional-usages/ # Saídas, retornos e histórico da frota institucional.
 │   └── institutional-vehicles/ # Contratos, formulário e serviços da frota.
 ├── pages/            # Componentes associados às páginas.
 ├── routes/           # Configuração central das rotas.
@@ -228,7 +229,7 @@ src/
 - refresh token ou persistência de sessão;
 - logout, revogação ou renovação no servidor;
 - recuperação e redefinição de senha;
-- integração de utilizações institucionais e administração;
+- integração da administração de usuários e permissões;
 - integração da visão geral ao resumo operacional da API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;

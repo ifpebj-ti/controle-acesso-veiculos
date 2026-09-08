@@ -7,6 +7,7 @@ import { EventsPage } from "../pages/EventsPage";
 import { FleetPage } from "../pages/FleetPage";
 import { HistoryPage } from "../pages/HistoryPage";
 import { InstitutionalDriversPage } from "../pages/InstitutionalDriversPage";
+import { InstitutionalUsagesPage } from "../pages/InstitutionalUsagesPage";
 import { LoginPage } from "../pages/LoginPage";
 import { NewAccessPage } from "../pages/NewAccessPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
@@ -50,6 +51,10 @@ export const router = createBrowserRouter([
             element: <ProfileRoute allowedProfiles={allProfiles} />,
             children: [
               { path: "/acessos/historico", element: <HistoryPage /> },
+              {
+                path: "/utilizacoes-institucionais",
+                element: <InstitutionalUsagesPage />,
+              },
               { path: "/frota", element: <FleetPage /> },
               {
                 path: "/motoristas-institucionais",
