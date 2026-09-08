@@ -1,11 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { describeApiError } from "../../../services/api-errors";
+import {
+  describeApiError,
+  getApiValidationErrors,
+} from "../../../services/api-errors";
 import { searchInstitutionalUsageHistory } from "../services/institutionalUsagesService";
 import type {
   InstitutionalUsageHistoryFilters,
+  InstitutionalUsageHistoryFilterErrors,
   InstitutionalVehicleUsagePage,
 } from "../types";
+
+const historyFilterErrorKeys = [
+  "driverId",
+  "period",
+  "plate",
+  "vehicleId",
+  "vehicleIdentification",
+] as const;
+
+function extractHistoryFilterErrors(error: unknown) {
+  const validationErrors = getApiValidationErrors(error);
+  return Object.fromEntries(
+    historyFilterErrorKeys.flatMap((key) =>
+      validationErrors[key] ? [[key, validationErrors[key]]] : [],
+    ),
+  ) as InstitutionalUsageHistoryFilterErrors;
+}
 
 function toLocalInput(date: Date) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
@@ -60,24 +81,37 @@ export function useInstitutionalUsageHistory(enabled: boolean) {
   >(enabled ? "loading" : "idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filterError, setFilterError] = useState<string | null>(null);
+  const [serverFilterErrors, setServerFilterErrors] =
+    useState<InstitutionalUsageHistoryFilterErrors>({});
 
   const load = useCallback(
     async (filters: InstitutionalUsageHistoryFilters) => {
       if (!enabled) return;
       const currentRequest = ++requestId.current;
       setStatus("loading");
-      setPage(null);
       setErrorMessage(null);
+      setServerFilterErrors({});
       try {
         const result = await searchInstitutionalUsageHistory(
           asRequestFilters(filters),
         );
         if (requestId.current !== currentRequest) return;
         setPage(result);
+        setServerFilterErrors({});
         setStatus("ready");
       } catch (error) {
         if (requestId.current !== currentRequest) return;
         const description = describeApiError(error);
+        const fieldErrors =
+          description.kind === "validation"
+            ? extractHistoryFilterErrors(error)
+            : {};
+        if (Object.keys(fieldErrors).length > 0) {
+          setServerFilterErrors(fieldErrors);
+          setStatus("ready");
+          return;
+        }
+        setPage(null);
         setStatus(description.kind === "access-denied" ? "denied" : "error");
         setErrorMessage(description.message);
       }
@@ -92,11 +126,22 @@ export function useInstitutionalUsageHistory(enabled: boolean) {
       .then((result) => {
         if (requestId.current !== currentRequest) return;
         setPage(result);
+        setServerFilterErrors({});
         setStatus("ready");
       })
       .catch((error: unknown) => {
         if (requestId.current !== currentRequest) return;
         const description = describeApiError(error);
+        const fieldErrors =
+          description.kind === "validation"
+            ? extractHistoryFilterErrors(error)
+            : {};
+        if (Object.keys(fieldErrors).length > 0) {
+          setServerFilterErrors(fieldErrors);
+          setStatus("ready");
+          return;
+        }
+        setPage(null);
         setStatus(description.kind === "access-denied" ? "denied" : "error");
         setErrorMessage(description.message);
       });
@@ -107,6 +152,19 @@ export function useInstitutionalUsageHistory(enabled: boolean) {
 
   function updateDraft(next: InstitutionalUsageHistoryFilters) {
     setFilterError(null);
+    setServerFilterErrors((current) => {
+      const remaining = { ...current };
+      if (next.driverId !== draft.driverId) delete remaining.driverId;
+      if (next.plate !== draft.plate) delete remaining.plate;
+      if (next.vehicleId !== draft.vehicleId) delete remaining.vehicleId;
+      if (next.vehicleIdentification !== draft.vehicleIdentification) {
+        delete remaining.vehicleIdentification;
+      }
+      if (next.fromUtc !== draft.fromUtc || next.toUtc !== draft.toUtc) {
+        delete remaining.period;
+      }
+      return remaining;
+    });
     setDraft(next);
   }
 
@@ -119,6 +177,7 @@ export function useInstitutionalUsageHistory(enabled: boolean) {
     }
     const next = { ...draft, page: 1 };
     setFilterError(null);
+    setServerFilterErrors({});
     setDraft(next);
     setApplied(next);
     void load(next);
@@ -127,6 +186,7 @@ export function useInstitutionalUsageHistory(enabled: boolean) {
   function clearFilters() {
     const next = initialFilters();
     setFilterError(null);
+    setServerFilterErrors({});
     setDraft(next);
     setApplied(next);
     void load(next);
@@ -148,6 +208,7 @@ export function useInstitutionalUsageHistory(enabled: boolean) {
     goToPage,
     page,
     retry: () => void load(applied),
+    serverFilterErrors,
     setDraft: updateDraft,
     status,
   };

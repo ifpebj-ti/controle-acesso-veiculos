@@ -167,6 +167,7 @@ export function InstitutionalUsagesPage() {
           onRetry={history.retry}
           page={history.page}
           periodError={history.filterError}
+          serverErrors={history.serverFilterErrors}
           status={history.status}
           vehicles={catalogs.vehicles}
         />

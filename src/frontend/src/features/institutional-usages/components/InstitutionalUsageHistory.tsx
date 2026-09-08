@@ -3,6 +3,7 @@ import type { InstitutionalVehicle } from "../../institutional-vehicles";
 import { Icon } from "../../../components/ui/Icon";
 import type {
   InstitutionalUsageHistoryFilters,
+  InstitutionalUsageHistoryFilterErrors,
   InstitutionalVehicleUsage,
   InstitutionalVehicleUsagePage,
 } from "../types";
@@ -36,6 +37,7 @@ interface InstitutionalUsageHistoryProps {
   onRetry: () => void;
   page: InstitutionalVehicleUsagePage | null;
   periodError: string | null;
+  serverErrors: InstitutionalUsageHistoryFilterErrors;
   status: "idle" | "loading" | "ready" | "error" | "denied";
   vehicles: InstitutionalVehicle[];
 }
@@ -52,11 +54,13 @@ export function InstitutionalUsageHistory({
   onRetry,
   page,
   periodError,
+  serverErrors,
   status,
   vehicles,
 }: InstitutionalUsageHistoryProps) {
   const disabled = status === "loading";
-  const periodDescription = periodError
+  const periodMessage = periodError ?? serverErrors.period;
+  const periodDescription = periodMessage
     ? "usage-history-period-hint usage-history-period-error"
     : "usage-history-period-hint";
 
@@ -91,7 +95,7 @@ export function InstitutionalUsageHistory({
           </label>
           <input
             aria-describedby={periodDescription}
-            aria-invalid={Boolean(periodError)}
+            aria-invalid={Boolean(periodMessage)}
             className={fieldClass}
             disabled={disabled}
             id="usage-history-from"
@@ -108,7 +112,7 @@ export function InstitutionalUsageHistory({
           </label>
           <input
             aria-describedby={periodDescription}
-            aria-invalid={Boolean(periodError)}
+            aria-invalid={Boolean(periodMessage)}
             className={fieldClass}
             disabled={disabled}
             id="usage-history-to"
@@ -127,6 +131,10 @@ export function InstitutionalUsageHistory({
             Placa
           </label>
           <input
+            aria-describedby={
+              serverErrors.plate ? "usage-history-plate-error" : undefined
+            }
+            aria-invalid={Boolean(serverErrors.plate)}
             className={fieldClass}
             disabled={disabled}
             id="usage-history-plate"
@@ -137,6 +145,15 @@ export function InstitutionalUsageHistory({
             placeholder="Ex.: TST1A23"
             value={draft.plate}
           />
+          {serverErrors.plate && (
+            <p
+              className="mt-1.5 text-sm text-red-800"
+              id="usage-history-plate-error"
+              role="alert"
+            >
+              {serverErrors.plate}
+            </p>
+          )}
         </div>
         <div>
           <label
@@ -146,6 +163,12 @@ export function InstitutionalUsageHistory({
             Identificação da frota
           </label>
           <input
+            aria-describedby={
+              serverErrors.vehicleIdentification
+                ? "usage-history-identification-error"
+                : undefined
+            }
+            aria-invalid={Boolean(serverErrors.vehicleIdentification)}
             className={fieldClass}
             disabled={disabled}
             id="usage-history-identification"
@@ -159,6 +182,15 @@ export function InstitutionalUsageHistory({
             placeholder="Ex.: FROTA-TESTE-01"
             value={draft.vehicleIdentification}
           />
+          {serverErrors.vehicleIdentification && (
+            <p
+              className="mt-1.5 text-sm text-red-800"
+              id="usage-history-identification-error"
+              role="alert"
+            >
+              {serverErrors.vehicleIdentification}
+            </p>
+          )}
         </div>
         <div>
           <label
@@ -168,6 +200,10 @@ export function InstitutionalUsageHistory({
             Veículo ativo
           </label>
           <select
+            aria-describedby={
+              serverErrors.vehicleId ? "usage-history-vehicle-error" : undefined
+            }
+            aria-invalid={Boolean(serverErrors.vehicleId)}
             className={fieldClass}
             disabled={disabled || !catalogsReady}
             id="usage-history-vehicle"
@@ -188,6 +224,15 @@ export function InstitutionalUsageHistory({
               </option>
             ))}
           </select>
+          {serverErrors.vehicleId && (
+            <p
+              className="mt-1.5 text-sm text-red-800"
+              id="usage-history-vehicle-error"
+              role="alert"
+            >
+              {serverErrors.vehicleId}
+            </p>
+          )}
         </div>
         <div>
           <label
@@ -197,6 +242,10 @@ export function InstitutionalUsageHistory({
             Motorista ativo
           </label>
           <select
+            aria-describedby={
+              serverErrors.driverId ? "usage-history-driver-error" : undefined
+            }
+            aria-invalid={Boolean(serverErrors.driverId)}
             className={fieldClass}
             disabled={disabled || !catalogsReady}
             id="usage-history-driver"
@@ -217,6 +266,15 @@ export function InstitutionalUsageHistory({
               </option>
             ))}
           </select>
+          {serverErrors.driverId && (
+            <p
+              className="mt-1.5 text-sm text-red-800"
+              id="usage-history-driver-error"
+              role="alert"
+            >
+              {serverErrors.driverId}
+            </p>
+          )}
         </div>
         <div className="flex items-end gap-2 sm:col-span-2">
           <button
@@ -241,13 +299,13 @@ export function InstitutionalUsageHistory({
         >
           Informe data e hora locais em um intervalo máximo de 366 dias.
         </p>
-        {periodError && (
+        {periodMessage && (
           <p
             className="text-sm font-semibold text-red-800 sm:col-span-2 xl:col-span-4"
             id="usage-history-period-error"
             role="alert"
           >
-            {periodError}
+            {periodMessage}
           </p>
         )}
       </form>

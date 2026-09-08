@@ -46,3 +46,10 @@ export interface InstitutionalUsageHistoryFilters {
 }
 
 export type InstitutionalUsageServerErrors = Record<string, string>;
+
+export type InstitutionalUsageHistoryFilterErrors = Partial<
+  Record<
+    "driverId" | "period" | "plate" | "vehicleId" | "vehicleIdentification",
+    string
+  >
+>;
