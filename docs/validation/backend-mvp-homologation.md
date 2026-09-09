@@ -215,11 +215,32 @@ perfis exigida pela Issue #162:
 - uma sessão técnica com a conta fictícia de Porteiro validou os dois caminhos
   de registro, uma falha controlada, navegação por teclado e as larguras
   390 × 844 e 1440 × 1000, sem overflow horizontal;
+- uma sessão técnica com a conta fictícia de Vigilante confirmou registro e
+  encerramento de acesso geral, consulta do histórico, permissões de consulta
+  sobre os cadastros institucionais e o ciclo de saída e retorno de veículo
+  institucional. Os registros usados foram exclusivamente fictícios;
+- a conta fictícia do Setor de Transporte foi verificada em navegador Brave
+  controlado. Os históricos geral e institucional e os catálogos de frota,
+  motoristas e eventos responderam com sucesso; os formulários de manutenção
+  foram abertos e cancelados sem mutações. O menu não expôs entrada, acessos em
+  aberto ou administração, e a tentativa de abrir diretamente a rota de nova
+  entrada resultou em acesso negado;
+- a conta fictícia de Administrador carregou quatro contas e permitiu filtrar a
+  listagem. Ao alternar para a trilha de auditoria e voltar, filtro e resultado
+  permaneceram coerentes sem nova consulta inicial. O formulário exibiu a
+  terminologia neutra e o campo de senha protegido e foi cancelado sem envio. A
+  rota operacional excepcional permaneceu acessível diretamente, embora não
+  apareça no menu rotineiro, conforme o contrato atual de autorização;
+- nas verificações controladas de Transporte e Administrador, somente consultas
+  `GET` foram observadas e todas responderam com HTTP 200; nenhuma mutação foi
+  enviada;
 - a suíte da `main` possui 134 testes frontend em 21 arquivos.
 
-Ainda faltam representantes adequados de Porteiro, Vigilante, Setor de
-Transporte e Administrador, além de um volume de pico combinado com a Portaria e
-a Vigilância. Por isso, o resultado permanece classificado como preparação
+Ainda faltam sessões com representantes institucionais adequados dos quatro
+perfis, além de um volume de pico combinado com a Portaria e a Vigilância. As
+execuções acima foram realizadas como ensaio técnico com contas fictícias pela
+equipe do projeto; não comprovam compreensão, utilidade ou aprovação pelos
+futuros usuários. Por isso, o resultado permanece classificado como preparação
 técnica, e não como homologação ou autorização para produção.
 
 ## 4. Ordem da demonstração
