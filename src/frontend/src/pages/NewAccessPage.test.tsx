@@ -125,14 +125,17 @@ describe("NewAccessPage", () => {
       screen.getByLabelText(/Objetivo do acesso/),
       "Atendimento fictício",
     );
-    plateField.focus();
+    const consecutiveButton = screen.getByRole("button", {
+      name: "Registrar e continuar",
+    });
+    consecutiveButton.focus();
     await user.keyboard("{Enter}");
 
     expect(await screen.findByText(/formulário está pronto/)).toHaveAttribute(
       "role",
       "status",
     );
-    expect(plateField).toHaveFocus();
+    await waitFor(() => expect(plateField).toHaveFocus());
     expect(
       screen.getByRole("heading", { name: "Registrar entrada" }),
     ).toBeInTheDocument();

@@ -59,7 +59,6 @@ export function NewAccessPage() {
     register,
     reset,
     setError,
-    setFocus,
   } = useForm<AccessEntryFormValues>({
     defaultValues,
     resolver: zodResolver(accessEntryFormSchema),
@@ -87,7 +86,9 @@ export function NewAccessPage() {
       setSuccessNotice(
         "Entrada registrada. O formulário está pronto para o próximo veículo.",
       );
-      window.requestAnimationFrame(() => setFocus("plate"));
+      window.requestAnimationFrame(() =>
+        document.getElementById("plate")?.focus(),
+      );
     } catch (error) {
       const validationErrors = getApiValidationErrors(error);
       let hasFieldError = false;
