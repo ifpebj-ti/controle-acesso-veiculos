@@ -2,7 +2,7 @@
 
 **Status:** roteiro técnico preliminar para validação com usuários<br>
 **Escopo:** frontend, backend, PostgreSQL, infraestrutura local, UX e QA<br>
-**Rastreabilidade:** Issues #88, #108, #112 e #162; PR #164
+**Rastreabilidade:** Issues #88, #108, #112, #162 e #167; PRs #164, #168 e #170
 
 Este documento transforma as funcionalidades já integradas à `main` em uma
 sessão reproduzível de validação. Ele não comprova aceitação institucional e não
@@ -197,6 +197,31 @@ Se o Docker, a API, o banco ou o frontend não estiverem disponíveis, interromp
 a sessão e registre uma falha de ambiente. Não peça ao participante para avaliar
 uma tela parcialmente carregada como se fosse o produto funcionando.
 
+### 3.7. Ensaio técnico local registrado em 9 de setembro de 2026
+
+Este ensaio preparou a sessão, mas não substitui a participação dos quatro
+perfis exigida pela Issue #162:
+
+- a `main` contém o merge `ba423b3` do PR #168 e mantém o PR #170 incorporado;
+- PostgreSQL ficou saudável, as 12 migrations foram aplicadas, a API respondeu
+  em `http://localhost:8081/health/ready` e o frontend em
+  `http://localhost:3000` no ambiente Compose local configurado;
+- o Administrador inicial e as contas fictícias de Porteiro, Vigilante e Setor
+  de Transporte foram provisionados por entrada protegida, sem registrar
+  credenciais;
+- o inicializador criou o conjunto fictício esperado. A repetição manual para
+  comprovar idempotência não foi executada; essa propriedade continua coberta
+  pelo workflow `CI - Demo data`;
+- uma sessão técnica com a conta fictícia de Porteiro validou os dois caminhos
+  de registro, uma falha controlada, navegação por teclado e as larguras
+  390 × 844 e 1440 × 1000, sem overflow horizontal;
+- a suíte da `main` possui 134 testes frontend em 21 arquivos.
+
+Ainda faltam representantes adequados de Porteiro, Vigilante, Setor de
+Transporte e Administrador, além de um volume de pico combinado com a Portaria e
+a Vigilância. Por isso, o resultado permanece classificado como preparação
+técnica, e não como homologação ou autorização para produção.
+
 ## 4. Ordem da demonstração
 
 Antes de iniciar, substitua na cópia `*.local.http`:
@@ -224,16 +249,23 @@ O Administrador cria contas fictícias para `Porteiro`, `Vigilante` e
 
 ### Cenário 2 — acesso geral e troca de turno
 
-| Campo    | Valor                                                                                                                                                  |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Perfil   | Porteiro; depois Vigilante                                                                                                                             |
-| Ação     | com cada perfil, registrar entrada, listar abertos, consultar histórico, registrar saída e corrigir descrição com justificativa                        |
-| Esperado | horário e ator definidos no servidor; placa normalizada; um único acesso aberto; saída preserva autoria; correção não altera placa, pessoa ou horários |
-| Pergunta | os campos e a lista de abertos são suficientes para a troca de turno?                                                                                  |
+| Campo    | Valor                                                                                                                                                                                |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Perfil   | Porteiro; depois Vigilante                                                                                                                                                           |
+| Ação     | com cada perfil, registrar entradas consecutivas, usar também “Registrar e ver acessos”, listar abertos, consultar histórico, registrar saída e corrigir descrição com justificativa |
+| Esperado | horário e ator definidos no servidor; placa normalizada; um único acesso aberto; saída preserva autoria; correção não altera placa, pessoa ou horários                               |
+| Pergunta | os campos e a lista de abertos são suficientes para a troca de turno?                                                                                                                |
 
 O Vigilante usa a própria conta ao assumir a portaria e possui as mesmas
 permissões operacionais do Porteiro. Não simule transferência de autoria do
 registro original.
+
+Durante a sequência de pico, confirme que “Registrar e continuar” limpa somente
+uma entrada concluída, anuncia o sucesso e devolve o foco à placa. Em seguida,
+use “Registrar e ver acessos” para comprovar a navegação alternativa. Uma falha
+de validação ou da API deve preservar os valores para correção e não pode manter
+uma confirmação anterior. Registre tempo, ajuda, erros e interrupções como
+evidência diagnóstica, sem impor uma meta arbitrária.
 
 ### Cenário 3 — fronteira do Setor de Transporte
 
@@ -342,6 +374,7 @@ O roteiro completo e o registro das decisões ficam no
 
 - [ ] Consegue autenticar com conta individual.
 - [ ] Entende os campos obrigatórios da entrada.
+- [ ] Usa os dois caminhos de conclusão e consegue iniciar entradas consecutivas.
 - [ ] Localiza registros abertos sem consultar papel.
 - [ ] Registra saída sem reescrever o registro.
 - [ ] Corrige somente dados descritivos, com justificativa e auditoria.
