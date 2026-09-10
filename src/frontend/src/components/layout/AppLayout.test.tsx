@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { SessionContext } from "../../features/authentication/session/SessionContext";
 import type { ProfileName } from "../../features/authentication/types";
+import { RouteTransitionManager } from "../../routes/RouteTransitionManager";
 import { expectNoSeriousAccessibilityViolations } from "../../test/accessibility";
 import { AppLayout } from "./AppLayout";
 
@@ -38,6 +39,42 @@ function renderLayout(profileName: ProfileName = "Porteiro") {
   );
 
   return view;
+}
+
+function renderNavigableLayout() {
+  return render(
+    <SessionContext.Provider
+      value={{
+        expiresAtUtc: "2026-09-03T23:59:59.000Z",
+        login: vi.fn(),
+        logout: vi.fn(),
+        sessionEndReason: null,
+        status: "authenticated",
+        user: {
+          email: "operador@example.test",
+          id: 42,
+          profileName: "Porteiro",
+        },
+      }}
+    >
+      <MemoryRouter initialEntries={["/visao-geral"]}>
+        <Routes>
+          <Route element={<RouteTransitionManager />}>
+            <Route element={<AppLayout />}>
+              <Route
+                element={<h1>Visão operacional fictícia</h1>}
+                path="/visao-geral"
+              />
+              <Route
+                element={<h1>Histórico fictício</h1>}
+                path="/acessos/historico"
+              />
+            </Route>
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </SessionContext.Provider>,
+  );
 }
 
 describe("AppLayout", () => {
@@ -97,6 +134,38 @@ describe("AppLayout", () => {
     expect(
       within(dialog).queryByRole("link", { name: "Usuários e permissões" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("preserves the skip link and moves focus after mobile menu navigation", async () => {
+    const user = userEvent.setup();
+    renderNavigableLayout();
+    const initialHeading = screen.getByRole("heading", {
+      name: "Visão operacional fictícia",
+    });
+
+    await waitFor(() => expect(initialHeading).toHaveFocus());
+    expect(
+      screen.getByRole("link", { name: "Ir para o conteúdo" }),
+    ).toHaveAttribute("href", "#conteudo-principal");
+    expect(document.querySelector("#conteudo-principal")).toHaveAttribute(
+      "tabindex",
+      "-1",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Abrir menu" }));
+    const dialog = screen.getByRole("dialog", { name: "Menu principal" });
+    await user.click(within(dialog).getByRole("link", { name: "Histórico" }));
+
+    const destinationHeading = screen.getByRole("heading", {
+      name: "Histórico fictício",
+    });
+    await waitFor(() => expect(destinationHeading).toHaveFocus());
+    expect(
+      screen.queryByRole("dialog", { name: "Menu principal" }),
+    ).not.toBeInTheDocument();
+    expect(document.title).toBe(
+      "Histórico de acessos | Controle de Acesso de Veículos",
+    );
   });
 
   it("has no serious automated accessibility violations", async () => {
