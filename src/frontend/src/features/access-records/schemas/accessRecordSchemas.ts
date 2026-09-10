@@ -30,6 +30,12 @@ export const pagedAccessRecordsSchema = z.object({
 });
 
 export const accessEntryFormSchema = z.object({
+  eventAuthorizationId: z
+    .string()
+    .refine(
+      (value) => value === "" || /^[1-9]\d*$/.test(value),
+      "Selecione uma autorização de evento válida.",
+    ),
   plate: z
     .string()
     .trim()

@@ -15,6 +15,7 @@ export interface RegisterAccessEntryInput {
   objective: string;
   vehicleType?: string;
   observation?: string;
+  eventAuthorizationId?: number;
 }
 
 export interface AccessHistoryFilters {
