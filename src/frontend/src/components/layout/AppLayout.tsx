@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import {
@@ -242,6 +242,19 @@ export function AppLayout() {
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const menuCloseRef = useRef<HTMLButtonElement>(null);
 
+  function skipToPageContent(event: MouseEvent<HTMLAnchorElement>) {
+    const pageHeading = document.querySelector<HTMLElement>(
+      "#conteudo-principal h1",
+    );
+
+    if (!pageHeading) return;
+
+    event.preventDefault();
+    pageHeading.tabIndex = -1;
+    pageHeading.dataset.routeFocusTarget = "";
+    pageHeading.focus();
+  }
+
   useEffect(() => {
     if (!menuOpen) return;
 
@@ -294,6 +307,7 @@ export function AppLayout() {
       <a
         className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform focus:translate-y-0"
         href="#conteudo-principal"
+        onClick={skipToPageContent}
       >
         Ir para o conteúdo
       </a>

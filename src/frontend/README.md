@@ -131,6 +131,23 @@ Alternativas avaliadas:
 
 ## Testes e acessibilidade
 
+### Transições de rota
+
+Os títulos das páginas e as permissões necessárias para identificar um acesso
+negado ficam centralizados em `src/routes/routeMetadata.ts`. O componente
+`RouteTransitionManager` reage somente a mudanças de caminho, atualiza o título
+do documento e move o foco para o alvo definido pela rota. O login usa o campo
+de e-mail para permitir o início imediato da autenticação; as demais telas usam
+o primeiro `h1` dentro do conteúdo principal. Esse título recebe
+`tabIndex="-1"` programaticamente, portanto não entra na sequência normal de Tab.
+
+Novas rotas devem receber um título descritivo no mapa e renderizar exatamente
+um `h1` dentro de `main`. Filtros, paginação, retry, abertura de formulários e
+outras atualizações internas não mudam o caminho e, por isso, não deslocam o
+foco. O mecanismo não cria uma região `aria-live`; o novo contexto é comunicado
+pelo título do documento e pelo foco no cabeçalho, preservando o skip link e a
+gestão de foco do menu móvel.
+
 A suíte usa Vitest com JSDOM e Testing Library. Os testes consultam elementos por
 papel e nome acessível e cobrem autenticação, restrição visual por perfil,
 movimentações gerais, estados de carregamento, vazio, falha e acesso negado.

@@ -148,6 +148,36 @@ describe("HistoryPage", () => {
     );
   });
 
+  it("keeps filter submission focus while the request is pending", async () => {
+    let resolveRequest: ((value: PagedAccessRecords) => void) | undefined;
+    const pendingRequest = new Promise<PagedAccessRecords>((resolve) => {
+      resolveRequest = resolve;
+    });
+    vi.mocked(searchAccessHistory)
+      .mockResolvedValueOnce(pageResult([]))
+      .mockReturnValueOnce(pendingRequest);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Nenhum registro encontrado");
+
+    const applyButton = screen.getByRole("button", {
+      name: "Aplicar filtros",
+    });
+    await user.click(applyButton);
+
+    expect(applyButton).toHaveFocus();
+    expect(applyButton).toHaveAttribute("aria-disabled", "true");
+    expect(applyButton).not.toBeDisabled();
+    await user.click(applyButton);
+    expect(searchAccessHistory).toHaveBeenCalledTimes(2);
+
+    resolveRequest?.(pageResult([]));
+    await waitFor(() =>
+      expect(applyButton).toHaveAttribute("aria-disabled", "false"),
+    );
+    expect(applyButton).toHaveFocus();
+  });
+
   it("requests the selected server-side page", async () => {
     vi.mocked(searchAccessHistory)
       .mockResolvedValueOnce(pageResult([record], 1, 2))
