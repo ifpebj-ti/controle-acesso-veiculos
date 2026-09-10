@@ -144,13 +144,17 @@ describe("AppLayout", () => {
     });
 
     await waitFor(() => expect(initialHeading).toHaveFocus());
-    expect(
-      screen.getByRole("link", { name: "Ir para o conteúdo" }),
-    ).toHaveAttribute("href", "#conteudo-principal");
+    const skipLink = screen.getByRole("link", {
+      name: "Ir para o conteúdo",
+    });
+    expect(skipLink).toHaveAttribute("href", "#conteudo-principal");
     expect(document.querySelector("#conteudo-principal")).toHaveAttribute(
       "tabindex",
       "-1",
     );
+
+    await user.click(skipLink);
+    expect(initialHeading).toHaveFocus();
 
     await user.click(screen.getByRole("button", { name: "Abrir menu" }));
     const dialog = screen.getByRole("dialog", { name: "Menu principal" });
