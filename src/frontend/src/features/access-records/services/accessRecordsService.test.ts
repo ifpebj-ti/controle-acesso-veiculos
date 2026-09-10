@@ -51,6 +51,36 @@ describe("accessRecordsService", () => {
     expect(api.post).toHaveBeenNthCalledWith(2, "/access-records/10/exit");
   });
 
+  it("forwards an explicitly selected event authorization", async () => {
+    vi.mocked(api.post).mockResolvedValue({
+      data: {
+        ...record,
+        eventAuthorizationId: 7,
+        eventAuthorizationName: "Evento Fictício",
+        eventVehicleRuleId: 9,
+      },
+    });
+
+    const result = await registerAccessEntry({
+      categoryName: "Visitante",
+      driverName: "Pessoa fictícia",
+      eventAuthorizationId: 7,
+      objective: "Evento fictício",
+      plate: "EVT-1A23",
+      vehicleType: "Automóvel",
+    });
+
+    expect(api.post).toHaveBeenCalledWith("/access-records/entries", {
+      categoryName: "Visitante",
+      driverName: "Pessoa fictícia",
+      eventAuthorizationId: 7,
+      objective: "Evento fictício",
+      plate: "EVT-1A23",
+      vehicleType: "Automóvel",
+    });
+    expect(result.eventAuthorizationName).toBe("Evento Fictício");
+  });
+
   it("passes only supported filters and pagination to history", async () => {
     vi.mocked(api.get).mockResolvedValue({
       data: {
