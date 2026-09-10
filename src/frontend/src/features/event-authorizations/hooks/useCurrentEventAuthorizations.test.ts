@@ -79,6 +79,27 @@ describe("useCurrentEventAuthorizations", () => {
     expect(Date.parse(filters.fromUtc)).toBeLessThan(Date.parse(filters.toUtc));
   });
 
+  it("loads every page of current authorizations", async () => {
+    vi.mocked(searchEventAuthorizations)
+      .mockResolvedValueOnce({
+        ...page([currentEvent]),
+        totalCount: 2,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce(
+        page([{ ...currentEvent, id: 8, name: "Segundo Evento Fictício" }]),
+      );
+
+    const { result } = renderHook(() => useCurrentEventAuthorizations(true));
+
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.events).toHaveLength(2);
+    expect(searchEventAuthorizations).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ page: 2, pageSize: 100 }),
+    );
+  });
+
   it("does not query before the progressive section is opened", () => {
     const { result } = renderHook(() => useCurrentEventAuthorizations(false));
 

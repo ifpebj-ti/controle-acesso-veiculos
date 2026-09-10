@@ -41,17 +41,27 @@ export function useCurrentEventAuthorizations(enabled: boolean) {
     setErrorMessage(null);
 
     try {
-      const result = await searchEventAuthorizations({
+      const filters = {
         active: "true",
         fromUtc: now.toISOString(),
         name: "",
-        page: 1,
         pageSize: 100,
         toUtc: queryEnd.toISOString(),
+      } as const;
+      const firstPage = await searchEventAuthorizations({
+        ...filters,
+        page: 1,
       });
       if (requestId.current !== currentRequest) return;
 
-      const currentEvents = result.items.filter((event) =>
+      const items = [...firstPage.items];
+      for (let page = 2; page <= firstPage.totalPages; page += 1) {
+        const nextPage = await searchEventAuthorizations({ ...filters, page });
+        if (requestId.current !== currentRequest) return;
+        items.push(...nextPage.items);
+      }
+
+      const currentEvents = items.filter((event) =>
         isCurrentAuthorization(event, now),
       );
       setEvents(currentEvents);
