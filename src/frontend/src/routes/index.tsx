@@ -14,65 +14,63 @@ import { NotFoundPage } from "../pages/NotFoundPage";
 import { OpenAccessPage } from "../pages/OpenAccessPage";
 import { ProfileRoute } from "./ProfileRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
-
-const allProfiles = [
-  "Porteiro",
-  "Vigilante",
-  "SetorTransporte",
-  "Administrador",
-] as const;
-
-const operationalProfiles = ["Porteiro", "Vigilante", "Administrador"] as const;
+import { RouteTransitionManager } from "./RouteTransitionManager";
+import { allProfiles, operationalProfiles } from "./routeMetadata";
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: <Navigate replace to="/login" />,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    element: <ProtectedRoute />,
+    element: <RouteTransitionManager />,
     children: [
       {
-        element: <AppLayout />,
+        path: "/",
+        element: <Navigate replace to="/login" />,
+      },
+      {
+        path: "/login",
+        element: <LoginPage />,
+      },
+      {
+        element: <ProtectedRoute />,
         children: [
-          { path: "/visao-geral", element: <DashboardPage /> },
           {
-            element: <ProfileRoute allowedProfiles={operationalProfiles} />,
+            element: <AppLayout />,
             children: [
-              { path: "/acessos/novo", element: <NewAccessPage /> },
-              { path: "/acessos/abertos", element: <OpenAccessPage /> },
-            ],
-          },
-          {
-            element: <ProfileRoute allowedProfiles={allProfiles} />,
-            children: [
-              { path: "/acessos/historico", element: <HistoryPage /> },
+              { path: "/visao-geral", element: <DashboardPage /> },
               {
-                path: "/utilizacoes-institucionais",
-                element: <InstitutionalUsagesPage />,
+                element: <ProfileRoute allowedProfiles={operationalProfiles} />,
+                children: [
+                  { path: "/acessos/novo", element: <NewAccessPage /> },
+                  { path: "/acessos/abertos", element: <OpenAccessPage /> },
+                ],
               },
-              { path: "/frota", element: <FleetPage /> },
               {
-                path: "/motoristas-institucionais",
-                element: <InstitutionalDriversPage />,
+                element: <ProfileRoute allowedProfiles={allProfiles} />,
+                children: [
+                  { path: "/acessos/historico", element: <HistoryPage /> },
+                  {
+                    path: "/utilizacoes-institucionais",
+                    element: <InstitutionalUsagesPage />,
+                  },
+                  { path: "/frota", element: <FleetPage /> },
+                  {
+                    path: "/motoristas-institucionais",
+                    element: <InstitutionalDriversPage />,
+                  },
+                  { path: "/eventos", element: <EventsPage /> },
+                ],
               },
-              { path: "/eventos", element: <EventsPage /> },
+              {
+                element: <ProfileRoute allowedProfiles={["Administrador"]} />,
+                children: [{ path: "/administracao", element: <AdminPage /> }],
+              },
             ],
-          },
-          {
-            element: <ProfileRoute allowedProfiles={["Administrador"]} />,
-            children: [{ path: "/administracao", element: <AdminPage /> }],
           },
         ],
       },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
     ],
-  },
-  {
-    path: "*",
-    element: <NotFoundPage />,
   },
 ]);
