@@ -110,7 +110,7 @@ function ReturnForm({
           Cancelar
         </button>
         <button
-          className="min-h-11 rounded-xl bg-brand px-5 text-sm font-bold text-white disabled:opacity-60"
+          className="min-h-11 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
           disabled={disabled}
           type="submit"
         >
