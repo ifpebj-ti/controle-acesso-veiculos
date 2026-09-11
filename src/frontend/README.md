@@ -41,6 +41,13 @@ opcionais. Categoria e objetivo permanecem distintos. Documento não é exigido
 por decisão apenas visual, e horário, autorização e duplicidade continuam sob
 responsabilidade da API.
 
+Para reduzir digitação na portaria, o formulário apresenta objetivos rápidos e
+tipos de veículo predefinidos, mantendo “Outro” com texto livre. O valor final é
+enviado nos mesmos campos `objective` e `vehicleType` do contrato atual. As
+opções de objetivo são hipóteses do MVP e ainda dependem da observação e
+homologação institucional da Issue #162; elas não estabelecem regras entre
+categoria, objetivo ou tipo de veículo.
+
 Quando necessário, o operador pode abrir a seção opcional de eventos, consultar
 as autorizações ativas e vigentes e escolher explicitamente uma delas. A interface
 mostra período, área, responsável e saldo das regras, mas não pré-seleciona um
