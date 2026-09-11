@@ -18,6 +18,13 @@ export interface RegisterAccessEntryInput {
   eventAuthorizationId?: number;
 }
 
+export interface CorrectAccessRecordInput {
+  objective: string;
+  categoryName: string;
+  observation: string | null;
+  justification: string;
+}
+
 export interface AccessHistoryFilters {
   plate?: string;
   driverName?: string;

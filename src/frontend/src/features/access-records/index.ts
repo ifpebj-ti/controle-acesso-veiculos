@@ -1,15 +1,24 @@
 export { generalAccessCategories } from "./model/accessCategories";
 export {
+  AccessRecordsContractError,
   closeAccessRecord,
+  correctAccessRecord,
   listOpenAccessRecords,
   registerAccessEntry,
   searchAccessHistory,
 } from "./services/accessRecordsService";
-export { accessEntryFormSchema } from "./schemas/accessRecordSchemas";
-export type { AccessEntryFormValues } from "./schemas/accessRecordSchemas";
+export {
+  accessCorrectionFormSchema,
+  accessEntryFormSchema,
+} from "./schemas/accessRecordSchemas";
+export type {
+  AccessCorrectionFormValues,
+  AccessEntryFormValues,
+} from "./schemas/accessRecordSchemas";
 export type {
   AccessHistoryFilters,
   AccessRecord,
+  CorrectAccessRecordInput,
   PagedAccessRecords,
   RegisterAccessEntryInput,
 } from "./types";

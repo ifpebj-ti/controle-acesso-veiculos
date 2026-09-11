@@ -50,6 +50,16 @@ bloqueia o fluxo geral; conflitos retornados ao registrar preservam o formulári
 para conferência. O histórico identifica pelo nome somente os acessos que foram
 associados a uma autorização.
 
+No histórico geral, Porteiro, Vigilante e Administrador podem abrir uma correção
+auditada para alterar somente objetivo, categoria e observação, sempre com uma
+justificativa obrigatória. Placa, condutor, horários, situação, autoria original
+e eventual associação com evento permanecem como contexto textual imutável. A
+interface usa a resposta canônica de `PUT /access-records/{id}/correction` e
+revalida o histórico com os filtros efetivamente aplicados. A página atual é
+preservada enquanto continuar válida; caso deixe de existir, a última página
+válida é carregada. O Setor de Transporte continua somente leitura, e a
+autorização efetiva permanece sob responsabilidade do backend.
+
 Após uma resposta bem-sucedida, o operador pode continuar na mesma tela para
 registrar o próximo veículo ou abrir a lista de acessos. A continuidade limpa os
 dados concluídos, anuncia o sucesso e restaura o foco na placa; falhas preservam
