@@ -22,7 +22,8 @@ Fluxo sugerido para validação local:
 2. confirmar que e-mail e perfil exibidos vieram da resposta da API;
 3. como Porteiro ou Vigilante, registrar entradas consecutivas em
    `/acessos/novo` e confirmar que a ação de continuidade reinicia o formulário
-   com foco na placa;
+   com foco na placa; conferir também a associação opcional com uma autorização
+   de evento vigente, sem impedir uma entrada comum quando a consulta falhar;
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
 5. como Transporte, consultar e manter os catálogos ativos da frota e de
    motoristas e manter as autorizações de eventos;
@@ -39,6 +40,15 @@ placa, objetivo e categoria são obrigatórios; tipo do veículo e observação 
 opcionais. Categoria e objetivo permanecem distintos. Documento não é exigido
 por decisão apenas visual, e horário, autorização e duplicidade continuam sob
 responsabilidade da API.
+
+Quando necessário, o operador pode abrir a seção opcional de eventos, consultar
+as autorizações ativas e vigentes e escolher explicitamente uma delas. A interface
+mostra período, área, responsável e saldo das regras, mas não pré-seleciona um
+evento nem decide se a placa, o tipo, a janela ou a cota permitem a entrada. Essa
+validação permanece transacional no backend. Falha ao consultar eventos não
+bloqueia o fluxo geral; conflitos retornados ao registrar preservam o formulário
+para conferência. O histórico identifica pelo nome somente os acessos que foram
+associados a uma autorização.
 
 Após uma resposta bem-sucedida, o operador pode continuar na mesma tela para
 registrar o próximo veículo ou abrir a lista de acessos. A continuidade limpa os

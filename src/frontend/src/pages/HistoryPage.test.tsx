@@ -196,6 +196,46 @@ describe("HistoryPage", () => {
     expect(await screen.findByText("Página 2 de 2")).toBeInTheDocument();
   });
 
+  it("shows the associated event in desktop and mobile history views", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(
+      pageResult([
+        {
+          ...record,
+          eventAuthorizationId: 7,
+          eventAuthorizationName: "Evento Fictício de Demonstração",
+          eventVehicleRuleId: 9,
+        },
+      ]),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findAllByText("Evento Fictício de Demonstração"),
+    ).toHaveLength(2);
+    expect(screen.getAllByText("Evento:")).toHaveLength(2);
+  });
+
+  it("omits event details when the access has no named association", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(
+      pageResult([
+        record,
+        {
+          ...record,
+          eventAuthorizationId: 8,
+          eventAuthorizationName: "   ",
+          id: 11,
+        },
+      ]),
+    );
+
+    renderPage();
+
+    await screen.findAllByText("DEM1A23");
+    expect(screen.queryByText("Evento:")).not.toBeInTheDocument();
+    expect(screen.queryByText("8")).not.toBeInTheDocument();
+  });
+
   it("has no serious accessibility violations in the empty state", async () => {
     vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
     const { container } = renderPage();

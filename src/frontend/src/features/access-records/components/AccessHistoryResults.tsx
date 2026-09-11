@@ -31,6 +31,10 @@ function stayDuration(record: AccessRecord) {
   return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, "0")}`;
 }
 
+function linkedEventName(record: AccessRecord) {
+  return record.eventAuthorizationName?.trim() || null;
+}
+
 export function AccessHistoryResults({
   errorMessage,
   requestStatus,
@@ -120,6 +124,12 @@ export function AccessHistoryResults({
                   {record.driverName}
                 </p>
                 <p className="mt-1 text-sm text-ink/60">{record.objective}</p>
+                {linkedEventName(record) && (
+                  <p className="mt-2 text-sm text-ink/70">
+                    <span className="font-bold text-ink">Evento:</span>{" "}
+                    {linkedEventName(record)}
+                  </p>
+                )}
                 <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-ink/8 pt-3 text-xs">
                   <div>
                     <dt className="font-bold uppercase tracking-wider text-ink/50">
@@ -184,6 +194,12 @@ export function AccessHistoryResults({
                     </td>
                     <td className="px-3 py-4 text-ink/75">
                       {record.objective}
+                      {linkedEventName(record) && (
+                        <span className="mt-2 block text-xs text-ink/65">
+                          <strong className="text-ink">Evento:</strong>{" "}
+                          {linkedEventName(record)}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-4 text-ink/70">
                       {stayDuration(record)}
