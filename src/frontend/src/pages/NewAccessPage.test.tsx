@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   registerAccessEntry,
+  quickAccessObjectives,
   type AccessRecord,
+  vehicleTypeOptions,
 } from "../features/access-records";
 import {
   EventAuthorizationsContractError,
@@ -14,6 +16,7 @@ import {
   type EventAuthorizationPage,
 } from "../features/event-authorizations";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { operationalProfiles } from "../routes/routeMetadata";
 import { NewAccessPage } from "./NewAccessPage";
 
 vi.mock("../features/access-records", async () => {
@@ -115,6 +118,34 @@ function renderPage() {
   );
 }
 
+type TestUser = ReturnType<typeof userEvent.setup>;
+
+async function fillRequiredFields(
+  user: TestUser,
+  plate = "DEM-1A23",
+  driverName = "Pessoa fictícia",
+) {
+  await user.type(screen.getByLabelText(/Placa do veículo/), plate);
+  await user.type(screen.getByLabelText(/Nome do condutor/), driverName);
+  await user.click(screen.getByRole("radio", { name: "Atendimento em setor" }));
+}
+
+async function chooseCustomObjective(user: TestUser, value: string) {
+  const otherOption = screen.getByRole("radio", { name: "Outro" });
+  await user.click(otherOption);
+  expect(otherOption).toBeChecked();
+  const field = await screen.findByLabelText(/Outro objetivo/);
+  await user.type(field, value);
+  return field;
+}
+
+async function fillObservation(user: TestUser, value: string) {
+  await user.click(screen.getByText("Detalhes adicionais"));
+  const field = screen.getByLabelText("Observação");
+  await user.type(field, value);
+  return field;
+}
+
 describe("NewAccessPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -128,15 +159,7 @@ describe("NewAccessPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/Placa do veículo/), "DEM-1A23");
-    await user.type(
-      screen.getByLabelText(/Nome do condutor/),
-      "Pessoa fictícia",
-    );
-    await user.type(
-      screen.getByLabelText(/Objetivo do acesso/),
-      "Atendimento fictício",
-    );
+    await fillRequiredFields(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e ver acessos" }),
     );
@@ -145,7 +168,7 @@ describe("NewAccessPage", () => {
       expect(registerAccessEntry).toHaveBeenCalledWith({
         categoryName: "Visitante",
         driverName: "Pessoa fictícia",
-        objective: "Atendimento fictício",
+        objective: "Atendimento em setor",
         observation: undefined,
         plate: "DEM-1A23",
         vehicleType: undefined,
@@ -177,10 +200,12 @@ describe("NewAccessPage", () => {
       screen.getByLabelText(/Nome do condutor/),
       "Pessoa fictícia",
     );
-    await user.type(screen.getByLabelText(/Tipo do veículo/), "Automóvel");
-    await user.type(
-      screen.getByLabelText(/Objetivo do acesso/),
-      "Evento fictício",
+    await user.selectOptions(
+      screen.getByLabelText(/Tipo do veículo/),
+      "Automóvel",
+    );
+    await user.click(
+      screen.getByRole("radio", { name: "Participação em atividade" }),
     );
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
@@ -214,9 +239,8 @@ describe("NewAccessPage", () => {
       screen.getByLabelText(/Nome do condutor/),
       "Pessoa fictícia",
     );
-    await user.type(
-      screen.getByLabelText(/Objetivo do acesso/),
-      "Atendimento fictício",
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
@@ -298,11 +322,13 @@ describe("NewAccessPage", () => {
 
     const plateField = screen.getByLabelText(/Placa do veículo/);
     const driverField = screen.getByLabelText(/Nome do condutor/);
-    const objectiveField = screen.getByLabelText(/Objetivo do acesso/);
+    const objectiveField = screen.getByRole("radio", {
+      name: "Atendimento em setor",
+    });
 
     await user.type(plateField, "DEM-1A23");
     await user.type(driverField, "Pessoa fictícia");
-    await user.type(objectiveField, "Atendimento fictício");
+    await user.click(objectiveField);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -314,7 +340,7 @@ describe("NewAccessPage", () => {
     ).toHaveAttribute("role", "status");
     expect(plateField).toHaveValue("");
     expect(driverField).toHaveValue("");
-    expect(objectiveField).toHaveValue("");
+    expect(objectiveField).not.toBeChecked();
     await waitFor(() => expect(plateField).toHaveFocus());
     expect(
       screen.getByRole("heading", { name: "Registrar entrada" }),
@@ -339,9 +365,8 @@ describe("NewAccessPage", () => {
       screen.getByLabelText(/Nome do condutor/),
       "Pessoa fictícia",
     );
-    await user.type(
-      screen.getByLabelText(/Objetivo do acesso/),
-      "Evento fictício",
+    await user.click(
+      screen.getByRole("radio", { name: "Participação em atividade" }),
     );
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
@@ -374,9 +399,8 @@ describe("NewAccessPage", () => {
       screen.getByLabelText(/Nome do condutor/),
       "Pessoa fictícia",
     );
-    await user.type(
-      screen.getByLabelText(/Objetivo do acesso/),
-      "Atendimento fictício",
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
     const consecutiveButton = screen.getByRole("button", {
       name: "Registrar e continuar",
@@ -403,11 +427,13 @@ describe("NewAccessPage", () => {
 
     const plateField = screen.getByLabelText(/Placa do veículo/);
     const driverField = screen.getByLabelText(/Nome do condutor/);
-    const objectiveField = screen.getByLabelText(/Objetivo do acesso/);
+    const firstObjective = screen.getByRole("radio", {
+      name: "Atendimento em setor",
+    });
 
     await user.type(plateField, "DEM-1A23");
     await user.type(driverField, "Pessoa fictícia");
-    await user.type(objectiveField, "Primeiro atendimento");
+    await user.click(firstObjective);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -415,7 +441,10 @@ describe("NewAccessPage", () => {
 
     await user.type(plateField, "TST-2B34");
     await user.type(driverField, "Outra pessoa fictícia");
-    await user.type(objectiveField, "Segundo atendimento");
+    const objectiveField = await chooseCustomObjective(
+      user,
+      "Segundo atendimento",
+    );
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -461,15 +490,14 @@ describe("NewAccessPage", () => {
         screen.getByLabelText(/Nome do condutor/),
         "Pessoa fictícia",
       );
-      await user.type(screen.getByLabelText(/Tipo do veículo/), "Automóvel");
-      await user.type(
-        screen.getByLabelText(/Objetivo do acesso/),
-        "Evento fictício",
+      await user.selectOptions(
+        screen.getByLabelText(/Tipo do veículo/),
+        "Automóvel",
       );
-      await user.type(
-        screen.getByLabelText(/Observação/),
-        "Observação fictícia",
+      await user.click(
+        screen.getByRole("radio", { name: "Participação em atividade" }),
       );
+      await fillObservation(user, "Observação fictícia");
       await user.click(
         screen.getByRole("button", { name: "Registrar e continuar" }),
       );
@@ -480,9 +508,9 @@ describe("NewAccessPage", () => {
         "Pessoa fictícia",
       );
       expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("Automóvel");
-      expect(screen.getByLabelText(/Objetivo do acesso/)).toHaveValue(
-        "Evento fictício",
-      );
+      expect(
+        screen.getByRole("radio", { name: "Participação em atividade" }),
+      ).toBeChecked();
       expect(screen.getByLabelText(/Observação/)).toHaveValue(
         "Observação fictícia",
       );
@@ -518,9 +546,8 @@ describe("NewAccessPage", () => {
       screen.getByLabelText(/Nome do condutor/),
       "Pessoa fictícia",
     );
-    await user.type(
-      screen.getByLabelText(/Objetivo do acesso/),
-      "Evento fictício",
+    await user.click(
+      screen.getByRole("radio", { name: "Participação em atividade" }),
     );
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
@@ -555,9 +582,8 @@ describe("NewAccessPage", () => {
       screen.getByLabelText(/Nome do condutor/),
       "Pessoa fictícia",
     );
-    await user.type(
-      screen.getByLabelText(/Objetivo do acesso/),
-      "Atendimento fictício",
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
@@ -586,8 +612,18 @@ describe("NewAccessPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Informe o nome do condutor.")).toBeInTheDocument();
     expect(
-      screen.getByText("Informe o objetivo do acesso."),
+      screen.getByText("Selecione o objetivo do acesso."),
     ).toBeInTheDocument();
+    const objectiveGroup = screen.getByRole("radiogroup", {
+      name: /Objetivo do acesso/,
+    });
+    expect(objectiveGroup.closest("fieldset")).toHaveAttribute(
+      "aria-describedby",
+      "objective-error",
+    );
+    expect(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
+    ).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveAttribute(
       "aria-describedby",
       "plate-error",
@@ -596,6 +632,240 @@ describe("NewAccessPage", () => {
       "Informe a placa do veículo.",
     );
     expect(registerAccessEntry).not.toHaveBeenCalled();
+  });
+
+  it.each(quickAccessObjectives.filter((objective) => objective !== "Outro"))(
+    "sends the quick objective %s without changing the category",
+    async (objective) => {
+      vi.mocked(registerAccessEntry).mockResolvedValue(createdRecord);
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.type(screen.getByLabelText(/Placa do veículo/), "OBJ-1A23");
+      await user.type(
+        screen.getByLabelText(/Nome do condutor/),
+        "Pessoa fictícia",
+      );
+      await user.selectOptions(
+        screen.getByLabelText(/Categoria do acesso/),
+        "Entrega",
+      );
+      await user.click(screen.getByRole("radio", { name: objective }));
+      await user.click(
+        screen.getByRole("button", { name: "Registrar e continuar" }),
+      );
+
+      await waitFor(() => expect(registerAccessEntry).toHaveBeenCalledTimes(1));
+      expect(registerAccessEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ categoryName: "Entrega", objective }),
+      );
+    },
+  );
+
+  it.each(vehicleTypeOptions.filter((vehicleType) => vehicleType !== "Outro"))(
+    "sends the known vehicle type %s exactly as selected",
+    async (vehicleType) => {
+      vi.mocked(registerAccessEntry).mockResolvedValue(createdRecord);
+      const user = userEvent.setup();
+      renderPage();
+
+      await fillRequiredFields(user, "TIP-1A23");
+      await user.selectOptions(
+        screen.getByLabelText(/Tipo do veículo/),
+        vehicleType,
+      );
+      await user.click(
+        screen.getByRole("button", { name: "Registrar e continuar" }),
+      );
+
+      await waitFor(() => expect(registerAccessEntry).toHaveBeenCalledTimes(1));
+      expect(registerAccessEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ vehicleType }),
+      );
+    },
+  );
+
+  it("sends custom objective and vehicle type values in the current API contract", async () => {
+    vi.mocked(registerAccessEntry).mockResolvedValue(createdRecord);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(/Placa do veículo/), "CUS-1A23");
+    await user.type(
+      screen.getByLabelText(/Nome do condutor/),
+      "Pessoa fictícia",
+    );
+    await chooseCustomObjective(user, "Visita técnica fictícia");
+    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Outro");
+    const customVehicleType = await screen.findByLabelText(
+      /Outro tipo de veículo/,
+    );
+    await user.type(customVehicleType, "Triciclo fictício");
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+
+    await waitFor(() => expect(registerAccessEntry).toHaveBeenCalledTimes(1));
+    expect(registerAccessEntry).toHaveBeenCalledWith({
+      categoryName: "Visitante",
+      driverName: "Pessoa fictícia",
+      objective: "Visita técnica fictícia",
+      observation: undefined,
+      plate: "CUS-1A23",
+      vehicleType: "Triciclo fictício",
+    });
+  });
+
+  it("associates conditional validation errors and focuses revealed fields", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(/Placa do veículo/), "VAL-1A23");
+    await user.type(
+      screen.getByLabelText(/Nome do condutor/),
+      "Pessoa fictícia",
+    );
+    await user.click(screen.getByRole("radio", { name: "Outro" }));
+    const objectiveOther = await screen.findByLabelText(/Outro objetivo/);
+    await waitFor(() => expect(objectiveOther).toHaveFocus());
+    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Outro");
+    const vehicleTypeOther = await screen.findByLabelText(
+      /Outro tipo de veículo/,
+    );
+    await waitFor(() => expect(vehicleTypeOther).toHaveFocus());
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+
+    expect(objectiveOther).toHaveAttribute("aria-invalid", "true");
+    expect(objectiveOther).toHaveAttribute(
+      "aria-describedby",
+      "objectiveOther-error",
+    );
+    expect(vehicleTypeOther).toHaveAttribute("aria-invalid", "true");
+    expect(vehicleTypeOther).toHaveAttribute(
+      "aria-describedby",
+      "vehicleTypeOther-error",
+    );
+    expect(registerAccessEntry).not.toHaveBeenCalled();
+  });
+
+  it("associates API errors with the active custom fields", async () => {
+    vi.mocked(registerAccessEntry).mockRejectedValue(
+      apiError(400, {
+        errors: {
+          objective: ["Revise o objetivo informado."],
+          vehicleType: ["Revise o tipo informado."],
+        },
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(/Placa do veículo/), "API-1A23");
+    await user.type(
+      screen.getByLabelText(/Nome do condutor/),
+      "Pessoa fictícia",
+    );
+    const objectiveOther = await chooseCustomObjective(
+      user,
+      "Objetivo fictício",
+    );
+    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Outro");
+    const vehicleTypeOther = await screen.findByLabelText(
+      /Outro tipo de veículo/,
+    );
+    await user.type(vehicleTypeOther, "Tipo fictício");
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+
+    expect(
+      await screen.findByText("Revise o objetivo informado."),
+    ).toHaveAttribute("id", "objectiveOther-error");
+    expect(objectiveOther).toHaveAttribute(
+      "aria-describedby",
+      "objectiveOther-error",
+    );
+    expect(screen.getByText("Revise o tipo informado.")).toHaveAttribute(
+      "id",
+      "vehicleTypeOther-error",
+    );
+    expect(vehicleTypeOther).toHaveAttribute(
+      "aria-describedby",
+      "vehicleTypeOther-error",
+    );
+  });
+
+  it("keeps additional details mounted while the section is collapsed", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const observation = await fillObservation(user, "Observação fictícia");
+    await user.click(screen.getByText("Detalhes adicionais"));
+    expect(screen.getByText("Detalhes adicionais")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await user.click(screen.getByText("Detalhes adicionais"));
+    expect(observation).toHaveValue("Observação fictícia");
+  });
+
+  it("preserves custom values and details after a network failure", async () => {
+    vi.mocked(registerAccessEntry).mockRejectedValue(new Error("network"));
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(/Placa do veículo/), "NET-1A23");
+    await user.type(
+      screen.getByLabelText(/Nome do condutor/),
+      "Pessoa fictícia",
+    );
+    const objectiveOther = await chooseCustomObjective(
+      user,
+      "Objetivo fictício personalizado",
+    );
+    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Outro");
+    const vehicleTypeOther = await screen.findByLabelText(
+      /Outro tipo de veículo/,
+    );
+    await user.type(vehicleTypeOther, "Veículo fictício adaptado");
+    const observation = await fillObservation(user, "Detalhe fictício");
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(objectiveOther).toHaveValue("Objetivo fictício personalizado");
+    expect(vehicleTypeOther).toHaveValue("Veículo fictício adaptado");
+    expect(observation).toHaveValue("Detalhe fictício");
+    expect(registerAccessEntry).toHaveBeenCalledTimes(1);
+  });
+
+  it("supports keyboard selection without adding conditional fields to the default tab order", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const firstObjective = screen.getByRole("radio", {
+      name: "Atendimento em setor",
+    });
+    firstObjective.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("radio", { name: "Reunião" })).toBeChecked();
+
+    const details = screen.getByText("Detalhes adicionais");
+    details.focus();
+    await user.keyboard("{Enter}");
+    expect(details).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps the general entry route identical for Porteiro and Vigilante", () => {
+    expect(operationalProfiles).toEqual(
+      expect.arrayContaining(["Porteiro", "Vigilante"]),
+    );
+    expect(operationalProfiles.indexOf("Porteiro") + 1).toBe(
+      operationalProfiles.indexOf("Vigilante"),
+    );
   });
 
   it("has no serious automated accessibility violations", async () => {
