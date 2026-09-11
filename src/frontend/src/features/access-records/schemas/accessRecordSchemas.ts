@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { generalAccessCategories } from "../model/accessCategories";
+
 export const accessRecordSchema = z.object({
   id: z.number().int().positive(),
   vehicleId: z.number().int().positive(),
@@ -64,3 +66,34 @@ export const accessEntryFormSchema = z.object({
 });
 
 export type AccessEntryFormValues = z.infer<typeof accessEntryFormSchema>;
+
+export const accessCorrectionFormSchema = z.object({
+  categoryName: z
+    .string()
+    .trim()
+    .refine(
+      (value) =>
+        generalAccessCategories.includes(
+          value as (typeof generalAccessCategories)[number],
+        ),
+      "Selecione uma categoria válida.",
+    ),
+  justification: z
+    .string()
+    .trim()
+    .min(10, "A justificativa deve possuir pelo menos 10 caracteres.")
+    .max(500, "A justificativa deve possuir até 500 caracteres."),
+  objective: z
+    .string()
+    .trim()
+    .min(1, "Informe o objetivo do acesso.")
+    .max(500, "O objetivo deve possuir até 500 caracteres."),
+  observation: z
+    .string()
+    .trim()
+    .max(1000, "A observação deve possuir até 1000 caracteres."),
+});
+
+export type AccessCorrectionFormValues = z.infer<
+  typeof accessCorrectionFormSchema
+>;

@@ -3,13 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../../services/api";
 import {
   closeAccessRecord,
+  correctAccessRecord,
   listOpenAccessRecords,
   registerAccessEntry,
   searchAccessHistory,
 } from "./accessRecordsService";
 
 vi.mock("../../../services/api", () => ({
-  api: { get: vi.fn(), post: vi.fn() },
+  api: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
 }));
 
 const record = {
@@ -79,6 +80,49 @@ describe("accessRecordsService", () => {
       vehicleType: "Automóvel",
     });
     expect(result.eventAuthorizationName).toBe("Evento Fictício");
+  });
+
+  it("uses the correction endpoint with only the supported fields", async () => {
+    vi.mocked(api.put).mockResolvedValue({
+      data: {
+        ...record,
+        categoryName: "Entrega",
+        objective: "Entrega corrigida",
+        observation: "Conferido na portaria",
+        updatedById: 7,
+      },
+    });
+    const input = {
+      categoryName: "Entrega",
+      justification: "Correção solicitada durante conferência.",
+      objective: "Entrega corrigida",
+      observation: "Conferido na portaria",
+    };
+
+    const result = await correctAccessRecord(10, input);
+
+    expect(api.put).toHaveBeenCalledWith(
+      "/access-records/10/correction",
+      input,
+    );
+    expect(result).toMatchObject({
+      categoryName: "Entrega",
+      objective: "Entrega corrigida",
+      updatedById: 7,
+    });
+  });
+
+  it("rejects an invalid correction response", async () => {
+    vi.mocked(api.put).mockResolvedValue({ data: { id: "invalid" } });
+
+    await expect(
+      correctAccessRecord(10, {
+        categoryName: "Visitante",
+        justification: "Justificativa fictícia válida.",
+        objective: "Atendimento fictício",
+        observation: null,
+      }),
+    ).rejects.toMatchObject({ name: "AccessRecordsContractError" });
   });
 
   it("passes only supported filters and pagination to history", async () => {
