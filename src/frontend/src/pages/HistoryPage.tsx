@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -22,17 +22,32 @@ export function HistoryPage() {
   const [activeCorrection, setActiveCorrection] =
     useState<ActiveCorrection | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  const [successFocusRequest, setSuccessFocusRequest] = useState(0);
+  const successNoticeRef = useRef<HTMLDivElement>(null);
   const canCorrect = correctionProfiles.includes(user.profileName);
+
+  useEffect(() => {
+    if (successFocusRequest === 0) return;
+    successNoticeRef.current?.focus({ preventScroll: true });
+  }, [successFocusRequest]);
 
   function openCorrection(record: AccessRecord, trigger: HTMLButtonElement) {
     setSuccessNotice(null);
     setActiveCorrection({ record, trigger });
   }
 
-  function finishCorrection(record: AccessRecord) {
-    history.replaceRecord(record);
+  async function finishCorrection(record: AccessRecord) {
+    const trigger = activeCorrection?.trigger;
     setActiveCorrection(null);
     setSuccessNotice(`Registro #${record.id} corrigido com sucesso.`);
+
+    const refreshed = await history.revalidateAfterCorrection(record);
+    if (
+      !trigger?.isConnected ||
+      !refreshed?.items.some(({ id }) => id === record.id)
+    ) {
+      setSuccessFocusRequest((request) => request + 1);
+    }
   }
 
   if (history.requestStatus === "denied") {
@@ -50,7 +65,9 @@ export function HistoryPage() {
       {successNotice && (
         <div
           className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-950"
+          ref={successNoticeRef}
           role="status"
+          tabIndex={-1}
         >
           {successNotice}
         </div>

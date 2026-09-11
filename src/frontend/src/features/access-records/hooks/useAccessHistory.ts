@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { describeApiError } from "../../../services/api-errors";
 import { searchAccessHistory } from "../services/accessRecordsService";
@@ -72,18 +72,21 @@ export function useAccessHistory() {
   const [requestStatus, setRequestStatus] =
     useState<AccessHistoryRequestStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const requestSequence = useRef(0);
 
   useEffect(() => {
     let active = true;
+    const requestId = ++requestSequence.current;
 
     void searchAccessHistory(filters)
       .then((response) => {
-        if (!active) return;
+        if (!active || requestId !== requestSequence.current) return;
         setResult(response);
+        setErrorMessage(null);
         setRequestStatus("ready");
       })
       .catch((error: unknown) => {
-        if (!active) return;
+        if (!active || requestId !== requestSequence.current) return;
         const description = describeApiError(error);
         setResult(null);
         setErrorMessage(description.message);
@@ -148,6 +151,41 @@ export function useAccessHistory() {
     );
   }
 
+  async function revalidateAfterCorrection(record: AccessRecord) {
+    replaceRecord(record);
+    setErrorMessage(null);
+
+    const appliedFilters = filters;
+    const requestId = ++requestSequence.current;
+
+    try {
+      const response = await searchAccessHistory(appliedFilters);
+      if (requestId !== requestSequence.current) return null;
+
+      const lastValidPage = Math.max(1, response.totalPages);
+      if (appliedFilters.page > lastValidPage) {
+        setFilters({ ...appliedFilters, page: lastValidPage });
+        return response;
+      }
+
+      setResult(response);
+      setRequestStatus("ready");
+      return response;
+    } catch (error) {
+      if (requestId !== requestSequence.current) return null;
+
+      const description = describeApiError(error);
+      setResult(null);
+      setErrorMessage(
+        `A correção foi salva, mas não foi possível atualizar o histórico. ${description.message}`,
+      );
+      setRequestStatus(
+        description.kind === "access-denied" ? "denied" : "error",
+      );
+      return null;
+    }
+  }
+
   return {
     applyFilters,
     clearFilters,
@@ -155,7 +193,7 @@ export function useAccessHistory() {
     errorMessage,
     goToPage,
     requestStatus,
-    replaceRecord,
+    revalidateAfterCorrection,
     result,
     retry,
     selectPeriod,
