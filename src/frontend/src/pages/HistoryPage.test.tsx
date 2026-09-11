@@ -7,13 +7,25 @@ import {
   type AccessRecord,
   type PagedAccessRecords,
 } from "../features/access-records";
-import { searchAccessHistory } from "../features/access-records/services/accessRecordsService";
+import {
+  correctAccessRecord,
+  searchAccessHistory,
+} from "../features/access-records/services/accessRecordsService";
+import {
+  useAuthenticatedSession,
+  type ProfileName,
+} from "../features/authentication";
 import { describeApiError } from "../services/api-errors";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { HistoryPage } from "./HistoryPage";
 
 vi.mock("../features/access-records/services/accessRecordsService", () => ({
+  correctAccessRecord: vi.fn(),
   searchAccessHistory: vi.fn(),
+}));
+
+vi.mock("../features/authentication", () => ({
+  useAuthenticatedSession: vi.fn(),
 }));
 
 vi.mock("../services/api-errors", () => ({
@@ -50,7 +62,20 @@ function pageResult(
   };
 }
 
-function renderPage() {
+function renderPage(profileName: ProfileName = "Porteiro") {
+  vi.mocked(useAuthenticatedSession).mockReturnValue({
+    expiresAtUtc: "2099-01-01T00:00:00Z",
+    login: vi.fn(),
+    logout: vi.fn(),
+    sessionEndReason: null,
+    status: "authenticated",
+    user: {
+      email: "operador.ficticio@example.test",
+      id: 1,
+      profileName,
+    },
+  });
+
   return render(
     <MemoryRouter>
       <HistoryPage />
@@ -60,6 +85,7 @@ function renderPage() {
 
 describe("HistoryPage", () => {
   beforeEach(() => {
+    vi.mocked(correctAccessRecord).mockReset();
     vi.mocked(searchAccessHistory).mockReset();
     vi.mocked(describeApiError).mockReset();
     vi.mocked(describeApiError).mockReturnValue({
@@ -234,6 +260,117 @@ describe("HistoryPage", () => {
     await screen.findAllByText("DEM1A23");
     expect(screen.queryByText("Evento:")).not.toBeInTheDocument();
     expect(screen.queryByText("8")).not.toBeInTheDocument();
+  });
+
+  it.each<ProfileName>(["Porteiro", "Vigilante", "Administrador"])(
+    "allows %s to correct a record using the canonical response",
+    async (profileName) => {
+      vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([record]));
+      vi.mocked(correctAccessRecord).mockResolvedValue({
+        ...record,
+        categoryName: "Entrega",
+        objective: "Objetivo devolvido pela API",
+        updatedById: 9,
+      });
+      const user = userEvent.setup();
+      renderPage(profileName);
+
+      await screen.findAllByText("DEM1A23");
+      await user.click(
+        screen.getAllByRole("button", { name: /Corrigir registro/ })[0],
+      );
+      const objective = screen.getByLabelText("Objetivo");
+      await user.clear(objective);
+      await user.type(objective, "Valor enviado pelo formulário");
+      await user.type(
+        screen.getByLabelText("Justificativa da correção"),
+        "Justificativa fictícia válida.",
+      );
+      await user.click(screen.getByRole("button", { name: "Salvar correção" }));
+
+      expect(correctAccessRecord).toHaveBeenCalledTimes(1);
+      expect(
+        await screen.findAllByText("Objetivo devolvido pela API"),
+      ).toHaveLength(2);
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Registro #10 corrigido com sucesso.",
+      );
+    },
+  );
+
+  it("keeps Setor de Transporte in read-only mode", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([record]));
+    renderPage("SetorTransporte");
+
+    await screen.findAllByText("DEM1A23");
+    expect(
+      screen.queryByRole("button", { name: /Corrigir registro/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers correction for both open and closed records", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(
+      pageResult([
+        record,
+        {
+          ...record,
+          exitAtUtc: "2026-09-02T13:00:00.000Z",
+          id: 11,
+          status: "Encerrado",
+        },
+      ]),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(
+      await screen.findAllByRole("button", { name: /Corrigir registro/ }),
+    ).toHaveLength(4);
+    await user.click(
+      screen.getAllByRole("button", { name: /Corrigir registro/ })[1],
+    );
+    expect(screen.getByRole("dialog")).toHaveTextContent("Registro #11");
+    expect(screen.getByRole("dialog")).toHaveTextContent("Encerrado");
+    expect(screen.getByRole("dialog")).not.toHaveTextContent(
+      "Ainda não registrada",
+    );
+  });
+
+  it("preserves applied filters and pagination after correction", async () => {
+    vi.mocked(searchAccessHistory)
+      .mockResolvedValueOnce(pageResult([record], 1, 2))
+      .mockResolvedValueOnce(pageResult([record], 1, 2))
+      .mockResolvedValueOnce(pageResult([record], 2, 2));
+    vi.mocked(correctAccessRecord).mockResolvedValue({
+      ...record,
+      objective: "Resultado canônico corrigido",
+      updatedById: 8,
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findAllByText("DEM1A23");
+    await user.type(screen.getByLabelText("Placa"), "DEM-1A23");
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
+    await user.click(screen.getByRole("button", { name: "2" }));
+    expect(await screen.findByText("Página 2 de 2")).toBeInTheDocument();
+
+    await user.click(
+      screen.getAllByRole("button", { name: /Corrigir registro/ })[0],
+    );
+    await user.type(
+      screen.getByLabelText("Justificativa da correção"),
+      "Justificativa fictícia válida.",
+    );
+    await user.click(screen.getByRole("button", { name: "Salvar correção" }));
+
+    expect(
+      await screen.findAllByText("Resultado canônico corrigido"),
+    ).toHaveLength(2);
+    expect(screen.getByLabelText("Placa")).toHaveValue("DEM-1A23");
+    expect(screen.getByText("Página 2 de 2")).toBeInTheDocument();
+    expect(searchAccessHistory).toHaveBeenCalledTimes(3);
   });
 
   it("has no serious accessibility violations in the empty state", async () => {

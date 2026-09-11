@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 
 import { describeApiError } from "../../../services/api-errors";
 import { searchAccessHistory } from "../services/accessRecordsService";
-import type { AccessHistoryFilters, PagedAccessRecords } from "../types";
+import type {
+  AccessHistoryFilters,
+  AccessRecord,
+  PagedAccessRecords,
+} from "../types";
 
 export type PeriodPreset = "7" | "30" | "90" | "365" | "custom";
 export type AccessHistoryRequestStatus =
@@ -131,6 +135,19 @@ export function useAccessHistory() {
     startRequest({ ...filters });
   }
 
+  function replaceRecord(record: AccessRecord) {
+    setResult((current) =>
+      current
+        ? {
+            ...current,
+            items: current.items.map((item) =>
+              item.id === record.id ? record : item,
+            ),
+          }
+        : current,
+    );
+  }
+
   return {
     applyFilters,
     clearFilters,
@@ -138,6 +155,7 @@ export function useAccessHistory() {
     errorMessage,
     goToPage,
     requestStatus,
+    replaceRecord,
     result,
     retry,
     selectPeriod,

@@ -10,6 +10,7 @@ interface AccessHistoryResultsProps {
   result: PagedAccessRecords | null;
   onPageChange: (page: number) => void;
   onRetry: () => void;
+  onCorrect?: (record: AccessRecord, trigger: HTMLButtonElement) => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -41,6 +42,7 @@ export function AccessHistoryResults({
   result,
   onPageChange,
   onRetry,
+  onCorrect,
 }: AccessHistoryResultsProps) {
   const records = result?.items ?? [];
   const pageNumbers = useMemo(() => {
@@ -146,6 +148,16 @@ export function AccessHistoryResults({
                     <dd className="mt-1 text-ink/75">{stayDuration(record)}</dd>
                   </div>
                 </dl>
+                {onCorrect && (
+                  <button
+                    aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                    className="mt-4 min-h-11 w-full rounded-xl border border-brand-dark px-4 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
+                    onClick={(event) => onCorrect(record, event.currentTarget)}
+                    type="button"
+                  >
+                    Corrigir registro
+                  </button>
+                )}
               </article>
             ))}
           </div>
@@ -172,6 +184,11 @@ export function AccessHistoryResults({
                   <th className="px-3 py-3" scope="col">
                     Situação
                   </th>
+                  {onCorrect && (
+                    <th className="px-3 py-3" scope="col">
+                      Ações
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -216,6 +233,20 @@ export function AccessHistoryResults({
                         tone={record.exitAtUtc ? "success" : "warning"}
                       />
                     </td>
+                    {onCorrect && (
+                      <td className="px-3 py-4">
+                        <button
+                          aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                          className="min-h-10 whitespace-nowrap rounded-xl border border-brand-dark px-3 text-xs font-bold text-brand-dark hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
+                          onClick={(event) =>
+                            onCorrect(record, event.currentTarget)
+                          }
+                          type="button"
+                        >
+                          Corrigir registro
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
