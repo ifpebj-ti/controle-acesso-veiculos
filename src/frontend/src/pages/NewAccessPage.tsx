@@ -1,12 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import {
   accessEntryFormSchema,
+  customEntryOption,
+  EntryAdditionalDetails,
+  EntryObjectiveFieldset,
+  EntryVehicleTypeField,
   generalAccessCategories,
   registerAccessEntry,
   type AccessEntryFormValues,
@@ -30,8 +34,6 @@ const fieldNames: Record<string, keyof AccessEntryFormValues> = {
   plate: "plate",
   driverName: "driverName",
   categoryName: "categoryName",
-  objective: "objective",
-  vehicleType: "vehicleType",
   observation: "observation",
 };
 
@@ -40,9 +42,11 @@ const defaultValues: AccessEntryFormValues = {
   driverName: "",
   eventAuthorizationId: "",
   objective: "",
+  objectiveOther: "",
   observation: "",
   plate: "",
   vehicleType: "",
+  vehicleTypeOther: "",
 };
 
 type SubmitIntent = "continue" | "review";
@@ -59,6 +63,7 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 export function NewAccessPage() {
   const navigate = useNavigate();
   const [eventSectionOpen, setEventSectionOpen] = useState(false);
+  const [additionalDetailsOpen, setAdditionalDetailsOpen] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [pendingIntent, setPendingIntent] = useState<SubmitIntent | null>(null);
@@ -80,6 +85,7 @@ export function NewAccessPage() {
     control,
     name: "eventAuthorizationId",
   });
+  const selectedVehicleType = useWatch({ control, name: "vehicleType" });
   const selectedEvent = eventAuthorizations.events.find(
     (event) => String(event.id) === selectedEventAuthorizationId,
   );
@@ -101,10 +107,16 @@ export function NewAccessPage() {
       const input: RegisterAccessEntryInput = {
         categoryName: values.categoryName,
         driverName: values.driverName,
-        objective: values.objective,
+        objective:
+          values.objective === customEntryOption
+            ? values.objectiveOther
+            : values.objective,
         observation: values.observation || undefined,
         plate: values.plate,
-        vehicleType: values.vehicleType || undefined,
+        vehicleType:
+          values.vehicleType === customEntryOption
+            ? values.vehicleTypeOther
+            : values.vehicleType || undefined,
       };
       if (values.eventAuthorizationId) {
         input.eventAuthorizationId = Number(values.eventAuthorizationId);
@@ -120,6 +132,7 @@ export function NewAccessPage() {
 
       reset(defaultValues);
       setEventSectionOpen(false);
+      setAdditionalDetailsOpen(false);
       setSuccessNotice(
         "Entrada registrada. O formulário está pronto para o próximo veículo.",
       );
@@ -133,8 +146,18 @@ export function NewAccessPage() {
 
       for (const [apiField, message] of Object.entries(validationErrors)) {
         if (apiField === "accessRecord") continue;
-        const formField = fieldNames[apiField];
+        const formField =
+          apiField === "objective"
+            ? values.objective === customEntryOption
+              ? "objectiveOther"
+              : "objective"
+            : apiField === "vehicleType"
+              ? values.vehicleType === customEntryOption
+                ? "vehicleTypeOther"
+                : "vehicleType"
+              : fieldNames[apiField];
         if (!formField) continue;
+        if (formField === "observation") setAdditionalDetailsOpen(true);
         setError(formField, { message, type: "server" });
         hasFieldError = true;
       }
@@ -280,79 +303,35 @@ export function NewAccessPage() {
                 />
               </div>
 
-              <div>
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="vehicleType"
-                >
-                  Tipo do veículo{" "}
-                  <span className="font-normal text-ink/50">(opcional)</span>
-                </label>
-                <input
-                  aria-describedby={
-                    errors.vehicleType ? "vehicleType-error" : undefined
-                  }
-                  aria-invalid={Boolean(errors.vehicleType)}
-                  className={fieldClass}
-                  id="vehicleType"
-                  maxLength={50}
-                  placeholder="Ex.: Automóvel"
-                  {...register("vehicleType")}
-                />
-                <FieldError
-                  id="vehicleType-error"
-                  message={errors.vehicleType?.message}
-                />
-              </div>
+              <EntryVehicleTypeField
+                clearErrors={clearErrors}
+                errors={errors}
+                register={register}
+                selectedVehicleType={selectedVehicleType}
+              />
 
-              <div className="md:col-span-2">
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="objective"
-                >
-                  Objetivo do acesso <span className="text-red-700">*</span>
-                </label>
-                <textarea
-                  aria-describedby={
-                    errors.objective ? "objective-error" : undefined
-                  }
-                  aria-invalid={Boolean(errors.objective)}
-                  className={`${fieldClass} min-h-28 py-3`}
-                  id="objective"
-                  maxLength={500}
-                  placeholder="Descreva de forma objetiva a finalidade da entrada."
-                  {...register("objective")}
-                />
-                <FieldError
-                  id="objective-error"
-                  message={errors.objective?.message}
-                />
-              </div>
+              <Controller
+                control={control}
+                name="objective"
+                render={({ field }) => (
+                  <EntryObjectiveFieldset
+                    clearErrors={clearErrors}
+                    errors={errors}
+                    fieldRef={field.ref}
+                    onBlur={field.onBlur}
+                    onSelect={field.onChange}
+                    register={register}
+                    selectedObjective={field.value}
+                  />
+                )}
+              />
 
-              <div className="md:col-span-2">
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="observation"
-                >
-                  Observação{" "}
-                  <span className="font-normal text-ink/50">(opcional)</span>
-                </label>
-                <textarea
-                  aria-describedby={
-                    errors.observation ? "observation-error" : undefined
-                  }
-                  aria-invalid={Boolean(errors.observation)}
-                  className={`${fieldClass} min-h-24 py-3`}
-                  id="observation"
-                  maxLength={1000}
-                  placeholder="Inclua somente informação necessária para a operação."
-                  {...register("observation")}
-                />
-                <FieldError
-                  id="observation-error"
-                  message={errors.observation?.message}
-                />
-              </div>
+              <EntryAdditionalDetails
+                errors={errors}
+                onOpenChange={setAdditionalDetailsOpen}
+                open={additionalDetailsOpen}
+                register={register}
+              />
             </div>
 
             <section
