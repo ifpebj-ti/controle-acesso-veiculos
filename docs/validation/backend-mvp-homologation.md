@@ -2,7 +2,7 @@
 
 **Status:** roteiro técnico preliminar para validação com usuários<br>
 **Escopo:** frontend, backend, PostgreSQL, infraestrutura local, UX e QA<br>
-**Rastreabilidade:** Issues #88, #108, #112, #162 e #167; PRs #164, #168 e #170
+**Rastreabilidade:** Issues #88, #108, #112, #162, #167, #175, #176, #177, #178 e #180; PRs #164, #168, #170, #183, #184, #185, #186 e #187
 
 Este documento transforma as funcionalidades já integradas à `main` em uma
 sessão reproduzível de validação. Ele não comprova aceitação institucional e não
@@ -243,6 +243,56 @@ equipe do projeto; não comprovam compreensão, utilidade ou aprovação pelos
 futuros usuários. Por isso, o resultado permanece classificado como preparação
 técnica, e não como homologação ou autorização para produção.
 
+### 3.8. Preparação técnica atual em 12 de setembro de 2026
+
+Esta preparação atualiza o roteiro para a `main` no SHA
+`a7065d336a224635321ad50736742831b4aed203`, que incorpora os PRs #183, #184,
+#185, #186 e #187. Ela foi executada no ambiente local Windows com Docker
+Desktop e Brave 153.1.95.101 disponível. Não houve nesta data uma nova sessão
+observada com representantes institucionais.
+
+Resultados efetivamente observados nesta preparação:
+
+- o Compose iniciou os containers existentes sem apagar volumes;
+- PostgreSQL ficou `healthy`, a API respondeu HTTP 200 em
+  `http://127.0.0.1:8081/health/ready` e o frontend respondeu HTTP 200 em
+  `http://127.0.0.1:3000`;
+- `npm ci` concluiu sem vulnerabilidades conhecidas pelo npm;
+- a primeira execução frontend excedeu o limite de cinco segundos em um teste
+  de indisponibilidade do login: 248 de 249 testes passaram;
+- o arquivo afetado passou isoladamente com 8 de 8 testes e a repetição completa
+  passou com 249 de 249 testes em 27 arquivos;
+- lint e build do frontend passaram; o build manteve apenas o aviso conhecido de
+  chunk JavaScript acima de 500 kB;
+- como o SDK .NET não estava disponível no host, restore e build foram executados
+  na imagem oficial .NET SDK 10 e passaram sem avisos ou erros;
+- os testes de Domain e Application passaram, respectivamente, com 42 de 42 e
+  40 de 40 casos;
+- a suíte de integração não pôde ser validada nesse container auxiliar: 10 casos
+  passaram e 84 não inicializaram o PostgreSQL descartável por uma limitação de
+  conectividade entre o Testcontainers e o Docker Desktop. Esse resultado é uma
+  limitação do ambiente de execução, não evidência de aprovação nem de regressão
+  funcional.
+
+Os números desta seção pertencem somente à execução de 12 de setembro. Eles não
+substituem nem reescrevem os resultados históricos de 9 de setembro. Antes da
+sessão institucional, a suíte de integração deve ser repetida em um host com o
+SDK .NET 10 e acesso direto ao Docker, e os checks do SHA demonstrado devem ser
+confirmados no GitHub.
+
+### 3.9. Incrementos incorporados desde o ensaio histórico
+
+| Capacidade atualizada                                      | Rastreabilidade      | Situação para a homologação                                          |
+| ---------------------------------------------------------- | -------------------- | -------------------------------------------------------------------- |
+| Associar opcionalmente uma entrada a evento                | Issue #176 / PR #183 | implementação técnica incorporada; compreensão e utilidade pendentes |
+| Corrigir descrição com justificativa e auditoria           | Issue #175 / PR #184 | implementação técnica incorporada; política institucional pendente   |
+| Registrar entrada com opções rápidas e campos condicionais | Issue #177 / PR #185 | hipóteses reversíveis do MVP pendentes de avaliação                  |
+| Operar a lista compacta de acessos abertos                 | Issue #178 / PR #186 | volume real de pico e aceitação pendentes                            |
+| Navegar por agrupamentos conforme o perfil                 | Issue #180 / PR #187 | nomenclatura e encontrabilidade pendentes                            |
+
+A Issue #163 continua sendo uma pesquisa separada. Presença de servidores e
+terceirizados não deve ser demonstrada como funcionalidade pronta deste MVP.
+
 ## 4. Ordem da demonstração
 
 Antes de iniciar, substitua na cópia `*.local.http`:
@@ -273,13 +323,25 @@ O Administrador cria contas fictícias para `Porteiro`, `Vigilante` e
 | Campo    | Valor                                                                                                                                                                                |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Perfil   | Porteiro; depois Vigilante                                                                                                                                                           |
-| Ação     | com cada perfil, registrar entradas consecutivas, usar também “Registrar e ver acessos”, listar abertos, consultar histórico, registrar saída e corrigir descrição com justificativa |
-| Esperado | horário e ator definidos no servidor; placa normalizada; um único acesso aberto; saída preserva autoria; correção não altera placa, pessoa ou horários                               |
+| Ação     | com cada perfil, registrar entradas consecutivas, operar acessos abertos, consultar histórico, registrar saída e corrigir descrição com justificativa                                |
+| Esperado | horário e ator definidos no servidor; placa normalizada; um único acesso aberto; saída preserva autoria; correção não altera placa, condutor, horários, situação ou autoria original |
 | Pergunta | os campos e a lista de abertos são suficientes para a troca de turno?                                                                                                                |
 
 O Vigilante usa a própria conta ao assumir a portaria e possui as mesmas
 permissões operacionais do Porteiro. Não simule transferência de autoria do
 registro original.
+
+No formulário de entrada, valide placa e condutor como campos prioritários, as
+categorias canônicas, os objetivos rápidos e a opção “Outro” com texto livre.
+Percorra Atendimento em setor, Reunião, Entrega ou retirada de material,
+Serviço ou manutenção, Participação em atividade e Embarque ou desembarque sem
+tratá-los como regras institucionais já aprovadas.
+Confirme as nove opções de tipo de veículo: Automóvel, Motocicleta, Caminhonete,
+Van, Micro-ônibus, Ônibus, Caminhão, Veículo de emergência e Outro. Quando
+“Outro” for escolhido, valide o campo de tipo personalizado. Expanda e recolha
+os detalhes adicionais sem perder a observação e associe, de forma explícita e
+opcional, uma autorização de evento. Nenhum evento pode ser escolhido
+automaticamente nem apresentado como liberação do veículo pelo frontend.
 
 Durante a sequência de pico, confirme que “Registrar e continuar” limpa somente
 uma entrada concluída, anuncia o sucesso e devolve o foco à placa. Em seguida,
@@ -287,6 +349,20 @@ use “Registrar e ver acessos” para comprovar a navegação alternativa. Uma 
 de validação ou da API deve preservar os valores para correção e não pode manter
 uma confirmação anterior. Registre tempo, ajuda, erros e interrupções como
 evidência diagnóstica, sem impor uma meta arbitrária.
+
+Na lista de acessos em aberto, confira linhas compactas no desktop e cartões
+compactos no mobile. Use a busca local, diferencie o tempo transcorrido do acesso
+do horário da última resposta bem-sucedida da API e execute uma atualização
+manual. Uma falha de atualização deve preservar a lista anterior e avisar que os
+dados podem estar desatualizados, sem criar contagem zero ou lista vazia falsa.
+Ao registrar a saída, confira identificação por placa e condutor, confirmação,
+controle e retorno de foco e exatamente uma mutação, mesmo diante de clique ou
+submissão repetidos.
+
+A correção auditada está disponível para Porteiro, Vigilante e Administrador; o
+Setor de Transporte permanece somente leitura. Somente objetivo, categoria e
+observação podem ser alterados, sempre com justificativa. Placa, condutor,
+horários, situação e autoria original permanecem imutáveis.
 
 ### Cenário 3 — fronteira do Setor de Transporte
 
@@ -299,6 +375,19 @@ evidência diagnóstica, sem impor uma meta arbitrária.
 
 Se o cliente disser que o setor também opera a portaria, registre a observação;
 não altere a permissão durante a sessão.
+
+Confirme também a arquitetura de informação esperada por perfil:
+
+- Porteiro e Vigilante possuem navegação idêntica, organizada em `Visão geral`,
+  `Operações` e `Consultas de apoio`;
+- Setor de Transporte possui `Visão geral`, `Supervisão` e `Gestão`, sem entrada
+  geral nem acessos gerais em aberto;
+- Administrador possui `Visão geral`, `Supervisão`, `Consultas de apoio` e
+  `Gestão técnica`; operações excepcionais continuam acessíveis por rota direta,
+  mas não são promovidas no menu rotineiro.
+
+Esses agrupamentos organizam a interface, mas não substituem a autorização do
+backend e permanecem hipóteses reversíveis até a homologação.
 
 ### Cenário 4 — frota e motoristas autorizados
 
@@ -350,25 +439,32 @@ Desativação e reativação podem ser demonstradas somente em conta fictícia q
 não será usada nos demais cenários. O Administrador não pode desativar a própria
 conta nem remover o último Administrador ativo.
 
+Produção, retenção, backup e contingência não são aprovados por esta sessão. As
+decisões de liberação e governança continuam nas Issues #30 e #100; este roteiro
+apenas coleta evidências e dúvidas que possam apoiar essas decisões.
+
 ## 5. Matriz de rastreabilidade
 
-| Capacidade do MVP              | Contratos principais                                      | Evidência automatizada                                                                                    |
-| ------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Saúde técnica                  | `GET /health`, `/health/live`, `/health/ready`            | `TechnicalEndpointsTests`                                                                                 |
-| Login e bloqueio               | `POST /auth/login`                                        | `AuthenticationTests`, `UsuarioTests`                                                                     |
-| Administração de contas        | `GET/POST/DELETE /users`, reativação                      | `UserAccountLifecycleTests`, `CreateUserAccountServiceTests`, `UserAccountLifecycleServiceTests`          |
-| Entrada, abertos e saída geral | `/access-records/entries`, `/open`, `/{id}/exit`          | `VehicleAccessTests`, `VehicleAccessServiceTests`, `RegistroAcessoTests`                                  |
-| Histórico e correção geral     | `/access-records/history`, `/{id}/correction`             | `VehicleAccessTests`, `VehicleAccessServiceTests`                                                         |
-| Catálogo de frota              | `/institutional-vehicles`                                 | `InstitutionalVehicleCatalogTests`, `InstitutionalVehicleCatalogServiceTests`, `VeiculoTests`             |
-| Motoristas autorizados         | `/institutional-drivers`                                  | `InstitutionalDriverTests`, `InstitutionalDriverServiceTests`, `MotoristaInstitucionalTests`              |
-| Uso institucional              | `/institutional-vehicle-usages`                           | `InstitutionalVehicleUsageTests`, `InstitutionalVehicleUsageServiceTests`, `UsoVeiculoInstitucionalTests` |
-| Autorizações de eventos        | `/event-authorizations`                                   | `EventAuthorizationTests`, `EventAuthorizationServiceTests`, `EventoAcessoTests`                          |
-| Entrada vinculada ao evento    | `POST /access-records/entries` com `eventAuthorizationId` | `EventAccessAssociationTests`                                                                             |
-| Resumo diário                  | `GET /operations/daily-summary`                           | `OperationalSummaryTests`, `OperationalSummaryServiceTests`                                               |
-| Auditoria administrativa       | `GET /audits`                                             | `AuditTrailTests`, `AuditTrailServiceTests`, `AuditoriaTests`                                             |
-| Segurança das requisições      | middleware, Problem Details e rate limiting               | `RequestSafetyTests`, `RateLimitingTests`                                                                 |
-| PostgreSQL e migrations        | schema `dbo`, constraints e índices                       | `PostgreSqlPersistenceTests`, setup de `ApiFactory`                                                       |
-| Fronteiras arquiteturais       | dependências entre projetos                               | `ArchitectureTests`                                                                                       |
+| Capacidade do MVP               | Contratos principais                                      | Evidência automatizada                                                                                    |
+| ------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Saúde técnica                   | `GET /health`, `/health/live`, `/health/ready`            | `TechnicalEndpointsTests`                                                                                 |
+| Login e bloqueio                | `POST /auth/login`                                        | `AuthenticationTests`, `UsuarioTests`                                                                     |
+| Administração de contas         | `GET/POST/DELETE /users`, reativação                      | `UserAccountLifecycleTests`, `CreateUserAccountServiceTests`, `UserAccountLifecycleServiceTests`          |
+| Entrada, abertos e saída geral  | `/access-records/entries`, `/open`, `/{id}/exit`          | `VehicleAccessTests`, `VehicleAccessServiceTests`, `RegistroAcessoTests`                                  |
+| Histórico e correção geral      | `/access-records/history`, `/{id}/correction`             | `VehicleAccessTests`, `VehicleAccessServiceTests`                                                         |
+| Catálogo de frota               | `/institutional-vehicles`                                 | `InstitutionalVehicleCatalogTests`, `InstitutionalVehicleCatalogServiceTests`, `VeiculoTests`             |
+| Motoristas autorizados          | `/institutional-drivers`                                  | `InstitutionalDriverTests`, `InstitutionalDriverServiceTests`, `MotoristaInstitucionalTests`              |
+| Uso institucional               | `/institutional-vehicle-usages`                           | `InstitutionalVehicleUsageTests`, `InstitutionalVehicleUsageServiceTests`, `UsoVeiculoInstitucionalTests` |
+| Autorizações de eventos         | `/event-authorizations`                                   | `EventAuthorizationTests`, `EventAuthorizationServiceTests`, `EventoAcessoTests`                          |
+| Entrada vinculada ao evento     | `POST /access-records/entries` com `eventAuthorizationId` | `EventAccessAssociationTests`                                                                             |
+| Formulário de entrada otimizado | campos existentes de `POST /access-records/entries`       | testes de `NewAccessPage` e validação dos campos condicionais                                             |
+| Lista compacta de abertos       | `GET /access-records/open`, `POST /{id}/exit`             | testes de `OpenAccessPage`, `OpenAccessList` e cálculo de tempo                                           |
+| Navegação por perfil            | rotas e políticas existentes                              | testes de `routeMetadata`, `ProfileRoute` e `AppLayout`                                                   |
+| Resumo diário                   | `GET /operations/daily-summary`                           | `OperationalSummaryTests`, `OperationalSummaryServiceTests`                                               |
+| Auditoria administrativa        | `GET /audits`                                             | `AuditTrailTests`, `AuditTrailServiceTests`, `AuditoriaTests`                                             |
+| Segurança das requisições       | middleware, Problem Details e rate limiting               | `RequestSafetyTests`, `RateLimitingTests`                                                                 |
+| PostgreSQL e migrations         | schema `dbo`, constraints e índices                       | `PostgreSqlPersistenceTests`, setup de `ApiFactory`                                                       |
+| Fronteiras arquiteturais        | dependências entre projetos                               | `ArchitectureTests`                                                                                       |
 
 A suíte automatizada reduz regressões técnicas, mas não substitui a avaliação de
 clareza, utilidade e adequação do processo pelos usuários.
@@ -458,14 +554,23 @@ transformar interpretação da equipe em requisito institucional.
 
 Perguntas que precisam de resposta explícita:
 
-1. Quem registra saídas e retornos dos veículos institucionais na prática?
-2. O resumo diário atende à troca de turno e à conferência do Transporte?
-3. Quais exceções após o fechamento operacional precisam apenas de registro?
-4. Para eventos, são informadas placas, tipos e quantidades ou uma combinação?
-5. Quais correções podem ser feitas e por qual perfil?
-6. Há necessidade comprovada de exportação? Para quem e com quais dados?
-7. Quem será Administrador e quem poderá consultar auditoria?
-8. Quais decisões da Issue #30 possuem responsáveis e prazo?
+1. Os objetivos rápidos representam os casos frequentes?
+2. Está faltando algum tipo de veículo?
+3. “Operações”, “Consultas de apoio”, “Supervisão”, “Gestão” e “Gestão técnica”
+   são compreensíveis?
+4. Cada perfil encontra suas tarefas sem ajuda?
+5. A lista compacta funciona com o volume real de pico combinado com a Portaria
+   e a Vigilância?
+6. O horário de atualização e o tempo transcorrido são compreendidos sem parecer
+   alerta?
+7. Quem registra saídas e retornos dos veículos institucionais na prática?
+8. O resumo diário atende à troca de turno e à conferência do Transporte?
+9. Quais exceções após o fechamento operacional precisam apenas de registro?
+10. Para eventos, são informadas placas, tipos e quantidades ou uma combinação?
+11. Quais correções podem ser feitas e por qual perfil?
+12. Há necessidade comprovada de exportação? Para quem e com quais dados?
+13. Quem será Administrador e quem poderá consultar auditoria?
+14. Quais decisões das Issues #30 e #100 possuem responsáveis e prazo?
 
 ## 8. Critério de encerramento
 
@@ -479,7 +584,8 @@ A homologação técnica está pronta para ser registrada quando:
 - [ ] mudanças aprovadas receberam issues independentes;
 - [ ] nenhuma credencial ou dado pessoal foi incluído nas evidências;
 - [ ] a data, os participantes e a versão/commit demonstrado foram registrados;
-- [ ] o sistema permaneceu classificado como não produtivo até concluir a Issue #30.
+- [ ] o sistema permaneceu classificado como não produtivo até concluir as
+      Issues #30 e #100.
 
 Depois da reunião, publique na Wiki apenas decisões consolidadas. Anotações
 brutas, credenciais, tokens, documentos e dados pessoais não devem ser
