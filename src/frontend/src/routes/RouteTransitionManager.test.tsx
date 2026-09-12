@@ -115,9 +115,7 @@ function renderTransitions(
               <Route element={<MainLayout />}>
                 <Route element={<OverviewPage />} path="/visao-geral" />
                 <Route element={<HistoryPage />} path="/acessos/historico" />
-                <Route
-                  element={<ProfileRoute allowedProfiles={["Administrador"]} />}
-                >
+                <Route element={<ProfileRoute />}>
                   <Route
                     element={<h1>Usuários e permissões</h1>}
                     path="/administracao"

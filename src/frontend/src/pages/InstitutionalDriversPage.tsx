@@ -18,8 +18,8 @@ import {
   describeApiError,
   getApiValidationErrors,
 } from "../services/api-errors";
+import { profileHasCapability } from "../routes/routeMetadata";
 
-const manageableProfiles = ["SetorTransporte", "Administrador"];
 const driverFieldNames: Record<string, InstitutionalDriverField> = {
   documentNumber: "documentNumber",
   documentType: "documentType",
@@ -28,7 +28,10 @@ const driverFieldNames: Record<string, InstitutionalDriverField> = {
 
 export function InstitutionalDriversPage() {
   const { user } = useAuthenticatedSession();
-  const canManage = manageableProfiles.includes(user.profileName);
+  const canManage = profileHasCapability(
+    user.profileName,
+    "manage-institutional-catalogs",
+  );
   const [drivers, setDrivers] = useState<InstitutionalDriver[]>([]);
   const [status, setStatus] = useState<
     "loading" | "ready" | "error" | "denied"

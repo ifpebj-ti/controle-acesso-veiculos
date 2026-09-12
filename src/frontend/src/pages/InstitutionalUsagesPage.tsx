@@ -10,14 +10,18 @@ import {
   useInstitutionalUsageHistory,
   useInstitutionalUsageOperations,
 } from "../features/institutional-usages";
-
-const operationalProfiles = ["Porteiro", "Vigilante", "Administrador"];
-const reviewProfiles = ["SetorTransporte", "Administrador"];
+import { profileHasCapability } from "../routes/routeMetadata";
 
 export function InstitutionalUsagesPage() {
   const { user } = useAuthenticatedSession();
-  const canOperate = operationalProfiles.includes(user.profileName);
-  const canReview = reviewProfiles.includes(user.profileName);
+  const canOperate = profileHasCapability(
+    user.profileName,
+    "operate-institutional-fleet",
+  );
+  const canReview = profileHasCapability(
+    user.profileName,
+    "review-institutional-fleet",
+  );
   const catalogs = useInstitutionalUsageCatalogs();
   const operations = useInstitutionalUsageOperations(canOperate);
   const history = useInstitutionalUsageHistory(canReview);

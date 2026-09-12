@@ -11,10 +11,14 @@ import {
   UserAccountForm,
   useUserAccounts,
 } from "../features/user-accounts";
+import { profileHasCapability } from "../routes/routeMetadata";
 
 export function AdminPage() {
   const { user } = useAuthenticatedSession();
-  const isAdministrator = user.profileName === "Administrador";
+  const isAdministrator = profileHasCapability(
+    user.profileName,
+    "manage-administration",
+  );
   const [activeArea, setActiveArea] = useState<"accounts" | "audit">(
     "accounts",
   );
