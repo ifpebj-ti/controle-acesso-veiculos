@@ -48,6 +48,12 @@ opções de objetivo são hipóteses do MVP e ainda dependem da observação e
 homologação institucional da Issue #162; elas não estabelecem regras entre
 categoria, objetivo ou tipo de veículo.
 
+A lista de acessos em aberto usa linhas compactas no desktop e cartões compactos
+no mobile. O tempo transcorrido é somente informativo e permanece separado do
+horário da última resposta bem-sucedida da API. A atualização da lista é manual;
+não há polling ou classificação de atraso. O volume real representativo de pico
+e a aceitação institucional desse formato permanecem para a Issue #162.
+
 Quando necessário, o operador pode abrir a seção opcional de eventos, consultar
 as autorizações ativas e vigentes e escolher explicitamente uma delas. A interface
 mostra período, área, responsável e saldo das regras, mas não pré-seleciona um

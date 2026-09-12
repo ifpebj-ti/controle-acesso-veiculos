@@ -1,7 +1,10 @@
 export { generalAccessCategories } from "./model/accessCategories";
+export { AccessExitDialog } from "./components/AccessExitDialog";
 export { EntryAdditionalDetails } from "./components/EntryAdditionalDetails";
 export { EntryObjectiveFieldset } from "./components/EntryObjectiveFieldset";
 export { EntryVehicleTypeField } from "./components/EntryVehicleTypeField";
+export { OpenAccessList } from "./components/OpenAccessList";
+export { useOpenAccessRecords } from "./hooks/useOpenAccessRecords";
 export {
   customEntryOption,
   quickAccessObjectives,
