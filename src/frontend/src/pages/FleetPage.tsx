@@ -19,8 +19,8 @@ import {
   describeApiError,
   getApiValidationErrors,
 } from "../services/api-errors";
+import { profileHasCapability } from "../routes/routeMetadata";
 
-const manageableProfiles = ["SetorTransporte", "Administrador"];
 const vehicleFieldNames: Record<string, InstitutionalVehicleField> = {
   brand: "brand",
   color: "color",
@@ -42,7 +42,10 @@ function isSameFormState(current: FormState, expected: NonNullable<FormState>) {
 
 export function FleetPage() {
   const { user } = useAuthenticatedSession();
-  const canManageFleet = manageableProfiles.includes(user.profileName);
+  const canManageFleet = profileHasCapability(
+    user.profileName,
+    "manage-institutional-catalogs",
+  );
   const [vehicles, setVehicles] = useState<InstitutionalVehicle[]>([]);
   const [status, setStatus] = useState<
     "loading" | "ready" | "error" | "denied"

@@ -8,12 +8,14 @@ import {
   EventAuthorizationForm,
   useEventAuthorizations,
 } from "../features/event-authorizations";
-
-const manageableProfiles = ["SetorTransporte", "Administrador"];
+import { profileHasCapability } from "../routes/routeMetadata";
 
 export function EventsPage() {
   const { user } = useAuthenticatedSession();
-  const canManage = manageableProfiles.includes(user.profileName);
+  const canManage = profileHasCapability(
+    user.profileName,
+    "manage-institutional-catalogs",
+  );
   const events = useEventAuthorizations();
 
   if (events.status === "denied") {

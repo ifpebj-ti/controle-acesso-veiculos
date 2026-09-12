@@ -59,9 +59,7 @@ function renderAuthenticationFlow(
           <Route element={<ProtectedRoute />}>
             <Route element={<AppFrame />}>
               <Route element={<SessionIdentity />} path="/visao-geral" />
-              <Route
-                element={<ProfileRoute allowedProfiles={["Administrador"]} />}
-              >
+              <Route element={<ProfileRoute />}>
                 <Route element={<p>Administração</p>} path="/administracao" />
               </Route>
             </Route>

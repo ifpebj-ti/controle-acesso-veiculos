@@ -8,8 +8,7 @@ import { AccessHistoryResults } from "../features/access-records/components/Acce
 import { useAccessHistory } from "../features/access-records/hooks/useAccessHistory";
 import type { AccessRecord } from "../features/access-records";
 import { useAuthenticatedSession } from "../features/authentication";
-
-const correctionProfiles = ["Porteiro", "Vigilante", "Administrador"];
+import { profileHasCapability } from "../routes/routeMetadata";
 
 interface ActiveCorrection {
   record: AccessRecord;
@@ -24,7 +23,10 @@ export function HistoryPage() {
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [successFocusRequest, setSuccessFocusRequest] = useState(0);
   const successNoticeRef = useRef<HTMLDivElement>(null);
-  const canCorrect = correctionProfiles.includes(user.profileName);
+  const canCorrect = profileHasCapability(
+    user.profileName,
+    "correct-general-access",
+  );
 
   useEffect(() => {
     if (successFocusRequest === 0) return;

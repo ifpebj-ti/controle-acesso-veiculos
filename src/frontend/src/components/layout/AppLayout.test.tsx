@@ -123,7 +123,13 @@ describe("AppLayout", () => {
     const dialog = screen.getByRole("dialog", { name: "Menu principal" });
 
     expect(
-      within(dialog).getByRole("link", { name: "Histórico" }),
+      within(dialog).getByRole("button", { name: "Supervisão" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(
+      within(dialog).getByRole("button", { name: "Gestão" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(
+      within(dialog).getByRole("link", { name: "Histórico de acessos" }),
     ).toBeVisible();
     expect(
       within(dialog).queryByRole("link", { name: "Registrar entrada" }),
@@ -133,6 +139,62 @@ describe("AppLayout", () => {
     ).not.toBeInTheDocument();
     expect(
       within(dialog).queryByRole("link", { name: "Usuários e permissões" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("announces collapsible groups and preserves a clear active item", async () => {
+    const user = userEvent.setup();
+    renderLayout("Porteiro");
+
+    await user.click(screen.getByRole("button", { name: "Abrir menu" }));
+    const dialog = screen.getByRole("dialog", { name: "Menu principal" });
+    const operations = within(dialog).getByRole("button", {
+      name: "Operações",
+    });
+    const controlledId = operations.getAttribute("aria-controls");
+
+    expect(operations).toHaveAttribute("aria-expanded", "true");
+    expect(controlledId).toBeTruthy();
+    expect(document.getElementById(controlledId!)).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("link", { name: "Visão geral" }),
+    ).toHaveAttribute("aria-current", "page");
+
+    operations.focus();
+    await user.keyboard("{Enter}");
+    expect(operations).toHaveAttribute("aria-expanded", "false");
+    expect(document.getElementById(controlledId!)).not.toBeInTheDocument();
+    expect(operations).toHaveFocus();
+
+    await user.keyboard(" ");
+    expect(operations).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById(controlledId!)).toBeInTheDocument();
+  });
+
+  it("keeps exceptional general operations out of Administrator navigation", async () => {
+    const user = userEvent.setup();
+    renderLayout("Administrador");
+
+    await user.click(screen.getByRole("button", { name: "Abrir menu" }));
+    const dialog = screen.getByRole("dialog", { name: "Menu principal" });
+
+    expect(
+      within(dialog).getByRole("button", { name: "Supervisão" }),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("button", { name: "Consultas de apoio" }),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("button", { name: "Gestão técnica" }),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("link", { name: "Usuários e permissões" }),
+    ).toBeVisible();
+    expect(
+      within(dialog).queryByRole("link", { name: "Registrar entrada" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("link", { name: "Acessos em aberto" }),
     ).not.toBeInTheDocument();
   });
 
@@ -158,7 +220,9 @@ describe("AppLayout", () => {
 
     await user.click(screen.getByRole("button", { name: "Abrir menu" }));
     const dialog = screen.getByRole("dialog", { name: "Menu principal" });
-    await user.click(within(dialog).getByRole("link", { name: "Histórico" }));
+    await user.click(
+      within(dialog).getByRole("link", { name: "Histórico de acessos" }),
+    );
 
     const destinationHeading = screen.getByRole("heading", {
       name: "Histórico fictício",

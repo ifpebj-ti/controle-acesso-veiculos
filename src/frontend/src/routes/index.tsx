@@ -15,7 +15,6 @@ import { OpenAccessPage } from "../pages/OpenAccessPage";
 import { ProfileRoute } from "./ProfileRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { RouteTransitionManager } from "./RouteTransitionManager";
-import { allProfiles, operationalProfiles } from "./routeMetadata";
 
 export const router = createBrowserRouter([
   {
@@ -35,17 +34,12 @@ export const router = createBrowserRouter([
           {
             element: <AppLayout />,
             children: [
-              { path: "/visao-geral", element: <DashboardPage /> },
               {
-                element: <ProfileRoute allowedProfiles={operationalProfiles} />,
+                element: <ProfileRoute />,
                 children: [
+                  { path: "/visao-geral", element: <DashboardPage /> },
                   { path: "/acessos/novo", element: <NewAccessPage /> },
                   { path: "/acessos/abertos", element: <OpenAccessPage /> },
-                ],
-              },
-              {
-                element: <ProfileRoute allowedProfiles={allProfiles} />,
-                children: [
                   { path: "/acessos/historico", element: <HistoryPage /> },
                   {
                     path: "/utilizacoes-institucionais",
@@ -57,11 +51,8 @@ export const router = createBrowserRouter([
                     element: <InstitutionalDriversPage />,
                   },
                   { path: "/eventos", element: <EventsPage /> },
+                  { path: "/administracao", element: <AdminPage /> },
                 ],
-              },
-              {
-                element: <ProfileRoute allowedProfiles={["Administrador"]} />,
-                children: [{ path: "/administracao", element: <AdminPage /> }],
               },
             ],
           },

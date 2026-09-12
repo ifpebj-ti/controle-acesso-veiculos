@@ -1,20 +1,17 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import {
   profileLabels,
   useAuthenticatedSession,
-  type ProfileName,
 } from "../features/authentication";
+import { canProfileAccessRoute } from "./routeMetadata";
 
-interface ProfileRouteProps {
-  allowedProfiles: readonly ProfileName[];
-}
-
-export function ProfileRoute({ allowedProfiles }: ProfileRouteProps) {
+export function ProfileRoute() {
   const { user } = useAuthenticatedSession();
+  const { pathname } = useLocation();
 
-  if (!allowedProfiles.includes(user.profileName)) {
+  if (!canProfileAccessRoute(user.profileName, pathname)) {
     return (
       <AccessDeniedState
         message={`O perfil ${profileLabels[user.profileName]} não possui acesso a esta área.`}

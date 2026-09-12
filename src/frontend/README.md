@@ -35,6 +35,16 @@ mantém frota e eventos. O Administrador gerencia contas, frota e eventos e poss
 o acesso operacional excepcional permitido pelo backend, embora entrada e saída
 continuem ocultas de seu menu rotineiro.
 
+A navegação apresenta `Operações` e `Consultas de apoio` para Porteiro e
+Vigilante; `Supervisão` e `Gestão` para o Setor de Transporte; e `Supervisão`,
+`Consultas de apoio` e `Gestão técnica` para o Administrador. A matriz visual,
+as rotas permitidas e as capacidades de cada página possuem uma fonte
+centralizada em `src/routes/routeMetadata.ts`. Um item oculto não representa
+negação de autorização: o frontend ainda protege o acesso direto conforme o
+perfil autenticado, e o backend permanece como autoridade final em cada
+requisição. Os nomes e agrupamentos são hipóteses reversíveis do MVP; sua
+encontrabilidade e aceitação institucional continuam na Issue #162.
+
 O formulário integrado segue o fluxo geral documentado: nome do condutor,
 placa, objetivo e categoria são obrigatórios; tipo do veículo e observação são
 opcionais. Categoria e objetivo permanecem distintos. Documento não é exigido
