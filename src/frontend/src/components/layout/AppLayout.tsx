@@ -1,104 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useId, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import {
   profileLabels,
   useAuthenticatedSession,
-  type ProfileName,
 } from "../../features/authentication";
+import { getProfileNavigation } from "../../routes/routeMetadata";
 import { Brand } from "../ui/Brand";
-import { Icon, type IconName } from "../ui/Icon";
-
-interface NavigationItem {
-  label: string;
-  icon: IconName;
-  to: string;
-  profiles?: ProfileName[];
-}
-
-interface NavigationSection {
-  label: string;
-  icon: IconName;
-  items?: NavigationItem[];
-  profiles?: ProfileName[];
-  to?: string;
-}
-
-const operationalProfiles: ProfileName[] = ["Porteiro", "Vigilante"];
-
-const registryProfiles: ProfileName[] = [
-  "Porteiro",
-  "Vigilante",
-  "SetorTransporte",
-  "Administrador",
-];
-
-const navigation: NavigationSection[] = [
-  {
-    icon: "dashboard",
-    label: "Visão geral",
-    to: "/visao-geral",
-  },
-  {
-    icon: "history",
-    label: "Movimentações",
-    items: [
-      {
-        icon: "plus",
-        label: "Registrar entrada",
-        profiles: operationalProfiles,
-        to: "/acessos/novo",
-      },
-      {
-        icon: "clock",
-        label: "Acessos em aberto",
-        profiles: operationalProfiles,
-        to: "/acessos/abertos",
-      },
-      { icon: "history", label: "Histórico", to: "/acessos/historico" },
-      {
-        icon: "bus",
-        label: "Utilizações da frota",
-        to: "/utilizacoes-institucionais",
-      },
-    ],
-  },
-  {
-    icon: "clipboard",
-    label: "Cadastros",
-    profiles: registryProfiles,
-    items: [
-      {
-        icon: "bus",
-        label: "Frota institucional",
-        profiles: registryProfiles,
-        to: "/frota",
-      },
-      {
-        icon: "users",
-        label: "Motoristas autorizados",
-        profiles: registryProfiles,
-        to: "/motoristas-institucionais",
-      },
-      {
-        icon: "calendar",
-        label: "Eventos e autorizações",
-        profiles: registryProfiles,
-        to: "/eventos",
-      },
-    ],
-  },
-  {
-    icon: "users",
-    label: "Usuários e permissões",
-    profiles: ["Administrador"],
-    to: "/administracao",
-  },
-];
+import { Icon } from "../ui/Icon";
 
 function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
   const { logout, user } = useAuthenticatedSession();
   const navigate = useNavigate();
+  const navigation = getProfileNavigation(user.profileName);
+  const navigationId = useId();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     () => new Set(),
   );
@@ -147,18 +62,8 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
       <nav aria-label="Navegação principal" className="mt-20 flex-1">
         <ul className="space-y-2">
           {navigation.map((section) => {
-            if (
-              section.profiles &&
-              !section.profiles.includes(user.profileName)
-            ) {
-              return null;
-            }
-
-            const items = section.items?.filter(
-              (item) =>
-                !item.profiles || item.profiles.includes(user.profileName),
-            );
             const isExpanded = !collapsedSections.has(section.label);
+            const sectionItemsId = `${navigationId}-${section.id}-items`;
 
             return (
               <li key={section.label}>
@@ -180,6 +85,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                 ) : (
                   <>
                     <button
+                      aria-controls={sectionItemsId}
                       aria-expanded={isExpanded}
                       className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-ink/85 transition-colors hover:text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
                       onClick={() => toggleSection(section.label)}
@@ -194,9 +100,12 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                       />
                     </button>
 
-                    {isExpanded && items && (
-                      <ul className="ml-6 mt-1 space-y-1 border-l border-ink/15 pl-3">
-                        {items.map((item) => (
+                    {isExpanded && section.items && (
+                      <ul
+                        className="ml-6 mt-1 space-y-1 border-l border-ink/15 pl-3"
+                        id={sectionItemsId}
+                      >
+                        {section.items.map((item) => (
                           <li key={item.to}>
                             <NavLink
                               className={({ isActive }) =>
@@ -241,6 +150,19 @@ export function AppLayout() {
   const menuDialogRef = useRef<HTMLElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const menuCloseRef = useRef<HTMLButtonElement>(null);
+
+  function skipToPageContent(event: MouseEvent<HTMLAnchorElement>) {
+    const pageHeading = document.querySelector<HTMLElement>(
+      "#conteudo-principal h1",
+    );
+
+    if (!pageHeading) return;
+
+    event.preventDefault();
+    pageHeading.tabIndex = -1;
+    pageHeading.dataset.routeFocusTarget = "";
+    pageHeading.focus();
+  }
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -294,6 +216,7 @@ export function AppLayout() {
       <a
         className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform focus:translate-y-0"
         href="#conteudo-principal"
+        onClick={skipToPageContent}
       >
         Ir para o conteúdo
       </a>

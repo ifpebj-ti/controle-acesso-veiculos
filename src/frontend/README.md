@@ -22,7 +22,8 @@ Fluxo sugerido para validação local:
 2. confirmar que e-mail e perfil exibidos vieram da resposta da API;
 3. como Porteiro ou Vigilante, registrar entradas consecutivas em
    `/acessos/novo` e confirmar que a ação de continuidade reinicia o formulário
-   com foco na placa;
+   com foco na placa; conferir também a associação opcional com uma autorização
+   de evento vigente, sem impedir uma entrada comum quando a consulta falhar;
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
 5. como Transporte, consultar e manter os catálogos ativos da frota e de
    motoristas e manter as autorizações de eventos;
@@ -34,11 +35,53 @@ mantém frota e eventos. O Administrador gerencia contas, frota e eventos e poss
 o acesso operacional excepcional permitido pelo backend, embora entrada e saída
 continuem ocultas de seu menu rotineiro.
 
+A navegação apresenta `Operações` e `Consultas de apoio` para Porteiro e
+Vigilante; `Supervisão` e `Gestão` para o Setor de Transporte; e `Supervisão`,
+`Consultas de apoio` e `Gestão técnica` para o Administrador. A matriz visual,
+as rotas permitidas e as capacidades de cada página possuem uma fonte
+centralizada em `src/routes/routeMetadata.ts`. Um item oculto não representa
+negação de autorização: o frontend ainda protege o acesso direto conforme o
+perfil autenticado, e o backend permanece como autoridade final em cada
+requisição. Os nomes e agrupamentos são hipóteses reversíveis do MVP; sua
+encontrabilidade e aceitação institucional continuam na Issue #162.
+
 O formulário integrado segue o fluxo geral documentado: nome do condutor,
 placa, objetivo e categoria são obrigatórios; tipo do veículo e observação são
 opcionais. Categoria e objetivo permanecem distintos. Documento não é exigido
 por decisão apenas visual, e horário, autorização e duplicidade continuam sob
 responsabilidade da API.
+
+Para reduzir digitação na portaria, o formulário apresenta objetivos rápidos e
+tipos de veículo predefinidos, mantendo “Outro” com texto livre. O valor final é
+enviado nos mesmos campos `objective` e `vehicleType` do contrato atual. As
+opções de objetivo são hipóteses do MVP e ainda dependem da observação e
+homologação institucional da Issue #162; elas não estabelecem regras entre
+categoria, objetivo ou tipo de veículo.
+
+A lista de acessos em aberto usa linhas compactas no desktop e cartões compactos
+no mobile. O tempo transcorrido é somente informativo e permanece separado do
+horário da última resposta bem-sucedida da API. A atualização da lista é manual;
+não há polling ou classificação de atraso. O volume real representativo de pico
+e a aceitação institucional desse formato permanecem para a Issue #162.
+
+Quando necessário, o operador pode abrir a seção opcional de eventos, consultar
+as autorizações ativas e vigentes e escolher explicitamente uma delas. A interface
+mostra período, área, responsável e saldo das regras, mas não pré-seleciona um
+evento nem decide se a placa, o tipo, a janela ou a cota permitem a entrada. Essa
+validação permanece transacional no backend. Falha ao consultar eventos não
+bloqueia o fluxo geral; conflitos retornados ao registrar preservam o formulário
+para conferência. O histórico identifica pelo nome somente os acessos que foram
+associados a uma autorização.
+
+No histórico geral, Porteiro, Vigilante e Administrador podem abrir uma correção
+auditada para alterar somente objetivo, categoria e observação, sempre com uma
+justificativa obrigatória. Placa, condutor, horários, situação, autoria original
+e eventual associação com evento permanecem como contexto textual imutável. A
+interface usa a resposta canônica de `PUT /access-records/{id}/correction` e
+revalida o histórico com os filtros efetivamente aplicados. A página atual é
+preservada enquanto continuar válida; caso deixe de existir, a última página
+válida é carregada. O Setor de Transporte continua somente leitura, e a
+autorização efetiva permanece sob responsabilidade do backend.
 
 Após uma resposta bem-sucedida, o operador pode continuar na mesma tela para
 registrar o próximo veículo ou abrir a lista de acessos. A continuidade limpa os
@@ -130,6 +173,23 @@ Alternativas avaliadas:
 - axe-core para auditoria automatizada de acessibilidade.
 
 ## Testes e acessibilidade
+
+### Transições de rota
+
+Os títulos das páginas e as permissões necessárias para identificar um acesso
+negado ficam centralizados em `src/routes/routeMetadata.ts`. O componente
+`RouteTransitionManager` reage somente a mudanças de caminho, atualiza o título
+do documento e move o foco para o alvo definido pela rota. O login usa o campo
+de e-mail para permitir o início imediato da autenticação; as demais telas usam
+o primeiro `h1` dentro do conteúdo principal. Esse título recebe
+`tabIndex="-1"` programaticamente, portanto não entra na sequência normal de Tab.
+
+Novas rotas devem receber um título descritivo no mapa e renderizar exatamente
+um `h1` dentro de `main`. Filtros, paginação, retry, abertura de formulários e
+outras atualizações internas não mudam o caminho e, por isso, não deslocam o
+foco. O mecanismo não cria uma região `aria-live`; o novo contexto é comunicado
+pelo título do documento e pelo foco no cabeçalho, preservando o skip link e a
+gestão de foco do menu móvel.
 
 A suíte usa Vitest com JSDOM e Testing Library. Os testes consultam elementos por
 papel e nome acessível e cobrem autenticação, restrição visual por perfil,

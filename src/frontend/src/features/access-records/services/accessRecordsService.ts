@@ -7,6 +7,7 @@ import {
 import type {
   AccessHistoryFilters,
   AccessRecord,
+  CorrectAccessRecordInput,
   PagedAccessRecords,
   RegisterAccessEntryInput,
 } from "../types";
@@ -39,6 +40,17 @@ export async function listOpenAccessRecords(): Promise<AccessRecord[]> {
 
 export async function closeAccessRecord(id: number): Promise<AccessRecord> {
   const response = await api.post<unknown>(`/access-records/${id}/exit`);
+  return parseContract(accessRecordSchema.safeParse(response.data));
+}
+
+export async function correctAccessRecord(
+  id: number,
+  input: CorrectAccessRecordInput,
+): Promise<AccessRecord> {
+  const response = await api.put<unknown>(
+    `/access-records/${id}/correction`,
+    input,
+  );
   return parseContract(accessRecordSchema.safeParse(response.data));
 }
 

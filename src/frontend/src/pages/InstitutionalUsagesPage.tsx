@@ -10,14 +10,18 @@ import {
   useInstitutionalUsageHistory,
   useInstitutionalUsageOperations,
 } from "../features/institutional-usages";
-
-const operationalProfiles = ["Porteiro", "Vigilante", "Administrador"];
-const reviewProfiles = ["SetorTransporte", "Administrador"];
+import { profileHasCapability } from "../routes/routeMetadata";
 
 export function InstitutionalUsagesPage() {
   const { user } = useAuthenticatedSession();
-  const canOperate = operationalProfiles.includes(user.profileName);
-  const canReview = reviewProfiles.includes(user.profileName);
+  const canOperate = profileHasCapability(
+    user.profileName,
+    "operate-institutional-fleet",
+  );
+  const canReview = profileHasCapability(
+    user.profileName,
+    "review-institutional-fleet",
+  );
   const catalogs = useInstitutionalUsageCatalogs();
   const operations = useInstitutionalUsageOperations(canOperate);
   const history = useInstitutionalUsageHistory(canReview);
@@ -45,7 +49,7 @@ export function InstitutionalUsagesPage() {
         action={
           canOperate ? (
             <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 disabled:cursor-wait disabled:opacity-60"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
               disabled={
                 catalogs.status !== "ready" || operations.pendingAction !== null
               }

@@ -171,7 +171,7 @@ export function InstitutionalDriverForm({
             Cancelar
           </button>
           <button
-            className="min-h-12 rounded-xl bg-brand px-7 font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 disabled:cursor-wait disabled:opacity-65"
+            className="min-h-12 rounded-xl bg-brand-dark px-7 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
             disabled={disabled}
             type="submit"
           >

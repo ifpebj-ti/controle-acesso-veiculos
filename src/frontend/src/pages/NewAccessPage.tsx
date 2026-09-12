@@ -1,16 +1,26 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import {
   accessEntryFormSchema,
+  customEntryOption,
+  EntryAdditionalDetails,
+  EntryObjectiveFieldset,
+  EntryVehicleTypeField,
   generalAccessCategories,
   registerAccessEntry,
   type AccessEntryFormValues,
+  type RegisterAccessEntryInput,
 } from "../features/access-records";
+import {
+  EventAuthorizationSelector,
+  useCurrentEventAuthorizations,
+  type EventAuthorization,
+} from "../features/event-authorizations";
 import {
   describeApiError,
   getApiValidationErrors,
@@ -20,21 +30,23 @@ const fieldClass =
   "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 const fieldNames: Record<string, keyof AccessEntryFormValues> = {
+  eventAuthorizationId: "eventAuthorizationId",
   plate: "plate",
   driverName: "driverName",
   categoryName: "categoryName",
-  objective: "objective",
-  vehicleType: "vehicleType",
   observation: "observation",
 };
 
 const defaultValues: AccessEntryFormValues = {
   categoryName: generalAccessCategories[0],
   driverName: "",
+  eventAuthorizationId: "",
   objective: "",
+  objectiveOther: "",
   observation: "",
   plate: "",
   vehicleType: "",
+  vehicleTypeOther: "",
 };
 
 type SubmitIntent = "continue" | "review";
@@ -50,19 +62,41 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 export function NewAccessPage() {
   const navigate = useNavigate();
+  const [eventSectionOpen, setEventSectionOpen] = useState(false);
+  const [additionalDetailsOpen, setAdditionalDetailsOpen] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [pendingIntent, setPendingIntent] = useState<SubmitIntent | null>(null);
   const {
     formState: { errors, isSubmitting },
+    control,
     handleSubmit,
     register,
     reset,
+    clearErrors,
     setError,
+    setValue,
   } = useForm<AccessEntryFormValues>({
     defaultValues,
     resolver: zodResolver(accessEntryFormSchema),
   });
+  const eventAuthorizations = useCurrentEventAuthorizations(eventSectionOpen);
+  const selectedEventAuthorizationId = useWatch({
+    control,
+    name: "eventAuthorizationId",
+  });
+  const selectedVehicleType = useWatch({ control, name: "vehicleType" });
+  const selectedEvent = eventAuthorizations.events.find(
+    (event) => String(event.id) === selectedEventAuthorizationId,
+  );
+
+  function selectEventAuthorization(event: EventAuthorization | null) {
+    clearErrors("eventAuthorizationId");
+    setValue("eventAuthorizationId", event ? String(event.id) : "", {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
 
   async function submit(values: AccessEntryFormValues, intent: SubmitIntent) {
     setRequestError(null);
@@ -70,11 +104,25 @@ export function NewAccessPage() {
     setPendingIntent(intent);
 
     try {
-      await registerAccessEntry({
-        ...values,
+      const input: RegisterAccessEntryInput = {
+        categoryName: values.categoryName,
+        driverName: values.driverName,
+        objective:
+          values.objective === customEntryOption
+            ? values.objectiveOther
+            : values.objective,
         observation: values.observation || undefined,
-        vehicleType: values.vehicleType || undefined,
-      });
+        plate: values.plate,
+        vehicleType:
+          values.vehicleType === customEntryOption
+            ? values.vehicleTypeOther
+            : values.vehicleType || undefined,
+      };
+      if (values.eventAuthorizationId) {
+        input.eventAuthorizationId = Number(values.eventAuthorizationId);
+      }
+
+      await registerAccessEntry(input);
       if (intent === "review") {
         navigate("/acessos/abertos", {
           state: { notice: "Entrada registrada com sucesso." },
@@ -83,6 +131,8 @@ export function NewAccessPage() {
       }
 
       reset(defaultValues);
+      setEventSectionOpen(false);
+      setAdditionalDetailsOpen(false);
       setSuccessNotice(
         "Entrada registrada. O formulário está pronto para o próximo veículo.",
       );
@@ -91,20 +141,33 @@ export function NewAccessPage() {
       );
     } catch (error) {
       const validationErrors = getApiValidationErrors(error);
+      const accessRecordError = validationErrors.accessRecord;
       let hasFieldError = false;
 
       for (const [apiField, message] of Object.entries(validationErrors)) {
-        const formField = fieldNames[apiField];
+        if (apiField === "accessRecord") continue;
+        const formField =
+          apiField === "objective"
+            ? values.objective === customEntryOption
+              ? "objectiveOther"
+              : "objective"
+            : apiField === "vehicleType"
+              ? values.vehicleType === customEntryOption
+                ? "vehicleTypeOther"
+                : "vehicleType"
+              : fieldNames[apiField];
         if (!formField) continue;
+        if (formField === "observation") setAdditionalDetailsOpen(true);
         setError(formField, { message, type: "server" });
         hasFieldError = true;
       }
 
       const description = describeApiError(error);
       setRequestError(
-        hasFieldError
-          ? "Revise os campos destacados e tente novamente."
-          : description.message,
+        accessRecordError ??
+          (hasFieldError
+            ? "Revise os campos destacados e tente novamente."
+            : description.message),
       );
     } finally {
       setPendingIntent(null);
@@ -240,80 +303,92 @@ export function NewAccessPage() {
                 />
               </div>
 
-              <div>
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="vehicleType"
-                >
-                  Tipo do veículo{" "}
-                  <span className="font-normal text-ink/50">(opcional)</span>
-                </label>
-                <input
-                  aria-describedby={
-                    errors.vehicleType ? "vehicleType-error" : undefined
-                  }
-                  aria-invalid={Boolean(errors.vehicleType)}
-                  className={fieldClass}
-                  id="vehicleType"
-                  maxLength={50}
-                  placeholder="Ex.: Automóvel"
-                  {...register("vehicleType")}
-                />
-                <FieldError
-                  id="vehicleType-error"
-                  message={errors.vehicleType?.message}
-                />
-              </div>
+              <EntryVehicleTypeField
+                clearErrors={clearErrors}
+                errors={errors}
+                register={register}
+                selectedVehicleType={selectedVehicleType}
+              />
 
-              <div className="md:col-span-2">
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="objective"
-                >
-                  Objetivo do acesso <span className="text-red-700">*</span>
-                </label>
-                <textarea
-                  aria-describedby={
-                    errors.objective ? "objective-error" : undefined
-                  }
-                  aria-invalid={Boolean(errors.objective)}
-                  className={`${fieldClass} min-h-28 py-3`}
-                  id="objective"
-                  maxLength={500}
-                  placeholder="Descreva de forma objetiva a finalidade da entrada."
-                  {...register("objective")}
-                />
-                <FieldError
-                  id="objective-error"
-                  message={errors.objective?.message}
-                />
-              </div>
+              <Controller
+                control={control}
+                name="objective"
+                render={({ field }) => (
+                  <EntryObjectiveFieldset
+                    clearErrors={clearErrors}
+                    errors={errors}
+                    fieldRef={field.ref}
+                    onBlur={field.onBlur}
+                    onSelect={field.onChange}
+                    register={register}
+                    selectedObjective={field.value}
+                  />
+                )}
+              />
 
-              <div className="md:col-span-2">
-                <label
-                  className="text-sm font-semibold text-ink"
-                  htmlFor="observation"
-                >
-                  Observação{" "}
-                  <span className="font-normal text-ink/50">(opcional)</span>
-                </label>
-                <textarea
-                  aria-describedby={
-                    errors.observation ? "observation-error" : undefined
-                  }
-                  aria-invalid={Boolean(errors.observation)}
-                  className={`${fieldClass} min-h-24 py-3`}
-                  id="observation"
-                  maxLength={1000}
-                  placeholder="Inclua somente informação necessária para a operação."
-                  {...register("observation")}
-                />
-                <FieldError
-                  id="observation-error"
-                  message={errors.observation?.message}
-                />
-              </div>
+              <EntryAdditionalDetails
+                errors={errors}
+                onOpenChange={setAdditionalDetailsOpen}
+                open={additionalDetailsOpen}
+                register={register}
+              />
             </div>
+
+            <section
+              className="rounded-2xl border border-ink/10 bg-[#BDD8F1]/20 p-4 sm:p-5"
+              aria-labelledby="event-link-title"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3
+                    className="font-display text-xl text-ink"
+                    id="event-link-title"
+                  >
+                    Autorização de evento
+                  </h3>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/65">
+                    Associação opcional. Nenhum evento é escolhido
+                    automaticamente.
+                  </p>
+                  {selectedEvent && !eventSectionOpen && (
+                    <p className="mt-2 text-sm font-bold text-brand-dark">
+                      Evento vinculado: {selectedEvent.name}
+                    </p>
+                  )}
+                </div>
+                <button
+                  aria-controls="event-authorization-options"
+                  aria-expanded={eventSectionOpen}
+                  className="min-h-11 rounded-xl border border-brand-dark px-4 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
+                  onClick={() => setEventSectionOpen((current) => !current)}
+                  type="button"
+                >
+                  {eventSectionOpen
+                    ? "Ocultar autorizações de evento"
+                    : selectedEvent
+                      ? "Alterar autorização vinculada"
+                      : "Vincular uma autorização de evento"}
+                </button>
+              </div>
+
+              {eventSectionOpen && (
+                <div className="mt-5" id="event-authorization-options">
+                  <EventAuthorizationSelector
+                    errorMessage={eventAuthorizations.errorMessage}
+                    events={eventAuthorizations.events}
+                    onRetry={() => void eventAuthorizations.retry()}
+                    onSelect={selectEventAuthorization}
+                    selectedId={
+                      selectedEventAuthorizationId
+                        ? Number(selectedEventAuthorizationId)
+                        : null
+                    }
+                    selectionError={errors.eventAuthorizationId?.message}
+                    status={eventAuthorizations.status}
+                  />
+                </div>
+              )}
+            </section>
 
             <div className="flex flex-col gap-3 border-t border-ink/10 pt-6 sm:flex-row sm:flex-wrap sm:justify-end">
               <button
@@ -325,7 +400,7 @@ export function NewAccessPage() {
                 Cancelar
               </button>
               <button
-                className="min-h-12 rounded-xl bg-brand px-7 font-bold text-white shadow-sm hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 disabled:cursor-wait disabled:opacity-65"
+                className="min-h-12 rounded-xl bg-brand-dark px-7 font-bold text-white shadow-sm hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
                 disabled={isSubmitting}
                 type="submit"
               >

@@ -15,6 +15,14 @@ export interface RegisterAccessEntryInput {
   objective: string;
   vehicleType?: string;
   observation?: string;
+  eventAuthorizationId?: number;
+}
+
+export interface CorrectAccessRecordInput {
+  objective: string;
+  categoryName: string;
+  observation: string | null;
+  justification: string;
 }
 
 export interface AccessHistoryFilters {

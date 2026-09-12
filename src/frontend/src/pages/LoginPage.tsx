@@ -178,7 +178,7 @@ export function LoginPage() {
 
               <div className="pt-2 text-center sm:pt-4">
                 <button
-                  className="min-h-13 w-full rounded-2xl bg-brand px-8 font-display text-xl font-bold uppercase text-white shadow-sm transition hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/35 disabled:cursor-wait disabled:opacity-65 sm:min-h-16 sm:w-auto sm:min-w-[17rem] sm:text-[1.75rem]"
+                  className="min-h-13 w-full rounded-2xl bg-brand-dark px-8 font-display text-xl font-bold uppercase text-white shadow-sm transition hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100 sm:min-h-16 sm:w-auto sm:min-w-[17rem] sm:text-[1.75rem]"
                   disabled={isSubmitting}
                   type="submit"
                 >

@@ -11,10 +11,14 @@ import {
   UserAccountForm,
   useUserAccounts,
 } from "../features/user-accounts";
+import { profileHasCapability } from "../routes/routeMetadata";
 
 export function AdminPage() {
   const { user } = useAuthenticatedSession();
-  const isAdministrator = user.profileName === "Administrador";
+  const isAdministrator = profileHasCapability(
+    user.profileName,
+    "manage-administration",
+  );
   const [activeArea, setActiveArea] = useState<"accounts" | "audit">(
     "accounts",
   );
@@ -37,7 +41,7 @@ export function AdminPage() {
         action={
           activeArea === "accounts" ? (
             <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 disabled:cursor-wait disabled:opacity-60"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
               disabled={
                 accounts.pendingAction !== null || accounts.status !== "ready"
               }

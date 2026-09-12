@@ -10,6 +10,7 @@ interface AccessHistoryResultsProps {
   result: PagedAccessRecords | null;
   onPageChange: (page: number) => void;
   onRetry: () => void;
+  onCorrect?: (record: AccessRecord, trigger: HTMLButtonElement) => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -31,12 +32,17 @@ function stayDuration(record: AccessRecord) {
   return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, "0")}`;
 }
 
+function linkedEventName(record: AccessRecord) {
+  return record.eventAuthorizationName?.trim() || null;
+}
+
 export function AccessHistoryResults({
   errorMessage,
   requestStatus,
   result,
   onPageChange,
   onRetry,
+  onCorrect,
 }: AccessHistoryResultsProps) {
   const records = result?.items ?? [];
   const pageNumbers = useMemo(() => {
@@ -120,6 +126,12 @@ export function AccessHistoryResults({
                   {record.driverName}
                 </p>
                 <p className="mt-1 text-sm text-ink/60">{record.objective}</p>
+                {linkedEventName(record) && (
+                  <p className="mt-2 text-sm text-ink/70">
+                    <span className="font-bold text-ink">Evento:</span>{" "}
+                    {linkedEventName(record)}
+                  </p>
+                )}
                 <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-ink/8 pt-3 text-xs">
                   <div>
                     <dt className="font-bold uppercase tracking-wider text-ink/50">
@@ -136,6 +148,16 @@ export function AccessHistoryResults({
                     <dd className="mt-1 text-ink/75">{stayDuration(record)}</dd>
                   </div>
                 </dl>
+                {onCorrect && (
+                  <button
+                    aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                    className="mt-4 min-h-11 w-full rounded-xl border border-brand-dark px-4 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
+                    onClick={(event) => onCorrect(record, event.currentTarget)}
+                    type="button"
+                  >
+                    Corrigir registro
+                  </button>
+                )}
               </article>
             ))}
           </div>
@@ -162,6 +184,11 @@ export function AccessHistoryResults({
                   <th className="px-3 py-3" scope="col">
                     Situação
                   </th>
+                  {onCorrect && (
+                    <th className="px-3 py-3" scope="col">
+                      Ações
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -184,6 +211,12 @@ export function AccessHistoryResults({
                     </td>
                     <td className="px-3 py-4 text-ink/75">
                       {record.objective}
+                      {linkedEventName(record) && (
+                        <span className="mt-2 block text-xs text-ink/65">
+                          <strong className="text-ink">Evento:</strong>{" "}
+                          {linkedEventName(record)}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-4 text-ink/70">
                       {stayDuration(record)}
@@ -200,6 +233,20 @@ export function AccessHistoryResults({
                         tone={record.exitAtUtc ? "success" : "warning"}
                       />
                     </td>
+                    {onCorrect && (
+                      <td className="px-3 py-4">
+                        <button
+                          aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                          className="min-h-10 whitespace-nowrap rounded-xl border border-brand-dark px-3 text-xs font-bold text-brand-dark hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
+                          onClick={(event) =>
+                            onCorrect(record, event.currentTarget)
+                          }
+                          type="button"
+                        >
+                          Corrigir registro
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

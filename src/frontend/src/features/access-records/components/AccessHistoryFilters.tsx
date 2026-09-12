@@ -29,6 +29,9 @@ export function AccessHistoryFilters({
 }: AccessHistoryFiltersProps) {
   function submit(event: FormEvent) {
     event.preventDefault();
+
+    if (requestStatus === "loading") return;
+
     onApply();
   }
 
@@ -203,8 +206,8 @@ export function AccessHistoryFilters({
 
         <div className="mt-5 flex justify-end">
           <button
-            className="min-h-11 rounded-xl bg-brand px-6 text-sm font-bold text-white hover:bg-brand-dark disabled:opacity-65"
-            disabled={requestStatus === "loading"}
+            aria-disabled={requestStatus === "loading"}
+            className="min-h-11 rounded-xl bg-brand-dark px-6 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white aria-disabled:cursor-wait aria-disabled:bg-brand-soft aria-disabled:text-ink aria-disabled:opacity-100"
             type="submit"
           >
             {requestStatus === "loading" ? "Consultando…" : "Aplicar filtros"}

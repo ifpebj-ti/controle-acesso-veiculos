@@ -1,80 +1,46 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
-import { StatusBadge } from "../components/ui/StatusBadge";
 import {
-  closeAccessRecord,
-  listOpenAccessRecords,
+  AccessExitDialog,
+  OpenAccessList,
   type AccessRecord,
+  useOpenAccessRecords,
 } from "../features/access-records";
-import { describeApiError } from "../services/api-errors";
-
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "short",
-  timeStyle: "short",
-});
 
 interface LocationState {
   notice?: string;
 }
 
+interface ExitSelection {
+  record: AccessRecord;
+  trigger: HTMLButtonElement;
+}
+
+const updateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
 export function OpenAccessPage() {
   const location = useLocation();
-  const [records, setRecords] = useState<AccessRecord[]>([]);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<
-    "loading" | "ready" | "error" | "denied"
-  >("loading");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [notice, setNotice] = useState(
+  const [navigationNotice, setNavigationNotice] = useState(
     (location.state as LocationState | null)?.notice ?? null,
   );
-  const [closingId, setClosingId] = useState<number | null>(null);
-
-  const loadRecords = useCallback(async () => {
-    setStatus("loading");
-    setRecords([]);
-    setErrorMessage(null);
-
-    try {
-      setRecords(await listOpenAccessRecords());
-      setStatus("ready");
-    } catch (error) {
-      const description = describeApiError(error);
-      setRecords([]);
-      setStatus(description.kind === "access-denied" ? "denied" : "error");
-      setErrorMessage(description.message);
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    void listOpenAccessRecords()
-      .then((response) => {
-        if (!active) return;
-        setRecords(response);
-        setStatus("ready");
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        const description = describeApiError(error);
-        setRecords([]);
-        setStatus(description.kind === "access-denied" ? "denied" : "error");
-        setErrorMessage(description.message);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const [exitSelection, setExitSelection] = useState<ExitSelection | null>(
+    null,
+  );
+  const accessRecords = useOpenAccessRecords();
 
   const filteredRecords = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
-    return records.filter((record) =>
+    return accessRecords.records.filter((record) =>
       [
         record.plate,
         record.driverName,
@@ -84,33 +50,37 @@ export function OpenAccessPage() {
         value.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
       ),
     );
-  }, [query, records]);
+  }, [accessRecords.records, query]);
 
-  const representedCategories = new Set(
-    filteredRecords.map((record) => record.categoryName),
-  ).size;
+  const notice = accessRecords.notice ?? navigationNotice;
 
-  async function confirmExit(record: AccessRecord) {
-    if (!window.confirm(`Confirmar a saída do veículo ${record.plate}?`))
-      return;
-
-    setClosingId(record.id);
-    setErrorMessage(null);
-    try {
-      await closeAccessRecord(record.id);
-      setRecords((current) => current.filter((item) => item.id !== record.id));
-      setNotice(`Saída do veículo ${record.plate} registrada com sucesso.`);
-    } catch (error) {
-      const description = describeApiError(error);
-      if (description.kind === "access-denied") setStatus("denied");
-      setErrorMessage(description.message);
-    } finally {
-      setClosingId(null);
-    }
+  function dismissNotice() {
+    accessRecords.clearNotice();
+    setNavigationNotice(null);
   }
 
-  if (status === "denied") {
-    return <AccessDeniedState message={errorMessage ?? undefined} />;
+  function openExitDialog(record: AccessRecord, trigger: HTMLButtonElement) {
+    if (accessRecords.closingId !== null) return;
+    accessRecords.clearOperationError();
+    setExitSelection({ record, trigger });
+  }
+
+  function closeExitDialog() {
+    if (accessRecords.closingId !== null) return;
+    accessRecords.clearOperationError();
+    setExitSelection(null);
+  }
+
+  async function confirmExit() {
+    if (!exitSelection) return;
+    const succeeded = await accessRecords.closeRecord(exitSelection.record);
+    if (succeeded) setExitSelection(null);
+  }
+
+  if (accessRecords.status === "denied") {
+    return (
+      <AccessDeniedState message={accessRecords.queryError ?? undefined} />
+    );
   }
 
   return (
@@ -118,7 +88,7 @@ export function OpenAccessPage() {
       <PageHeader
         action={
           <Link
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white"
             to="/acessos/novo"
           >
             <Icon name="plus" size={18} /> Nova entrada
@@ -137,7 +107,7 @@ export function OpenAccessPage() {
           <p>{notice}</p>
           <button
             className="shrink-0 rounded-md font-bold underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
-            onClick={() => setNotice(null)}
+            onClick={dismissNotice}
             type="button"
           >
             Fechar
@@ -145,169 +115,134 @@ export function OpenAccessPage() {
         </div>
       )}
 
-      {errorMessage && status !== "loading" && (
+      {accessRecords.queryError && (
         <div
           className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
           role="alert"
         >
-          <p>{errorMessage}</p>
-          {status === "error" && (
-            <button
-              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold"
-              onClick={() => void loadRecords()}
-              type="button"
-            >
-              Tentar novamente
-            </button>
-          )}
+          <p>{accessRecords.queryError}</p>
+          <button
+            className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30 disabled:cursor-wait disabled:opacity-60"
+            disabled={
+              accessRecords.isRefreshing || accessRecords.closingId !== null
+            }
+            onClick={() => void accessRecords.refresh()}
+            type="button"
+          >
+            Tentar novamente
+          </button>
         </div>
-      )}
-
-      {status === "ready" && (
-        <section
-          aria-label="Resumo dos acessos abertos"
-          className="mt-6 grid gap-3 sm:grid-cols-3"
-        >
-          {[
-            ["Total em aberto", records.length, "bg-[#BDD8F1]/45"],
-            ["Categorias", representedCategories, "bg-[#C8CE72]/30"],
-            ["Resultados da busca", filteredRecords.length, "bg-[#B8C9A4]/45"],
-          ].map(([label, value, surface]) => (
-            <article
-              className={`rounded-2xl border border-ink/8 p-4 ${surface}`}
-              key={label}
-            >
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink/55">
-                {label}
-              </p>
-              <p className="mt-2 font-display text-3xl text-ink">{value}</p>
-            </article>
-          ))}
-        </section>
       )}
 
       <section
-        className="mt-6 rounded-[2rem] border border-ink/10 bg-white p-5 shadow-[0_12px_35px_rgba(1,36,40,0.05)] sm:p-6"
-        aria-busy={status === "loading"}
+        aria-busy={
+          accessRecords.isRefreshing || accessRecords.status === "loading"
+        }
+        className="mt-6 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="w-full max-w-xl">
-            <label
-              className="text-sm font-semibold text-ink"
-              htmlFor="open-search"
-            >
-              Buscar acesso aberto
-            </label>
-            <div className="relative mt-2">
-              <Icon
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/50"
-                name="search"
-              />
-              <input
-                className="min-h-12 w-full rounded-xl border border-ink/20 bg-cream/45 pl-12 pr-4 text-ink outline-none placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20"
-                id="open-search"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Placa, condutor, categoria ou objetivo"
-                type="search"
-                value={query}
-              />
-            </div>
-          </div>
-          {status === "ready" && (
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                className="min-h-10 rounded-xl border border-ink/15 px-4 text-sm font-bold text-ink hover:bg-cream/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
-                onClick={() => void loadRecords()}
-                type="button"
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="w-full max-w-xl">
+              <label
+                className="text-sm font-semibold text-ink"
+                htmlFor="open-search"
               >
-                Atualizar lista
-              </button>
-              <p
-                aria-live="polite"
-                className="text-sm font-semibold text-ink/60"
-              >
-                {filteredRecords.length} registro(s)
-              </p>
+                Buscar acesso aberto
+              </label>
+              <div className="relative mt-2">
+                <Icon
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/50"
+                  name="search"
+                />
+                <input
+                  className="min-h-12 w-full rounded-xl border border-ink/20 bg-cream/45 pl-12 pr-4 text-ink outline-none placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20"
+                  id="open-search"
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Placa, condutor, categoria ou objetivo"
+                  ref={searchRef}
+                  type="search"
+                  value={query}
+                />
+              </div>
             </div>
-          )}
-        </div>
 
-        {status === "loading" ? (
-          <div
-            className="my-10 rounded-2xl bg-cream/35 p-8 text-center"
-            role="status"
-          >
-            Carregando acessos em aberto…
-          </div>
-        ) : status === "error" ? null : filteredRecords.length === 0 ? (
-          <div className="my-10 rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-8 text-center">
-            <p className="font-bold text-ink">
-              Nenhum acesso aberto encontrado
-            </p>
-            <p className="mt-1 text-sm text-ink/60">
-              Limpe a busca ou registre uma nova entrada.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4 xl:grid-cols-2">
-            {filteredRecords.map((record) => (
-              <article
-                className="rounded-2xl border border-ink/10 bg-cream/25 p-5"
-                key={record.id}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-display text-2xl text-ink">
-                      {record.plate}
+            {accessRecords.status === "ready" && (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="text-sm text-ink/65">
+                  <p aria-live="polite" className="font-bold text-ink">
+                    {accessRecords.records.length} em aberto
+                    {query.trim() && ` · ${filteredRecords.length} exibido(s)`}
+                  </p>
+                  {accessRecords.lastUpdatedAt && (
+                    <p className="mt-0.5 text-xs">
+                      Última atualização:{" "}
+                      {updateTimeFormatter.format(accessRecords.lastUpdatedAt)}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-ink/70">
-                      {record.driverName}
-                    </p>
-                  </div>
-                  <StatusBadge label="Em aberto" tone="warning" />
+                  )}
                 </div>
-                <p className="mt-4 rounded-xl bg-white/75 px-3 py-2 text-sm font-semibold text-ink/75">
-                  {record.objective}
-                </p>
-                <dl className="mt-4 grid gap-4 border-t border-ink/10 pt-4 text-sm sm:grid-cols-2">
-                  <div>
-                    <dt className="text-xs font-bold uppercase tracking-wider text-ink/50">
-                      Categoria
-                    </dt>
-                    <dd className="mt-1 text-ink/75">{record.categoryName}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs font-bold uppercase tracking-wider text-ink/50">
-                      Entrada
-                    </dt>
-                    <dd className="mt-1 text-ink/75">
-                      {dateFormatter.format(new Date(record.entryAtUtc))}
-                    </dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-xs font-bold uppercase tracking-wider text-ink/50">
-                      Observação
-                    </dt>
-                    <dd className="mt-1 text-ink/75">
-                      {record.observation ?? "Sem observação"}
-                    </dd>
-                  </div>
-                </dl>
                 <button
-                  className="mt-5 min-h-11 w-full rounded-xl bg-ink px-4 font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/35 disabled:cursor-wait disabled:opacity-65"
-                  disabled={closingId !== null}
-                  onClick={() => void confirmExit(record)}
+                  className="min-h-11 rounded-xl border border-ink/15 px-4 text-sm font-bold text-ink hover:bg-cream/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25 disabled:cursor-wait disabled:opacity-60"
+                  disabled={
+                    accessRecords.isRefreshing ||
+                    accessRecords.closingId !== null
+                  }
+                  onClick={() => void accessRecords.refresh()}
                   type="button"
                 >
-                  {closingId === record.id
-                    ? "Registrando saída…"
-                    : "Registrar saída"}
+                  {accessRecords.isRefreshing
+                    ? "Atualizando…"
+                    : "Atualizar lista"}
                 </button>
-              </article>
-            ))}
+              </div>
+            )}
           </div>
-        )}
+
+          {accessRecords.isRefreshing && (
+            <p className="mt-3 text-sm font-semibold text-ink/60" role="status">
+              Atualizando a lista. Os dados anteriores continuam disponíveis.
+            </p>
+          )}
+
+          {accessRecords.status === "loading" ? (
+            <div
+              className="my-10 rounded-2xl bg-cream/35 p-8 text-center"
+              role="status"
+            >
+              Carregando acessos em aberto…
+            </div>
+          ) : accessRecords.status ===
+            "error" ? null : filteredRecords.length === 0 ? (
+            <div className="my-10 rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-8 text-center">
+              <p className="font-bold text-ink">
+                Nenhum acesso aberto encontrado
+              </p>
+              <p className="mt-1 text-sm text-ink/60">
+                {query.trim()
+                  ? "Limpe ou ajuste a busca para ver outros acessos."
+                  : "Registre uma nova entrada quando necessário."}
+              </p>
+            </div>
+          ) : (
+            <OpenAccessList
+              closingId={accessRecords.closingId}
+              onExit={openExitDialog}
+              records={filteredRecords}
+            />
+          )}
+        </div>
       </section>
+
+      {exitSelection && (
+        <AccessExitDialog
+          errorMessage={accessRecords.operationError}
+          onCancel={closeExitDialog}
+          onConfirm={() => void confirmExit()}
+          pending={accessRecords.closingId === exitSelection.record.id}
+          record={exitSelection.record}
+          returnFocusTo={exitSelection.trigger}
+          successFocusRef={searchRef}
+        />
+      )}
     </div>
   );
 }

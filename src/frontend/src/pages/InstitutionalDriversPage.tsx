@@ -18,8 +18,8 @@ import {
   describeApiError,
   getApiValidationErrors,
 } from "../services/api-errors";
+import { profileHasCapability } from "../routes/routeMetadata";
 
-const manageableProfiles = ["SetorTransporte", "Administrador"];
 const driverFieldNames: Record<string, InstitutionalDriverField> = {
   documentNumber: "documentNumber",
   documentType: "documentType",
@@ -28,7 +28,10 @@ const driverFieldNames: Record<string, InstitutionalDriverField> = {
 
 export function InstitutionalDriversPage() {
   const { user } = useAuthenticatedSession();
-  const canManage = manageableProfiles.includes(user.profileName);
+  const canManage = profileHasCapability(
+    user.profileName,
+    "manage-institutional-catalogs",
+  );
   const [drivers, setDrivers] = useState<InstitutionalDriver[]>([]);
   const [status, setStatus] = useState<
     "loading" | "ready" | "error" | "denied"
@@ -176,7 +179,7 @@ export function InstitutionalDriversPage() {
         action={
           canManage ? (
             <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 disabled:cursor-wait disabled:opacity-60"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
               disabled={pendingAction !== null}
               onClick={openForm}
               type="button"
