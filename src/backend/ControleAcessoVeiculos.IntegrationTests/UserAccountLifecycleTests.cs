@@ -71,6 +71,19 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         var requestWithExistingToken = await targetClient.GetAsync("/access-records/open");
         Assert.Equal(HttpStatusCode.Unauthorized, requestWithExistingToken.StatusCode);
 
+        using (var deactivationScope = factory.Services.CreateScope())
+        {
+            var deactivationContext = deactivationScope.ServiceProvider
+                .GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var session = await deactivationContext.SessoesAutenticacao
+                .AsNoTracking()
+                .SingleAsync(item => item.UsuarioId == target.Id);
+            Assert.NotNull(session.RevogadaEm);
+            Assert.Equal(
+                MotivoRevogacaoSessao.ContaDesativada,
+                session.MotivoRevogacao);
+        }
+
         using var loginClient = factory.CreateClient();
         var inactiveLogin = await loginClient.PostAsJsonAsync("/auth/login", new
         {

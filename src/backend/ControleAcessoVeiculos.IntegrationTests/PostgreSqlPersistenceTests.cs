@@ -28,6 +28,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains("20260830065224_AllowSystemAuditActors", migrations);
         Assert.Contains("20260830202007_AddEventAuthorizationCatalog", migrations);
         Assert.Contains("20260830204741_LinkEventAuthorizationsToAccessRecords", migrations);
+        Assert.Contains("20260913185634_AddSecureAuthenticationSessions", migrations);
 
         await dbContext.Database.OpenConnectionAsync();
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
@@ -47,20 +48,26 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
             }
         }
 
-        Assert.Equal(12, tables.Count);
+        Assert.Equal(13, tables.Count);
         Assert.Contains("eventos_acesso", tables);
         Assert.Contains("autorizacoes_veiculos_eventos", tables);
+        Assert.Contains("sessoes_autenticacao", tables);
 
         command.CommandText = """
             SELECT constraint_name
             FROM information_schema.table_constraints
             WHERE table_schema = 'dbo'
-              AND table_name IN ('eventos_acesso', 'autorizacoes_veiculos_eventos')
+              AND table_name IN (
+                  'eventos_acesso',
+                  'autorizacoes_veiculos_eventos',
+                  'sessoes_autenticacao')
             UNION ALL
             SELECT indexname
             FROM pg_indexes
             WHERE schemaname = 'dbo'
-              AND tablename = 'autorizacoes_veiculos_eventos';
+              AND tablename IN (
+                  'autorizacoes_veiculos_eventos',
+                  'sessoes_autenticacao');
             """;
         var constraints = new List<string>();
         await using (var reader = await command.ExecuteReaderAsync())
@@ -77,6 +84,14 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains(
             "ux_autorizacoes_veiculos_eventos_evento_tipo_sem_placa",
             constraints);
+        Assert.Contains("ck_sessoes_autenticacao_periodo", constraints);
+        Assert.Contains("ck_sessoes_autenticacao_revogacao", constraints);
+        Assert.Contains("ck_sessoes_autenticacao_rotacao", constraints);
+        Assert.Contains("ck_sessoes_autenticacao_motivo_revogacao", constraints);
+        Assert.Contains("ck_sessoes_autenticacao_token_hash", constraints);
+        Assert.Contains("ck_sessoes_autenticacao_token_substituto_hash", constraints);
+        Assert.Contains("fk_sessoes_autenticacao_usuarios_usuario_id", constraints);
+        Assert.Contains("ux_sessoes_autenticacao_token_hash", constraints);
 
         command.CommandText = """
             SELECT COUNT(*)
