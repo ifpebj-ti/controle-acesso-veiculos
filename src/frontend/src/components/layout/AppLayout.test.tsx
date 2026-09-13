@@ -78,16 +78,11 @@ function renderNavigableLayout() {
 }
 
 describe("AppLayout", () => {
-  it("distinguishes the integrated MVP from pending institutional approval", () => {
+  it("does not repeat development status inside authenticated pages", () => {
     renderLayout();
 
     expect(
-      screen.getByText(
-        "MVP integrado à API — homologação institucional e liberação para produção permanecem pendentes.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/auditoria e homologação institucional permanecem/),
+      screen.queryByText(/homologação institucional e liberação para produção/),
     ).not.toBeInTheDocument();
   });
 

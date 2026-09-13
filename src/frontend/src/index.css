@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #012428;
+  --color-ink: #004953;
+  --color-ink-soft: #1a615d;
   --color-brand: #369833;
   --color-brand-dark: #236d2a;
   --color-brand-soft: #b8c897;
@@ -106,8 +107,21 @@ button:disabled {
   position: relative;
 }
 
+.sidebar-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .sidebar-primary-item--active {
-  background: transparent;
+  margin-right: -1.25rem;
+  border-radius: 1rem 0 0 1rem;
+  background: var(--color-cream);
+  animation: sidebar-selection-in 220ms ease-out both;
+  transform-origin: left center;
 }
 
 .sidebar-primary-item > * {
@@ -117,16 +131,28 @@ button:disabled {
 
 .sidebar-primary-item--active::before {
   position: absolute;
-  top: 0;
-  right: -1.25rem;
-  bottom: 0;
-  left: 0;
-  border-radius: 1rem 0 0 1rem;
-  background: var(--color-cream);
+  top: -1rem;
+  right: 0;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0 0 1rem;
+  background: transparent;
+  box-shadow: 0.35rem 0.35rem 0 0.35rem var(--color-cream);
   content: "";
   z-index: 0;
-  animation: sidebar-selection-in 220ms ease-out both;
-  transform-origin: left center;
+}
+
+.sidebar-primary-item--active::after {
+  position: absolute;
+  right: 0;
+  bottom: -1rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0 1rem 0 0;
+  background: transparent;
+  box-shadow: 0.35rem -0.35rem 0 0.35rem var(--color-cream);
+  content: "";
+  z-index: 0;
 }
 
 @keyframes sidebar-selection-in {
