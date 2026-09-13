@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #004953;
-  --color-ink-soft: #1a615d;
+  --color-ink: #012428;
+  --color-overview-ink: #004953;
+  --color-overview-ink-soft: #1a615d;
   --color-brand: #369833;
   --color-brand-dark: #236d2a;
   --color-brand-soft: #b8c897;
@@ -108,12 +109,34 @@ button:disabled {
 }
 
 .sidebar-scroll {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  scrollbar-color: color-mix(in srgb, var(--color-ink) 70%, transparent)
+    transparent;
+  scrollbar-width: thin;
 }
 
 .sidebar-scroll::-webkit-scrollbar {
-  display: none;
+  width: 0.75rem;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  min-height: 2.75rem;
+  border: 0.125rem solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  background-clip: content-box;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-ink) 82%, transparent);
+  background-clip: content-box;
+}
+
+.daily-overview {
+  --color-ink: var(--color-overview-ink);
 }
 
 .sidebar-primary-item--active {

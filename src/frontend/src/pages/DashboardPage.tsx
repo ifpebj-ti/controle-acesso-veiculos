@@ -108,13 +108,13 @@ export function DashboardPage() {
             {greetingForHour(currentInstitutionalTime.hour)},{" "}
             {profileLabels[user.profileName]}.
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-soft sm:text-base">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-overview-ink-soft sm:text-base">
             Acompanhe as movimentações e a situação dos acessos do dia.
           </p>
         </div>
 
         <div className="shrink-0 border-l-4 border-[#BDD8F1] pl-4 text-left lg:min-w-72 lg:text-right">
-          <p className="text-sm font-semibold text-ink-soft">
+          <p className="text-sm font-semibold text-overview-ink-soft">
             {capitalize(currentInstitutionalTime.fullDate)}
           </p>
           <time
@@ -142,7 +142,7 @@ export function DashboardPage() {
               Resumo do dia
             </h2>
             {operationalSummary.summary && (
-              <p className="mt-2 text-sm text-ink-soft">
+              <p className="mt-2 text-sm text-overview-ink-soft">
                 {capitalize(
                   formatSummaryDate(operationalSummary.summary.localDate),
                 )}
@@ -196,7 +196,7 @@ export function DashboardPage() {
         <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 font-bold text-ink transition-colors hover:bg-brand-soft/15 focus:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-brand/30 [&::-webkit-details-marker]:hidden">
           <span
             aria-hidden="true"
-            className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft/35 font-display text-lg text-ink-soft"
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft/35 font-display text-lg text-overview-ink-soft"
           >
             i
           </span>
@@ -209,14 +209,14 @@ export function DashboardPage() {
         </summary>
         <div className="border-t border-[#1A615D]/15 bg-cream/45 p-5">
           <dl className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-[#BDD8F1] bg-white/80 p-4 text-ink-soft">
+            <div className="rounded-2xl border border-[#BDD8F1] bg-white/80 p-4 text-overview-ink-soft">
               <dt className="font-bold text-ink">Já estavam no campus</dt>
               <dd className="mt-1">
                 Veículos que entraram antes da data e ainda estavam no campus
                 quando o dia começou.
               </dd>
             </div>
-            <div className="rounded-2xl border border-[#BDD8F1] bg-white/80 p-4 text-ink-soft">
+            <div className="rounded-2xl border border-[#BDD8F1] bg-white/80 p-4 text-overview-ink-soft">
               <dt className="font-bold text-ink">Ainda estavam no campus</dt>
               <dd className="mt-1">
                 {isCurrentDate
@@ -224,14 +224,14 @@ export function DashboardPage() {
                   : "Acessos que continuavam sem saída registrada ao encerrar aquele dia."}
               </dd>
             </div>
-            <div className="rounded-2xl border border-[#C8CE72] bg-white/80 p-4 text-ink-soft">
+            <div className="rounded-2xl border border-[#C8CE72] bg-white/80 p-4 text-overview-ink-soft">
               <dt className="font-bold text-ink">Já estavam em uso</dt>
               <dd className="mt-1">
                 Veículos institucionais que saíram antes da data e ainda não
                 tinham retornado quando o dia começou.
               </dd>
             </div>
-            <div className="rounded-2xl border border-[#C8CE72] bg-white/80 p-4 text-ink-soft">
+            <div className="rounded-2xl border border-[#C8CE72] bg-white/80 p-4 text-overview-ink-soft">
               <dt className="font-bold text-ink">Ainda estavam em uso</dt>
               <dd className="mt-1">
                 {isCurrentDate
@@ -240,7 +240,7 @@ export function DashboardPage() {
               </dd>
             </div>
           </dl>
-          <p className="mt-4 rounded-xl bg-[#EFD780]/30 px-4 py-3 text-xs font-medium text-ink-soft">
+          <p className="mt-4 rounded-xl bg-[#EFD780]/30 px-4 py-3 text-xs font-medium text-overview-ink-soft">
             Esses indicadores não classificam atraso ou irregularidade.
           </p>
         </div>
