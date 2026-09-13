@@ -85,17 +85,28 @@ Referência:
 - negar por padrão e autorizar por política/caso de uso;
 - validar permissão no servidor e no recurso solicitado;
 - usuário inativo não pode autenticar ou manter sessão válida;
+- manter access token curto e refresh token fora do alcance do JavaScript;
+- persistir somente hash do refresh token e rotacioná-lo de forma atômica;
+- impor inatividade e duração absoluta no servidor, sem sessão indefinida;
+- proteger toda operação autenticada por cookie contra CSRF;
+- revogar a família no logout, na desativação e na detecção de reutilização;
 - proteger operações administrativas e auditoria separadamente;
 - não implementar algoritmo criptográfico próprio;
 - não registrar senha, token ou header de autorização.
 
-As decisões atuais de token, hash, bloqueio, ciclo administrativo de contas e políticas estão em [Autenticação e autorização](authentication.md). A desativação invalida o JWT na próxima requisição; refresh token, logout com revogação individual, recuperação e matriz final de perfis permanecem na Issue #29.
+As decisões atuais de token, hash, bloqueio, ciclo administrativo de contas,
+sessões e políticas estão em [Autenticação e autorização](authentication.md). A
+Issue #190 implementa renovação rotativa, revogação no servidor e logout; a
+Issue #191 integra esse contrato no frontend. Recuperação de acesso e matriz
+final de perfis permanecem pendentes.
 
 Referências:
 
 - [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
 - [OWASP Authorization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html)
 - [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+- [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
+- [ASP.NET Core antiforgery](https://learn.microsoft.com/aspnet/core/security/anti-request-forgery?view=aspnetcore-10.0)
 
 ## Banco e Entity Framework Core
 

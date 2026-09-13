@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 2.7
+**Versão:** 2.8
 
-**Data de referência:** 2 de setembro de 2026
+**Data de referência:** 13 de setembro de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104 e #106
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106 e #190
 
 ## Objetivo e limites
 
@@ -122,7 +122,7 @@ flowchart LR
 | Fronteira | Mudança de confiança | Estado |
 |---|---|---|
 | B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
-| B2 | Código executado no navegador para API | Login do frontend, JWT somente em memória, rotas protegidas e contratos operacionais implementados; integração das telas de negócio e matriz final pendentes |
+| B2 | Código executado no navegador para API | Login e rotas protegidas implementados; backend de renovação com cookie `HttpOnly`, rotação, revogação e CSRF implementado na #190; integração do cliente pendente na #191 |
 | B3 | API para PostgreSQL | Implementado localmente |
 | B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos, incluindo eventos; consulta da trilha restrita a Administrador |
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
@@ -156,6 +156,8 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup com restauração verificada, upgrade/downgrade e falha explícita — #23, #30 e #67 | Backup/restauração local e testes de migration implementados; processo de produção pendente |
 | TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, ator humano ou origem de sistema explícita, alerta e monitoramento — #31, #51, #53, #55, #57, #65, #71, #73 e #76 | Mitigado nos fluxos geral, correção descritiva, institucional, catálogos, autenticação e ciclo de contas; alerta e demais operações pendentes |
 | TM-19 | Information disclosure | Collector falso ou mal configurado recebe telemetria operacional | 2 | 3 | 6 | OTLP desabilitado por padrão, endpoint externo ao código, TLS, autenticação, menor privilégio e revisão de atributos — #102 | Base técnica implementada; identidade do collector, secret manager e rede de produção pendentes |
+| TM-20 | Spoofing | Refresh token roubado, repetido ou usado depois do logout mantém acesso prolongado | 3 | 3 | 9 | Token opaco de 256 bits em cookie `HttpOnly`, hash no banco, rotação atômica, detecção de reutilização, duração absoluta, inatividade e revogação da família — #190 | Mitigado no backend; HTTPS de produção e integração do frontend pendentes |
+| TM-21 | Spoofing / Tampering | Site externo induz o navegador autenticado a renovar ou encerrar uma sessão por CSRF | 2 | 3 | 6 | `SameSite=Strict`, caminho mínimo, token antifalsificação vinculado ao cookie e arquitetura same-origin — #190 e #191 | Mitigado no backend e no proxy Compose; integração e teste em ambiente HTTPS pendentes |
 
 ## Controles existentes verificados
 
@@ -163,6 +165,12 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - EF Core restrito à Infrastructure/API;
 - migrations versionadas e sem execução automática no startup;
 - autenticação JWT com validade curta, chave externa e validação de emissor e audiência;
+- token de renovação opaco gerado por CSPRNG, armazenado somente como hash e
+  entregue em cookie `HttpOnly`, `Secure` em produção e `SameSite=Strict`;
+- rotação transacional de refresh token com bloqueio no PostgreSQL, detecção de
+  reutilização e revogação de família no replay, logout e desativação da conta;
+- timeout de inatividade e duração absoluta impostos pelo servidor, com valores
+  configuráveis e proteção CSRF explícita nos endpoints baseados em cookie;
 - frontend valida a resposta de login, mantém o JWT somente em memória, encerra a
   sessão por logout, expiração ou 401 e deriva a navegação apenas do perfil
   retornado pela API;

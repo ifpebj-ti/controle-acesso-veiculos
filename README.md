@@ -27,17 +27,17 @@ Wiki para preservar a rastreabilidade.
 
 ## Estado atual
 
-> Atualizado em 2 de setembro de 2026. O projeto possui dois fluxos operacionais verticais do MVP, mas ainda não está pronto para uso real na portaria.
+> Atualizado em 13 de setembro de 2026. O MVP técnico está integrado localmente, mas ainda depende de homologação institucional e infraestrutura de produção antes do uso real na portaria.
 
 | Área | Estado |
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
-| Frontend | Protótipo responsivo com autenticação real, sessão JWT somente em memória, rotas protegidas e navegação por perfil; telas de negócio ainda usam dados fictícios e aguardam integração |
+| Frontend | Aplicação responsiva integrada à API para autenticação, acessos, histórico, correção, frota, motoristas, eventos e resumo diário; renovação segura da sessão permanece na Issue #191 |
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional, autorizações de eventos e resumo operacional diário |
-| Dados | PostgreSQL 16, EF Core 10, doze entidades e doze migrations versionadas |
+| Dados | PostgreSQL 16, EF Core 10, treze entidades e treze migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, CI com build, scan, smoke test integrado, publicação no GHCR, proveniência assinada e SBOM SPDX atestado por digest após integração na `main`, além de ensaio local de backup/restauração e exportação OpenTelemetry configurável |
-| Qualidade | 176 testes de Domain, Application, API e PostgreSQL, com cobertura publicada pela CI |
-| Segurança | JWT, contas individuais, desativação com efeito imediato, autorização por operação, rate limiting correlacionado, controles HTTP, auditoria transacional e consulta administrativa da trilha implementados; matriz final de perfis, retenção e imutabilidade em produção pendentes |
+| Qualidade | 189 testes automatizados no backend, incluindo PostgreSQL real, e 249 testes no frontend da `main`, com cobertura publicada pela CI |
+| Segurança | JWT curto, sessões renováveis com rotação e revogação no servidor, cookies protegidos, CSRF, contas individuais, autorização por operação, rate limiting e auditoria transacional implementados; integração frontend da sessão, matriz final, retenção e imutabilidade em produção pendentes |
 | Deploy | Imagens OCI versionadas no GHCR pela CI e base OTLP implementada; ambiente de homologação, HTTPS, collector, painéis, alertas, backup protegido e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
@@ -47,6 +47,9 @@ Os contratos operacionais e administrativos disponíveis são:
 | Método e rota | Finalidade |
 |---|---|
 | `POST /auth/login` | autentica uma conta ativa e retorna JWT, expiração e identidade mínima (`id`, e-mail e perfil) |
+| `GET /auth/csrf` | emite o token antifalsificação necessário para renovar ou encerrar a sessão |
+| `POST /auth/refresh` | rotaciona o refresh token em cookie `HttpOnly` e retorna um novo JWT curto |
+| `POST /auth/logout` | revoga a família da sessão no servidor e expira o cookie |
 | `GET /users` | pesquisa contas por nome/e-mail e estado, com paginação restrita a Administrador |
 | `POST /users` | cria uma conta individual para um dos perfis preliminares do MVP |
 | `DELETE /users/{id}` | desativa uma conta, revoga seus JWTs na próxima requisição e preserva o histórico |
@@ -594,6 +597,7 @@ validação, privacidade, alertas propostos e pendências de produção.
 - Criação administrativa e bootstrap também são auditados atomicamente; a criação HTTP registra o Administrador, enquanto o bootstrap usa ator de sistema nulo sem atribuição falsa.
 - A trilha pode ser consultada apenas por Administrador por meio da política dedicada `audits:read`, com período máximo de 90 dias, paginação e filtros; a resposta não faz joins com dados de pessoa, conta ou veículo e projeta somente os campos já persistidos na auditoria. Justificativas de correção fazem parte da trilha e não devem conter dados pessoais desnecessários.
 - Cada requisição autenticada confirma no banco se a conta e o perfil continuam ativos; assim, um JWT emitido antes da desativação deixa de autorizar imediatamente.
+- O refresh token nunca integra o JSON nem o armazenamento web: somente seu hash fica no PostgreSQL e o valor bruto permanece em cookie `HttpOnly`; renovação e logout exigem proteção CSRF.
 - Não versione `.env`, `.env.local`, tokens, chaves ou connection strings reais.
 - Use `ConnectionStrings__DefaultConnection` para sobrescrever a configuração local.
 - Não use dados pessoais reais em testes, seeds, exemplos, issues ou capturas de tela.
@@ -603,6 +607,7 @@ validação, privacidade, alertas propostos e pendências de produção.
 
 Consulte a [modelagem de ameaças](docs/security/threat-model.md), o [guia de desenvolvimento seguro](docs/security/secure-development-guide.md) e as [instruções de segurança](.github/instructions/security.instructions.md).
 As decisões e pendências da fundação de login estão em [autenticação e autorização](docs/security/authentication.md).
+O desenho de renovação, rotação e revogação está registrado no [ADR 0001 — ciclo de vida seguro de sessões](docs/architecture/decisions/0001-secure-session-lifecycle.md).
 
 ## Documentação
 
@@ -614,6 +619,7 @@ As decisões e pendências da fundação de login estão em [autenticação e au
 - [Possibilidades de evolução acadêmica](docs/research/academic-evolution-options.md) — material exploratório para uma futura conversa com professores; não integra o escopo atual.
 - [Modelagem de ameaças](docs/security/threat-model.md).
 - [Guia de desenvolvimento seguro](docs/security/secure-development-guide.md).
+- [ADR 0001 — ciclo de vida seguro de sessões](docs/architecture/decisions/0001-secure-session-lifecycle.md).
 
 A Wiki abrange o projeto completo, não apenas o backend. Documentos acadêmicos e decisões históricas devem ser atualizados de forma aditiva, preservando contexto e rastreabilidade.
 
