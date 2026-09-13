@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { Icon } from "../components/ui/Icon";
@@ -12,22 +12,8 @@ import {
   useOperationalSummary,
 } from "../features/operational-summary";
 
-const fullDateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  day: "numeric",
-  month: "long",
-  weekday: "long",
-  year: "numeric",
-});
-
 const summaryDateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "long",
-});
-
-const clockFormatter = new Intl.DateTimeFormat("pt-BR", {
-  hour: "2-digit",
-  hour12: false,
-  minute: "2-digit",
-  second: "2-digit",
 });
 
 function capitalize(value: string) {
@@ -44,17 +30,55 @@ function formatSummaryDate(localDate: string) {
   return summaryDateFormatter.format(new Date(`${localDate}T12:00:00`));
 }
 
-function formatCurrentLocalDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function institutionalDateTime(date: Date, timeZoneId?: string) {
+  const timeZone = timeZoneId ? { timeZone: timeZoneId } : {};
+  const dateParts = new Intl.DateTimeFormat("pt-BR", {
+    ...timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((parts, part) => {
+      if (part.type !== "literal") parts[part.type] = part.value;
+      return parts;
+    }, {});
+  const hour = Number(
+    new Intl.DateTimeFormat("pt-BR", {
+      ...timeZone,
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(date),
+  );
+
+  return {
+    clock: new Intl.DateTimeFormat("pt-BR", {
+      ...timeZone,
+      hour: "2-digit",
+      hourCycle: "h23",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(date),
+    fullDate: new Intl.DateTimeFormat("pt-BR", {
+      ...timeZone,
+      day: "numeric",
+      month: "long",
+      weekday: "long",
+      year: "numeric",
+    }).format(date),
+    hour,
+    localDate: `${dateParts.year}-${dateParts.month}-${dateParts.day}`,
+  };
 }
 
 export function DashboardPage() {
   const { user } = useAuthenticatedSession();
   const operationalSummary = useOperationalSummary();
   const [now, setNow] = useState(() => new Date());
+  const currentInstitutionalTime = useMemo(
+    () => institutionalDateTime(now, operationalSummary.summary?.timeZoneId),
+    [now, operationalSummary.summary?.timeZoneId],
+  );
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setNow(new Date()), 1000);
@@ -70,18 +94,19 @@ export function DashboardPage() {
   }
 
   const isCurrentDate =
-    operationalSummary.summary?.localDate === formatCurrentLocalDate(now);
+    operationalSummary.summary?.localDate ===
+    currentInstitutionalTime.localDate;
 
   return (
-    <div className="min-w-0">
+    <div className="daily-overview min-w-0">
       <header className="sticky top-16 z-10 -mx-4 flex flex-col gap-6 border-b border-ink/10 bg-cream/95 px-4 pb-7 pt-1 shadow-[0_10px_24px_rgba(1,36,40,0.04)] backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-9 lg:flex-row lg:items-end lg:justify-between lg:px-9 lg:pt-0">
         <div className="max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-dark">
             Controle de acesso • Campus Belo Jardim
           </p>
           <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">
-            {greetingForHour(now.getHours())}, {profileLabels[user.profileName]}
-            .
+            {greetingForHour(currentInstitutionalTime.hour)},{" "}
+            {profileLabels[user.profileName]}.
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-soft sm:text-base">
             Acompanhe as movimentações e a situação dos acessos do dia.
@@ -90,13 +115,13 @@ export function DashboardPage() {
 
         <div className="shrink-0 border-l-4 border-[#BDD8F1] pl-4 text-left lg:min-w-72 lg:text-right">
           <p className="text-sm font-semibold text-ink-soft">
-            {capitalize(fullDateFormatter.format(now))}
+            {capitalize(currentInstitutionalTime.fullDate)}
           </p>
           <time
             className="mt-1 block font-mono text-3xl font-semibold tracking-[0.08em] text-ink"
             dateTime={now.toISOString()}
           >
-            {clockFormatter.format(now)}
+            {currentInstitutionalTime.clock}
           </time>
         </div>
       </header>

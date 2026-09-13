@@ -1,7 +1,13 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   type ProfileName,
@@ -71,6 +77,10 @@ describe("DashboardPage", () => {
     });
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("keeps the daily context visible while the summary scrolls", () => {
     const { container } = renderPage();
     const pageHeader = container.querySelector("header");
@@ -136,22 +146,24 @@ describe("DashboardPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("describes current open records as the situation now", async () => {
-    const today = new Date();
-    const localDate = [
-      today.getFullYear(),
-      String(today.getMonth() + 1).padStart(2, "0"),
-      String(today.getDate()).padStart(2, "0"),
-    ].join("-");
+  it("uses the campus timezone when the device instant is already on the next UTC day", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-11T01:30:00Z"));
     vi.mocked(getDailyOperationalSummary).mockResolvedValue({
       ...summary,
-      localDate,
+      localDate: "2030-06-10",
+      timeZoneId: "America/Recife",
     });
-    const user = userEvent.setup();
-    renderPage();
+    await act(async () => {
+      renderPage();
+    });
 
-    await user.click(await screen.findByText("Como ler o resumo"));
+    fireEvent.click(screen.getByText("Como ler o resumo"));
 
+    expect(
+      screen.getByText(/Segunda-feira, 10 de junho de 2030/i),
+    ).toBeVisible();
+    expect(screen.getByText("22:30:00")).toBeVisible();
     expect(
       screen.getByText("Acessos que continuam sem saída registrada agora."),
     ).toBeInTheDocument();
@@ -160,6 +172,35 @@ describe("DashboardPage", () => {
         "Veículos institucionais que continuam sem retorno registrado agora.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("stops describing the selected date as current after midnight at the campus", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-11T02:59:59Z"));
+    vi.mocked(getDailyOperationalSummary).mockResolvedValue({
+      ...summary,
+      localDate: "2030-06-10",
+      timeZoneId: "America/Recife",
+    });
+    await act(async () => {
+      renderPage();
+    });
+    fireEvent.click(screen.getByText("Como ler o resumo"));
+
+    expect(
+      screen.getByText("Acessos que continuam sem saída registrada agora."),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+
+    expect(
+      screen.getByText(
+        "Acessos que continuavam sem saída registrada ao encerrar aquele dia.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("00:00:00")).toBeVisible();
   });
 
   it("loads a selected local date without mixing previous results", async () => {
