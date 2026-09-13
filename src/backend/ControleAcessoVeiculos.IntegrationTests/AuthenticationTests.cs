@@ -41,6 +41,13 @@ public sealed class AuthenticationTests(ApiFactory factory)
         Assert.Equal(email, body.User.Email);
         Assert.Equal(ProfileNames.Administrator, body.User.ProfileName);
 
+        var refreshCookie = Assert.Single(
+            login.Headers.GetValues("Set-Cookie"),
+            value => value.StartsWith("cav_refresh=", StringComparison.Ordinal));
+        Assert.Contains("httponly", refreshCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("samesite=strict", refreshCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("path=/auth", refreshCookie, StringComparison.OrdinalIgnoreCase);
+
         using (var responseJson = JsonDocument.Parse(responseContent))
         {
             var userProperties = responseJson.RootElement
@@ -50,6 +57,24 @@ public sealed class AuthenticationTests(ApiFactory factory)
                 .Order()
                 .ToArray();
             Assert.Equal(["email", "id", "profileName"], userProperties);
+            Assert.False(responseJson.RootElement.TryGetProperty("refreshToken", out _));
+        }
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var session = await dbContext.SessoesAutenticacao
+                .AsNoTracking()
+                .SingleAsync(item => item.UsuarioId == userId);
+            var rawRefreshToken = refreshCookie
+                .Split(';', 2)[0]
+                .Split('=', 2)[1];
+
+            Assert.Equal(64, session.TokenHash.Length);
+            Assert.DoesNotContain(rawRefreshToken, session.TokenHash, StringComparison.Ordinal);
+            Assert.True(session.ExpiraEm > DateTime.UtcNow);
+            Assert.Null(session.RevogadaEm);
         }
 
         var audit = await GetSingleAuthenticationAuditAsync(email);
@@ -169,6 +194,8 @@ public sealed class AuthenticationTests(ApiFactory factory)
             item.Entidade == nameof(Usuario) &&
             item.RegistroId == user.Id &&
             item.TipoAcao == TipoAcaoAuditoria.Login));
+        Assert.Equal(0, await dbContext.SessoesAutenticacao.CountAsync(item =>
+            item.UsuarioId == user.Id));
     }
 
     [Fact]

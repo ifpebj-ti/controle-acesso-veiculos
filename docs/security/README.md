@@ -8,6 +8,7 @@ documentos devem passar por Issue, branch, revisão e Pull Request.
 
 - [Modelagem de ameaças](threat-model.md)
 - [Guia de desenvolvimento seguro](secure-development-guide.md)
+- [ADR 0001 — ciclo de vida seguro de sessões](../architecture/decisions/0001-secure-session-lifecycle.md)
 
 Documentos relacionados:
 

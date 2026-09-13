@@ -213,6 +213,22 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
         else
         {
             user.Desativar(updatedAtUtc);
+
+            var sessions = await dbContext.SessoesAutenticacao
+                .FromSqlInterpolated($"""
+                    SELECT *
+                    FROM dbo.sessoes_autenticacao
+                    WHERE usuario_id = {userId} AND revogada_em IS NULL
+                    FOR UPDATE
+                    """)
+                .ToListAsync(cancellationToken);
+
+            foreach (var session in sessions)
+            {
+                session.Revogar(
+                    updatedAtUtc,
+                    MotivoRevogacaoSessao.ContaDesativada);
+            }
         }
 
         dbContext.Auditorias.Add(new Auditoria(

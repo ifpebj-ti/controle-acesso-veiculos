@@ -6,6 +6,9 @@ public sealed class LoginService(
     IAuthenticationUserStore userStore,
     IPasswordHashService passwordHashService,
     IAccessTokenService accessTokenService,
+    IRefreshTokenService refreshTokenService,
+    IAuthenticationSessionStore sessionStore,
+    AuthenticationSessionPolicy sessionPolicy,
     TimeProvider timeProvider)
 {
     public const int MaximumFailedAttempts = 5;
@@ -48,6 +51,14 @@ public sealed class LoginService(
         }
 
         authenticationUser.User.RegistrarAutenticacaoBemSucedida(now);
+        var refreshToken = refreshTokenService.Create();
+        var session = new SessaoAutenticacao(
+            authenticationUser.User.Id,
+            Guid.NewGuid(),
+            refreshToken.Hash,
+            now,
+            now.Add(sessionPolicy.AbsoluteLifetime));
+        sessionStore.Add(session);
         await userStore.SaveChangesAsync(
             new AuthenticationAudit(
                 authenticationUser.User.Id,
@@ -62,6 +73,8 @@ public sealed class LoginService(
 
         return LoginResult.Success(
             token,
+            refreshToken.Value,
+            session.ExpiraEm,
             new LoginUser(
                 authenticationUser.User.Id,
                 authenticationUser.User.Email,
