@@ -71,6 +71,13 @@ describe("DashboardPage", () => {
     });
   });
 
+  it("keeps the daily context visible while the summary scrolls", () => {
+    const { container } = renderPage();
+    const pageHeader = container.querySelector("header");
+
+    expect(pageHeader).toHaveClass("sticky", "top-16", "lg:top-0");
+  });
+
   it.each<ProfileName>([
     "Porteiro",
     "Vigilante",
@@ -105,8 +112,54 @@ describe("DashboardPage", () => {
       screen.getByText("Entradas vinculadas").nextElementSibling,
     ).toHaveTextContent("2");
     expect(
-      screen.getByText("Em uso no fim").nextElementSibling,
+      screen.getAllByText("Ainda estavam em uso")[0].nextElementSibling,
     ).toHaveTextContent("2");
+  });
+
+  it("keeps technical context out of the summary and offers optional guidance", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { name: "Resumo do dia" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Fuso|America\/Recife/)).not.toBeInTheDocument();
+
+    const guidanceToggle = screen.getByText("Como ler o resumo");
+    const guidance = guidanceToggle.closest("details");
+
+    expect(guidance).not.toHaveAttribute("open");
+    await user.click(guidanceToggle);
+    expect(guidance).toHaveAttribute("open");
+    expect(
+      screen.getByText(/sem saída registrada ao encerrar aquele dia/),
+    ).toBeInTheDocument();
+  });
+
+  it("describes current open records as the situation now", async () => {
+    const today = new Date();
+    const localDate = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, "0"),
+      String(today.getDate()).padStart(2, "0"),
+    ].join("-");
+    vi.mocked(getDailyOperationalSummary).mockResolvedValue({
+      ...summary,
+      localDate,
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByText("Como ler o resumo"));
+
+    expect(
+      screen.getByText("Acessos que continuam sem saída registrada agora."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Veículos institucionais que continuam sem retorno registrado agora.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("loads a selected local date without mixing previous results", async () => {
