@@ -47,6 +47,20 @@ builder.Services.AddProblemDetails(options =>
             Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
     };
 });
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "cav_csrf";
+    options.Cookie.HttpOnly = false;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.Path = "/auth";
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ||
+        builder.Environment.IsEnvironment("LocalContainer") ||
+        builder.Environment.IsEnvironment("Testing")
+        ? CookieSecurePolicy.None
+        : CookieSecurePolicy.Always;
+});
 builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = RequestSafetyMiddleware.MaximumRequestBodySize);
 
@@ -65,6 +79,14 @@ var jwtOptions = builder.Configuration
 jwtOptions.Validate();
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
+
+var sessionOptions = builder.Configuration
+    .GetSection(AuthenticationSessionOptions.SectionName)
+    .Get<AuthenticationSessionOptions>() ?? new AuthenticationSessionOptions();
+var sessionPolicy = sessionOptions.Validate();
+builder.Services.Configure<AuthenticationSessionOptions>(
+    builder.Configuration.GetSection(AuthenticationSessionOptions.SectionName));
+builder.Services.AddSingleton(sessionPolicy);
 
 var institutionalTimeZoneId =
     builder.Configuration["Institution:TimeZoneId"] ?? "America/Recife";
@@ -186,6 +208,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(institutionalTimeZone);
 builder.Services.AddSingleton<IPasswordHashService, AspNetPasswordHashService>();
 builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
+builder.Services.AddScoped<IAuthenticationSessionStore, AuthenticationSessionStore>();
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
 builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
@@ -195,7 +218,10 @@ builder.Services.AddScoped<IEventAuthorizationStore, EventAuthorizationStore>();
 builder.Services.AddScoped<IAuditTrailStore, AuditTrailStore>();
 builder.Services.AddScoped<IOperationalSummaryStore, OperationalSummaryStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
+builder.Services.AddSingleton<IRefreshTokenService, CryptographicRefreshTokenService>();
+builder.Services.AddScoped<AuthenticationSessionCookie>();
 builder.Services.AddScoped<LoginService>();
+builder.Services.AddScoped<AuthenticationSessionService>();
 builder.Services.AddScoped<CreateUserAccountService>();
 builder.Services.AddScoped<UserAccountLifecycleService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
@@ -235,6 +261,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
+app.UseAntiforgery();
 
 var livenessOptions = new HealthCheckOptions
 {
@@ -268,6 +295,8 @@ app.MapOperationalSummaryEndpoints();
 app.MapPost("/auth/login", async (
     LoginRequest request,
     LoginService loginService,
+    AuthenticationSessionCookie sessionCookie,
+    HttpContext httpContext,
     CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Email) ||
@@ -286,17 +315,27 @@ app.MapPost("/auth/login", async (
         request.Password,
         cancellationToken);
 
-    return result.IsSuccess
-        ? Results.Ok(new LoginResponse(
-            result.AccessToken!,
-            result.ExpiresAtUtc!.Value,
-            new LoginUserResponse(
-                result.User!.Id,
-                result.User.Email,
-                result.User.ProfileName)))
-        : Results.Json(
+    SetAuthenticationResponseHeaders(httpContext.Response);
+
+    if (!result.IsSuccess)
+    {
+        return Results.Json(
             new LoginErrorResponse("Credenciais inválidas."),
             statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    sessionCookie.Append(
+        httpContext.Response,
+        result.RefreshToken!,
+        result.SessionExpiresAtUtc!.Value);
+
+    return Results.Ok(new LoginResponse(
+        result.AccessToken!,
+        result.ExpiresAtUtc!.Value,
+        new LoginUserResponse(
+            result.User!.Id,
+            result.User.Email,
+            result.User.ProfileName)));
 })
 .AllowAnonymous()
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
@@ -304,6 +343,90 @@ app.MapPost("/auth/login", async (
 .Produces<LoginResponse>(StatusCodes.Status200OK)
 .ProducesValidationProblem(StatusCodes.Status400BadRequest)
 .Produces<LoginErrorResponse>(StatusCodes.Status401Unauthorized);
+
+app.MapGet("/auth/csrf", (
+    Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery,
+    HttpContext httpContext) =>
+{
+    SetAuthenticationResponseHeaders(httpContext.Response);
+    var tokens = antiforgery.GetAndStoreTokens(httpContext);
+    return Results.Ok(new CsrfTokenResponse(tokens.RequestToken!));
+})
+.AllowAnonymous()
+.WithName("GetAuthenticationCsrfToken")
+.Produces<CsrfTokenResponse>(StatusCodes.Status200OK);
+
+app.MapPost("/auth/refresh", async (
+    AuthenticationSessionService sessionService,
+    AuthenticationSessionCookie sessionCookie,
+    Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery,
+    HttpContext httpContext,
+    CancellationToken cancellationToken) =>
+{
+    SetAuthenticationResponseHeaders(httpContext.Response);
+
+    if (!await IsAntiforgeryRequestValidAsync(antiforgery, httpContext))
+    {
+        return Results.BadRequest();
+    }
+
+    if (!sessionCookie.TryRead(httpContext.Request, out var refreshToken))
+    {
+        sessionCookie.Delete(httpContext.Response);
+        return Results.Unauthorized();
+    }
+
+    var result = await sessionService.RenewAsync(
+        refreshToken,
+        cancellationToken);
+
+    if (!result.IsSuccess)
+    {
+        sessionCookie.Delete(httpContext.Response);
+        return Results.Unauthorized();
+    }
+
+    sessionCookie.Append(
+        httpContext.Response,
+        result.RefreshToken!,
+        result.SessionExpiresAtUtc!.Value);
+
+    return Results.Ok(new LoginResponse(
+        result.AccessToken!,
+        result.ExpiresAtUtc!.Value,
+        new LoginUserResponse(
+            result.User!.Id,
+            result.User.Email,
+            result.User.ProfileName)));
+})
+.AllowAnonymous()
+.RequireRateLimiting(ApiRateLimiting.LoginPolicy)
+.WithName("RefreshAuthenticationSession")
+.Produces<LoginResponse>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status401Unauthorized);
+
+app.MapPost("/auth/logout", async (
+    AuthenticationSessionService sessionService,
+    AuthenticationSessionCookie sessionCookie,
+    Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery,
+    HttpContext httpContext,
+    CancellationToken cancellationToken) =>
+{
+    SetAuthenticationResponseHeaders(httpContext.Response);
+
+    if (!await IsAntiforgeryRequestValidAsync(antiforgery, httpContext))
+    {
+        return Results.BadRequest();
+    }
+
+    sessionCookie.TryRead(httpContext.Request, out var refreshToken);
+    await sessionService.EndAsync(refreshToken, cancellationToken);
+    sessionCookie.Delete(httpContext.Response);
+    return Results.NoContent();
+})
+.AllowAnonymous()
+.WithName("Logout")
+.Produces(StatusCodes.Status204NoContent);
 
 var summaries = new[]
 {
@@ -370,6 +493,27 @@ static Task WriteHealthResponse(HttpContext context, HealthReport report)
     });
 }
 
+static void SetAuthenticationResponseHeaders(HttpResponse response)
+{
+    response.Headers.CacheControl = "no-store";
+    response.Headers.Pragma = "no-cache";
+}
+
+static async Task<bool> IsAntiforgeryRequestValidAsync(
+    Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery,
+    HttpContext context)
+{
+    try
+    {
+        await antiforgery.ValidateRequestAsync(context);
+        return true;
+    }
+    catch (Microsoft.AspNetCore.Antiforgery.AntiforgeryValidationException)
+    {
+        return false;
+    }
+}
+
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
@@ -386,3 +530,4 @@ public sealed record LoginResponse(
     LoginUserResponse User);
 public sealed record LoginUserResponse(int Id, string Email, string ProfileName);
 public sealed record LoginErrorResponse(string Message);
+public sealed record CsrfTokenResponse(string RequestToken);

@@ -59,7 +59,9 @@ public sealed class AuthenticationUserStore(ControleAcessoVeiculosDbContext dbCo
     private static Auditoria CreateAudit(AuthenticationAudit audit) =>
         new(
             audit.OccurredAtUtc,
-            TipoAcaoAuditoria.Login,
+            audit.Outcome == AuthenticationAuditOutcome.LogoutSucceeded
+                ? TipoAcaoAuditoria.Logout
+                : TipoAcaoAuditoria.Login,
             nameof(Usuario),
             audit.UserId,
             audit.UserId,
@@ -70,6 +72,12 @@ public sealed class AuthenticationUserStore(ControleAcessoVeiculosDbContext dbCo
                     "Authentication succeeded.",
                 AuthenticationAuditOutcome.AccountLocked =>
                     "Account temporarily locked after failed authentication attempts.",
+                AuthenticationAuditOutcome.LogoutSucceeded =>
+                    "Authentication session ended by the user.",
+                AuthenticationAuditOutcome.TokenReuseDetected =>
+                    "Authentication session revoked after refresh token reuse.",
+                AuthenticationAuditOutcome.SessionRevoked =>
+                    "Authentication session revoked because the account or profile is inactive.",
                 _ => throw new ArgumentOutOfRangeException(nameof(audit))
             });
 

@@ -24,5 +24,8 @@ public sealed record AuthenticationAudit(
 public enum AuthenticationAuditOutcome
 {
     LoginSucceeded = 1,
-    AccountLocked = 2
+    AccountLocked = 2,
+    LogoutSucceeded = 3,
+    TokenReuseDetected = 4,
+    SessionRevoked = 5
 }
