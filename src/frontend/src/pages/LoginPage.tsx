@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Brand } from "../components/ui/Brand";
 import {
   AuthenticationContractError,
+  type SessionEndReason,
   useSession,
 } from "../features/authentication";
 import {
@@ -33,6 +34,21 @@ function loginErrorMessage(error: unknown) {
   return apiError.message;
 }
 
+function sessionEndMessage(reason: SessionEndReason) {
+  switch (reason) {
+    case "expired":
+      return "Sua sessão expirou. Entre novamente para continuar.";
+    case "logout-unconfirmed":
+      return "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.";
+    case "restoration-unavailable":
+      return "Não foi possível verificar uma sessão anterior. Você ainda pode entrar novamente.";
+    case "unauthorized":
+      return "Sua sessão não é mais válida. Entre novamente.";
+    default:
+      return null;
+  }
+}
+
 export function LoginPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,6 +64,26 @@ export function LoginPage() {
   });
   const locationState = location.state as LoginLocationState | null;
   const redirectTo = locationState?.from?.pathname ?? "/visao-geral";
+
+  if (status === "restoring") {
+    return (
+      <main
+        aria-busy="true"
+        className="grid min-h-svh place-items-center bg-cream px-4 text-center text-ink"
+      >
+        <div>
+          <span
+            aria-hidden="true"
+            className="mx-auto block size-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand-dark"
+          />
+          <h1 className="mt-4 font-display text-2xl">Verificando sua sessão</h1>
+          <p className="mt-2 text-sm text-ink-soft">
+            Aguarde enquanto confirmamos seu acesso com segurança.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   if (user && status === "authenticated") {
     return <Navigate replace to={redirectTo} />;
@@ -107,9 +143,7 @@ export function LoginPage() {
                 role="alert"
               >
                 {errors.root?.server?.message ??
-                  (sessionEndReason === "expired"
-                    ? "Sua sessão expirou. Entre novamente para continuar."
-                    : "Sua sessão não é mais válida. Entre novamente.")}
+                  sessionEndMessage(sessionEndReason)}
               </div>
             )}
 

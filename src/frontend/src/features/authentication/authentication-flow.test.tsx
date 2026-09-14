@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LoginPage } from "../../pages/LoginPage";
 import { ProfileRoute } from "../../routes/ProfileRoute";
@@ -9,6 +9,7 @@ import { ProtectedRoute } from "../../routes/ProtectedRoute";
 import {
   api,
   setApiAccessToken,
+  setApiSessionRefreshHandler,
   setApiUnauthorizedHandler,
 } from "../../services/api";
 import { SessionProvider } from "./session/SessionProvider";
@@ -31,7 +32,7 @@ function sessionFor(
 }
 
 function SessionIdentity() {
-  const { logout, user } = useAuthenticatedSession();
+  const { logout, sessionNotice, user } = useAuthenticatedSession();
   return (
     <div>
       <p>
@@ -40,6 +41,15 @@ function SessionIdentity() {
       <button onClick={logout} type="button">
         Sair
       </button>
+      <label>
+        Observação
+        <input name="note" />
+      </label>
+      {sessionNotice === "renewal-unavailable" ? (
+        <p role="status">
+          Não foi possível renovar a sessão agora. Seus dados foram mantidos.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -72,17 +82,60 @@ function renderAuthenticationFlow(
 
 async function submitCredentials() {
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText("E-mail:"), "operator@example.test");
+  await user.type(
+    await screen.findByLabelText("E-mail:"),
+    "operator@example.test",
+  );
   await user.type(screen.getByLabelText("Senha:"), "test-only-password");
   await user.click(screen.getByRole("button", { name: "Entrar" }));
 }
 
+beforeEach(() => {
+  Object.defineProperty(navigator, "locks", {
+    configurable: true,
+    value: {
+      request: vi.fn(
+        async (_name: string, _options: object, operation: () => unknown) =>
+          operation(),
+      ),
+    },
+  });
+  vi.spyOn(api, "get").mockRejectedValue({
+    isAxiosError: true,
+    response: { status: 401 },
+  });
+});
+
 afterEach(() => {
   setApiAccessToken(null);
+  setApiSessionRefreshHandler(null);
   setApiUnauthorizedHandler(null);
 });
 
 describe("authentication flow", () => {
+  it("restores a renewable session before rendering protected content", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { requestToken: "test-only-csrf-token" },
+    });
+    const post = vi.spyOn(api, "post").mockResolvedValue({
+      data: sessionFor("Porteiro"),
+    });
+
+    renderAuthenticationFlow("/visao-geral");
+
+    expect(screen.getByText("Validando sua sessão…")).toBeInTheDocument();
+    expect(
+      screen.queryByText("operator@example.test — Porteiro"),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("operator@example.test — Porteiro"),
+    ).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith("/auth/refresh", null, {
+      headers: { "X-CSRF-TOKEN": "test-only-csrf-token" },
+      skipSessionRefresh: true,
+    });
+  });
+
   it("uses the identity and profile returned by the API", async () => {
     const post = vi
       .spyOn(api, "post")
@@ -94,10 +147,14 @@ describe("authentication flow", () => {
     expect(
       await screen.findByText("operator@example.test — Porteiro"),
     ).toBeInTheDocument();
-    expect(post).toHaveBeenCalledWith("/auth/login", {
-      email: "operator@example.test",
-      password: "test-only-password",
-    });
+    expect(post).toHaveBeenCalledWith(
+      "/auth/login",
+      {
+        email: "operator@example.test",
+        password: "test-only-password",
+      },
+      { skipSessionRefresh: true },
+    );
     expect(window.localStorage).toHaveLength(0);
     expect(window.sessionStorage).toHaveLength(0);
   });
@@ -130,11 +187,11 @@ describe("authentication flow", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("redirects unauthenticated users to the login page", () => {
+  it("redirects unauthenticated users to the login page", async () => {
     renderAuthenticationFlow("/visao-geral");
 
     expect(
-      screen.getByRole("heading", { name: "Bem-vindo," }),
+      await screen.findByRole("heading", { name: "Bem-vindo," }),
     ).toBeInTheDocument();
   });
 
@@ -156,13 +213,18 @@ describe("authentication flow", () => {
   });
 
   it("clears the local session on logout", async () => {
-    vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("Administrador"),
-    });
+    vi.spyOn(api, "post").mockImplementation(async (url) =>
+      url === "/auth/login"
+        ? { data: sessionFor("Administrador") }
+        : { data: undefined },
+    );
 
     renderAuthenticationFlow();
     await submitCredentials();
     await screen.findByText("operator@example.test — Administrador");
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: { requestToken: "test-only-csrf-token" },
+    });
     await userEvent.click(screen.getByRole("button", { name: "Sair" }));
 
     expect(
@@ -170,16 +232,41 @@ describe("authentication flow", () => {
     ).toBeInTheDocument();
   });
 
-  it("ends the in-memory session when the token reaches its expiration", async () => {
+  it("clears the local session even when server logout cannot be confirmed", async () => {
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: sessionFor("Administrador"),
+    });
+
+    renderAuthenticationFlow();
+    await submitCredentials();
+    await screen.findByText("operator@example.test — Administrador");
+    vi.mocked(api.get).mockRejectedValueOnce(new Error("network unavailable"));
+    await userEvent.click(screen.getByRole("button", { name: "Sair" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.",
+    );
+    expect(
+      screen.queryByText("operator@example.test — Administrador"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps form values during a transient transparent renewal failure", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
     try {
+      vi.mocked(api.get)
+        .mockRejectedValueOnce({
+          isAxiosError: true,
+          response: { status: 401 },
+        })
+        .mockRejectedValue(new Error("network unavailable"));
       vi.spyOn(api, "post").mockResolvedValue({
-        data: sessionFor("Vigilante", 60_000),
+        data: sessionFor("Porteiro", 120_000),
       });
-
       renderAuthenticationFlow();
+      await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -188,6 +275,54 @@ describe("authentication flow", () => {
       });
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      fireEvent.change(screen.getByLabelText("Observação"), {
+        target: { value: "Dado fictício em preenchimento" },
+      });
+
+      await act(async () => vi.advanceTimersByTimeAsync(60_000));
+
+      expect(screen.getByLabelText("Observação")).toHaveValue(
+        "Dado fictício em preenchimento",
+      );
+      expect(
+        screen.getByText(/Não foi possível renovar a sessão agora/),
+      ).toHaveAttribute("role", "status");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ends the in-memory session when the token reaches its expiration", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
+
+    try {
+      vi.mocked(api.get)
+        .mockRejectedValueOnce({
+          isAxiosError: true,
+          response: { status: 401 },
+        })
+        .mockRejectedValue(new Error("connection failed"));
+      vi.spyOn(api, "post").mockResolvedValue({
+        data: sessionFor("Vigilante", 60_000),
+      });
+
+      renderAuthenticationFlow();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const email = screen.getByLabelText("E-mail:");
+      fireEvent.change(email, {
+        target: { value: "operator@example.test" },
+      });
+      fireEvent.change(screen.getByLabelText("Senha:"), {
+        target: { value: "test-only-password" },
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+        await vi.advanceTimersByTimeAsync(0);
       });
 
       expect(
@@ -206,22 +341,29 @@ describe("authentication flow", () => {
     }
   });
 
-  it("notifies the session when an authenticated request returns 401", async () => {
+  it("ends the session when a retried authenticated request returns 401", async () => {
+    vi.mocked(api.get).mockRestore();
     const unauthorizedHandler = vi.fn();
     setApiAccessToken("test-only-access-token");
+    setApiSessionRefreshHandler(async () => "renewed-test-token");
     setApiUnauthorizedHandler(unauthorizedHandler);
+
+    let attempts = 0;
 
     await expect(
       api.get("/protected", {
-        adapter: async (config) =>
-          Promise.reject({
+        adapter: async (config) => {
+          attempts += 1;
+          return Promise.reject({
             config,
             isAxiosError: true,
             response: { config, data: null, headers: {}, status: 401 },
-          }),
+          });
+        },
       }),
     ).rejects.toMatchObject({ isAxiosError: true });
 
+    expect(attempts).toBe(2);
     expect(unauthorizedHandler).toHaveBeenCalledOnce();
   });
 });

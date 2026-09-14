@@ -4,14 +4,16 @@ import type {
   AuthenticatedUser,
   LoginCredentials,
   SessionEndReason,
+  SessionNotice,
 } from "../types";
 
 export interface SessionContextValue {
   expiresAtUtc: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   sessionEndReason: SessionEndReason;
-  status: "authenticated" | "authenticating" | "unauthenticated";
+  sessionNotice?: SessionNotice;
+  status: "authenticated" | "authenticating" | "restoring" | "unauthenticated";
   user: AuthenticatedUser | null;
 }
 
