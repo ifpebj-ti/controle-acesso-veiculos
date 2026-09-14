@@ -40,7 +40,7 @@ Wiki para preservar a rastreabilidade.
 | Segurança | JWT curto, sessões renováveis com rotação e revogação no servidor, cookies protegidos, CSRF, contas individuais, autorização por operação, rate limiting e auditoria transacional implementados; integração frontend da sessão, matriz final, retenção e imutabilidade em produção pendentes |
 | Deploy | Imagens OCI versionadas no GHCR pela CI e base OTLP implementada; ambiente de homologação, HTTPS, collector, painéis, alertas, backup protegido e deploy ainda não configurados |
 
-Os endpoints `/health`, `/health/live`, `/health/ready` e `/weatherforecast` são verificações técnicas iniciais. `/weatherforecast` exige JWT apenas para validar a fundação de segurança e será removido quando deixar de ser útil; não representa um fluxo de negócio do produto.
+Os endpoints `/health`, `/health/live` e `/health/ready` são verificações técnicas. Autenticação, autorização e demais controles são exercitados diretamente nos contratos reais do produto; a API não mantém endpoints de exemplo do template ASP.NET Core.
 
 Os contratos operacionais e administrativos disponíveis são:
 
@@ -558,10 +558,10 @@ Verificações técnicas da API:
 curl http://localhost:5118/health
 curl http://localhost:5118/health/live
 curl http://localhost:5118/health/ready
-curl -i http://localhost:5118/weatherforecast
+curl -i http://localhost:5118/access-records/open
 ```
 
-`/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível. `/weatherforecast` retorna HTTP 401 sem token e pode ser usado para verificar uma autenticação local.
+`/health` e `/health/live` verificam o processo HTTP. `/health/ready` também verifica o PostgreSQL e retorna HTTP 503 quando o banco não está acessível. `/access-records/open` retorna HTTP 401 sem token e permite conferir a proteção de um contrato real do produto.
 
 ### Observabilidade opcional
 
