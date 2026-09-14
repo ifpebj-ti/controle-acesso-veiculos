@@ -29,7 +29,7 @@ export function AuditTrailResults({
   if (status === "loading") {
     return (
       <p
-        className="p-8 text-center text-sm font-semibold text-ink/60"
+        className="p-8 text-center text-sm font-semibold text-ink-soft"
         role="status"
       >
         Carregando eventos de auditoria…
@@ -40,7 +40,7 @@ export function AuditTrailResults({
 
   return (
     <>
-      <p aria-live="polite" className="px-5 pt-5 text-sm text-ink/60 sm:px-6">
+      <p aria-live="polite" className="px-5 pt-5 text-sm text-ink-soft sm:px-6">
         {page.totalCount} evento(s) encontrado(s)
       </p>
       {page.items.length === 0 ? (
@@ -51,7 +51,7 @@ export function AuditTrailResults({
           <h3 className="mt-4 font-display text-2xl text-ink">
             Nenhum evento encontrado
           </h3>
-          <p className="mt-2 text-sm text-ink/60">
+          <p className="mt-2 text-sm text-ink-soft">
             Ajuste os filtros ou consulte outro período.
           </p>
         </div>
@@ -113,7 +113,7 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
           </h3>
         </div>
         <time
-          className="text-xs font-semibold text-ink/60"
+          className="text-xs font-semibold text-ink-soft"
           dateTime={entry.occurredAtUtc}
         >
           {dateTimeFormatter.format(new Date(entry.occurredAtUtc))}
@@ -121,15 +121,15 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
       </div>
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-ink/55">Origem</dt>
+          <dt className="text-ink-soft">Origem</dt>
           <dd className="font-semibold">{actor}</dd>
         </div>
         <div>
-          <dt className="text-ink/55">Evento</dt>
+          <dt className="text-ink-soft">Evento</dt>
           <dd>#{entry.id}</dd>
         </div>
         <div className="sm:col-span-2">
-          <dt className="text-ink/55">Detalhes</dt>
+          <dt className="text-ink-soft">Detalhes</dt>
           <dd className="break-words">{entry.details ?? "Não informado"}</dd>
         </div>
       </dl>
@@ -152,7 +152,7 @@ function StateDetails({
     <details className="rounded-xl border border-ink/10 bg-white p-3">
       <summary className="cursor-pointer text-sm font-bold">{label}</summary>
       {value === null ? (
-        <p className="mt-3 text-sm text-ink/60">Não informado</p>
+        <p className="mt-3 text-sm text-ink-soft">Não informado</p>
       ) : (
         <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-ink p-3 text-xs text-white">
           {JSON.stringify(value, null, 2)}

@@ -88,7 +88,7 @@ export function EventAuthorizationSelector({
 
   if (status === "empty") {
     return (
-      <div className="rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-5 text-sm text-ink/70">
+      <div className="rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-5 text-sm text-ink-soft">
         <p className="font-bold text-ink">
           Nenhuma autorização vigente disponível
         </p>
@@ -116,7 +116,7 @@ export function EventAuthorizationSelector({
         Autorizações vigentes
       </legend>
       <p
-        className="text-sm leading-6 text-ink/65"
+        className="text-sm leading-6 text-ink-soft"
         id="event-authorization-guidance"
       >
         A autorização será conferida pelo sistema no momento do registro.
@@ -136,7 +136,7 @@ export function EventAuthorizationSelector({
         />
         <span>
           <strong className="block text-ink">Sem autorização de evento</strong>
-          <span className="mt-1 block text-sm text-ink/60">
+          <span className="mt-1 block text-sm text-ink-soft">
             Manter esta entrada no fluxo geral, sem associação.
           </span>
         </span>
@@ -155,17 +155,17 @@ export function EventAuthorizationSelector({
           />
           <span className="min-w-0 flex-1">
             <strong className="block text-ink">{event.name}</strong>
-            <span className="mt-1 block text-sm text-ink/65">
+            <span className="mt-1 block text-sm text-ink-soft">
               {dateFormatter.format(new Date(event.startsAtUtc))} até{" "}
               {dateFormatter.format(new Date(event.endsAtUtc))}
             </span>
-            <span className="mt-1 block text-sm text-ink/65">
+            <span className="mt-1 block text-sm text-ink-soft">
               Área: {event.area} · Responsável: {event.responsible}
             </span>
-            <span className="mt-3 block text-xs font-bold uppercase tracking-[0.1em] text-ink/50">
+            <span className="mt-3 block text-xs font-bold uppercase tracking-[0.1em] text-ink-soft">
               Regras de veículos
             </span>
-            <ul className="mt-1 space-y-1 text-sm text-ink/70">
+            <ul className="mt-1 space-y-1 text-sm text-ink-soft">
               {event.vehicleRules.map((rule) => (
                 <li key={rule.id}>{ruleDescription(rule)}</li>
               ))}

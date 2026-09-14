@@ -14,7 +14,7 @@ import type {
 import { EventVehicleRulesFields } from "./EventVehicleRulesFields";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
 
 interface EventAuthorizationFormProps {
   busy: boolean;
@@ -143,7 +143,7 @@ export function EventAuthorizationForm({
         >
           {event ? "Editar autorização" : "Nova autorização de evento"}
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/65">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
           A autorização apoia a conferência. Cada entrada continua sendo
           registrada separadamente na portaria.
         </p>
@@ -250,7 +250,7 @@ export function EventAuthorizationForm({
             Permitir pernoite
           </label>
           <p
-            className="text-xs text-ink/60 md:col-span-3"
+            className="text-xs text-ink-soft md:col-span-3"
             id="event-period-hint"
           >
             Informe data e hora locais. O servidor armazenará o período em UTC.
@@ -272,7 +272,7 @@ export function EventAuthorizationForm({
             htmlFor="event-notes"
           >
             Observação{" "}
-            <span className="font-normal text-ink/50">(opcional)</span>
+            <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
           {(() => {
             const message = errorFor("notes", errors.notes?.message);

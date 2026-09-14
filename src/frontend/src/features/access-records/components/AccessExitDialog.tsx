@@ -99,7 +99,7 @@ export function AccessExitDialog({
           Registrar saída?
         </h2>
         <p
-          className="mt-4 text-sm leading-6 text-ink/70"
+          className="mt-4 text-sm leading-6 text-ink-soft"
           id="access-exit-description"
         >
           Confirme a saída do veículo <strong>{record.plate}</strong>, conduzido

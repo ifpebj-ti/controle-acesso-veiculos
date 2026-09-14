@@ -24,8 +24,8 @@ export function AccessDeniedState({
       >
         Acesso negado
       </h1>
-      <p className="mt-3 leading-7 text-ink/70">{message}</p>
-      <p className="mt-2 text-sm text-ink/55">
+      <p className="mt-3 leading-7 text-ink-soft">{message}</p>
+      <p className="mt-2 text-sm text-ink-soft">
         O menu organiza a experiência, mas cada operação continua sendo validada
         pela API.
       </p>

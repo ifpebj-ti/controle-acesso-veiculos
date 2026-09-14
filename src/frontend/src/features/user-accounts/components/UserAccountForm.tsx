@@ -18,7 +18,7 @@ interface UserAccountFormProps {
 }
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:opacity-60";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:opacity-60";
 
 function errorId(field: keyof UserAccountServerErrors) {
   return `account-${field}-error`;
@@ -98,7 +98,7 @@ export function UserAccountForm({
         >
           Criar conta
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/65">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
           A senha temporária é enviada somente nesta criação e não volta a ser
           exibida. Oriente o funcionário por um canal seguro.
         </p>
@@ -173,7 +173,10 @@ export function UserAccountForm({
             type="password"
             {...registration("password")}
           />
-          <p className="mt-1.5 text-xs text-ink/55" id="account-password-help">
+          <p
+            className="mt-1.5 text-xs text-ink-soft"
+            id="account-password-help"
+          >
             Use entre 12 e 128 caracteres e não registre a senha em issues ou
             capturas de tela.
           </p>

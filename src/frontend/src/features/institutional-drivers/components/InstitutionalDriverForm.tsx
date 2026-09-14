@@ -9,7 +9,7 @@ import {
 import type { InstitutionalDriverInput } from "../types";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 export type InstitutionalDriverField = keyof InstitutionalDriverFormValues;
 
@@ -86,7 +86,7 @@ export function InstitutionalDriverForm({
         >
           Autorizar motorista
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/65">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
           O nome é obrigatório. Documento é opcional e não será exibido no
           catálogo; se necessário, informe tipo e número juntos.
         </p>
@@ -122,7 +122,7 @@ export function InstitutionalDriverForm({
             htmlFor="driver-document-type"
           >
             Tipo de documento{" "}
-            <span className="font-normal text-ink/50">(opcional)</span>
+            <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
           <input
             aria-describedby={
@@ -145,7 +145,7 @@ export function InstitutionalDriverForm({
             htmlFor="driver-document-number"
           >
             Número do documento{" "}
-            <span className="font-normal text-ink/50">(opcional)</span>
+            <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
           <input
             aria-describedby={

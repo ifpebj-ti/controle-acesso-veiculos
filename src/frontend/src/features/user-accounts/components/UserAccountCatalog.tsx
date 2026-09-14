@@ -23,7 +23,7 @@ export function UserAccountCatalog({
 }: UserAccountCatalogProps) {
   if (status === "loading") {
     return (
-      <p className="p-6 text-sm font-semibold text-ink/60" role="status">
+      <p className="p-6 text-sm font-semibold text-ink-soft" role="status">
         Carregando contas…
       </p>
     );
@@ -35,7 +35,7 @@ export function UserAccountCatalog({
         <h3 className="font-display text-2xl text-ink">
           Nenhuma conta encontrada
         </h3>
-        <p className="mt-2 text-sm text-ink/60">
+        <p className="mt-2 text-sm text-ink-soft">
           Ajuste os filtros ou crie uma nova conta individual.
         </p>
       </div>
@@ -44,7 +44,7 @@ export function UserAccountCatalog({
 
   return (
     <>
-      <p className="px-5 pt-5 text-sm text-ink/60 sm:px-6">
+      <p className="px-5 pt-5 text-sm text-ink-soft sm:px-6">
         {page.totalCount} conta(s) encontrada(s)
       </p>
       <div className="space-y-3 p-4 md:hidden">
@@ -61,7 +61,7 @@ export function UserAccountCatalog({
         <table className="w-full min-w-[54rem] border-collapse text-left text-sm">
           <caption className="sr-only">Contas de acesso do sistema</caption>
           <thead>
-            <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink/50">
+            <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
               <th className="px-6 py-3" scope="col">
                 Usuário
               </th>
@@ -87,9 +87,9 @@ export function UserAccountCatalog({
               >
                 <td className="px-6 py-4">
                   <strong className="block text-ink">{account.name}</strong>
-                  <span className="text-xs text-ink/55">{account.email}</span>
+                  <span className="text-xs text-ink-soft">{account.email}</span>
                 </td>
-                <td className="px-4 py-4 text-ink/70">
+                <td className="px-4 py-4 text-ink-soft">
                   {profileLabels[account.profileName]}
                 </td>
                 <td className="px-4 py-4">
@@ -98,7 +98,7 @@ export function UserAccountCatalog({
                     tone={account.active ? "success" : "neutral"}
                   />
                 </td>
-                <td className="px-4 py-4 text-ink/65">
+                <td className="px-4 py-4 text-ink-soft">
                   {dateFormatter.format(new Date(account.createdAtUtc))}
                 </td>
                 <td className="px-6 py-4 text-right">
@@ -126,7 +126,7 @@ export function UserAccountCatalog({
           >
             Anterior
           </button>
-          <span className="text-sm text-ink/60">
+          <span className="text-sm text-ink-soft">
             Página {page.page} de {page.totalPages}
           </span>
           <button
@@ -179,7 +179,9 @@ function AccountCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <strong className="block text-ink">{account.name}</strong>
-          <span className="break-all text-xs text-ink/55">{account.email}</span>
+          <span className="break-all text-xs text-ink-soft">
+            {account.email}
+          </span>
         </div>
         <StatusBadge
           label={account.active ? "Ativa" : "Desativada"}

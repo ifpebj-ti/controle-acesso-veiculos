@@ -11,7 +11,7 @@ import type { EventAuthorizationFormValues } from "../schemas/eventAuthorization
 import type { EventAuthorizationServerErrors } from "../types";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
 
 interface EventVehicleRulesFieldsProps {
   control: Control<EventAuthorizationFormValues>;
@@ -77,7 +77,7 @@ export function EventVehicleRulesFields({
       <legend className="px-2 text-lg font-bold text-ink">
         Regras de veículos
       </legend>
-      <p className="mb-4 text-sm text-ink/65" id="event-rules-hint">
+      <p className="mb-4 text-sm text-ink-soft" id="event-rules-hint">
         Use placa para um veículo específico ou cota para uma quantidade por
         tipo.
       </p>
@@ -198,7 +198,7 @@ export function EventVehicleRulesFields({
                   >
                     Placa{" "}
                     {mode === "quota" && (
-                      <span className="font-normal text-ink/50">
+                      <span className="font-normal text-ink-soft">
                         (não se aplica)
                       </span>
                     )}

@@ -39,7 +39,10 @@ export function EventAuthorizationCatalog({
   return (
     <div aria-busy={status === "loading"}>
       {status === "ready" && page && (
-        <p aria-live="polite" className="px-5 pt-5 text-sm text-ink/60 sm:px-6">
+        <p
+          aria-live="polite"
+          className="px-5 pt-5 text-sm text-ink-soft sm:px-6"
+        >
           {page.totalCount} autorização(ões) encontrada(s)
         </p>
       )}
@@ -58,7 +61,7 @@ export function EventAuthorizationCatalog({
           <p className="mt-4 font-bold text-ink">
             Nenhuma autorização encontrada
           </p>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-sm text-ink-soft">
             Revise os filtros ou cadastre uma nova autorização.
           </p>
         </div>
@@ -92,7 +95,7 @@ export function EventAuthorizationCatalog({
                       <h3 className="mt-1 break-words text-xl font-bold text-ink">
                         {event.name}
                       </h3>
-                      <p className="mt-1 text-sm text-ink/65">
+                      <p className="mt-1 text-sm text-ink-soft">
                         Responsável: {event.responsible}
                       </p>
                     </div>
@@ -101,7 +104,7 @@ export function EventAuthorizationCatalog({
                       tone={statusInfo.tone}
                     />
                   </div>
-                  <p className="mt-4 rounded-xl bg-white/80 p-3 text-sm text-ink/75">
+                  <p className="mt-4 rounded-xl bg-white/80 p-3 text-sm text-ink-soft">
                     <strong>
                       {dateTimeFormatter.format(new Date(event.startsAtUtc))}
                     </strong>{" "}
@@ -112,22 +115,22 @@ export function EventAuthorizationCatalog({
                   </p>
                   <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
                     <div className="rounded-xl bg-brand-soft/35 p-3">
-                      <dt className="text-xs text-ink/60">Previstos</dt>
+                      <dt className="text-xs text-ink-soft">Previstos</dt>
                       <dd className="mt-1 text-lg font-bold">{expected}</dd>
                     </div>
                     <div className="rounded-xl bg-blue-50 p-3">
-                      <dt className="text-xs text-ink/60">
+                      <dt className="text-xs text-ink-soft">
                         Entradas registradas
                       </dt>
                       <dd className="mt-1 text-lg font-bold">{consumed}</dd>
                     </div>
                     <div className="rounded-xl bg-amber-50 p-3">
-                      <dt className="text-xs text-ink/60">Restantes</dt>
+                      <dt className="text-xs text-ink-soft">Restantes</dt>
                       <dd className="mt-1 text-lg font-bold">{remaining}</dd>
                     </div>
                   </dl>
                   <div className="mt-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-ink/55">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-ink-soft">
                       Regras de veículos
                     </h4>
                     <ul className="mt-2 space-y-2 text-sm">
@@ -141,7 +144,7 @@ export function EventAuthorizationCatalog({
                               ? `Placa ${rule.plate}`
                               : rule.vehicleType}
                           </span>
-                          <span className="text-ink/60">
+                          <span className="text-ink-soft">
                             {rule.consumedQuantity} de {rule.quantity}{" "}
                             entrada(s)
                           </span>
@@ -149,13 +152,13 @@ export function EventAuthorizationCatalog({
                       ))}
                     </ul>
                   </div>
-                  <p className="mt-4 text-xs font-semibold text-ink/60">
+                  <p className="mt-4 text-xs font-semibold text-ink-soft">
                     {event.overnightAllowed
                       ? "Pernoite permitido"
                       : "Pernoite não permitido"}
                   </p>
                   {event.notes && (
-                    <p className="mt-2 text-sm leading-6 text-ink/65">
+                    <p className="mt-2 text-sm leading-6 text-ink-soft">
                       {event.notes}
                     </p>
                   )}
@@ -198,7 +201,7 @@ export function EventAuthorizationCatalog({
               >
                 Anterior
               </button>
-              <span className="text-sm text-ink/65">
+              <span className="text-sm text-ink-soft">
                 Página {page.page} de {page.totalPages}
               </span>
               <button

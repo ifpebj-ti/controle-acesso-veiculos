@@ -35,7 +35,7 @@ export function AuditTrailPanel({ enabled }: { enabled: boolean }) {
         >
           Trilha de auditoria
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/60">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
           Consulte ações registradas pelo sistema sem alterar ou excluir a
           autoria histórica.
         </p>

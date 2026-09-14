@@ -43,7 +43,7 @@ export function InstitutionalVehicleCatalog({
             Veículos institucionais
           </h2>
           {status === "ready" && (
-            <p className="mt-1 text-sm text-ink/60" aria-live="polite">
+            <p className="mt-1 text-sm text-ink-soft" aria-live="polite">
               {vehicles.length} veículo(s) ativo(s)
             </p>
           )}
@@ -59,11 +59,11 @@ export function InstitutionalVehicleCatalog({
             </label>
             <div className="relative mt-2">
               <Icon
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/50"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft"
                 name="search"
               />
               <input
-                className="min-h-12 w-full rounded-xl border border-ink/20 bg-white pl-12 pr-4 text-ink outline-none placeholder:text-ink/40 focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
+                className="min-h-12 w-full rounded-xl border border-ink/20 bg-white pl-12 pr-4 text-ink outline-none placeholder:text-ink-soft focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
                 id="fleet-search"
                 onChange={(event) => onQueryChange(event.target.value)}
                 placeholder="Placa, identificação, modelo ou cor"
@@ -92,7 +92,7 @@ export function InstitutionalVehicleCatalog({
               ? "Nenhum veículo ativo cadastrado"
               : "Nenhum veículo corresponde à busca"}
           </p>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-sm text-ink-soft">
             {vehicles.length === 0 && canManage
               ? "Cadastre o primeiro veículo institucional para iniciar o catálogo."
               : vehicles.length === 0
@@ -153,32 +153,32 @@ function InstitutionalVehicleCard({
           {vehicle.identification}
         </p>
       )}
-      <p className="mt-3 min-h-6 text-sm text-ink/70">
+      <p className="mt-3 min-h-6 text-sm text-ink-soft">
         {description || vehicle.vehicleType || "Detalhes não informados"}
       </p>
       <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-ink/10 pt-4 text-sm">
         <div>
-          <dt className="text-xs font-bold uppercase tracking-wider text-ink/45">
+          <dt className="text-xs font-bold uppercase tracking-wider text-ink-soft">
             Tipo
           </dt>
-          <dd className="mt-1 text-ink/75">
+          <dd className="mt-1 text-ink-soft">
             {vehicle.vehicleType ?? "Não informado"}
           </dd>
         </div>
         <div>
-          <dt className="text-xs font-bold uppercase tracking-wider text-ink/45">
+          <dt className="text-xs font-bold uppercase tracking-wider text-ink-soft">
             Cor / ano
           </dt>
-          <dd className="mt-1 text-ink/75">
+          <dd className="mt-1 text-ink-soft">
             {[vehicle.color, vehicle.year].filter(Boolean).join(" · ") ||
               "Não informado"}
           </dd>
         </div>
         <div className="col-span-2">
-          <dt className="text-xs font-bold uppercase tracking-wider text-ink/45">
+          <dt className="text-xs font-bold uppercase tracking-wider text-ink-soft">
             Cadastrado em
           </dt>
-          <dd className="mt-1 text-ink/75">
+          <dd className="mt-1 text-ink-soft">
             {createdAtFormatter.format(new Date(vehicle.createdAtUtc))}
           </dd>
         </div>

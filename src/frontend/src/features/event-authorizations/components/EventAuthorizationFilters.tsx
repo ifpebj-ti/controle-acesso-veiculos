@@ -132,7 +132,7 @@ export function EventAuthorizationFilterForm({
         </button>
       </div>
       <p
-        className="text-xs text-ink/60 sm:col-span-2 xl:col-span-5"
+        className="text-xs text-ink-soft sm:col-span-2 xl:col-span-5"
         id="event-filter-period-hint"
       >
         O período considera data e hora locais e pode abranger no máximo 366

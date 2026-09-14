@@ -61,7 +61,7 @@ export function AccessHistoryFilters({
         </div>
 
         <fieldset className="mt-5">
-          <legend className="text-xs font-bold uppercase tracking-[0.12em] text-ink/55">
+          <legend className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">
             Período
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -77,7 +77,7 @@ export function AccessHistoryFilters({
                 className={`min-h-9 rounded-full border px-3.5 text-xs font-bold transition ${
                   draft.period === value
                     ? "border-ink bg-ink text-white"
-                    : "border-ink/15 bg-white/75 text-ink/70 hover:border-ink/35"
+                    : "border-ink/15 bg-white/75 text-ink-soft hover:border-ink/35"
                 }`}
                 key={value}
                 onClick={() => onPeriodChange(value as PeriodPreset)}

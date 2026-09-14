@@ -39,7 +39,7 @@ export function InstitutionalDriverCatalog({
             Motoristas institucionais
           </h2>
           {status === "ready" && (
-            <p aria-live="polite" className="mt-1 text-sm text-ink/60">
+            <p aria-live="polite" className="mt-1 text-sm text-ink-soft">
               {drivers.length} motorista(s) autorizado(s)
             </p>
           )}
@@ -54,11 +54,11 @@ export function InstitutionalDriverCatalog({
             </label>
             <div className="relative mt-2">
               <Icon
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/50"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft"
                 name="search"
               />
               <input
-                className="min-h-12 w-full rounded-xl border border-ink/20 bg-white pl-12 pr-4 text-ink outline-none placeholder:text-ink/40 focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
+                className="min-h-12 w-full rounded-xl border border-ink/20 bg-white pl-12 pr-4 text-ink outline-none placeholder:text-ink-soft focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
                 id="driver-search"
                 onChange={(event) => onQueryChange(event.target.value)}
                 placeholder="Nome do motorista"
@@ -87,7 +87,7 @@ export function InstitutionalDriverCatalog({
               ? "Nenhum motorista autorizado"
               : "Nenhum motorista corresponde à busca"}
           </p>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-sm text-ink-soft">
             {drivers.length === 0 && canManage
               ? "Autorize o primeiro motorista institucional para iniciar o catálogo."
               : drivers.length === 0
@@ -112,10 +112,10 @@ export function InstitutionalDriverCatalog({
                 {driver.name}
               </h3>
               <dl className="mt-4 border-t border-ink/10 pt-4 text-sm">
-                <dt className="text-xs font-bold uppercase tracking-wider text-ink/45">
+                <dt className="text-xs font-bold uppercase tracking-wider text-ink-soft">
                   Autorizado em
                 </dt>
-                <dd className="mt-1 text-ink/75">
+                <dd className="mt-1 text-ink-soft">
                   {dateFormatter.format(new Date(driver.authorizedAtUtc))}
                 </dd>
               </dl>

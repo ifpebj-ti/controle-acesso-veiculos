@@ -89,7 +89,7 @@ export function AccessHistoryResults({
           <p className="font-bold text-ink">
             {result?.totalCount ?? 0} registro(s)
           </p>
-          <p className="text-xs text-ink/55">
+          <p className="text-xs text-ink-soft">
             Página {result?.page ?? 1} de {Math.max(1, result?.totalPages ?? 1)}
           </p>
         </div>
@@ -98,7 +98,7 @@ export function AccessHistoryResults({
       {records.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-8 text-center">
           <p className="font-bold text-ink">Nenhum registro encontrado</p>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-sm text-ink-soft">
             Ajuste o período ou limpe os filtros para tentar novamente.
           </p>
         </div>
@@ -113,7 +113,7 @@ export function AccessHistoryResults({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <strong className="block text-ink">{record.plate}</strong>
-                    <span className="text-xs text-ink/60">
+                    <span className="text-xs text-ink-soft">
                       {record.categoryName} • #{record.id}
                     </span>
                   </div>
@@ -122,30 +122,32 @@ export function AccessHistoryResults({
                     tone={record.exitAtUtc ? "success" : "warning"}
                   />
                 </div>
-                <p className="mt-3 text-sm font-semibold text-ink/80">
+                <p className="mt-3 text-sm font-semibold text-ink-soft">
                   {record.driverName}
                 </p>
-                <p className="mt-1 text-sm text-ink/60">{record.objective}</p>
+                <p className="mt-1 text-sm text-ink-soft">{record.objective}</p>
                 {linkedEventName(record) && (
-                  <p className="mt-2 text-sm text-ink/70">
+                  <p className="mt-2 text-sm text-ink-soft">
                     <span className="font-bold text-ink">Evento:</span>{" "}
                     {linkedEventName(record)}
                   </p>
                 )}
                 <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-ink/8 pt-3 text-xs">
                   <div>
-                    <dt className="font-bold uppercase tracking-wider text-ink/50">
+                    <dt className="font-bold uppercase tracking-wider text-ink-soft">
                       Entrada
                     </dt>
-                    <dd className="mt-1 text-ink/75">
+                    <dd className="mt-1 text-ink-soft">
                       {dateFormatter.format(new Date(record.entryAtUtc))}
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-bold uppercase tracking-wider text-ink/50">
+                    <dt className="font-bold uppercase tracking-wider text-ink-soft">
                       Permanência
                     </dt>
-                    <dd className="mt-1 text-ink/75">{stayDuration(record)}</dd>
+                    <dd className="mt-1 text-ink-soft">
+                      {stayDuration(record)}
+                    </dd>
                   </div>
                 </dl>
                 {onCorrect && (
@@ -168,7 +170,7 @@ export function AccessHistoryResults({
                 Histórico de acessos retornado pela API
               </caption>
               <thead>
-                <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink/50">
+                <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
                   <th className="px-3 py-3" scope="col">
                     Data e veículo
                   </th>
@@ -199,29 +201,29 @@ export function AccessHistoryResults({
                   >
                     <td className="px-3 py-4">
                       <strong className="block text-ink">{record.plate}</strong>
-                      <span className="mt-1 block whitespace-nowrap text-xs text-ink/55">
+                      <span className="mt-1 block whitespace-nowrap text-xs text-ink-soft">
                         {dateFormatter.format(new Date(record.entryAtUtc))}
                       </span>
                       <span className="mt-1 block text-[0.68rem] font-bold uppercase tracking-wider text-brand-dark">
                         {record.categoryName}
                       </span>
                     </td>
-                    <td className="px-3 py-4 text-ink/75">
+                    <td className="px-3 py-4 text-ink-soft">
                       {record.driverName}
                     </td>
-                    <td className="px-3 py-4 text-ink/75">
+                    <td className="px-3 py-4 text-ink-soft">
                       {record.objective}
                       {linkedEventName(record) && (
-                        <span className="mt-2 block text-xs text-ink/65">
+                        <span className="mt-2 block text-xs text-ink-soft">
                           <strong className="text-ink">Evento:</strong>{" "}
                           {linkedEventName(record)}
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-4 text-ink/70">
+                    <td className="px-3 py-4 text-ink-soft">
                       {stayDuration(record)}
                       {record.exitAtUtc && (
-                        <span className="mt-1 block whitespace-nowrap text-xs text-ink/50">
+                        <span className="mt-1 block whitespace-nowrap text-xs text-ink-soft">
                           Saída{" "}
                           {dateFormatter.format(new Date(record.exitAtUtc))}
                         </span>

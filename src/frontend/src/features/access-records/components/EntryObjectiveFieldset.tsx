@@ -13,7 +13,7 @@ import {
 } from "../model/entryOptions";
 
 const textFieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 interface EntryObjectiveFieldsetProps {
   clearErrors: UseFormClearErrors<AccessEntryFormValues>;
@@ -92,7 +92,7 @@ export function EntryObjectiveFieldset({
       <legend className="text-sm font-semibold text-ink" id="objective-label">
         Objetivo do acesso <span className="text-red-700">*</span>
       </legend>
-      <p className="mt-1 text-sm text-ink/60" id="objective-help">
+      <p className="mt-1 text-sm text-ink-soft" id="objective-help">
         Escolha a opção que melhor resume a finalidade da entrada.
       </p>
 

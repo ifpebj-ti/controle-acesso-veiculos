@@ -98,7 +98,7 @@ export function InstitutionalDepartureForm({
         >
           Registrar saída institucional
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/65">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
           Selecione somente veículos e motoristas previamente autorizados. O
           horário oficial será registrado pelo servidor.
         </p>

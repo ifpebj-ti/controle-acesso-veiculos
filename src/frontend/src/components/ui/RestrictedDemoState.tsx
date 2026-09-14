@@ -13,8 +13,8 @@ export function RestrictedDemoState({ message }: RestrictedDemoStateProps) {
         <Icon name="shield" size={27} />
       </span>
       <h1 className="mt-5 font-display text-3xl text-ink">Acesso negado</h1>
-      <p className="mt-3 leading-7 text-ink/70">{message}</p>
-      <p className="mt-2 text-sm text-ink/55">
+      <p className="mt-3 leading-7 text-ink-soft">{message}</p>
+      <p className="mt-2 text-sm text-ink-soft">
         A interface oculta ações incompatíveis, e a API continua validando cada
         permissão.
       </p>

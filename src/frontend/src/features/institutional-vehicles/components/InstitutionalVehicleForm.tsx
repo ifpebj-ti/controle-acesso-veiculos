@@ -9,7 +9,7 @@ import {
 import type { InstitutionalVehicle, InstitutionalVehicleInput } from "../types";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 export type InstitutionalVehicleField = keyof InstitutionalVehicleFormValues;
 
@@ -111,7 +111,7 @@ export function InstitutionalVehicleForm({
         >
           {mode === "create" ? "Cadastrar veículo" : "Editar veículo"}
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/65">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
           Informe ao menos a placa ou a identificação institucional. Os demais
           campos ajudam a equipe a conferir o veículo correto.
         </p>
@@ -171,7 +171,7 @@ export function InstitutionalVehicleForm({
             className="text-sm font-semibold text-ink"
             htmlFor="fleet-type"
           >
-            Tipo <span className="font-normal text-ink/50">(opcional)</span>
+            Tipo <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
           <input
             aria-describedby={
@@ -195,7 +195,7 @@ export function InstitutionalVehicleForm({
             className="text-sm font-semibold text-ink"
             htmlFor="fleet-brand"
           >
-            Marca <span className="font-normal text-ink/50">(opcional)</span>
+            Marca <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
           <input
             aria-describedby={errorFor("brand") ? errorId("brand") : undefined}
@@ -213,7 +213,7 @@ export function InstitutionalVehicleForm({
             className="text-sm font-semibold text-ink"
             htmlFor="fleet-model"
           >
-            Modelo <span className="font-normal text-ink/50">(opcional)</span>
+            Modelo <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
           <input
             aria-describedby={errorFor("model") ? errorId("model") : undefined}
@@ -231,7 +231,7 @@ export function InstitutionalVehicleForm({
             className="text-sm font-semibold text-ink"
             htmlFor="fleet-color"
           >
-            Cor <span className="font-normal text-ink/50">(opcional)</span>
+            Cor <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
           <input
             aria-describedby={errorFor("color") ? errorId("color") : undefined}
@@ -249,7 +249,7 @@ export function InstitutionalVehicleForm({
             className="text-sm font-semibold text-ink"
             htmlFor="fleet-year"
           >
-            Ano <span className="font-normal text-ink/50">(opcional)</span>
+            Ano <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
           <input
             aria-describedby={errorFor("year") ? errorId("year") : undefined}
