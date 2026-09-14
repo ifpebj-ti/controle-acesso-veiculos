@@ -7,6 +7,7 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 ## Decisões implementadas
 
 - Senhas usam `PasswordHasher` do ASP.NET Core Identity no formato V3, PBKDF2-HMAC-SHA512, salt aleatório por senha e 210.000 iterações.
+- Quando um login válido usa um hash compatível, porém abaixo da configuração vigente, a API recalcula e persiste o hash antes de emitir a sessão. A atualização, a sessão e a auditoria compartilham a mesma unidade de trabalho; uma falha impede a emissão da credencial e desfaz todas as mudanças.
 - A API nunca recebe nem persiste senha em texto simples fora da duração da requisição de login.
 - Usuário desconhecido, inativo, bloqueado, perfil inativo e senha incorreta recebem a mesma resposta HTTP 401.
 - Cinco senhas incorretas bloqueiam a conta por 15 minutos.
@@ -157,4 +158,4 @@ substitui o Porteiro quando necessário.
 
 ## Validação automatizada
 
-Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. O ciclo de sessão acrescenta testes de cookie, ausência de segredo no corpo e no banco, CSRF, rotação, replay, concorrência, inatividade, duração absoluta, logout, perfil inativo, revogação por desativação e rollback. Os testes de persistência usam PostgreSQL real e dados, senhas e chaves fictícios exclusivos do ambiente temporário.
+Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, atualização progressiva de hash sem regravação desnecessária, atomicidade da atualização, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. O ciclo de sessão acrescenta testes de cookie, ausência de segredo no corpo e no banco, CSRF, rotação, replay, concorrência, inatividade, duração absoluta, logout, perfil inativo, revogação por desativação e rollback. Os testes de persistência usam PostgreSQL real e dados, senhas e chaves fictícios exclusivos do ambiente temporário.
