@@ -175,6 +175,57 @@ jobs:
             "http://127.0.0.1:${frontend_port}/api/health/ready" \
             | jq --exit-status '.status == "Healthy"'
 
+      - name: Verify frontend security headers
+        working-directory: infrastructure/docker
+        shell: bash
+        run: |
+          frontend_port="$(docker compose port frontend 8080 | sed 's/.*://')"
+          frontend_headers="$(curl \
+            --head \
+            --silent \
+            --show-error \
+            --retry 30 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            "http://127.0.0.1:${frontend_port}/" \
+            | tr -d '\r')"
+          proxy_error_headers="$(curl \
+            --head \
+            --silent \
+            --show-error \
+            "http://127.0.0.1:${frontend_port}/api/route-that-does-not-exist" \
+            | tr -d '\r')"
+
+          verify_headers() {
+            local headers="$1"
+
+            grep --fixed-strings --ignore-case --quiet \
+              "content-security-policy: default-src 'none'; base-uri 'self'; connect-src 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; manifest-src 'self'; object-src 'none'; script-src 'self'; style-src 'self'" \
+              <<< "${headers}"
+            grep --fixed-strings --ignore-case --quiet \
+              'cross-origin-opener-policy: same-origin' <<< "${headers}"
+            grep --fixed-strings --ignore-case --quiet \
+              'cross-origin-resource-policy: same-origin' <<< "${headers}"
+            grep --fixed-strings --ignore-case --quiet \
+              'permissions-policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()' \
+              <<< "${headers}"
+            grep --fixed-strings --ignore-case --quiet \
+              'referrer-policy: no-referrer' <<< "${headers}"
+            grep --fixed-strings --ignore-case --quiet \
+              'x-content-type-options: nosniff' <<< "${headers}"
+            grep --fixed-strings --ignore-case --quiet \
+              'x-frame-options: DENY' <<< "${headers}"
+
+            if grep --extended-regexp --ignore-case --quiet \
+              '^server: nginx/[0-9]' <<< "${headers}"; then
+              echo 'The Nginx version must not be disclosed.' >&2
+              return 1
+            fi
+          }
+
+          verify_headers "${frontend_headers}"
+          verify_headers "${proxy_error_headers}"
+
       - name: Show Compose diagnostics
         if: failure()
         working-directory: infrastructure/docker
