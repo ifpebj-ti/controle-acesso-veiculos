@@ -70,6 +70,14 @@ public class Usuario
         DataAlteracao = agoraUtc;
     }
 
+    public void AtualizarSenhaHash(string senhaHash, DateTime agoraUtc)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(senhaHash);
+
+        SenhaHash = senhaHash;
+        DataAlteracao = agoraUtc;
+    }
+
     public void Desativar(DateTime agoraUtc)
     {
         Ativo = false;

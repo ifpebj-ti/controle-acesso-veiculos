@@ -25,10 +25,14 @@ public sealed class AspNetPasswordHashService : IPasswordHashService
         return _hasher.HashPassword(Marker, password);
     }
 
-    public bool Verify(string passwordHash, string password) =>
-        _hasher.VerifyHashedPassword(Marker, passwordHash, password) is
-            PasswordVerificationResult.Success or
-            PasswordVerificationResult.SuccessRehashNeeded;
+    public PasswordHashVerificationResult Verify(string passwordHash, string password) =>
+        _hasher.VerifyHashedPassword(Marker, passwordHash, password) switch
+        {
+            PasswordVerificationResult.Success => PasswordHashVerificationResult.Success,
+            PasswordVerificationResult.SuccessRehashNeeded =>
+                PasswordHashVerificationResult.SuccessRehashNeeded,
+            _ => PasswordHashVerificationResult.Failed
+        };
 
     public void PerformDummyVerification(string password) =>
         _ = _hasher.VerifyHashedPassword(Marker, _dummyHash, password);

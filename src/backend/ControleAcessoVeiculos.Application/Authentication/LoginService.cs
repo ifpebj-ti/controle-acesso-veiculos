@@ -33,7 +33,11 @@ public sealed class LoginService(
             return LoginResult.InvalidCredentials();
         }
 
-        if (!passwordHashService.Verify(authenticationUser.User.SenhaHash, password))
+        var passwordVerification = passwordHashService.Verify(
+            authenticationUser.User.SenhaHash,
+            password);
+
+        if (passwordVerification == PasswordHashVerificationResult.Failed)
         {
             authenticationUser.User.RegistrarTentativaFalha(
                 now,
@@ -48,6 +52,13 @@ public sealed class LoginService(
                 : null;
             await userStore.SaveChangesAsync(audit, cancellationToken);
             return LoginResult.InvalidCredentials();
+        }
+
+        if (passwordVerification == PasswordHashVerificationResult.SuccessRehashNeeded)
+        {
+            authenticationUser.User.AtualizarSenhaHash(
+                passwordHashService.Hash(password),
+                now);
         }
 
         authenticationUser.User.RegistrarAutenticacaoBemSucedida(now);

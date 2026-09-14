@@ -118,7 +118,8 @@ public sealed class CreateUserAccountServiceTests
     private sealed class FakePasswordHashService : IPasswordHashService
     {
         public string Hash(string password) => $"HASH::{password}";
-        public bool Verify(string passwordHash, string password) => false;
+        public PasswordHashVerificationResult Verify(string passwordHash, string password) =>
+            PasswordHashVerificationResult.Failed;
         public void PerformDummyVerification(string password)
         {
         }
