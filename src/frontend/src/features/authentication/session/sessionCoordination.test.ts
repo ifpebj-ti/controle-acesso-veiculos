@@ -44,19 +44,28 @@ describe("cross-tab session coordination", () => {
 
   it("broadcasts only a session-ended event and never a token", () => {
     const postedMessages: unknown[] = [];
+    let receiveMessage: ((message: { data: unknown }) => void) | undefined;
     class TestBroadcastChannel {
-      addEventListener() {}
+      addEventListener(
+        _type: string,
+        listener: (message: { data: unknown }) => void,
+      ) {
+        receiveMessage = listener;
+      }
       postMessage(message: unknown) {
         postedMessages.push(message);
       }
     }
     vi.stubGlobal("BroadcastChannel", TestBroadcastChannel);
-    const unsubscribe = subscribeToSessionEvents(vi.fn());
+    const listener = vi.fn();
+    const unsubscribe = subscribeToSessionEvents(listener);
 
     broadcastSessionEnded();
+    receiveMessage?.({ data: { type: "session-ended" } });
 
     expect(postedMessages).toEqual([{ type: "session-ended" }]);
     expect(JSON.stringify(postedMessages)).not.toContain("token");
+    expect(listener).toHaveBeenCalledWith({ type: "session-ended" });
     unsubscribe();
   });
 });
