@@ -41,12 +41,6 @@ X-CSRF-TOKEN: {{CsrfToken}}
 
 ###
 
-GET {{ControleAcessoVeiculos.API_HostAddress}}/weatherforecast
-Authorization: Bearer {{AccessToken}}
-Accept: application/json
-
-###
-
 POST {{ControleAcessoVeiculos.API_HostAddress}}/users
 Authorization: Bearer {{AccessToken}}
 Content-Type: application/json
