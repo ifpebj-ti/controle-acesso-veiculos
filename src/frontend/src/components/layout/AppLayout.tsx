@@ -280,8 +280,9 @@ export function AppLayout() {
         <div className="mx-auto min-w-0 w-full max-w-[94rem] px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
           {sessionNotice === "renewal-unavailable" && (
             <div
+              aria-atomic="true"
               className="mb-5 rounded-2xl border border-amber-500 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"
-              role="status"
+              role="alert"
             >
               Não foi possível renovar a sessão agora. Seus dados foram
               mantidos; verifique a conexão antes de continuar.
