@@ -202,21 +202,21 @@ export function AccessCorrectionDialog({
 
         <dl className="mt-6 grid gap-4 rounded-2xl bg-cream/45 p-4 text-sm sm:grid-cols-2">
           <div>
-            <dt className="font-bold text-ink/60">Placa</dt>
+            <dt className="font-bold text-ink-soft">Placa</dt>
             <dd className="mt-1 text-ink">{record.plate}</dd>
           </div>
           <div>
-            <dt className="font-bold text-ink/60">Condutor</dt>
+            <dt className="font-bold text-ink-soft">Condutor</dt>
             <dd className="mt-1 text-ink">{record.driverName}</dd>
           </div>
           <div>
-            <dt className="font-bold text-ink/60">Entrada</dt>
+            <dt className="font-bold text-ink-soft">Entrada</dt>
             <dd className="mt-1 text-ink">
               {dateFormatter.format(new Date(record.entryAtUtc))}
             </dd>
           </div>
           <div>
-            <dt className="font-bold text-ink/60">Saída</dt>
+            <dt className="font-bold text-ink-soft">Saída</dt>
             <dd className="mt-1 text-ink">
               {record.exitAtUtc
                 ? dateFormatter.format(new Date(record.exitAtUtc))
@@ -224,16 +224,16 @@ export function AccessCorrectionDialog({
             </dd>
           </div>
           <div>
-            <dt className="font-bold text-ink/60">Situação</dt>
+            <dt className="font-bold text-ink-soft">Situação</dt>
             <dd className="mt-1 text-ink">{statusLabel(record)}</dd>
           </div>
           <div>
-            <dt className="font-bold text-ink/60">Autoria original</dt>
+            <dt className="font-bold text-ink-soft">Autoria original</dt>
             <dd className="mt-1 text-ink">Usuário #{record.createdById}</dd>
           </div>
           {record.eventAuthorizationName?.trim() && (
             <div className="sm:col-span-2">
-              <dt className="font-bold text-ink/60">Evento associado</dt>
+              <dt className="font-bold text-ink-soft">Evento associado</dt>
               <dd className="mt-1 text-ink">{record.eventAuthorizationName}</dd>
             </div>
           )}
@@ -318,7 +318,7 @@ export function AccessCorrectionDialog({
               htmlFor="correction-observation"
             >
               Observação{" "}
-              <span className="font-normal text-ink/55">(opcional)</span>
+              <span className="font-normal text-ink-soft">(opcional)</span>
             </label>
             <textarea
               {...register("observation")}
@@ -358,7 +358,7 @@ export function AccessCorrectionDialog({
               rows={3}
             />
             <p
-              className="mt-1 text-xs text-ink/60"
+              className="mt-1 text-xs text-ink-soft"
               id="correction-justification-guidance"
             >
               Informe entre 10 e 500 caracteres.

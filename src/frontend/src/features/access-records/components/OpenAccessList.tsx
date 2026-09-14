@@ -45,7 +45,7 @@ export function OpenAccessList({
                 <strong className="block font-display text-2xl leading-none text-ink">
                   {record.plate}
                 </strong>
-                <p className="mt-2 break-words text-sm font-semibold text-ink/80">
+                <p className="mt-2 break-words text-sm font-semibold text-ink-soft">
                   {record.driverName}
                 </p>
               </div>
@@ -55,23 +55,23 @@ export function OpenAccessList({
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-ink/8 pt-3 text-xs">
               <div className="col-span-2">
-                <dt className="font-bold uppercase tracking-wider text-ink/50">
+                <dt className="font-bold uppercase tracking-wider text-ink-soft">
                   Categoria
                 </dt>
-                <dd className="mt-0.5 break-words text-ink/75">
+                <dd className="mt-0.5 break-words text-ink-soft">
                   {record.categoryName}
                 </dd>
               </div>
               <div>
-                <dt className="font-bold uppercase tracking-wider text-ink/50">
+                <dt className="font-bold uppercase tracking-wider text-ink-soft">
                   Entrada
                 </dt>
-                <dd className="mt-0.5 text-ink/75">
+                <dd className="mt-0.5 text-ink-soft">
                   {entryFormatter.format(new Date(record.entryAtUtc))}
                 </dd>
               </div>
               <div>
-                <dt className="font-bold uppercase tracking-wider text-ink/50">
+                <dt className="font-bold uppercase tracking-wider text-ink-soft">
                   Tempo transcorrido
                 </dt>
                 <dd className="mt-0.5 font-semibold text-ink">
@@ -100,7 +100,7 @@ export function OpenAccessList({
             Acessos em aberto retornados pela API
           </caption>
           <thead>
-            <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink/55">
+            <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
               <th className="w-[14%] px-3 py-3" scope="col">
                 Placa
               </th>
@@ -132,13 +132,13 @@ export function OpenAccessList({
                     {record.plate}
                   </strong>
                 </td>
-                <td className="break-words px-3 py-3 font-semibold text-ink/80">
+                <td className="break-words px-3 py-3 font-semibold text-ink-soft">
                   {record.driverName}
                 </td>
-                <td className="break-words px-3 py-3 text-ink/70">
+                <td className="break-words px-3 py-3 text-ink-soft">
                   {record.categoryName}
                 </td>
-                <td className="px-3 py-3 text-ink/70">
+                <td className="px-3 py-3 text-ink-soft">
                   {entryFormatter.format(new Date(record.entryAtUtc))}
                 </td>
                 <td className="px-3 py-3 font-semibold text-ink">

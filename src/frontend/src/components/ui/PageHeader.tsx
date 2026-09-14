@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface PageHeaderProps {
   eyebrow?: string;
@@ -24,7 +24,7 @@ export function PageHeader({
         <h1 className="mt-1 font-display text-3xl leading-tight text-ink sm:text-4xl">
           {title}
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/70 sm:text-base">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft sm:text-base">
           {description}
         </p>
       </div>

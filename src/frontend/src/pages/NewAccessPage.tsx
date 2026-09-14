@@ -27,7 +27,7 @@ import {
 } from "../services/api-errors";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 const fieldNames: Record<string, keyof AccessEntryFormValues> = {
   eventAuthorizationId: "eventAuthorizationId",
@@ -346,7 +346,7 @@ export function NewAccessPage() {
                   >
                     Autorização de evento
                   </h3>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/65">
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-soft">
                     Associação opcional. Nenhum evento é escolhido
                     automaticamente.
                   </p>
@@ -423,11 +423,11 @@ export function NewAccessPage() {
         </section>
 
         <aside className="h-fit space-y-4 xl:sticky xl:top-8">
-          <section className="rounded-[2rem] bg-[#B8C9A4] p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink/55">
+          <section className="rounded-[2rem] bg-[#B8C9A4] p-6 text-ink">
+            <p className="text-xs font-bold uppercase tracking-[0.14em]">
               Conferência rápida
             </p>
-            <ol className="mt-5 space-y-4 text-sm leading-6 text-ink/75">
+            <ol className="mt-5 space-y-4 text-sm leading-6">
               <li className="flex gap-3">
                 <strong>1.</strong>
                 <span>Confirme a placa com o veículo.</span>
@@ -452,7 +452,7 @@ export function NewAccessPage() {
                 <p className="text-sm font-bold text-ink">
                   Veículo institucional
                 </p>
-                <p className="mt-1 text-xs leading-5 text-ink/65">
+                <p className="mt-1 text-xs leading-5 text-ink-soft">
                   Saída, quilometragem, motorista e retorno pertencem ao fluxo
                   próprio da frota.
                 </p>

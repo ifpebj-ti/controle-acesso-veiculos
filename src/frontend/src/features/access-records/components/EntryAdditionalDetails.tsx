@@ -3,7 +3,7 @@ import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 interface EntryAdditionalDetailsProps {
   errors: FieldErrors<AccessEntryFormValues>;
@@ -28,7 +28,7 @@ export function EntryAdditionalDetails({
         type="button"
       >
         Detalhes adicionais
-        <span className="ml-2 font-normal text-ink/55">(opcional)</span>
+        <span className="ml-2 font-normal text-ink-soft">(opcional)</span>
       </button>
       <div className="mt-3" hidden={!open} id="additional-entry-details">
         <label className="text-sm font-semibold text-ink" htmlFor="observation">
@@ -47,7 +47,7 @@ export function EntryAdditionalDetails({
           placeholder="Inclua somente informação necessária para a operação."
           {...register("observation")}
         />
-        <p className="mt-1.5 text-xs text-ink/55" id="observation-help">
+        <p className="mt-1.5 text-xs text-ink-soft" id="observation-help">
           Evite dados pessoais que não sejam necessários para o controle do
           acesso.
         </p>

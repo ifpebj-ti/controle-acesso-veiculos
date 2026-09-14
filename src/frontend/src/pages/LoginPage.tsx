@@ -96,7 +96,7 @@ export function LoginPage() {
               <h1 className="font-display text-4xl font-bold uppercase leading-none text-brand sm:text-6xl lg:text-[4.4rem]">
                 Bem-vindo,
               </h1>
-              <p className="mx-auto mt-5 max-w-2xl text-xs font-medium uppercase leading-5 tracking-[0.08em] text-ink/80 sm:text-sm">
+              <p className="mx-auto mt-5 max-w-2xl text-xs font-medium uppercase leading-5 tracking-[0.08em] text-ink sm:text-sm">
                 Ao sistema de acesso e cadastro de veículos no campus!
               </p>
             </header>
@@ -131,7 +131,7 @@ export function LoginPage() {
                   autoCapitalize="none"
                   autoComplete="username"
                   autoFocus
-                  className="mt-2 min-h-13 w-full rounded-full border border-transparent bg-[#d8e6c6] px-6 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-cream focus:ring-3 focus:ring-brand/25 aria-invalid:border-red-700 aria-invalid:bg-red-50 sm:min-h-14"
+                  className="mt-2 min-h-13 w-full rounded-full border border-transparent bg-[#d8e6c6] px-6 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-cream focus:ring-3 focus:ring-brand/25 aria-invalid:border-red-700 aria-invalid:bg-red-50 sm:min-h-14"
                   id="email"
                   inputMode="email"
                   placeholder="nome@instituicao.edu.br"
@@ -197,7 +197,7 @@ export function LoginPage() {
           </div>
         </div>
 
-        <div className="mx-auto mt-3 max-w-3xl text-center text-xs leading-5 text-ink/65">
+        <div className="mx-auto mt-3 max-w-3xl text-center text-xs leading-5 text-ink-soft">
           <p>Use sua conta individual cadastrada pelo Administrador.</p>
           <p className="mt-1">
             Por segurança, a sessão não é salva no navegador e será encerrada ao

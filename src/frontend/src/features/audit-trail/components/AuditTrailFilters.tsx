@@ -239,7 +239,7 @@ export function AuditTrailFilters({
         </button>
       </div>
       <p
-        className="text-xs text-ink/60 sm:col-span-2 xl:col-span-4"
+        className="text-xs text-ink-soft sm:col-span-2 xl:col-span-4"
         id="audit-period-hint"
       >
         A consulta inicia com os últimos 30 dias e aceita intervalos de até 90

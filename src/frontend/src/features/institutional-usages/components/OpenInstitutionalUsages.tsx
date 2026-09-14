@@ -86,7 +86,7 @@ function ReturnForm({
         {...register("returnMileage")}
       />
       <p
-        className="mt-1.5 text-xs text-ink/60"
+        className="mt-1.5 text-xs text-ink-soft"
         id={`usage-return-${usage.id}-hint`}
       >
         Deve ser igual ou superior aos {usage.departureMileage} km registrados
@@ -161,7 +161,7 @@ export function OpenInstitutionalUsages({
           Veículos em uso
         </h2>
         {status === "ready" && (
-          <p aria-live="polite" className="mt-1 text-sm text-ink/60">
+          <p aria-live="polite" className="mt-1 text-sm text-ink-soft">
             {usages.length} veículo(s) aguardando retorno
           </p>
         )}
@@ -177,7 +177,7 @@ export function OpenInstitutionalUsages({
             <Icon name="bus" />
           </span>
           <p className="mt-4 font-bold">Nenhum veículo institucional em uso</p>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-sm text-ink-soft">
             Uma saída registrada aparecerá aqui até a confirmação do retorno.
           </p>
         </div>
@@ -201,17 +201,17 @@ export function OpenInstitutionalUsages({
               </div>
               <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                 <div>
-                  <dt className="text-ink/55">Saída</dt>
+                  <dt className="text-ink-soft">Saída</dt>
                   <dd className="font-semibold">
                     {dateTimeFormatter.format(new Date(usage.departureAtUtc))}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-ink/55">Quilometragem</dt>
+                  <dt className="text-ink-soft">Quilometragem</dt>
                   <dd className="font-semibold">{usage.departureMileage} km</dd>
                 </div>
                 <div className="sm:col-span-2">
-                  <dt className="text-ink/55">Itinerário</dt>
+                  <dt className="text-ink-soft">Itinerário</dt>
                   <dd className="break-words font-semibold">
                     {usage.itinerary}
                   </dd>

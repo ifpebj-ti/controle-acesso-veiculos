@@ -172,6 +172,19 @@ Alternativas avaliadas:
 - Vitest e Testing Library;
 - axe-core para auditoria automatizada de acessibilidade.
 
+## Paleta tipográfica
+
+O frontend utiliza dois tons semânticos compartilhados para manter a linguagem
+visual consistente entre as páginas:
+
+- `ink` (`#004953`) identifica textos principais, títulos, controles e foco;
+- `ink-soft` (`#1A615D`) identifica descrições, metadados e textos de apoio.
+
+Os dois tons mantêm contraste superior a 4,5:1 sobre branco e sobre o fundo
+creme do sistema. Em superfícies coloridas, o componente deve usar a combinação
+com contraste medido, sem substituir as cores semânticas próprias de erro,
+sucesso, aviso ou indisponibilidade.
+
 ## Testes e acessibilidade
 
 ### Transições de rota

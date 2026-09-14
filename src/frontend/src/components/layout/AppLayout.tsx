@@ -45,7 +45,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
       <div className="mt-14 flex items-center gap-3 px-3">
         <span
           aria-hidden="true"
-          className="grid size-13 shrink-0 place-items-center rounded-full bg-[#d9d9d9] text-ink/65"
+          className="grid size-13 shrink-0 place-items-center rounded-full bg-[#d9d9d9] text-ink"
         >
           <Icon name="user" size={25} />
         </span>
@@ -70,10 +70,10 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                 {section.to ? (
                   <NavLink
                     className={({ isActive }) =>
-                      `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-l-2xl px-4 py-3 font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 ${
+                      `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-l-2xl px-4 py-3 font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
                         isActive
                           ? "sidebar-primary-item--active bg-cream text-ink"
-                          : "text-ink/85 hover:bg-white/45 hover:text-ink"
+                          : "text-ink hover:bg-white/45 hover:text-ink"
                       }`
                     }
                     onClick={closeMenu}
@@ -87,7 +87,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                     <button
                       aria-controls={sectionItemsId}
                       aria-expanded={isExpanded}
-                      className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-ink/85 transition-colors hover:text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
+                      className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-ink transition-colors hover:text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink"
                       onClick={() => toggleSection(section.label)}
                       type="button"
                     >
@@ -109,10 +109,10 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                           <li key={item.to}>
                             <NavLink
                               className={({ isActive }) =>
-                                `flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30 ${
+                                `flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
                                   isActive
                                     ? "bg-cream font-semibold text-ink shadow-sm"
-                                    : "text-ink/70 hover:bg-white/45 hover:text-ink"
+                                    : "text-ink hover:bg-white/45 hover:text-ink"
                                 }`
                               }
                               onClick={closeMenu}
@@ -134,7 +134,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
       </nav>
 
       <button
-        className="mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-base font-semibold text-ink transition-colors hover:bg-white/45 focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
+        className="mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-base font-semibold text-ink transition-colors hover:bg-white/45 focus:outline-none focus-visible:ring-3 focus-visible:ring-ink"
         onClick={handleLogout}
         type="button"
       >
@@ -259,7 +259,7 @@ export function AppLayout() {
           >
             <button
               aria-label="Fechar menu"
-              className="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-full bg-white/65 text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink/30"
+              className="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-full bg-white/65 text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink"
               onClick={() => setMenuOpen(false)}
               ref={menuCloseRef}
               type="button"

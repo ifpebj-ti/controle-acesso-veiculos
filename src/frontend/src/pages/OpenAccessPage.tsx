@@ -151,11 +151,11 @@ export function OpenAccessPage() {
               </label>
               <div className="relative mt-2">
                 <Icon
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-ink/50"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft"
                   name="search"
                 />
                 <input
-                  className="min-h-12 w-full rounded-xl border border-ink/20 bg-cream/45 pl-12 pr-4 text-ink outline-none placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20"
+                  className="min-h-12 w-full rounded-xl border border-ink/20 bg-cream/45 pl-12 pr-4 text-ink outline-none placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20"
                   id="open-search"
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Placa, condutor, categoria ou objetivo"
@@ -168,7 +168,7 @@ export function OpenAccessPage() {
 
             {accessRecords.status === "ready" && (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="text-sm text-ink/65">
+                <div className="text-sm text-ink-soft">
                   <p aria-live="polite" className="font-bold text-ink">
                     {accessRecords.records.length} em aberto
                     {query.trim() && ` · ${filteredRecords.length} exibido(s)`}
@@ -198,7 +198,10 @@ export function OpenAccessPage() {
           </div>
 
           {accessRecords.isRefreshing && (
-            <p className="mt-3 text-sm font-semibold text-ink/60" role="status">
+            <p
+              className="mt-3 text-sm font-semibold text-ink-soft"
+              role="status"
+            >
               Atualizando a lista. Os dados anteriores continuam disponíveis.
             </p>
           )}
@@ -216,7 +219,7 @@ export function OpenAccessPage() {
               <p className="font-bold text-ink">
                 Nenhum acesso aberto encontrado
               </p>
-              <p className="mt-1 text-sm text-ink/60">
+              <p className="mt-1 text-sm text-ink-soft">
                 {query.trim()
                   ? "Limpe ou ajuste a busca para ver outros acessos."
                   : "Registre uma nova entrada quando necessário."}

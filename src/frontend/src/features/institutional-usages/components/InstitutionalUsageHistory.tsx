@@ -294,7 +294,7 @@ export function InstitutionalUsageHistory({
           </button>
         </div>
         <p
-          className="text-xs text-ink/60 sm:col-span-2 xl:col-span-4"
+          className="text-xs text-ink-soft sm:col-span-2 xl:col-span-4"
           id="usage-history-period-hint"
         >
           Informe data e hora locais em um intervalo máximo de 366 dias.
@@ -332,7 +332,7 @@ export function InstitutionalUsageHistory({
         <>
           <p
             aria-live="polite"
-            className="px-5 pt-5 text-sm text-ink/60 sm:px-6"
+            className="px-5 pt-5 text-sm text-ink-soft sm:px-6"
           >
             {page.totalCount} utilização(ões) encontrada(s)
           </p>
@@ -342,7 +342,7 @@ export function InstitutionalUsageHistory({
                 <Icon name="history" />
               </span>
               <p className="mt-4 font-bold">Nenhuma utilização encontrada</p>
-              <p className="mt-1 text-sm text-ink/60">
+              <p className="mt-1 text-sm text-ink-soft">
                 Revise os filtros e consulte novamente.
               </p>
             </div>
@@ -376,7 +376,7 @@ export function InstitutionalUsageHistory({
                     </p>
                     <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                       <div>
-                        <dt className="text-ink/55">Saída</dt>
+                        <dt className="text-ink-soft">Saída</dt>
                         <dd>
                           {dateTimeFormatter.format(
                             new Date(usage.departureAtUtc),
@@ -385,7 +385,7 @@ export function InstitutionalUsageHistory({
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-ink/55">Retorno</dt>
+                        <dt className="text-ink-soft">Retorno</dt>
                         <dd>
                           {usage.returnAtUtc && usage.returnMileage !== null
                             ? `${dateTimeFormatter.format(new Date(usage.returnAtUtc))} — ${usage.returnMileage} km`
@@ -394,7 +394,9 @@ export function InstitutionalUsageHistory({
                       </div>
                       {distance !== null && (
                         <div className="sm:col-span-2">
-                          <dt className="text-ink/55">Distância registrada</dt>
+                          <dt className="text-ink-soft">
+                            Distância registrada
+                          </dt>
                           <dd className="font-bold">{distance} km</dd>
                         </div>
                       )}

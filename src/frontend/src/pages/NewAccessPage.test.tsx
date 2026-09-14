@@ -154,6 +154,17 @@ describe("NewAccessPage", () => {
     );
   });
 
+  it("uses primary ink throughout the solid quick-check surface", () => {
+    renderPage();
+
+    const quickCheck = screen
+      .getByText("Conferência rápida")
+      .closest("section");
+
+    expect(quickCheck).toHaveClass("bg-[#B8C9A4]", "text-ink");
+    expect(quickCheck?.querySelector(".text-ink-soft")).toBeNull();
+  });
+
   it("submits documented fields once and opens accesses when requested", async () => {
     vi.mocked(registerAccessEntry).mockResolvedValue(createdRecord);
     const user = userEvent.setup();

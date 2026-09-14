@@ -138,7 +138,7 @@ export function AdminPage() {
             <h2 className="mt-1 font-display text-2xl text-ink">
               Contas do sistema
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-ink/60">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
               Pesquise por nome ou e-mail. Desativar revoga o acesso na próxima
               requisição protegida, mas preserva registros e autoria.
             </p>
@@ -165,7 +165,7 @@ export function AdminPage() {
         <AuditTrailPanel enabled={isAdministrator} />
       )}
 
-      <aside className="mt-6 rounded-3xl border border-[#EFD780] bg-[#EFD780]/30 p-5 text-sm leading-6 text-ink/70 sm:p-6">
+      <aside className="mt-6 rounded-3xl border border-[#EFD780] bg-[#EFD780]/30 p-5 text-sm leading-6 text-ink-soft sm:p-6">
         <h2 className="font-display text-xl text-ink">Limites deste fluxo</h2>
         <p className="mt-2">
           A API atual permite criar, consultar, desativar e reativar contas.
@@ -191,7 +191,7 @@ function AreaButton({
     <button
       aria-current={active ? "page" : undefined}
       className={`min-h-11 rounded-xl px-4 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
-        active ? "bg-brand-soft/60 text-ink" : "text-ink/65 hover:bg-cream"
+        active ? "bg-brand-soft/60 text-ink" : "text-ink-soft hover:bg-cream"
       }`}
       onClick={onClick}
       type="button"

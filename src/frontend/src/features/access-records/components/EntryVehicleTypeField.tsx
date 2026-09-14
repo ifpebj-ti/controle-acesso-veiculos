@@ -9,7 +9,7 @@ import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
 import { customEntryOption, vehicleTypeOptions } from "../model/entryOptions";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink/40 focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
+  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 interface EntryVehicleTypeFieldProps {
   clearErrors: UseFormClearErrors<AccessEntryFormValues>;
@@ -45,7 +45,7 @@ export function EntryVehicleTypeField({
     <div>
       <label className="text-sm font-semibold text-ink" htmlFor="vehicleType">
         Tipo do veículo{" "}
-        <span className="font-normal text-ink/50">(opcional)</span>
+        <span className="font-normal text-ink-soft">(opcional)</span>
       </label>
       <select
         aria-describedby={errors.vehicleType ? "vehicleType-error" : undefined}

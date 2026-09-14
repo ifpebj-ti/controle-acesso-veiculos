@@ -25,7 +25,7 @@ export function SummaryDateFilter({
     >
       <div>
         <label
-          className="block text-xs font-bold text-ink/70"
+          className="block text-xs font-bold text-ink-soft"
           htmlFor="summary-date"
         >
           Data do resumo
