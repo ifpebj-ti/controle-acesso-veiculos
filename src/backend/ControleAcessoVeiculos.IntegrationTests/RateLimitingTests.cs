@@ -79,9 +79,9 @@ public sealed class RateLimitingTests(ApiFactory factory)
         using var firstClient = CreateAuthenticatedClient(limitedFactory, firstToken);
         using var secondClient = CreateAuthenticatedClient(limitedFactory, secondToken);
 
-        var firstResponse = await firstClient.GetAsync("/weatherforecast");
-        var firstRejected = await firstClient.GetAsync("/weatherforecast");
-        var secondResponse = await secondClient.GetAsync("/weatherforecast");
+        var firstResponse = await firstClient.GetAsync("/access-records/open");
+        var firstRejected = await firstClient.GetAsync("/access-records/open");
+        var secondResponse = await secondClient.GetAsync("/access-records/open");
 
         firstResponse.EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.TooManyRequests, firstRejected.StatusCode);
