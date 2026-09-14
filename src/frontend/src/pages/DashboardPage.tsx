@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { Icon } from "../components/ui/Icon";
 import {
   profileLabels,
   useAuthenticatedSession,
@@ -11,22 +12,8 @@ import {
   useOperationalSummary,
 } from "../features/operational-summary";
 
-const fullDateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  day: "numeric",
-  month: "long",
-  weekday: "long",
-  year: "numeric",
-});
-
 const summaryDateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "long",
-});
-
-const clockFormatter = new Intl.DateTimeFormat("pt-BR", {
-  hour: "2-digit",
-  hour12: false,
-  minute: "2-digit",
-  second: "2-digit",
 });
 
 function capitalize(value: string) {
@@ -43,10 +30,55 @@ function formatSummaryDate(localDate: string) {
   return summaryDateFormatter.format(new Date(`${localDate}T12:00:00`));
 }
 
+function institutionalDateTime(date: Date, timeZoneId?: string) {
+  const timeZone = timeZoneId ? { timeZone: timeZoneId } : {};
+  const dateParts = new Intl.DateTimeFormat("pt-BR", {
+    ...timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((parts, part) => {
+      if (part.type !== "literal") parts[part.type] = part.value;
+      return parts;
+    }, {});
+  const hour = Number(
+    new Intl.DateTimeFormat("pt-BR", {
+      ...timeZone,
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(date),
+  );
+
+  return {
+    clock: new Intl.DateTimeFormat("pt-BR", {
+      ...timeZone,
+      hour: "2-digit",
+      hourCycle: "h23",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(date),
+    fullDate: new Intl.DateTimeFormat("pt-BR", {
+      ...timeZone,
+      day: "numeric",
+      month: "long",
+      weekday: "long",
+      year: "numeric",
+    }).format(date),
+    hour,
+    localDate: `${dateParts.year}-${dateParts.month}-${dateParts.day}`,
+  };
+}
+
 export function DashboardPage() {
   const { user } = useAuthenticatedSession();
   const operationalSummary = useOperationalSummary();
   const [now, setNow] = useState(() => new Date());
+  const currentInstitutionalTime = useMemo(
+    () => institutionalDateTime(now, operationalSummary.summary?.timeZoneId),
+    [now, operationalSummary.summary?.timeZoneId],
+  );
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setNow(new Date()), 1000);
@@ -61,32 +93,35 @@ export function DashboardPage() {
     );
   }
 
+  const isCurrentDate =
+    operationalSummary.summary?.localDate ===
+    currentInstitutionalTime.localDate;
+
   return (
-    <div className="min-w-0">
-      <header className="flex flex-col gap-6 border-b border-ink/10 pb-7 lg:flex-row lg:items-end lg:justify-between">
+    <div className="daily-overview min-w-0">
+      <header className="sticky top-16 z-10 -mx-4 flex flex-col gap-6 border-b border-ink/10 bg-cream/95 px-4 pb-7 pt-1 shadow-[0_10px_24px_rgba(1,36,40,0.04)] backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-9 lg:flex-row lg:items-end lg:justify-between lg:px-9 lg:pt-0">
         <div className="max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-dark">
             Controle de acesso • Campus Belo Jardim
           </p>
-          <h1 className="mt-2 font-display text-4xl leading-tight text-ink sm:text-5xl">
-            {greetingForHour(now.getHours())}, {profileLabels[user.profileName]}
-            .
+          <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">
+            {greetingForHour(currentInstitutionalTime.hour)},{" "}
+            {profileLabels[user.profileName]}.
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-ink/65 sm:text-base">
-            Consulte os totais operacionais consolidados pela API para
-            acompanhar o dia e apoiar a troca de turno.
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-overview-ink-soft sm:text-base">
+            Acompanhe as movimentações e a situação dos acessos do dia.
           </p>
         </div>
 
         <div className="shrink-0 border-l-4 border-[#BDD8F1] pl-4 text-left lg:min-w-72 lg:text-right">
-          <p className="text-sm font-semibold text-ink/65">
-            {capitalize(fullDateFormatter.format(now))}
+          <p className="text-sm font-semibold text-overview-ink-soft">
+            {capitalize(currentInstitutionalTime.fullDate)}
           </p>
           <time
             className="mt-1 block font-mono text-3xl font-semibold tracking-[0.08em] text-ink"
             dateTime={now.toISOString()}
           >
-            {clockFormatter.format(now)}
+            {currentInstitutionalTime.clock}
           </time>
         </div>
       </header>
@@ -98,20 +133,19 @@ export function DashboardPage() {
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-brand-dark">
-              Consulta integrada
+              Movimentações do dia
             </p>
             <h2
-              className="mt-1 font-display text-3xl text-ink"
+              className="mt-2 font-display text-3xl text-ink"
               id="daily-summary-title"
             >
-              Resumo operacional diário
+              Resumo do dia
             </h2>
             {operationalSummary.summary && (
-              <p className="mt-2 text-sm text-ink/60">
+              <p className="mt-2 text-sm text-overview-ink-soft">
                 {capitalize(
                   formatSummaryDate(operationalSummary.summary.localDate),
-                )}{" "}
-                • Fuso {operationalSummary.summary.timeZoneId}
+                )}
               </p>
             )}
           </div>
@@ -158,17 +192,59 @@ export function DashboardPage() {
           )}
       </section>
 
-      <aside className="mt-6 rounded-3xl border border-[#EFD780] bg-[#EFD780]/30 p-5 text-sm leading-6 text-ink/70 sm:p-6">
-        <h2 className="font-display text-xl text-ink">
-          Como interpretar o resumo
-        </h2>
-        <p className="mt-2">
-          “No início” inclui registros recebidos do dia anterior. “No fim”
-          mostra os que permanecem abertos ao final do período consultado. Esses
-          totais não classificam atraso, irregularidade ou fechamento formal de
-          turno.
-        </p>
-      </aside>
+      <details className="group mt-6 overflow-hidden rounded-3xl border border-[#1A615D]/20 bg-white text-sm leading-6 shadow-[0_10px_30px_rgba(0,73,83,0.06)]">
+        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 font-bold text-ink transition-colors hover:bg-brand-soft/15 focus:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-brand/30 [&::-webkit-details-marker]:hidden">
+          <span
+            aria-hidden="true"
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft/35 font-display text-lg text-overview-ink-soft"
+          >
+            i
+          </span>
+          <span>Como ler o resumo</span>
+          <Icon
+            className="ml-auto shrink-0 transition-transform group-open:rotate-180"
+            name="chevron-down"
+            size={18}
+          />
+        </summary>
+        <div className="border-t border-[#1A615D]/15 bg-cream/45 p-5">
+          <dl className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-[#BDD8F1] bg-white/80 p-4 text-overview-ink-soft">
+              <dt className="font-bold text-ink">Já estavam no campus</dt>
+              <dd className="mt-1">
+                Veículos que entraram antes da data e ainda estavam no campus
+                quando o dia começou.
+              </dd>
+            </div>
+            <div className="rounded-2xl border border-[#BDD8F1] bg-white/80 p-4 text-overview-ink-soft">
+              <dt className="font-bold text-ink">Ainda estavam no campus</dt>
+              <dd className="mt-1">
+                {isCurrentDate
+                  ? "Acessos que continuam sem saída registrada agora."
+                  : "Acessos que continuavam sem saída registrada ao encerrar aquele dia."}
+              </dd>
+            </div>
+            <div className="rounded-2xl border border-[#C8CE72] bg-white/80 p-4 text-overview-ink-soft">
+              <dt className="font-bold text-ink">Já estavam em uso</dt>
+              <dd className="mt-1">
+                Veículos institucionais que saíram antes da data e ainda não
+                tinham retornado quando o dia começou.
+              </dd>
+            </div>
+            <div className="rounded-2xl border border-[#C8CE72] bg-white/80 p-4 text-overview-ink-soft">
+              <dt className="font-bold text-ink">Ainda estavam em uso</dt>
+              <dd className="mt-1">
+                {isCurrentDate
+                  ? "Veículos institucionais que continuam sem retorno registrado agora."
+                  : "Veículos institucionais que continuavam sem retorno registrado ao encerrar aquele dia."}
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-4 rounded-xl bg-[#EFD780]/30 px-4 py-3 text-xs font-medium text-overview-ink-soft">
+            Esses indicadores não classificam atraso ou irregularidade.
+          </p>
+        </div>
+      </details>
     </div>
   );
 }

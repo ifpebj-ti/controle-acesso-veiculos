@@ -1,7 +1,13 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   type ProfileName,
@@ -71,6 +77,17 @@ describe("DashboardPage", () => {
     });
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps the daily context visible while the summary scrolls", () => {
+    const { container } = renderPage();
+    const pageHeader = container.querySelector("header");
+
+    expect(pageHeader).toHaveClass("sticky", "top-16", "lg:top-0");
+  });
+
   it.each<ProfileName>([
     "Porteiro",
     "Vigilante",
@@ -105,8 +122,85 @@ describe("DashboardPage", () => {
       screen.getByText("Entradas vinculadas").nextElementSibling,
     ).toHaveTextContent("2");
     expect(
-      screen.getByText("Em uso no fim").nextElementSibling,
+      screen.getAllByText("Ainda estavam em uso")[0].nextElementSibling,
     ).toHaveTextContent("2");
+  });
+
+  it("keeps technical context out of the summary and offers optional guidance", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { name: "Resumo do dia" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Fuso|America\/Recife/)).not.toBeInTheDocument();
+
+    const guidanceToggle = screen.getByText("Como ler o resumo");
+    const guidance = guidanceToggle.closest("details");
+
+    expect(guidance).not.toHaveAttribute("open");
+    await user.click(guidanceToggle);
+    expect(guidance).toHaveAttribute("open");
+    expect(
+      screen.getByText(/sem saída registrada ao encerrar aquele dia/),
+    ).toBeInTheDocument();
+  });
+
+  it("uses the campus timezone when the device instant is already on the next UTC day", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-11T01:30:00Z"));
+    vi.mocked(getDailyOperationalSummary).mockResolvedValue({
+      ...summary,
+      localDate: "2030-06-10",
+      timeZoneId: "America/Recife",
+    });
+    await act(async () => {
+      renderPage();
+    });
+
+    fireEvent.click(screen.getByText("Como ler o resumo"));
+
+    expect(
+      screen.getByText(/Segunda-feira, 10 de junho de 2030/i),
+    ).toBeVisible();
+    expect(screen.getByText("22:30:00")).toBeVisible();
+    expect(
+      screen.getByText("Acessos que continuam sem saída registrada agora."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Veículos institucionais que continuam sem retorno registrado agora.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("stops describing the selected date as current after midnight at the campus", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-11T02:59:59Z"));
+    vi.mocked(getDailyOperationalSummary).mockResolvedValue({
+      ...summary,
+      localDate: "2030-06-10",
+      timeZoneId: "America/Recife",
+    });
+    await act(async () => {
+      renderPage();
+    });
+    fireEvent.click(screen.getByText("Como ler o resumo"));
+
+    expect(
+      screen.getByText("Acessos que continuam sem saída registrada agora."),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+
+    expect(
+      screen.getByText(
+        "Acessos que continuavam sem saída registrada ao encerrar aquele dia.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("00:00:00")).toBeVisible();
   });
 
   it("loads a selected local date without mixing previous results", async () => {

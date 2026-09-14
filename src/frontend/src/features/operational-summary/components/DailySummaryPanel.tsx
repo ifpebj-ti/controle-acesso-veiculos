@@ -25,13 +25,13 @@ function SummaryGroup({
   return (
     <article className={`${surfaces[index]} rounded-3xl p-5 sm:p-6`}>
       <h3 className="font-display text-2xl text-ink">{title}</h3>
-      <p className="mt-1 min-h-10 text-xs leading-5 text-ink/60">
+      <p className="mt-1 min-h-10 text-xs leading-5 text-overview-ink-soft">
         {description}
       </p>
       <dl className="mt-5 grid grid-cols-2 gap-3">
         {metrics.map((metric) => (
           <div className="rounded-2xl bg-white/70 p-3" key={metric.label}>
-            <dt className="text-xs font-semibold leading-4 text-ink/65">
+            <dt className="text-xs font-semibold leading-4 text-overview-ink-soft">
               {metric.label}
             </dt>
             <dd className="mt-2 font-display text-3xl text-ink">
@@ -52,10 +52,13 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
         { label: "Entradas", value: summary.generalAccess.entries },
         { label: "Saídas", value: summary.generalAccess.exits },
         {
-          label: "Abertos no início",
+          label: "Já estavam no campus",
           value: summary.generalAccess.openAtStart,
         },
-        { label: "Abertos no fim", value: summary.generalAccess.openAtEnd },
+        {
+          label: "Ainda estavam no campus",
+          value: summary.generalAccess.openAtEnd,
+        },
       ],
       title: "Acessos gerais",
     },
@@ -65,11 +68,11 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
         { label: "Saídas", value: summary.institutionalUsages.departures },
         { label: "Retornos", value: summary.institutionalUsages.returns },
         {
-          label: "Em uso no início",
+          label: "Já estavam em uso",
           value: summary.institutionalUsages.openAtStart,
         },
         {
-          label: "Em uso no fim",
+          label: "Ainda estavam em uso",
           value: summary.institutionalUsages.openAtEnd,
         },
       ],
@@ -98,7 +101,7 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
     <>
       {totalMovements === 0 && (
         <p
-          className="mt-5 rounded-2xl border border-ink/10 bg-cream/55 p-4 text-sm text-ink/70"
+          className="mt-5 rounded-2xl border border-ink/10 bg-cream/55 p-4 text-sm text-overview-ink-soft"
           role="status"
         >
           Nenhuma movimentação foi contabilizada nesta data. Os registros

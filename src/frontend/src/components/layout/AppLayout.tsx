@@ -221,7 +221,7 @@ export function AppLayout() {
         Ir para o conteúdo
       </a>
 
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft shadow-[8px_0_28px_rgba(1,36,40,0.08)] lg:block">
+      <aside className="sidebar-scroll fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft lg:block">
         <SidebarContent />
       </aside>
 
@@ -253,7 +253,7 @@ export function AppLayout() {
           <aside
             aria-label="Menu principal"
             aria-modal="true"
-            className="absolute inset-y-0 left-0 w-[min(86vw,20rem)] overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft shadow-2xl"
+            className="sidebar-scroll absolute inset-y-0 left-0 w-[min(86vw,20rem)] overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft shadow-2xl"
             ref={menuDialogRef}
             role="dialog"
           >
@@ -272,14 +272,10 @@ export function AppLayout() {
       )}
 
       <main
-        className="min-h-svh min-w-0 max-w-full lg:pl-72"
+        className="min-h-svh min-w-0 max-w-full bg-cream lg:pl-72"
         id="conteudo-principal"
         tabIndex={-1}
       >
-        <div className="border-b border-amber-300/60 bg-amber-50 px-4 py-2 text-center text-xs font-semibold text-amber-950 sm:text-sm lg:px-8">
-          MVP integrado à API — homologação institucional e liberação para
-          produção permanecem pendentes.
-        </div>
         <div className="mx-auto min-w-0 w-full max-w-[94rem] px-4 py-6 sm:px-6 lg:px-9 lg:py-8">
           <Outlet />
         </div>
