@@ -234,8 +234,8 @@ export function LoginPage() {
         <div className="mx-auto mt-3 max-w-3xl text-center text-xs leading-5 text-ink-soft">
           <p>Use sua conta individual cadastrada pelo Administrador.</p>
           <p className="mt-1">
-            Por segurança, a sessão não é salva no navegador e será encerrada ao
-            atualizar ou fechar esta página.
+            Sua sessão é protegida e pode ser restaurada com segurança enquanto
+            estiver válida.
           </p>
         </div>
       </div>
