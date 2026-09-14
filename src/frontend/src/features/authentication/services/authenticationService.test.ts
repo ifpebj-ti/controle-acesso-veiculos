@@ -51,6 +51,11 @@ describe("authentication session service", () => {
     expect(post).toHaveBeenCalledWith("/auth/logout", null, {
       headers: { "X-CSRF-TOKEN": "logout-test-csrf-token" },
       skipSessionRefresh: true,
+      timeout: 4_000,
+    });
+    expect(api.get).toHaveBeenCalledWith("/auth/csrf", {
+      skipSessionRefresh: true,
+      timeout: 4_000,
     });
   });
 
