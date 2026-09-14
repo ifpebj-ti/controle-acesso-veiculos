@@ -267,6 +267,15 @@ Referência: [ASP.NET Core rate limiting](https://learn.microsoft.com/aspnet/cor
 - manter proteção contra clickjacking, MIME sniffing e políticas de conteúdo no
   servidor/proxy quando a implantação for definida.
 
+O Nginx do frontend aplica uma Content Security Policy same-origin, bloqueia
+incorporação em frames, impede MIME sniffing, reduz informações de referência e
+nega câmera, microfone, geolocalização, pagamentos e USB por padrão. A CI verifica
+esses cabeçalhos tanto na aplicação quanto em uma resposta de erro do proxy. Uma
+necessidade futura de câmera deve passar por nova análise de ameaça e liberar
+somente a permissão e a origem estritamente necessárias. HSTS pertence ao
+terminador HTTPS de homologação ou produção e não é anunciado pelo servidor HTTP
+local.
+
 ## Containers
 
 - usar build em múltiplos estágios;

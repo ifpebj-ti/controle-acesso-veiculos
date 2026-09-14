@@ -121,7 +121,7 @@ flowchart LR
 
 | Fronteira | Mudança de confiança | Estado |
 |---|---|---|
-| B1 | Dispositivo/rede do usuário para frontend | Local implementado; produção pendente |
+| B1 | Dispositivo/rede do usuário para frontend | Proxy local com política de conteúdo e cabeçalhos defensivos; domínio, HTTPS e HSTS de produção pendentes |
 | B2 | Código executado no navegador para API | Login e rotas protegidas implementados; backend de renovação com cookie `HttpOnly`, rotação, revogação e CSRF implementado na #190; integração do cliente pendente na #191 |
 | B3 | API para PostgreSQL | Implementado localmente |
 | B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos, incluindo eventos; consulta da trilha restrita a Administrador |
@@ -158,6 +158,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-19 | Information disclosure | Collector falso ou mal configurado recebe telemetria operacional | 2 | 3 | 6 | OTLP desabilitado por padrão, endpoint externo ao código, TLS, autenticação, menor privilégio e revisão de atributos — #102 | Base técnica implementada; identidade do collector, secret manager e rede de produção pendentes |
 | TM-20 | Spoofing | Refresh token roubado, repetido ou usado depois do logout mantém acesso prolongado | 3 | 3 | 9 | Token opaco de 256 bits em cookie `HttpOnly`, hash no banco, rotação atômica, detecção de reutilização, duração absoluta, inatividade e revogação da família — #190 | Mitigado no backend; HTTPS de produção e integração do frontend pendentes |
 | TM-21 | Spoofing / Tampering | Site externo induz o navegador autenticado a renovar ou encerrar uma sessão por CSRF | 2 | 3 | 6 | `SameSite=Strict`, caminho mínimo, token antifalsificação vinculado ao cookie e arquitetura same-origin — #190 e #191 | Mitigado no backend e no proxy Compose; integração e teste em ambiente HTTPS pendentes |
+| TM-22 | Tampering / Information disclosure | Conteúdo não autorizado é carregado ou a aplicação é incorporada por uma página externa | 2 | 3 | 6 | CSP same-origin, bloqueio de frames, MIME sniffing desabilitado, política de referência e permissões mínimas no Nginx — #196 | Mitigado no proxy local; HTTPS, HSTS e validação no ambiente de destino pendentes |
 
 ## Controles existentes verificados
 
