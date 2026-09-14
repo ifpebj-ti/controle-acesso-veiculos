@@ -133,32 +133,35 @@ homologação para produção.
 
 ## Sessão e segurança
 
-A estratégia implementada na Issue #117 mantém o access token somente na memória
-do processo JavaScript:
+O access token permanece exclusivamente na memória do processo JavaScript. O
+refresh token é controlado pelo servidor em cookie `HttpOnly`, não integra o JSON
+e não pode ser lido pelo frontend. O fluxo implementado:
 
-- o token é anexado pelo cliente Axios centralizado e nunca aparece em URL;
-- `localStorage` e `sessionStorage` não são usados, pois prolongariam a exposição
-  do token em caso de XSS;
-- atualizar ou fechar a página encerra a sessão e exige novo login;
-- a expiração informada por `expiresAtUtc` encerra a sessão localmente;
-- uma resposta 401 em requisição autenticada limpa a sessão;
-- resposta 403 e tentativa de abrir uma rota incompatível apresentam acesso
-  negado sem revelar dados;
-- logout limpa token, identidade e temporizador locais.
+- tenta restaurar a sessão de forma controlada antes de exibir conteúdo protegido;
+- solicita um token antifalsificação novo em `GET /auth/csrf` antes de renovar ou
+  encerrar a sessão;
+- envia cookies somente pelo cliente same-origin e usa o proxy local para preservar
+  o caminho `/api/auth` no navegador;
+- compartilha uma única renovação em andamento entre requisições concorrentes e
+  permite no máximo uma repetição depois de HTTP 401;
+- nunca repete login, refresh, logout, falhas de rede ou uma requisição já repetida;
+- mantém formulários renderizados durante uma falha transitória de renovação, até
+  a expiração efetiva do access token;
+- encerra imediatamente o estado local no logout e tenta revogar a sessão no
+  servidor, informando quando essa confirmação não for possível;
+- usa bloqueio exclusivo do navegador para coordenar renovações entre abas e
+  comunica somente o encerramento da sessão, sem transmitir tokens.
 
-O backend usa resposta 401 genérica para credencial incorreta, conta inativa e
-bloqueio temporário. O frontend preserva essa indistinguibilidade para não ajudar
-na enumeração de contas. Não existem refresh token ou logout no servidor.
+Nenhum token é colocado em URL, estado de rota, log, `localStorage` ou
+`sessionStorage`. O backend usa resposta 401 genérica para credencial incorreta,
+conta inativa e bloqueio temporário; o frontend preserva essa indistinguibilidade
+para não ajudar na enumeração de contas. Respostas 403 continuam representando
+acesso negado, e toda autorização efetiva permanece no backend.
 
-Alternativas avaliadas:
-
-- `localStorage`: rejeitado para este incremento por persistir o JWT e ampliar a
-  janela de exposição a XSS;
-- `sessionStorage`: rejeitado pelo mesmo motivo, embora limitado à aba;
-- cookie `HttpOnly`, `Secure` e `SameSite`: opção preferível para uma sessão
-  persistente futura, mas exige contrato de backend, proteção contra CSRF,
-  encerramento e rotação próprios;
-- refresh token: não implementado porque a API não possui esse contrato.
+A coordenação entre abas depende da Web Locks API. O navegador-alvo Brave/Chromium
+possui esse recurso; em um navegador sem suporte, a restauração e a renovação
+falham de modo seguro e a pessoa é orientada a entrar novamente, sem persistir ou
+compartilhar credenciais como alternativa.
 
 ## Tecnologias
 
@@ -320,9 +323,8 @@ src/
 
 ## Limites atuais
 
-- refresh token ou persistência de sessão;
-- logout, revogação ou renovação no servidor;
 - recuperação e redefinição de senha;
+- suporte à renovação transparente em navegadores sem Web Locks API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
 - garantia de autorização baseada somente na interface;

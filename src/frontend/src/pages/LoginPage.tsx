@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Brand } from "../components/ui/Brand";
 import {
   AuthenticationContractError,
+  type SessionEndReason,
   useSession,
 } from "../features/authentication";
 import {
@@ -33,6 +34,21 @@ function loginErrorMessage(error: unknown) {
   return apiError.message;
 }
 
+function sessionEndMessage(reason: SessionEndReason) {
+  switch (reason) {
+    case "expired":
+      return "Sua sessão expirou. Entre novamente para continuar.";
+    case "logout-unconfirmed":
+      return "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.";
+    case "restoration-unavailable":
+      return "Não foi possível verificar uma sessão anterior. Você ainda pode entrar novamente.";
+    case "unauthorized":
+      return "Sua sessão não é mais válida. Entre novamente.";
+    default:
+      return null;
+  }
+}
+
 export function LoginPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,6 +65,26 @@ export function LoginPage() {
   const locationState = location.state as LoginLocationState | null;
   const redirectTo = locationState?.from?.pathname ?? "/visao-geral";
 
+  if (status === "restoring") {
+    return (
+      <main
+        aria-busy="true"
+        className="grid min-h-svh place-items-center bg-cream px-4 text-center text-ink"
+      >
+        <div className="min-w-0 max-w-full">
+          <span
+            aria-hidden="true"
+            className="mx-auto block size-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand-dark"
+          />
+          <h1 className="mt-4 font-display text-2xl">Verificando sua sessão</h1>
+          <p className="mx-auto mt-2 max-w-xs text-sm text-ink-soft">
+            Aguarde enquanto confirmamos seu acesso com segurança.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   if (user && status === "authenticated") {
     return <Navigate replace to={redirectTo} />;
   }
@@ -61,6 +97,15 @@ export function LoginPage() {
       setError("root.server", { message: loginErrorMessage(error) });
     }
   });
+  const loginStatusMessage =
+    errors.root?.server?.message ??
+    (sessionEndReason ? sessionEndMessage(sessionEndReason) : null);
+  const emailDescriptionIds = [
+    errors.email ? "email-error" : null,
+    loginStatusMessage ? "login-status-message" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <main className="relative min-h-svh overflow-hidden bg-cream px-4 py-6 text-ink sm:px-8 sm:py-8">
@@ -101,15 +146,13 @@ export function LoginPage() {
               </p>
             </header>
 
-            {(sessionEndReason || errors.root?.server) && (
+            {loginStatusMessage && (
               <div
                 className="mx-auto mt-7 w-full max-w-2xl rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-950"
+                id="login-status-message"
                 role="alert"
               >
-                {errors.root?.server?.message ??
-                  (sessionEndReason === "expired"
-                    ? "Sua sessão expirou. Entre novamente para continuar."
-                    : "Sua sessão não é mais válida. Entre novamente.")}
+                {loginStatusMessage}
               </div>
             )}
 
@@ -126,7 +169,7 @@ export function LoginPage() {
                   E-mail:
                 </label>
                 <input
-                  aria-describedby={errors.email ? "email-error" : undefined}
+                  aria-describedby={emailDescriptionIds || undefined}
                   aria-invalid={Boolean(errors.email)}
                   autoCapitalize="none"
                   autoComplete="username"
@@ -200,8 +243,8 @@ export function LoginPage() {
         <div className="mx-auto mt-3 max-w-3xl text-center text-xs leading-5 text-ink-soft">
           <p>Use sua conta individual cadastrada pelo Administrador.</p>
           <p className="mt-1">
-            Por segurança, a sessão não é salva no navegador e será encerrada ao
-            atualizar ou fechar esta página.
+            Sua sessão é protegida e pode ser restaurada com segurança enquanto
+            estiver válida.
           </p>
         </div>
       </div>

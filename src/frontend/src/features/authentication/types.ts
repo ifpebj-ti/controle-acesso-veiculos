@@ -31,4 +31,11 @@ export interface AuthenticatedSession {
   user: AuthenticatedUser;
 }
 
-export type SessionEndReason = "expired" | "unauthorized" | null;
+export type SessionEndReason =
+  | "expired"
+  | "logout-unconfirmed"
+  | "restoration-unavailable"
+  | "unauthorized"
+  | null;
+
+export type SessionNotice = "renewal-unavailable" | null;

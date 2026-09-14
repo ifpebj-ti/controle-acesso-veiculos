@@ -9,7 +9,10 @@ import { RouteTransitionManager } from "../../routes/RouteTransitionManager";
 import { expectNoSeriousAccessibilityViolations } from "../../test/accessibility";
 import { AppLayout } from "./AppLayout";
 
-function renderLayout(profileName: ProfileName = "Porteiro") {
+function renderLayout(
+  profileName: ProfileName = "Porteiro",
+  sessionNotice: "renewal-unavailable" | null = null,
+) {
   const view = render(
     <SessionContext.Provider
       value={{
@@ -17,6 +20,7 @@ function renderLayout(profileName: ProfileName = "Porteiro") {
         login: vi.fn(),
         logout: vi.fn(),
         sessionEndReason: null,
+        sessionNotice,
         status: "authenticated",
         user: {
           email: "operador@example.test",
@@ -78,6 +82,15 @@ function renderNavigableLayout() {
 }
 
 describe("AppLayout", () => {
+  it("announces an unavailable session renewal assertively", () => {
+    renderLayout("Porteiro", "renewal-unavailable");
+
+    expect(screen.getByRole("alert")).toHaveAttribute("aria-atomic", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível renovar a sessão agora. Seus dados foram mantidos; verifique a conexão antes de continuar.",
+    );
+  });
+
   it("does not repeat development status inside authenticated pages", () => {
     renderLayout();
 

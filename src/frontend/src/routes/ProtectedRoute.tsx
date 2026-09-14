@@ -6,7 +6,7 @@ export function ProtectedRoute() {
   const location = useLocation();
   const { status, user } = useSession();
 
-  if (status === "authenticating") {
+  if (status === "authenticating" || status === "restoring") {
     return (
       <main
         aria-busy="true"

@@ -8,4 +8,5 @@ export type {
   LoginCredentials,
   ProfileName,
   SessionEndReason,
+  SessionNotice,
 } from "./types";
