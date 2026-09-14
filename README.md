@@ -32,12 +32,12 @@ Wiki para preservar a rastreabilidade.
 | Área | Estado |
 |---|---|
 | Produto | MVP documentado para os Formulários nº 01 e nº 02; regras institucionais ainda precisam de validação |
-| Frontend | Aplicação responsiva integrada à API para autenticação e renovação segura da sessão, acessos, histórico, correção, frota, motoristas, eventos e resumo diário |
+| Frontend | Aplicação responsiva integrada à API para autenticação, acessos, histórico, correção, frota, motoristas, eventos e resumo diário; renovação segura da sessão permanece na Issue #191 |
 | Backend | API .NET 10 com autenticação, ciclo administrativo de contas, consulta administrativa da auditoria, fluxo geral, histórico e correção descritiva rastreável, manutenção de frota, motoristas, saída/retorno, histórico institucional, autorizações de eventos e resumo operacional diário |
 | Dados | PostgreSQL 16, EF Core 10, treze entidades e treze migrations versionadas |
 | Infraestrutura | Dockerfiles e Compose endurecidos, containers não privilegiados, Nginx com política de conteúdo e cabeçalhos defensivos verificados pela CI, build, scan, smoke test integrado, publicação no GHCR, proveniência assinada e SBOM SPDX atestado por digest após integração na `main`, além de ensaio local de backup/restauração e exportação OpenTelemetry configurável |
 | Qualidade | 189 testes automatizados no backend, incluindo PostgreSQL real, e 249 testes no frontend da `main`, com cobertura publicada pela CI |
-| Segurança | JWT curto em memória no frontend, sessões renováveis com rotação e revogação no servidor, cookies protegidos, CSRF, contas individuais, autorização por operação, rate limiting e auditoria transacional implementados; matriz final, retenção e imutabilidade em produção pendentes |
+| Segurança | JWT curto, sessões renováveis com rotação e revogação no servidor, cookies protegidos, CSRF, contas individuais, autorização por operação, rate limiting e auditoria transacional implementados; integração frontend da sessão, matriz final, retenção e imutabilidade em produção pendentes |
 | Deploy | Imagens OCI versionadas no GHCR pela CI e base OTLP implementada; ambiente de homologação, HTTPS, collector, painéis, alertas, backup protegido e deploy ainda não configurados |
 
 Os endpoints `/health`, `/health/live` e `/health/ready` são verificações técnicas. Autenticação, autorização e demais controles são exercitados diretamente nos contratos reais do produto; a API não mantém endpoints de exemplo do template ASP.NET Core.
