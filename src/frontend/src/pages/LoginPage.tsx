@@ -71,13 +71,13 @@ export function LoginPage() {
         aria-busy="true"
         className="grid min-h-svh place-items-center bg-cream px-4 text-center text-ink"
       >
-        <div>
+        <div className="min-w-0 max-w-full">
           <span
             aria-hidden="true"
             className="mx-auto block size-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand-dark"
           />
           <h1 className="mt-4 font-display text-2xl">Verificando sua sessão</h1>
-          <p className="mt-2 text-sm text-ink-soft">
+          <p className="mx-auto mt-2 max-w-xs text-sm text-ink-soft">
             Aguarde enquanto confirmamos seu acesso com segurança.
           </p>
         </div>
