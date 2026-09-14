@@ -69,14 +69,6 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task WeatherForecastRejectsAnonymousRequests()
-    {
-        var response = await _client.GetAsync("/weatherforecast");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
     public async Task DevelopmentOpenApiDescribesMinimalLoginIdentity()
     {
         using var developmentFactory = factory.WithWebHostBuilder(builder =>
@@ -88,6 +80,7 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
 
         response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(responseContent);
+        var paths = document.RootElement.GetProperty("paths");
         var schemas = document.RootElement
             .GetProperty("components")
             .GetProperty("schemas");
@@ -108,6 +101,7 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
 
         Assert.Equal(["accessToken", "expiresAtUtc", "user"], loginProperties);
         Assert.Equal(["email", "id", "profileName"], userProperties);
+        Assert.False(paths.TryGetProperty("/weatherforecast", out _));
     }
 
     private sealed record HealthResponse(string Status, DateTime Timestamp);
