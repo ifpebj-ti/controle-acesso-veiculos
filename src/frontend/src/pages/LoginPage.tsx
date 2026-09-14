@@ -97,6 +97,15 @@ export function LoginPage() {
       setError("root.server", { message: loginErrorMessage(error) });
     }
   });
+  const loginStatusMessage =
+    errors.root?.server?.message ??
+    (sessionEndReason ? sessionEndMessage(sessionEndReason) : null);
+  const emailDescriptionIds = [
+    errors.email ? "email-error" : null,
+    loginStatusMessage ? "login-status-message" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <main className="relative min-h-svh overflow-hidden bg-cream px-4 py-6 text-ink sm:px-8 sm:py-8">
@@ -137,13 +146,13 @@ export function LoginPage() {
               </p>
             </header>
 
-            {(sessionEndReason || errors.root?.server) && (
+            {loginStatusMessage && (
               <div
                 className="mx-auto mt-7 w-full max-w-2xl rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-950"
+                id="login-status-message"
                 role="alert"
               >
-                {errors.root?.server?.message ??
-                  sessionEndMessage(sessionEndReason)}
+                {loginStatusMessage}
               </div>
             )}
 
@@ -160,7 +169,7 @@ export function LoginPage() {
                   E-mail:
                 </label>
                 <input
-                  aria-describedby={errors.email ? "email-error" : undefined}
+                  aria-describedby={emailDescriptionIds || undefined}
                   aria-invalid={Boolean(errors.email)}
                   autoCapitalize="none"
                   autoComplete="username"

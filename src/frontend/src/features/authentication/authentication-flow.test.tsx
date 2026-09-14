@@ -246,6 +246,10 @@ describe("authentication flow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.",
     );
+    expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
+      "aria-describedby",
+      "login-status-message",
+    );
     expect(
       screen.queryByText("operator@example.test — Administrador"),
     ).not.toBeInTheDocument();
@@ -335,6 +339,10 @@ describe("authentication flow", () => {
 
       expect(screen.getByRole("alert")).toHaveTextContent(
         "Sua sessão expirou. Entre novamente para continuar.",
+      );
+      expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
+        "aria-describedby",
+        "login-status-message",
       );
     } finally {
       vi.useRealTimers();
