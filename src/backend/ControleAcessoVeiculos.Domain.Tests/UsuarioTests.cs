@@ -56,4 +56,25 @@ public sealed class UsuarioTests
         Assert.Null(usuario.BloqueadoAte);
         Assert.Equal(now.AddMinutes(2), usuario.DataAlteracao);
     }
+
+    [Fact]
+    public void PasswordHashUpgradeReplacesHashAndRecordsChangeTime()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("user@example.com", "old-hash", 1, 1);
+
+        usuario.AtualizarSenhaHash("new-hash", now);
+
+        Assert.Equal("new-hash", usuario.SenhaHash);
+        Assert.Equal(now, usuario.DataAlteracao);
+    }
+
+    [Fact]
+    public void PasswordHashUpgradeRejectsEmptyHash()
+    {
+        var usuario = new Usuario("user@example.com", "old-hash", 1, 1);
+
+        Assert.Throws<ArgumentException>(() =>
+            usuario.AtualizarSenhaHash(" ", DateTime.UtcNow));
+    }
 }

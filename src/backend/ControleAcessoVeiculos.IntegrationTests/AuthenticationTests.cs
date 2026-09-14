@@ -7,8 +7,10 @@ using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Domain.Entities;
 using ControleAcessoVeiculos.Domain.Enums;
 using ControleAcessoVeiculos.Infrastructure.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace ControleAcessoVeiculos.IntegrationTests;
 
@@ -120,6 +122,75 @@ public sealed class AuthenticationTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Equal("Credenciais inválidas.", body?.Message);
         Assert.Equal(auditsBefore, await CountAuthenticationAuditsAsync());
+    }
+
+    [Fact]
+    public async Task SuccessfulLoginUpgradesOutdatedPasswordHash()
+    {
+        const string password = "Test-only-password-123!";
+        var email = await CreateUserAsync(
+            ProfileNames.Administrator,
+            password,
+            outdatedPasswordHash: true);
+        var outdatedHash = await GetPasswordHashAsync(email);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/auth/login", new { email, password });
+
+        response.EnsureSuccessStatusCode();
+        var upgradedHash = await GetPasswordHashAsync(email);
+        Assert.NotEqual(outdatedHash, upgradedHash);
+
+        using var scope = factory.Services.CreateScope();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHashService>();
+        Assert.Equal(
+            PasswordHashVerificationResult.Success,
+            passwordHasher.Verify(upgradedHash, password));
+    }
+
+    [Fact]
+    public async Task SuccessfulLoginDoesNotRewriteCurrentPasswordHash()
+    {
+        const string password = "Test-only-password-123!";
+        var email = await CreateUserAsync(ProfileNames.Administrator, password);
+        var currentHash = await GetPasswordHashAsync(email);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/auth/login", new { email, password });
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal(currentHash, await GetPasswordHashAsync(email));
+    }
+
+    [Fact]
+    public async Task AuditFailureRollsBackOutdatedPasswordHashUpgradeAndSession()
+    {
+        const string password = "Test-only-password-123!";
+        var email = await CreateUserAsync(
+            ProfileNames.Administrator,
+            password,
+            outdatedPasswordHash: true);
+        var outdatedHash = await GetPasswordHashAsync(email);
+        var userId = await GetUserIdAsync(email);
+        using var client = factory.CreateClient();
+
+        await InstallRejectingAuthenticationAuditTriggerAsync();
+        try
+        {
+            var response = await client.PostAsJsonAsync("/auth/login", new { email, password });
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        finally
+        {
+            await RemoveRejectingAuthenticationAuditTriggerAsync();
+        }
+
+        Assert.Equal(outdatedHash, await GetPasswordHashAsync(email));
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.Equal(0, await dbContext.SessoesAutenticacao.CountAsync(item =>
+            item.UsuarioId == userId));
     }
 
     [Fact]
@@ -342,7 +413,8 @@ public sealed class AuthenticationTests(ApiFactory factory)
     private async Task<string> CreateUserAsync(
         string profileName,
         string password,
-        bool active = true)
+        bool active = true,
+        bool outdatedPasswordHash = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
@@ -361,7 +433,10 @@ public sealed class AuthenticationTests(ApiFactory factory)
         await dbContext.SaveChangesAsync();
 
         var email = $"auth-{suffix}@example.test";
-        var user = new Usuario(email, passwordHasher.Hash(password), person.Id, profile.Id);
+        var passwordHash = outdatedPasswordHash
+            ? CreateOutdatedPasswordHash(password)
+            : passwordHasher.Hash(password);
+        var user = new Usuario(email, passwordHash, person.Id, profile.Id);
 
         if (!active)
         {
@@ -371,6 +446,27 @@ public sealed class AuthenticationTests(ApiFactory factory)
         dbContext.Usuarios.Add(user);
         await dbContext.SaveChangesAsync();
         return email;
+    }
+
+    private static string CreateOutdatedPasswordHash(string password)
+    {
+        var passwordHasher = new PasswordHasher<object>(Options.Create(new PasswordHasherOptions
+        {
+            IterationCount = 10_000
+        }));
+
+        return passwordHasher.HashPassword(new object(), password);
+    }
+
+    private async Task<string> GetPasswordHashAsync(string email)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        return await dbContext.Usuarios
+            .AsNoTracking()
+            .Where(item => item.Email == email)
+            .Select(item => item.SenhaHash)
+            .SingleAsync();
     }
 
     private async Task<Auditoria> GetSingleAuthenticationAuditAsync(string email)
