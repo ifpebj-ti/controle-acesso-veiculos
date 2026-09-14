@@ -423,11 +423,11 @@ export function NewAccessPage() {
         </section>
 
         <aside className="h-fit space-y-4 xl:sticky xl:top-8">
-          <section className="rounded-[2rem] bg-[#B8C9A4] p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink-soft">
+          <section className="rounded-[2rem] bg-[#B8C9A4] p-6 text-ink">
+            <p className="text-xs font-bold uppercase tracking-[0.14em]">
               Conferência rápida
             </p>
-            <ol className="mt-5 space-y-4 text-sm leading-6 text-ink-soft">
+            <ol className="mt-5 space-y-4 text-sm leading-6">
               <li className="flex gap-3">
                 <strong>1.</strong>
                 <span>Confirme a placa com o veículo.</span>
