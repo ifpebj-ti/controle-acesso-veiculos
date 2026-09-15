@@ -2,9 +2,11 @@
 
 ## Estado
 
-**Implementação versionada:** preparada na Issue #219.  
+**Implementação versionada:** preparada na Issue #219.
+
 **Ativação externa:** pendente até existir um projeto real no SonarQube Cloud e
-as configurações protegidas do repositório.  
+as configurações protegidas do repositório.
+
 **Badge:** não deve ser publicado antes da primeira análise válida.
 
 ## Decisão
