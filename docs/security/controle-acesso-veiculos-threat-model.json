@@ -588,7 +588,7 @@
             "id": "30000000-0000-4000-8000-000000000001",
             "source": { "x": 325, "y": 390 },
             "target": { "x": 325, "y": 710 },
-            "labels": [{ "attrs": { "text": { "text": "B1 • usuário/dispositivo" } } }],
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B1", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.15, "args": { "keepGradient": true, "ensureLegibility": true } } }],
             "data": { "type": "tm.Boundary", "name": "B1 — dispositivo do usuário", "description": "A pessoa e o ambiente físico não são implicitamente confiáveis.", "isTrustBoundary": true, "hasOpenThreats": false }
           },
           {
@@ -601,7 +601,7 @@
             "id": "30000000-0000-4000-8000-000000000002",
             "source": { "x": 1040, "y": 380 },
             "target": { "x": 1040, "y": 720 },
-            "labels": [{ "attrs": { "text": { "text": "B2 • cliente/API" } } }],
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B2", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.15, "args": { "keepGradient": true, "ensureLegibility": true } } }],
             "data": { "type": "tm.Boundary", "name": "B2 — navegador para API", "description": "Todo dado do cliente é não confiável e deve ser validado e autorizado no servidor.", "isTrustBoundary": true, "hasOpenThreats": false }
           },
           {
@@ -614,7 +614,7 @@
             "id": "30000000-0000-4000-8000-000000000003",
             "source": { "x": 1450, "y": 330 },
             "target": { "x": 1450, "y": 850 },
-            "labels": [{ "attrs": { "text": { "text": "B3/B4 • persistência" } } }],
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B3/B4", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.12, "args": { "keepGradient": true, "ensureLegibility": true } } }],
             "data": { "type": "tm.Boundary", "name": "B3/B4 — API para dados e auditoria", "description": "Credenciais, rede e privilégios separam a aplicação da persistência.", "isTrustBoundary": true, "hasOpenThreats": false }
           },
           {
@@ -627,7 +627,7 @@
             "id": "30000000-0000-4000-8000-000000000004",
             "source": { "x": 1860, "y": 330 },
             "target": { "x": 1860, "y": 580 },
-            "labels": [{ "attrs": { "text": { "text": "B5 • backup" } } }],
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B5", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.15, "args": { "keepGradient": true, "ensureLegibility": true } } }],
             "data": { "type": "tm.Boundary", "name": "B5 — banco para backup", "description": "O dump deixa o banco e precisa de proteção equivalente ou superior.", "isTrustBoundary": true, "hasOpenThreats": false }
           },
           {
@@ -640,7 +640,7 @@
             "id": "30000000-0000-4000-8000-000000000005",
             "source": { "x": 1450, "y": 35 },
             "target": { "x": 1450, "y": 265 },
-            "labels": [{ "attrs": { "text": { "text": "B6/B7 • entrega" } } }],
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B6/B7", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.15, "args": { "keepGradient": true, "ensureLegibility": true } } }],
             "data": { "type": "tm.Boundary", "name": "B6/B7 — registry para OCI", "description": "A publicação verificada não substitui a política de admissão do ambiente de destino.", "isTrustBoundary": true, "hasOpenThreats": false }
           }
         ],
