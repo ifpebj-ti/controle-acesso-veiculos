@@ -3,22 +3,23 @@
 ## Estado
 
 Esta página documenta a fundação de integração contínua iniciada na Issue #25 e
-ampliada pelas Issues #90 e #104. Os workflows validam código e imagens em Pull
+ampliada pelas Issues #90, #104 e #218. Os workflows validam código e imagens em Pull
 Requests e publicam imagens verificadas no GitHub Container Registry após
-integração na `main`. Cada digest publicado recebe proveniência assinada e um
-SBOM SPDX 2.3 atestado. A
+integração na `main`. Frontend e backend são verificados para `linux/amd64` e
+`linux/arm64`; cada digest de manifesto publicado recebe proveniência assinada e
+um SBOM SPDX 2.3 de cada arquitetura. A
 publicação no registry não realiza deploy nem torna o sistema pronto para
 produção.
 
 ## Workflows
 
-| Workflow | Gatilho | Verificações |
-|---|---|---|
-| CI - Backend | Alterações do backend e de suas regras de formato | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura |
-| CI - Frontend | Alterações do frontend | `npm ci`, ESLint e build Vite |
-| CI - Containers | Código, Dockerfiles, Compose ou contexto Docker | build isolado e Trivy nas duas imagens; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, novo build, novo scan, publicação no GHCR e atestação de proveniência e SBOM |
-| CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários |
-| Dependency Review | Toda Pull Request | bloqueio de novas dependências com vulnerabilidade alta ou crítica |
+| Workflow               | Gatilho                                               | Verificações                                                                                                                                                                                                                                                                 |
+| ---------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI - Backend           | Alterações do backend e de suas regras de formato     | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura                                                                                                                                                                              |
+| CI - Frontend          | Alterações do frontend                                | `npm ci`, ESLint e build Vite                                                                                                                                                                                                                                                |
+| CI - Containers        | Código, Dockerfiles, Compose ou contexto Docker       | build isolado, Trivy e SBOM de frontend e backend em `linux/amd64` e `linux/arm64`; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, publicação das variantes verificadas, montagem do manifesto multi-plataforma e atestação de proveniência e SBOM |
+| CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários                                                                                                                                                                                        |
+| Dependency Review      | Toda Pull Request                                     | bloqueio de novas dependências com vulnerabilidade alta ou crítica                                                                                                                                                                                                           |
 
 Todas as actions de terceiros estão fixadas por SHA de commit e acompanhadas do
 número da release auditada. Os jobs de validação usam apenas `contents: read`. O
@@ -54,10 +55,10 @@ Atualizações major do toolchain frontend são deliberadas: propostas para Node
 
 ## Liveness e readiness
 
-| Endpoint | Finalidade | Dependências |
-|---|---|---|
-| `GET /health` | Alias compatível de liveness | Nenhuma |
-| `GET /health/live` | Confirmar que o processo HTTP responde | Nenhuma |
+| Endpoint            | Finalidade                                     | Dependências           |
+| ------------------- | ---------------------------------------------- | ---------------------- |
+| `GET /health`       | Alias compatível de liveness                   | Nenhuma                |
+| `GET /health/live`  | Confirmar que o processo HTTP responde         | Nenhuma                |
 | `GET /health/ready` | Confirmar que a instância pode receber tráfego | Conexão com PostgreSQL |
 
 Readiness retorna `503 Service Unavailable` quando o banco não pode ser acessado. A resposta expõe apenas `Healthy` ou `Unhealthy` e timestamp; exceções e detalhes da conexão não são retornados.
@@ -85,33 +86,45 @@ não inicia.
 
 ## Análise de imagens
 
-Em Pull Requests e branches de trabalho, cada imagem é construída sem `push` e
-carregada apenas no runner. O Trivy falha em vulnerabilidades HIGH ou CRITICAL
-para as quais existe correção. Em um push na `main`, o job de publicação
-reconstrói e analisa a imagem com o nome final antes de autenticar no registry e
-enviar qualquer tag.
+Em Pull Requests e branches de trabalho, cada imagem é construída separadamente
+para `linux/amd64` e `linux/arm64`, sem `push`, e carregada apenas no runner. O
+QEMU é habilitado somente para a variante ARM64. Caches e tags locais são
+isolados por imagem e arquitetura para impedir reutilização cruzada indevida.
 
-Vulnerabilidades ainda sem correção permanecem visíveis no relatório, mas não
-bloqueiam automaticamente a pipeline para evitar um estado impossível de
-corrigir no repositório.
+O Trivy aplica duas barreiras complementares a cada variante:
 
-Essa exceção deve ser reavaliada periodicamente. Uma vulnerabilidade explorável sem correção pode exigir troca da imagem base, mitigação adicional ou aceitação formal de risco.
+- qualquer vulnerabilidade `CRITICAL` bloqueia o pipeline, ainda que não exista
+  correção publicada;
+- todas as vulnerabilidades `HIGH` são exibidas; aquelas com correção disponível
+  também bloqueiam o pipeline, enquanto as demais exigem revisão de
+  explorabilidade, troca da base, mitigação ou aceitação formal de risco.
+
+Em um push na `main`, cada variante é reconstruída, novamente analisada e recebe
+seu SBOM antes da autenticação no registry. Somente variantes aprovadas são
+enviadas com tags imutáveis por commit e arquitetura. O manifesto compartilhado
+`sha-<commit>` e a tag móvel `main` são criados apenas depois que as quatro
+combinações e o smoke test integrado terminam com sucesso.
 
 ## Publicação em registry
 
 Depois que uma alteração é integrada à `main`, o workflow publica:
 
-| Componente | Imagem |
-|---|---|
-| Backend | `ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend` |
-| Frontend | `ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend` |
+| Componente | Imagem                                                |
+| ---------- | ----------------------------------------------------- |
+| Backend    | `ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend`  |
+| Frontend   | `ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend` |
 
-Cada pacote recebe duas tags:
+Cada pacote recebe duas tags de consumo:
 
 - `sha-<commit>`: referência imutável por convenção para rastrear exatamente o
   código que originou a imagem;
 - `main`: referência móvel para o último commit integrado e aprovado pela
   esteira.
+
+O pipeline também mantém `sha-<commit>-amd64` e `sha-<commit>-arm64` como
+referências imutáveis das variantes efetivamente analisadas. Elas formam o
+manifesto e permitem auditoria por arquitetura; consumidores normais devem usar
+`sha-<commit>` ou seu digest.
 
 Exemplo de download da imagem rastreável do backend:
 
@@ -119,22 +132,39 @@ Exemplo de download da imagem rastreável do backend:
 docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:sha-<commit>
 ```
 
+Confirme as plataformas declaradas sem executar a imagem:
+
+```bash
+docker buildx imagetools inspect \
+  ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:sha-<commit>
+```
+
+O resultado deve listar `linux/amd64` e `linux/arm64`. Para exercitar uma
+variante explicitamente em host compatível ou com emulação configurada:
+
+```bash
+docker pull --platform linux/arm64 \
+  ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:sha-<commit>
+```
+
 O workflow usa o `GITHUB_TOKEN` efêmero do job e autentica somente depois do
 scan. Pull Requests não executam o job de publicação e permanecem sem
 `packages: write`. Nenhum token de registry deve ser adicionado ao repositório.
 
-Depois do push, o workflow resolve o digest da tag `sha-<commit>`, exige o formato
+Depois de montar e validar exatamente as plataformas `linux/amd64` e
+`linux/arm64`, o workflow resolve o digest da tag `sha-<commit>`, exige o formato
 `sha256:<64 caracteres hexadecimais>` e usa `actions/attest` fixada por SHA para
 gerar proveniência SLSA assinada. A atestação é associada ao repositório no GitHub
 e anexada ao artefato OCI no GHCR. Uma tag móvel, como `main`, não deve ser usada
 como única evidência; prefira a tag por commit ou o digest.
 
-Antes do push, o Trivy também gera um SBOM SPDX 2.3 JSON da imagem já aprovada
-pelo scan. O workflow rejeita arquivo vazio, documento sem pacotes, versão SPDX
-inesperada ou tamanho superior ao limite de 16 MiB aceito pela action. Depois do
-push, `actions/attest` vincula esse documento ao mesmo nome e digest imutável da
-proveniência. Em Pull Requests, o arquivo é gerado e validado apenas no runner
-descartável; nenhuma atestação ou imagem é publicada.
+Antes de cada push, o Trivy também gera um SBOM SPDX 2.3 JSON da variante já
+aprovada pelo scan. O workflow rejeita arquivo vazio, documento sem pacotes,
+versão SPDX inesperada ou tamanho superior ao limite de 16 MiB aceito pela
+action. Depois de montar o manifesto, `actions/attest` vincula os documentos de
+AMD64 e ARM64 ao mesmo nome e digest imutável da proveniência. Em Pull Requests,
+os arquivos são gerados e validados apenas nos runners descartáveis; nenhuma
+atestação ou imagem é publicada.
 
 Após autenticar no GHCR, verifique uma imagem com GitHub CLI:
 
