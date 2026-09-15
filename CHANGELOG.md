@@ -12,6 +12,7 @@ from its first published release.
 
 - Structured Issue forms for defects, improvements, and documentation.
 - Pull Request checklist for traceability, validation, security, privacy, and operations.
+- Project favicon based on the vehicle-access artwork.
 
 ## Release process
 
