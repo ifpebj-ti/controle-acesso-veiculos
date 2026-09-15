@@ -22,9 +22,51 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
 
         try
         {
-            var vehicle = await dbContext.Veiculos.SingleOrDefaultAsync(
-                item => item.Placa == entry.Plate,
-                cancellationToken);
+            Veiculo? vehicle;
+            Pessoa? person = null;
+
+            if (entry.VehicleId.HasValue && entry.PersonId.HasValue)
+            {
+                var activeOn = DateOnly.FromDateTime(entryAtUtc);
+                var selectedCandidate = await (
+                    from relationship in dbContext.PessoasVeiculos
+                    join candidateVehicle in dbContext.Veiculos
+                        on relationship.VeiculoId equals candidateVehicle.Id
+                    join candidatePerson in dbContext.Pessoas
+                        on relationship.PessoaId equals candidatePerson.Id
+                    where relationship.VeiculoId == entry.VehicleId.Value &&
+                        relationship.PessoaId == entry.PersonId.Value &&
+                        relationship.TipoRelacao == "Condutor" &&
+                        relationship.Ativo &&
+                        (!relationship.DataInicio.HasValue ||
+                            relationship.DataInicio.Value <= activeOn) &&
+                        (!relationship.DataFim.HasValue ||
+                            relationship.DataFim.Value >= activeOn) &&
+                        candidateVehicle.Ativo &&
+                        !candidateVehicle.EhInstitucional &&
+                        candidateVehicle.Placa != null &&
+                        candidatePerson.Ativo
+                    select new
+                    {
+                        Vehicle = candidateVehicle,
+                        Person = candidatePerson
+                    }).SingleOrDefaultAsync(cancellationToken);
+
+                if (selectedCandidate is null)
+                {
+                    return Conflict(
+                        VehicleAccessStoreRegistrationStatus.CandidateUnavailable);
+                }
+
+                vehicle = selectedCandidate.Vehicle;
+                person = selectedCandidate.Person;
+            }
+            else
+            {
+                vehicle = await dbContext.Veiculos.SingleOrDefaultAsync(
+                    item => item.Placa == entry.Plate,
+                    cancellationToken);
+            }
 
             if (vehicle is not null && !vehicle.Ativo)
             {
@@ -67,11 +109,12 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 var rules = await dbContext.AutorizacoesVeiculosEventos
                     .Where(rule => rule.EventoAcessoId == eventAuthorization.Id)
                     .ToListAsync(cancellationToken);
-                eventVehicleRule = rules.FirstOrDefault(rule => rule.Placa == entry.Plate);
+                var effectivePlate = vehicle?.Placa ?? entry.Plate;
+                eventVehicleRule = rules.FirstOrDefault(rule => rule.Placa == effectivePlate);
 
                 if (eventVehicleRule is null)
                 {
-                    var vehicleType = entry.VehicleType ?? vehicle?.Tipo;
+                    var vehicleType = vehicle?.Tipo ?? entry.VehicleType;
                     if (!string.IsNullOrWhiteSpace(vehicleType))
                     {
                         var normalizedVehicleType = vehicleType.Trim().ToUpperInvariant();
@@ -110,9 +153,8 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 dbContext.Veiculos.Add(vehicle);
             }
 
-            Pessoa? person = null;
-
-            if (entry.DocumentType is not null && entry.DocumentNumber is not null)
+            if (person is null &&
+                entry.DocumentType is not null && entry.DocumentNumber is not null)
             {
                 person = await dbContext.Pessoas.SingleOrDefaultAsync(
                     item => item.DocumentoTipo == entry.DocumentType &&
@@ -216,6 +258,48 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 .Where(item => item.Status == StatusRegistroAcesso.Aberto)
                 .OrderBy(item => item.DataHoraEntrada))
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<AccessEntryCandidate>> SearchEntryCandidatesAsync(
+        AccessEntryCandidateSearchCriteria criteria,
+        CancellationToken cancellationToken)
+    {
+        var namePattern = $"%{EscapeLikePattern(criteria.Query)}%";
+
+        return await (
+            from relationship in dbContext.PessoasVeiculos.AsNoTracking()
+            join vehicle in dbContext.Veiculos.AsNoTracking()
+                on relationship.VeiculoId equals vehicle.Id
+            join person in dbContext.Pessoas.AsNoTracking()
+                on relationship.PessoaId equals person.Id
+            where relationship.TipoRelacao == "Condutor" &&
+                relationship.Ativo &&
+                (!relationship.DataInicio.HasValue ||
+                    relationship.DataInicio.Value <= criteria.ActiveOn) &&
+                (!relationship.DataFim.HasValue ||
+                    relationship.DataFim.Value >= criteria.ActiveOn) &&
+                vehicle.Ativo &&
+                !vehicle.EhInstitucional &&
+                vehicle.Placa != null &&
+                person.Ativo &&
+                ((criteria.PlatePrefix != string.Empty &&
+                    vehicle.Placa.StartsWith(criteria.PlatePrefix)) ||
+                    EF.Functions.ILike(person.Nome, namePattern, "\\"))
+            orderby (vehicle.Placa == criteria.PlatePrefix) descending,
+                vehicle.Placa!,
+                person.Nome,
+                relationship.Id
+            select new AccessEntryCandidate(
+                vehicle.Id,
+                person.Id,
+                vehicle.Placa!,
+                person.Nome,
+                vehicle.Tipo,
+                vehicle.Marca,
+                vehicle.Modelo,
+                vehicle.Cor))
+            .Take(criteria.Limit)
+            .ToListAsync(cancellationToken);
+    }
 
     public async Task<PagedVehicleAccessResult> SearchAsync(
         VehicleAccessSearchCriteria criteria,

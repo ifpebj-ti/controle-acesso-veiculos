@@ -15,7 +15,9 @@ public sealed record RegisterVehicleEntryCommand(
     string? Color = null,
     int? Year = null,
     string? Observation = null,
-    int? EventAuthorizationId = null);
+    int? EventAuthorizationId = null,
+    int? VehicleId = null,
+    int? PersonId = null);
 
 public sealed record VehicleEntryData(
     string DriverName,
@@ -30,7 +32,38 @@ public sealed record VehicleEntryData(
     string? Color,
     int? Year,
     string? Observation,
-    int? EventAuthorizationId);
+    int? EventAuthorizationId,
+    int? VehicleId,
+    int? PersonId);
+
+public sealed record SearchAccessEntryCandidatesCommand(string Query);
+
+public sealed record AccessEntryCandidateSearchCriteria(
+    string Query,
+    string PlatePrefix,
+    DateOnly ActiveOn,
+    int Limit);
+
+public sealed record AccessEntryCandidate(
+    int VehicleId,
+    int PersonId,
+    string Plate,
+    string DriverName,
+    string? VehicleType,
+    string? Brand,
+    string? Model,
+    string? Color);
+
+public enum SearchAccessEntryCandidatesStatus
+{
+    Success,
+    Invalid
+}
+
+public sealed record SearchAccessEntryCandidatesResult(
+    SearchAccessEntryCandidatesStatus Status,
+    IReadOnlyList<AccessEntryCandidate> Items,
+    IReadOnlyDictionary<string, string[]> Errors);
 
 public sealed record VehicleAccessRecord(
     int Id,
@@ -164,6 +197,7 @@ public enum VehicleAccessStoreRegistrationStatus
 {
     Success,
     Conflict,
+    CandidateUnavailable,
     EventNotFound,
     EventInactive,
     EventOutsideWindow,
