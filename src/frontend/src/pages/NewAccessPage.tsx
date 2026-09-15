@@ -224,7 +224,7 @@ export function NewAccessPage() {
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
               Fluxo geral de veículos
             </p>
-            <h2 className="mt-1 font-display text-2xl text-ink">
+            <h2 className="mt-2 font-display text-2xl text-ink">
               Dados da entrada
             </h2>
           </div>

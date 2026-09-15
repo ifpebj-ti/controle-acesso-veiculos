@@ -30,7 +30,7 @@ export function AuditTrailPanel({ enabled }: { enabled: boolean }) {
           Consulta administrativa
         </p>
         <h2
-          className="mt-1 font-display text-2xl text-ink"
+          className="mt-2 font-display text-2xl text-ink"
           id="audit-trail-title"
         >
           Trilha de auditoria

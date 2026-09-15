@@ -104,7 +104,7 @@ export function InstitutionalVehicleForm({
           Manutenção autorizada
         </p>
         <h2
-          className="mt-1 font-display text-2xl text-ink"
+          className="mt-2 font-display text-2xl text-ink"
           id="vehicle-form-title"
           ref={titleRef}
           tabIndex={-1}

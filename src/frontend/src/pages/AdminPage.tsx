@@ -135,7 +135,7 @@ export function AdminPage() {
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
               Consulta autenticada
             </p>
-            <h2 className="mt-1 font-display text-2xl text-ink">
+            <h2 className="mt-2 font-display text-2xl text-ink">
               Contas do sistema
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
