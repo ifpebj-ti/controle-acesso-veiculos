@@ -93,7 +93,7 @@ export function AccessExitDialog({
           Conferência manual
         </p>
         <h2
-          className="mt-1 font-display text-3xl text-ink"
+          className="mt-2 font-display text-3xl text-ink"
           id="access-exit-title"
         >
           Registrar saída?

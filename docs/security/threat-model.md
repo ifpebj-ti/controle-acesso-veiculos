@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 2.8
+**Versão:** 2.9
 
-**Data de referência:** 13 de setembro de 2026
+**Data de referência:** 14 de setembro de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106 e #190
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190 e #213
 
 ## Objetivo e limites
 
@@ -159,6 +159,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-20 | Spoofing | Refresh token roubado, repetido ou usado depois do logout mantém acesso prolongado | 3 | 3 | 9 | Token opaco de 256 bits em cookie `HttpOnly`, hash no banco, rotação atômica, detecção de reutilização, duração absoluta, inatividade e revogação da família — #190 | Mitigado no backend; HTTPS de produção e integração do frontend pendentes |
 | TM-21 | Spoofing / Tampering | Site externo induz o navegador autenticado a renovar ou encerrar uma sessão por CSRF | 2 | 3 | 6 | `SameSite=Strict`, caminho mínimo, token antifalsificação vinculado ao cookie e arquitetura same-origin — #190 e #191 | Mitigado no backend e no proxy Compose; integração e teste em ambiente HTTPS pendentes |
 | TM-22 | Tampering / Information disclosure | Conteúdo não autorizado é carregado ou a aplicação é incorporada por uma página externa | 2 | 3 | 6 | CSP same-origin, bloqueio de frames, MIME sniffing desabilitado, política de referência e permissões mínimas no Nginx — #196 | Mitigado no proxy local; HTTPS, HSTS e validação no ambiente de destino pendentes |
+| TM-23 | Tampering / Information disclosure | Consulta de recorrentes enumera pessoas ou cliente adultera os identificadores e textos do vínculo selecionado | 2 | 3 | 6 | Política operacional, termo entre 3 e 80 caracteres, limite fixo de 10 resultados, rate limiting global por usuário, resposta sem documento/e-mail/histórico e revalidação canônica do par no servidor — #213 | Mitigado no backend; calibração com uso real e integração do frontend permanecem pendentes |
 
 ## Controles existentes verificados
 
@@ -190,6 +191,9 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - políticas distintas para o histórico geral e o histórico institucional;
 - política de correção separada da operação e da consulta, limitada aos operadores Porteiro e Vigilante e ao acesso excepcional do Administrador;
 - contratos operacionais e catálogo inicial protegidos, com validação no servidor e erros previsíveis;
+- consulta de veículo e condutor recorrentes restrita à política operacional, limitada e
+  sem documento, e-mail ou histórico; a entrada revalida o vínculo e usa os dados
+  canônicos do servidor em vez de confiar nos textos ou identificadores do navegador;
 - data/hora de entrada e saída definidas pelo servidor e vinculadas ao usuário autenticado;
 - transação e índice único parcial impedem dois acessos abertos para o mesmo veículo;
 - bloqueio transacional do evento impede consumo concorrente acima da cota e preserva a associação por FK;

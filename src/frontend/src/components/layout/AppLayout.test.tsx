@@ -237,6 +237,9 @@ describe("AppLayout", () => {
     });
     await waitFor(() => expect(destinationHeading).toHaveFocus());
     expect(
+      screen.getByRole("link", { name: "Histórico de acessos" }),
+    ).toHaveClass("sidebar-primary-item--active");
+    expect(
       screen.queryByRole("dialog", { name: "Menu principal" }),
     ).not.toBeInTheDocument();
     expect(document.title).toBe(

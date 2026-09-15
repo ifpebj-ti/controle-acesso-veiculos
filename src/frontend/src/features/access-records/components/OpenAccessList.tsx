@@ -34,7 +34,7 @@ export function OpenAccessList({
 
   return (
     <>
-      <div className="mt-4 space-y-3 lg:hidden" data-testid="open-access-cards">
+      <div className="mt-4 space-y-3 xl:hidden" data-testid="open-access-cards">
         {records.map((record) => (
           <article
             className="rounded-2xl border border-ink/10 bg-cream/25 p-4"
@@ -42,7 +42,7 @@ export function OpenAccessList({
           >
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
-                <strong className="block font-display text-2xl leading-none text-ink">
+                <strong className="block font-mono text-xl font-extrabold uppercase leading-none tracking-[0.08em] text-ink">
                   {record.plate}
                 </strong>
                 <p className="mt-2 break-words text-sm font-semibold text-ink-soft">
@@ -94,29 +94,32 @@ export function OpenAccessList({
         ))}
       </div>
 
-      <div className="mt-4 hidden lg:block" data-testid="open-access-table">
+      <div
+        className="mt-4 hidden overflow-hidden rounded-2xl border border-ink/10 xl:block"
+        data-testid="open-access-table"
+      >
         <table className="w-full table-fixed border-collapse text-left text-sm">
           <caption className="sr-only">
             Acessos em aberto retornados pela API
           </caption>
           <thead>
-            <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
-              <th className="w-[14%] px-3 py-3" scope="col">
+            <tr className="border-b border-ink/15 bg-brand-soft/20 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
+              <th className="w-[15%] px-4 py-3" scope="col">
                 Placa
               </th>
-              <th className="w-[22%] px-3 py-3" scope="col">
+              <th className="w-[24%] px-4 py-3" scope="col">
                 Condutor
               </th>
-              <th className="w-[18%] px-3 py-3" scope="col">
+              <th className="w-[17%] px-4 py-3" scope="col">
                 Categoria
               </th>
-              <th className="w-[18%] px-3 py-3" scope="col">
+              <th className="w-[18%] px-4 py-3" scope="col">
                 Entrada
               </th>
-              <th className="w-[15%] px-3 py-3" scope="col">
+              <th className="w-[14%] px-4 py-3" scope="col">
                 Tempo transcorrido
               </th>
-              <th className="w-[13%] px-3 py-3 text-right" scope="col">
+              <th className="w-[12%] px-4 py-3 text-right" scope="col">
                 Ação
               </th>
             </tr>
@@ -124,27 +127,29 @@ export function OpenAccessList({
           <tbody>
             {records.map((record) => (
               <tr
-                className="border-b border-ink/6 align-middle last:border-0 hover:bg-cream/30"
+                className="border-b border-ink/10 align-middle even:bg-cream/20 last:border-0 hover:bg-brand-soft/15"
                 key={record.id}
               >
-                <td className="px-3 py-3">
-                  <strong className="font-display text-lg text-ink">
+                <td className="px-4 py-4">
+                  <strong className="font-mono text-base font-extrabold uppercase tracking-[0.08em] text-ink">
                     {record.plate}
                   </strong>
                 </td>
-                <td className="break-words px-3 py-3 font-semibold text-ink-soft">
+                <td className="break-words px-4 py-4 font-semibold text-ink">
                   {record.driverName}
                 </td>
-                <td className="break-words px-3 py-3 text-ink-soft">
-                  {record.categoryName}
+                <td className="break-words px-4 py-4 text-ink-soft">
+                  <span className="inline-flex rounded-full border border-ink/10 bg-cream/60 px-2.5 py-1 text-xs font-semibold text-ink">
+                    {record.categoryName}
+                  </span>
                 </td>
-                <td className="px-3 py-3 text-ink-soft">
+                <td className="px-4 py-4 tabular-nums text-ink-soft">
                   {entryFormatter.format(new Date(record.entryAtUtc))}
                 </td>
-                <td className="px-3 py-3 font-semibold text-ink">
+                <td className="px-4 py-4 font-semibold tabular-nums text-ink">
                   {elapsed(record)}
                 </td>
-                <td className="px-3 py-3 text-right">
+                <td className="px-4 py-4 text-right">
                   <button
                     aria-label={exitLabel(record)}
                     className="min-h-10 whitespace-nowrap rounded-xl bg-brand-dark px-3 text-xs font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/45 disabled:cursor-wait disabled:opacity-65"

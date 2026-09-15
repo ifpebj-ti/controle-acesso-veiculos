@@ -109,9 +109,9 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                           <li key={item.to}>
                             <NavLink
                               className={({ isActive }) =>
-                                `flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+                                `sidebar-primary-item flex min-h-10 items-center gap-2.5 rounded-l-2xl px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
                                   isActive
-                                    ? "bg-cream font-semibold text-ink shadow-sm"
+                                    ? "sidebar-primary-item--active bg-cream font-semibold text-ink"
                                     : "text-ink hover:bg-white/45 hover:text-ink"
                                 }`
                               }

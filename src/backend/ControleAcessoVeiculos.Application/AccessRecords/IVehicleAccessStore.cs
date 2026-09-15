@@ -11,6 +11,10 @@ public interface IVehicleAccessStore
     Task<IReadOnlyList<VehicleAccessRecord>> ListOpenAsync(
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<AccessEntryCandidate>> SearchEntryCandidatesAsync(
+        AccessEntryCandidateSearchCriteria criteria,
+        CancellationToken cancellationToken);
+
     Task<PagedVehicleAccessResult> SearchAsync(
         VehicleAccessSearchCriteria criteria,
         CancellationToken cancellationToken);
