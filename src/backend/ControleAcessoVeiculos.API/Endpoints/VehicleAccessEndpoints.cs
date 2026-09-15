@@ -17,6 +17,9 @@ public static class VehicleAccessEndpoints
         group.MapGet("/open", ListOpenAsync)
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("ListOpenVehicleAccesses");
+        group.MapGet("/entry-candidates", SearchEntryCandidatesAsync)
+            .RequireAuthorization(AuthorizationPolicies.OperateAccess)
+            .WithName("SearchAccessEntryCandidates");
         group.MapPost("/{accessRecordId:int}/exit", RegisterExitAsync)
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterVehicleExit");
@@ -55,7 +58,9 @@ public static class VehicleAccessEndpoints
                 request.Color,
                 request.Year,
                 request.Observation,
-                request.EventAuthorizationId),
+                request.EventAuthorizationId,
+                request.VehicleId,
+                request.PersonId),
             actorUserId,
             cancellationToken);
 
@@ -79,6 +84,20 @@ public static class VehicleAccessEndpoints
     {
         var records = await vehicleAccessService.ListOpenAsync(cancellationToken);
         return Results.Ok(records);
+    }
+
+    private static async Task<IResult> SearchEntryCandidatesAsync(
+        [AsParameters] SearchAccessEntryCandidatesRequest request,
+        VehicleAccessService vehicleAccessService,
+        CancellationToken cancellationToken)
+    {
+        var result = await vehicleAccessService.SearchEntryCandidatesAsync(
+            new SearchAccessEntryCandidatesCommand(request.Query),
+            cancellationToken);
+
+        return result.Status == SearchAccessEntryCandidatesStatus.Success
+            ? Results.Ok(result.Items)
+            : Results.ValidationProblem(result.Errors);
     }
 
     private static async Task<IResult> RegisterExitAsync(
@@ -186,7 +205,11 @@ public sealed record RegisterVehicleEntryRequest(
     string? Color = null,
     int? Year = null,
     string? Observation = null,
-    int? EventAuthorizationId = null);
+    int? EventAuthorizationId = null,
+    int? VehicleId = null,
+    int? PersonId = null);
+
+public sealed record SearchAccessEntryCandidatesRequest(string Query);
 
 public sealed record SearchVehicleAccessesRequest(
     string? Plate = null,
