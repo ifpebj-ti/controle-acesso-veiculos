@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Relatar uma vulnerabilidade de forma privada
+    url: https://github.com/ifpebj-ti/controle-acesso-veiculos/security/advisories/new
+    about: Não publique vulnerabilidades exploráveis, credenciais ou dados pessoais em uma Issue pública.
+  - name: Consultar a Wiki do projeto
+    url: https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki
+    about: Revise produto, arquitetura, segurança e operação antes de propor mudanças amplas.
