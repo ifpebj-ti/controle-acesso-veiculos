@@ -76,6 +76,60 @@ public sealed class VehicleAccessServiceTests
     }
 
     [Fact]
+    public async Task RegisterEntryAsync_ShouldRejectIncompleteCandidateSelection()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.RegisterEntryAsync(
+            new RegisterVehicleEntryCommand(
+                "Condutor",
+                "ABC1D23",
+                "Visita",
+                AccessCategoryNames.Visitor,
+                VehicleId: 5),
+            actorUserId: 7);
+
+        Assert.Equal(RegisterVehicleEntryStatus.Invalid, result.Status);
+        Assert.Contains("candidate", result.Errors.Keys);
+        Assert.Equal(0, store.RegisterCalls);
+    }
+
+    [Fact]
+    public async Task SearchEntryCandidatesAsync_ShouldNormalizeAndLimitSearch()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.SearchEntryCandidatesAsync(
+            new SearchAccessEntryCandidatesCommand("  abc-1  "));
+
+        Assert.Equal(SearchAccessEntryCandidatesStatus.Success, result.Status);
+        Assert.NotNull(store.LastCandidateSearchCriteria);
+        Assert.Equal("abc-1", store.LastCandidateSearchCriteria.Query);
+        Assert.Equal("ABC1", store.LastCandidateSearchCriteria.PlatePrefix);
+        Assert.Equal(DateOnly.FromDateTime(FixedNow.UtcDateTime),
+            store.LastCandidateSearchCriteria.ActiveOn);
+        Assert.Equal(10, store.LastCandidateSearchCriteria.Limit);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("ab")]
+    public async Task SearchEntryCandidatesAsync_ShouldRejectInvalidQuery(string query)
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.SearchEntryCandidatesAsync(
+            new SearchAccessEntryCandidatesCommand(query));
+
+        Assert.Equal(SearchAccessEntryCandidatesStatus.Invalid, result.Status);
+        Assert.Contains("query", result.Errors.Keys);
+        Assert.Null(store.LastCandidateSearchCriteria);
+    }
+
+    [Fact]
     public async Task SearchHistoryAsync_ShouldUseDefaultsAndNormalizeFilters()
     {
         var store = new FakeVehicleAccessStore();
@@ -204,6 +258,11 @@ public sealed class VehicleAccessServiceTests
         public int LastActorUserId { get; private set; }
         public DateTime LastEntryAtUtc { get; private set; }
         public VehicleAccessSearchCriteria? LastSearchCriteria { get; private set; }
+        public AccessEntryCandidateSearchCriteria? LastCandidateSearchCriteria
+        {
+            get;
+            private set;
+        }
         public int CorrectionCalls { get; private set; }
         public int LastCorrectedAccessRecordId { get; private set; }
         public VehicleAccessCorrectionData? LastCorrection { get; private set; }
@@ -242,6 +301,14 @@ public sealed class VehicleAccessServiceTests
         public Task<IReadOnlyList<VehicleAccessRecord>> ListOpenAsync(
             CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<VehicleAccessRecord>>([]);
+
+        public Task<IReadOnlyList<AccessEntryCandidate>> SearchEntryCandidatesAsync(
+            AccessEntryCandidateSearchCriteria criteria,
+            CancellationToken cancellationToken)
+        {
+            LastCandidateSearchCriteria = criteria;
+            return Task.FromResult<IReadOnlyList<AccessEntryCandidate>>([]);
+        }
 
         public Task<PagedVehicleAccessResult> SearchAsync(
             VehicleAccessSearchCriteria criteria,
