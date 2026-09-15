@@ -75,6 +75,29 @@ Content-Type: application/json
 
 ###
 
+GET {{ControleAcessoVeiculos.API_HostAddress}}/access-records/entry-candidates?query=ABC-1D23
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+# Depois de selecionar um candidato retornado pela consulta acima, envie os dois
+# identificadores juntos. A API revalida o vínculo e usa placa e condutor canônicos.
+POST {{ControleAcessoVeiculos.API_HostAddress}}/access-records/entries
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "driverName": "Condutor Fictício",
+  "plate": "ABC-1D23",
+  "objective": "Visita técnica",
+  "categoryName": "Visitante",
+  "vehicleId": 1,
+  "personId": 1
+}
+
+###
+
 GET {{ControleAcessoVeiculos.API_HostAddress}}/access-records/open
 Authorization: Bearer {{AccessToken}}
 Accept: application/json
