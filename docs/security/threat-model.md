@@ -10,7 +10,7 @@
 
 **Data de referência:** 14 de setembro de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190 e #213
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210 e #213
 
 ## Objetivo e limites
 
@@ -20,7 +20,7 @@ CI/CD, operação local, implantação futura e backups.
 
 Não são considerados implementados:
 
-- matriz definitiva de autorização e ciclo completo de contas;
+- matriz definitiva de autorização e recuperação de acesso;
 - auditoria transversal e imutável;
 - demais endpoints funcionais além dos fluxos geral, correção descritiva, institucional, consultas históricas e catálogos de frota e motoristas;
 - ambiente de homologação ou produção;
@@ -44,6 +44,18 @@ Os controles são complementados pelo
 [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
 e pelo
 [NIST SSDF SP 800-218](https://csrc.nist.gov/pubs/sp/800/218/final).
+
+## Modelo visual no OWASP Threat Dragon
+
+O arquivo
+[`controle-acesso-veiculos-threat-model.json`](controle-acesso-veiculos-threat-model.json)
+é a representação visual versionada deste documento para OWASP Threat Dragon
+2.x. Ele contém o fluxo principal, a cadeia de entrega, as fronteiras de
+confiança e as ameaças `TM-01` a `TM-22` associadas aos elementos relevantes.
+
+O JSON não substitui esta fonte textual: probabilidades, impactos, riscos
+residuais e decisões institucionais continuam detalhados aqui. Mudanças de
+arquitetura devem atualizar os dois artefatos na mesma revisão.
 
 ## Escala de risco
 
@@ -122,7 +134,7 @@ flowchart LR
 | Fronteira | Mudança de confiança | Estado |
 |---|---|---|
 | B1 | Dispositivo/rede do usuário para frontend | Proxy local com política de conteúdo e cabeçalhos defensivos; domínio, HTTPS e HSTS de produção pendentes |
-| B2 | Código executado no navegador para API | Login e rotas protegidas implementados; backend de renovação com cookie `HttpOnly`, rotação, revogação e CSRF implementado na #190; integração do cliente pendente na #191 |
+| B2 | Código executado no navegador para API | Sessão renovável integrada: access token somente em memória, refresh token opaco em cookie `HttpOnly`, rotação, revogação, CSRF, repetição limitada e coordenação entre abas; HTTPS de produção pendente |
 | B3 | API para PostgreSQL | Implementado localmente |
 | B4 | Aplicação para logs e auditoria | Logging HTTP estruturado e correlacionado; auditoria transacional implementada na autenticação, ciclo de contas, fluxos geral, correção descritiva, institucional e catálogos, incluindo eventos; consulta da trilha restrita a Administrador |
 | B5 | Banco para backup | Dump e restauração isolada implementados apenas no desenvolvimento local; proteção externa pendente |
@@ -156,8 +168,8 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-17 | Tampering | Migration causa perda ou transformação sem semântica confiável | 2 | 3 | 6 | Revisão, backup com restauração verificada, upgrade/downgrade e falha explícita — #23, #30 e #67 | Backup/restauração local e testes de migration implementados; processo de produção pendente |
 | TM-18 | Repudiation | Falha na auditoria permite operação sem trilha | 2 | 3 | 6 | Atomicidade, falha fechada, ator humano ou origem de sistema explícita, alerta e monitoramento — #31, #51, #53, #55, #57, #65, #71, #73 e #76 | Mitigado nos fluxos geral, correção descritiva, institucional, catálogos, autenticação e ciclo de contas; alerta e demais operações pendentes |
 | TM-19 | Information disclosure | Collector falso ou mal configurado recebe telemetria operacional | 2 | 3 | 6 | OTLP desabilitado por padrão, endpoint externo ao código, TLS, autenticação, menor privilégio e revisão de atributos — #102 | Base técnica implementada; identidade do collector, secret manager e rede de produção pendentes |
-| TM-20 | Spoofing | Refresh token roubado, repetido ou usado depois do logout mantém acesso prolongado | 3 | 3 | 9 | Token opaco de 256 bits em cookie `HttpOnly`, hash no banco, rotação atômica, detecção de reutilização, duração absoluta, inatividade e revogação da família — #190 | Mitigado no backend; HTTPS de produção e integração do frontend pendentes |
-| TM-21 | Spoofing / Tampering | Site externo induz o navegador autenticado a renovar ou encerrar uma sessão por CSRF | 2 | 3 | 6 | `SameSite=Strict`, caminho mínimo, token antifalsificação vinculado ao cookie e arquitetura same-origin — #190 e #191 | Mitigado no backend e no proxy Compose; integração e teste em ambiente HTTPS pendentes |
+| TM-20 | Spoofing | Refresh token roubado, repetido ou usado depois do logout mantém acesso prolongado | 3 | 3 | 9 | Token opaco de 256 bits em cookie `HttpOnly`, hash no banco, rotação atômica, detecção de reutilização, duração absoluta, inatividade e revogação da família — #190 e #191 | Mitigado tecnicamente no servidor e cliente; HTTPS e validação no ambiente institucional pendentes |
+| TM-21 | Spoofing / Tampering | Site externo induz o navegador autenticado a renovar ou encerrar uma sessão por CSRF | 2 | 3 | 6 | `SameSite=Strict`, caminho mínimo, token antifalsificação vinculado ao cookie e arquitetura same-origin — #190 e #191 | Mitigado e testado no fluxo integrado; validação em ambiente HTTPS pendente |
 | TM-22 | Tampering / Information disclosure | Conteúdo não autorizado é carregado ou a aplicação é incorporada por uma página externa | 2 | 3 | 6 | CSP same-origin, bloqueio de frames, MIME sniffing desabilitado, política de referência e permissões mínimas no Nginx — #196 | Mitigado no proxy local; HTTPS, HSTS e validação no ambiente de destino pendentes |
 | TM-23 | Tampering / Information disclosure | Consulta de recorrentes enumera pessoas ou cliente adultera os identificadores e textos do vínculo selecionado | 2 | 3 | 6 | Política operacional, termo entre 3 e 80 caracteres, limite fixo de 10 resultados, rate limiting global por usuário, resposta sem documento/e-mail/histórico e revalidação canônica do par no servidor — #213 | Mitigado no backend; calibração com uso real e integração do frontend permanecem pendentes |
 
@@ -173,9 +185,10 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
   reutilização e revogação de família no replay, logout e desativação da conta;
 - timeout de inatividade e duração absoluta impostos pelo servidor, com valores
   configuráveis e proteção CSRF explícita nos endpoints baseados em cookie;
-- frontend valida a resposta de login, mantém o JWT somente em memória, encerra a
-  sessão por logout, expiração ou 401 e deriva a navegação apenas do perfil
-  retornado pela API;
+- frontend valida as respostas de login e renovação, mantém o JWT somente em
+  memória, restaura e renova a sessão pelo cookie protegido, limita a uma
+  repetição por requisição e coordena renovação e encerramento entre abas sem
+  compartilhar tokens;
 - rotas do frontend exigem sessão e apresentam acesso negado para perfil
   incompatível, sem substituir a autorização do backend;
 - hash de senha com salt e derivação, bloqueio temporário e resposta uniforme de login;

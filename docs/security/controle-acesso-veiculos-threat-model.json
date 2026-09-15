@@ -1,0 +1,659 @@
+{
+  "summary": {
+    "title": "Controle de Acesso de Veículos — IFPE Campus Belo Jardim",
+    "owner": "Equipe Controle de Acesso de Veículos",
+    "description": "Modelo STRIDE do MVP. Representa o ambiente local validado, a cadeia de entrega e a implantação institucional futura. A fonte detalhada e os níveis de risco estão em docs/security/threat-model.md.",
+    "id": 0
+  },
+  "detail": {
+    "contributors": [
+      { "name": "José Ernandes" },
+      { "name": "Raíssa Beatriz" }
+    ],
+    "diagrams": [
+      {
+        "cells": [
+          {
+            "position": { "x": 50, "y": 520 },
+            "size": { "width": 200, "height": 100 },
+            "attrs": { "text": { "text": "Usuário autorizado" }, "body": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
+            "shape": "actor",
+            "id": "00000000-0000-4000-8000-000000000001",
+            "zIndex": 1,
+            "data": {
+              "name": "Usuário autorizado",
+              "description": "Porteiro, Vigilante, Setor de Transporte ou Administrador, conforme a política da operação.",
+              "type": "tm.Actor",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "providesAuthentication": false,
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-01 — Conta compartilhada ou credencial roubada",
+                  "type": "Spoofing",
+                  "description": "Uma conta compartilhada ou comprometida impede atribuir com confiança a operação ao responsável real.",
+                  "mitigation": "Usar contas individuais, hash de senha, bloqueio temporário, ciclo administrativo, auditoria e validação operacional. Recuperação de acesso e homologação permanecem pendentes.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000001"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 400, "y": 510 },
+            "size": { "width": 160, "height": 120 },
+            "attrs": { "text": { "text": "Navegador" }, "body": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
+            "shape": "process",
+            "id": "00000000-0000-4000-8000-000000000002",
+            "zIndex": 2,
+            "data": {
+              "name": "Navegador",
+              "description": "Executa a interface, mantém o access token somente em memória e recebe o cookie HttpOnly gerenciado pelo servidor.",
+              "type": "tm.Process",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          },
+          {
+            "position": { "x": 750, "y": 510 },
+            "size": { "width": 190, "height": 120 },
+            "attrs": { "text": { "text": "Frontend React\ne Nginx" }, "body": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
+            "shape": "process",
+            "id": "00000000-0000-4000-8000-000000000003",
+            "zIndex": 3,
+            "data": {
+              "name": "Frontend React e Nginx",
+              "description": "Interface do MVP e proxy same-origin. A autorização efetiva permanece no servidor.",
+              "type": "tm.Process",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-14 — Container executado com privilégios excessivos",
+                  "type": "Elevation of privilege",
+                  "description": "Uma exploração tem impacto maior se o processo do container possuir privilégios desnecessários.",
+                  "mitigation": "Executar como usuário não privilegiado, restringir filesystem e capabilities e verificar a imagem na CI.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000014"
+                },
+                {
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "title": "TM-22 — Conteúdo indevido ou incorporação externa",
+                  "type": "Tampering",
+                  "description": "Conteúdo não autorizado pode ser carregado ou a aplicação pode ser incorporada por uma página externa.",
+                  "mitigation": "CSP same-origin, bloqueio de frames, MIME sniffing desabilitado, política de referência e permissões mínimas. HTTPS e HSTS ainda dependem do ambiente institucional.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000022"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 1150, "y": 500 },
+            "size": { "width": 200, "height": 140 },
+            "attrs": { "text": { "text": "API ASP.NET Core" }, "body": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
+            "shape": "process",
+            "id": "00000000-0000-4000-8000-000000000004",
+            "zIndex": 4,
+            "data": {
+              "name": "API ASP.NET Core",
+              "description": "Valida contratos, autentica, autoriza, aplica regras, registra horários do servidor e coordena transações e auditoria.",
+              "type": "tm.Process",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-07 — Erro, log ou telemetria expõe dados",
+                  "type": "Information disclosure",
+                  "description": "Stack trace, erro, log ou atributo de telemetria pode expor documento, token ou configuração.",
+                  "mitigation": "Usar ProblemDetails seguro, logs mínimos, valores de query redigidos e OTLP opt-in. Collector e retenção ainda precisam de definição.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000007"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-08 — Consulta expõe histórico excessivo",
+                  "type": "Information disclosure",
+                  "description": "Consulta ou exportação pode revelar histórico além da necessidade funcional do perfil.",
+                  "mitigation": "Aplicar menor privilégio, políticas por operação, paginação, limites temporais e respostas minimizadas. Auditoria de consultas depende de validação.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000008"
+                },
+                {
+                  "status": "Mitigated",
+                  "severity": "Medium",
+                  "title": "TM-11 — Requisição esgota API ou banco",
+                  "type": "Denial of service",
+                  "description": "Payload grande, consulta cara ou volume elevado pode degradar o serviço.",
+                  "mitigation": "Limite de 1 MiB, paginação, janelas máximas, índices e rate limiting por usuário ou endereço. Carga real e limite distribuído permanecem pendentes.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000011"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-12 — Indisponibilidade interrompe a portaria",
+                  "type": "Denial of service",
+                  "description": "Falha de rede, API ou PostgreSQL pode impedir a operação da portaria.",
+                  "mitigation": "Usar readiness, smoke tests, telemetria, backup e contingência reconciliável. Collector, alertas e procedimento institucional estão pendentes nas Issues #30 e #100.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000012"
+                },
+                {
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "title": "TM-13 — Elevação de privilégio por perfil",
+                  "type": "Elevation of privilege",
+                  "description": "Um usuário tenta executar operação administrativa ou acessar histórico incompatível com seu perfil.",
+                  "mitigation": "Negar por padrão e aplicar políticas no servidor por recurso e operação. A matriz técnica está coberta por testes; a matriz institucional final ainda será homologada.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000013"
+                },
+                {
+                  "status": "Mitigated",
+                  "severity": "Medium",
+                  "title": "TM-23 — Enumeração ou adulteração de vínculo recorrente",
+                  "type": "Tampering / Information disclosure",
+                  "description": "Uma busca irrestrita pode enumerar pessoas, ou um cliente adulterado pode enviar identificadores, placa e nome que não correspondem ao vínculo escolhido.",
+                  "mitigation": "Restringir à política operacional, limitar termo e resultados, aplicar rate limiting, omitir documento, e-mail e histórico, e revalidar no servidor o par ativo usando seus valores canônicos. Integração visual e calibração institucional permanecem nas Issues #214 e #162.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000023"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 1550, "y": 410 },
+            "size": { "width": 220, "height": 100 },
+            "attrs": { "text": { "text": "PostgreSQL" }, "topLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null }, "bottomLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
+            "shape": "store",
+            "id": "00000000-0000-4000-8000-000000000005",
+            "zIndex": 5,
+            "data": {
+              "name": "PostgreSQL",
+              "description": "Persistência transacional de pessoas, veículos, acessos, sessões, autorizações e auditoria.",
+              "type": "tm.Store",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "isALog": false,
+              "storesCredentials": true,
+              "isEncrypted": false,
+              "isSigned": false,
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-04 — Alteração direta do histórico",
+                  "type": "Tampering",
+                  "description": "Acesso direto ao banco pode alterar ou remover registros operacionais.",
+                  "mitigation": "Restringir rede e privilégios, preservar auditoria, backup e separação de contas. Controles definitivos de produção permanecem pendentes.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000004"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-10 — PostgreSQL exposto na rede",
+                  "type": "Information disclosure",
+                  "description": "Publicar o PostgreSQL em interface inadequada amplia acesso e tentativa de exploração.",
+                  "mitigation": "Não publicar o banco em produção; usar rede privada, firewall, TLS e menor privilégio.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000010"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-16 — Retenção sem finalidade",
+                  "type": "Information disclosure",
+                  "description": "Dados pessoais e histórico mantidos indefinidamente aumentam exposição e podem contrariar a finalidade.",
+                  "mitigation": "Aprovar política de retenção, descarte e anonimização com a instituição antes da produção — Issue #30.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000016"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-17 — Migration causa perda de dados",
+                  "type": "Tampering",
+                  "description": "Uma migration incorreta pode apagar ou transformar dados sem semântica confiável.",
+                  "mitigation": "Revisar migrations, testar upgrade e downgrade, exigir backup restaurável e falhar explicitamente. Processo de produção pendente.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000017"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 1550, "y": 700 },
+            "size": { "width": 220, "height": 100 },
+            "attrs": { "text": { "text": "Logs e auditoria" }, "topLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null }, "bottomLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
+            "shape": "store",
+            "id": "00000000-0000-4000-8000-000000000006",
+            "zIndex": 6,
+            "data": {
+              "name": "Logs e auditoria",
+              "description": "Eventos técnicos mínimos, trilha transacional de negócio e exportação OTLP opcional.",
+              "type": "tm.Store",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "isALog": true,
+              "storesCredentials": false,
+              "isEncrypted": false,
+              "isSigned": false,
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-06 — Operador nega uma ação",
+                  "type": "Repudiation",
+                  "description": "O operador pode negar inclusão, correção ou encerramento se a evidência for insuficiente.",
+                  "mitigation": "Associar usuário, horário, registro, justificativa e correlation ID; preservar auditoria transacional. Imutabilidade por infraestrutura ainda é pendente.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000006"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-18 — Operação persiste sem auditoria",
+                  "type": "Repudiation",
+                  "description": "Falha na auditoria pode deixar uma operação crítica sem trilha correspondente.",
+                  "mitigation": "Persistir mudança e auditoria na mesma transação e falhar de forma fechada. Alertas e operações futuras ainda precisam de cobertura.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000018"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-19 — Collector OTLP não confiável",
+                  "type": "Information disclosure",
+                  "description": "Um collector falso ou mal configurado pode receber telemetria operacional.",
+                  "mitigation": "Manter exportação desabilitada por padrão e exigir TLS, autenticação, menor privilégio e revisão de atributos na infraestrutura real.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000019"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 1950, "y": 410 },
+            "size": { "width": 220, "height": 100 },
+            "attrs": { "text": { "text": "Backup protegido" }, "topLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null }, "bottomLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
+            "shape": "store",
+            "id": "00000000-0000-4000-8000-000000000007",
+            "zIndex": 7,
+            "data": {
+              "name": "Backup protegido",
+              "description": "Dump e restauração são verificáveis localmente. Armazenamento externo de produção ainda não foi definido.",
+              "type": "tm.Store",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "isALog": false,
+              "storesCredentials": false,
+              "isEncrypted": false,
+              "isSigned": false,
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-15 — Backup desprotegido",
+                  "type": "Information disclosure",
+                  "description": "Um dump desprotegido pode expor pessoas, placas e histórico operacional.",
+                  "mitigation": "Manter fora do Git; definir criptografia, controle de acesso, retenção, inventário e restauração periódica na Issue #30.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000015"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 750, "y": 90 },
+            "size": { "width": 200, "height": 120 },
+            "attrs": { "text": { "text": "GitHub Actions" }, "body": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
+            "shape": "process",
+            "id": "00000000-0000-4000-8000-000000000008",
+            "zIndex": 8,
+            "data": {
+              "name": "GitHub Actions",
+              "description": "Executa build, testes, análise de imagens, SBOM, smoke tests e publicação verificada.",
+              "type": "tm.Process",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "title": "TM-05 — Cadeia de suprimentos comprometida",
+                  "type": "Tampering",
+                  "description": "Workflow, dependência ou imagem comprometida pode alterar o artefato entregue.",
+                  "mitigation": "Usar branch protegida, lockfiles, Dependabot, actions fixadas, scan antes do push, tags por commit, proveniência SLSA e SBOM. Admissão em produção ainda será definida.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000005"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-09 — Segredo versionado ou publicado",
+                  "type": "Information disclosure",
+                  "description": "Segredo pode entrar no Git, imagem, artefato, log ou Wiki.",
+                  "mitigation": "Ignorar arquivos locais, usar exemplos fictícios, permissões mínimas, secret scanning e rotação imediata diante de exposição.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000009"
+                }
+              ]
+            }
+          },
+          {
+            "position": { "x": 1150, "y": 100 },
+            "size": { "width": 220, "height": 100 },
+            "attrs": { "text": { "text": "GitHub Container\nRegistry" }, "topLine": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null }, "bottomLine": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
+            "shape": "store",
+            "id": "00000000-0000-4000-8000-000000000009",
+            "zIndex": 9,
+            "data": {
+              "name": "GitHub Container Registry",
+              "description": "Armazena imagens analisadas, identificadas por commit e acompanhadas de proveniência e SBOM.",
+              "type": "tm.Store",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "isALog": false,
+              "storesCredentials": false,
+              "isEncrypted": true,
+              "isSigned": true,
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          },
+          {
+            "position": { "x": 1550, "y": 90 },
+            "size": { "width": 220, "height": 120 },
+            "attrs": { "text": { "text": "OCI futura" }, "body": { "stroke": "#777777", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "shape": "process",
+            "id": "00000000-0000-4000-8000-000000000010",
+            "zIndex": 10,
+            "data": {
+              "name": "OCI futura",
+              "description": "Ambiente institucional planejado. Topologia, HTTPS, segredos, observabilidade, backup e operação ainda não foram aprovados.",
+              "type": "tm.Process",
+              "isTrustBoundary": false,
+              "outOfScope": true,
+              "reasonOutOfScope": "Implantação institucional ainda não definida.",
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000001",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Operação" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000001" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000002" },
+            "data": { "type": "tm.Flow", "name": "Credenciais e dados operacionais", "description": "Entrada de dados pelo usuário.", "protocol": "Interface local", "isEncrypted": false, "isPublicNetwork": false, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#d97706", "strokeWidth": 2, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000002",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Interface" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000002" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000003" },
+            "data": {
+              "type": "tm.Flow",
+              "name": "UI HTTP/HTTPS",
+              "description": "Entrega da aplicação ao navegador. O desenvolvimento usa HTTP local; produção deverá exigir HTTPS.",
+              "protocol": "HTTP/HTTPS",
+              "isEncrypted": false,
+              "isPublicNetwork": true,
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-02 — Interface ou API falsa",
+                  "type": "Spoofing",
+                  "description": "Um usuário pode acessar uma aplicação falsa ou sofrer interceptação em uma rede não confiável.",
+                  "mitigation": "Usar domínio institucional controlado, HTTPS obrigatório, certificados válidos e HSTS no terminador de produção.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000002"
+                }
+              ]
+            }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#d97706", "strokeWidth": 2, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000003",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "API segura" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000003" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000004" },
+            "data": {
+              "type": "tm.Flow",
+              "name": "API, JWT e cookie protegido",
+              "description": "JSON validado, access token curto, refresh cookie HttpOnly e token CSRF em arquitetura same-origin.",
+              "protocol": "HTTP/HTTPS",
+              "isEncrypted": false,
+              "isPublicNetwork": true,
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "title": "TM-03 — Cliente adultera dados operacionais",
+                  "type": "Tampering",
+                  "description": "O cliente pode alterar IDs, status, horários, evento, quilometragem ou identificação enviados à API.",
+                  "mitigation": "Validar DTOs e regras no servidor, normalizar placas, definir horários no servidor e aplicar FK, unicidade e transações.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000003"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-20 — Roubo ou reutilização de refresh token",
+                  "type": "Spoofing",
+                  "description": "Um refresh token roubado, repetido ou usado após logout pode prolongar o acesso.",
+                  "mitigation": "Token opaco de 256 bits, cookie HttpOnly/SameSite, hash no banco, rotação atômica, detecção de reutilização, inatividade, duração absoluta e revogação da família. HTTPS de produção permanece obrigatório.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000020"
+                },
+                {
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "title": "TM-21 — Renovação ou logout forjado por CSRF",
+                  "type": "Tampering",
+                  "description": "Um site externo tenta induzir o navegador autenticado a renovar ou encerrar a sessão.",
+                  "mitigation": "SameSite=Strict, caminho mínimo, token antifalsificação vinculado ao cookie, origem same-origin e testes de rejeição.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000021"
+                }
+              ]
+            }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000004",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Dados" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000004" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000005" },
+            "data": { "type": "tm.Flow", "name": "Npgsql e transações", "description": "Consultas parametrizadas, migrations e transações.", "protocol": "PostgreSQL/Npgsql", "isEncrypted": false, "isPublicNetwork": false, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000005",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Auditoria" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000004" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000006" },
+            "vertices": [{ "x": 1450, "y": 570 }, { "x": 1450, "y": 750 }],
+            "data": { "type": "tm.Flow", "name": "Eventos técnicos e de negócio", "description": "Logs mínimos, correlation ID, auditoria transacional e OTLP opcional.", "protocol": "Aplicação/OTLP", "isEncrypted": false, "isPublicNetwork": false, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#d97706", "strokeWidth": 2, "targetMarker": { "name": "block" }, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000006",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Backup" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000005" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000007" },
+            "data": { "type": "tm.Flow", "name": "Dump e restauração", "description": "Verificado localmente; transporte e armazenamento protegido de produção permanecem pendentes.", "protocol": "pg_dump/pg_restore", "isEncrypted": false, "isPublicNetwork": false, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000007",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Imagem + SBOM" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000008" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000009" },
+            "data": { "type": "tm.Flow", "name": "Imagens, SBOM e proveniência", "description": "Publicação após build e scan independentes no commit da main.", "protocol": "HTTPS/OCI", "isEncrypted": true, "isPublicNetwork": true, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#777777", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000008",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Promoção futura" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000009" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000010" },
+            "data": { "type": "tm.Flow", "name": "Deploy futuro", "description": "Fluxo planejado; política de admissão e ambiente institucional ainda não definidos.", "protocol": "HTTPS/OCI", "isEncrypted": true, "isPublicNetwork": true, "isTrustBoundary": false, "outOfScope": true, "reasonOutOfScope": "Implantação institucional futura.", "hasOpenThreats": false, "threats": [] }
+          },
+          {
+            "shape": "trust-boundary-curve",
+            "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 15,
+            "connector": "smooth",
+            "id": "30000000-0000-4000-8000-000000000001",
+            "source": { "x": 325, "y": 390 },
+            "target": { "x": 325, "y": 710 },
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B1", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.15, "args": { "keepGradient": true, "ensureLegibility": true } } }],
+            "data": { "type": "tm.Boundary", "name": "B1 — dispositivo do usuário", "description": "A pessoa e o ambiente físico não são implicitamente confiáveis.", "isTrustBoundary": true, "hasOpenThreats": false }
+          },
+          {
+            "shape": "trust-boundary-curve",
+            "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 15,
+            "connector": "smooth",
+            "id": "30000000-0000-4000-8000-000000000002",
+            "source": { "x": 1040, "y": 380 },
+            "target": { "x": 1040, "y": 720 },
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B2", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.15, "args": { "keepGradient": true, "ensureLegibility": true } } }],
+            "data": { "type": "tm.Boundary", "name": "B2 — navegador para API", "description": "Todo dado do cliente é não confiável e deve ser validado e autorizado no servidor.", "isTrustBoundary": true, "hasOpenThreats": false }
+          },
+          {
+            "shape": "trust-boundary-curve",
+            "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 15,
+            "connector": "smooth",
+            "id": "30000000-0000-4000-8000-000000000003",
+            "source": { "x": 1450, "y": 330 },
+            "target": { "x": 1450, "y": 850 },
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B3/B4", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.12, "args": { "keepGradient": true, "ensureLegibility": true } } }],
+            "data": { "type": "tm.Boundary", "name": "B3/B4 — API para dados e auditoria", "description": "Credenciais, rede e privilégios separam a aplicação da persistência.", "isTrustBoundary": true, "hasOpenThreats": false }
+          },
+          {
+            "shape": "trust-boundary-curve",
+            "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 15,
+            "connector": "smooth",
+            "id": "30000000-0000-4000-8000-000000000004",
+            "source": { "x": 1860, "y": 330 },
+            "target": { "x": 1860, "y": 580 },
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B5", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.15, "args": { "keepGradient": true, "ensureLegibility": true } } }],
+            "data": { "type": "tm.Boundary", "name": "B5 — banco para backup", "description": "O dump deixa o banco e precisa de proteção equivalente ou superior.", "isTrustBoundary": true, "hasOpenThreats": false }
+          },
+          {
+            "shape": "trust-boundary-curve",
+            "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 15,
+            "connector": "smooth",
+            "id": "30000000-0000-4000-8000-000000000005",
+            "source": { "x": 1450, "y": 35 },
+            "target": { "x": 1450, "y": 265 },
+            "labels": [{ "markup": [{ "tagName": "ellipse", "selector": "labelBody" }, { "tagName": "text", "selector": "labelText" }], "attrs": { "labelText": { "text": "B6/B7", "textAnchor": "middle", "textVerticalAnchor": "middle" }, "labelBody": { "ref": "labelText", "refRx": "50%", "refRy": "60%", "fill": "#fff", "strokeWidth": 0 } }, "position": { "distance": 0.15, "args": { "keepGradient": true, "ensureLegibility": true } } }],
+            "data": { "type": "tm.Boundary", "name": "B6/B7 — registry para OCI", "description": "A publicação verificada não substitui a política de admissão do ambiente de destino.", "isTrustBoundary": true, "hasOpenThreats": false }
+          }
+        ],
+        "version": "2.0",
+        "title": "Fluxo principal e cadeia de entrega",
+        "thumbnail": "./public/content/images/thumbnail.stride.jpg",
+        "diagramType": "STRIDE",
+        "id": 0
+      }
+    ],
+    "diagramTop": 1,
+    "reviewer": "Professor responsável por Segurança",
+    "threatTop": 23
+  },
+  "version": "2.0"
+}
