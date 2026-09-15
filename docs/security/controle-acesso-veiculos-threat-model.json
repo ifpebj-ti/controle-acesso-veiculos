@@ -337,7 +337,7 @@
             "zIndex": 8,
             "data": {
               "name": "GitHub Actions",
-              "description": "Executa build, testes, análise de imagens, SBOM, smoke tests e publicação verificada.",
+              "description": "Executa build, testes, análise e SBOM por arquitetura, smoke tests e publicação multi-plataforma verificada.",
               "type": "tm.Process",
               "isTrustBoundary": false,
               "outOfScope": false,
@@ -350,7 +350,7 @@
                   "title": "TM-05 — Cadeia de suprimentos comprometida",
                   "type": "Tampering",
                   "description": "Workflow, dependência ou imagem comprometida pode alterar o artefato entregue.",
-                  "mitigation": "Usar branch protegida, lockfiles, Dependabot, actions fixadas, scan antes do push, tags por commit, proveniência SLSA e SBOM. Admissão em produção ainda será definida.",
+                  "mitigation": "Usar branch protegida, lockfiles, Dependabot, actions fixadas, build e scan AMD64/ARM64 antes do push, bloqueio de todo achado crítico, manifesto validado, tags por commit, proveniência SLSA e SBOM por arquitetura. Admissão em produção ainda será definida.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000005"
                 },
