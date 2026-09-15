@@ -1,0 +1,89 @@
+name: Relatar defeito
+description: Registre um comportamento incorreto de forma reproduzível e segura.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar o problema. Não inclua senhas, tokens, dados pessoais reais, logs sensíveis ou detalhes exploráveis de vulnerabilidades. Use o canal privado de segurança quando necessário.
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto
+      description: Onde o defeito ocorre e quem é afetado?
+      placeholder: Descreva o fluxo, o perfil utilizado e o ambiente sem informar dados reais.
+    validations:
+      required: true
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: Passos para reproduzir
+      description: Informe a menor sequência que demonstra o defeito.
+      placeholder: |
+        1. Acesse...
+        2. Selecione...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: resultado
+    attributes:
+      label: Resultado atual e esperado
+      description: Explique o que aconteceu e o que deveria acontecer.
+    validations:
+      required: true
+  - type: textarea
+    id: evidencia
+    attributes:
+      label: Evidências sanitizadas
+      description: Inclua mensagens, capturas ou logs somente depois de remover credenciais e dados pessoais.
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afetada
+      options:
+        - Backend/API
+        - Frontend/UX
+        - Banco de dados
+        - Infraestrutura/CI
+        - Documentação
+        - Não identificada
+    validations:
+      required: true
+  - type: textarea
+    id: risco
+    attributes:
+      label: Impacto, riscos e dependências
+      description: Informe perda de dados, indisponibilidade, regressão, dependências ou bloqueios conhecidos.
+    validations:
+      required: true
+  - type: textarea
+    id: aceite
+    attributes:
+      label: Critérios de aceite
+      description: Liste condições verificáveis para considerar o defeito corrigido.
+      placeholder: |
+        - [ ] O cenário é coberto por teste de regressão.
+        - [ ] O comportamento esperado foi validado.
+    validations:
+      required: true
+  - type: textarea
+    id: fora-escopo
+    attributes:
+      label: Fora de escopo
+      description: Registre mudanças relacionadas que não devem ser misturadas nesta correção.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmacoes
+    attributes:
+      label: Confirmações
+      options:
+        - label: Pesquisei Issues abertas e fechadas e não encontrei uma duplicata.
+          required: true
+        - label: Removi credenciais, dados pessoais reais e informações sensíveis deste relato.
+          required: true
