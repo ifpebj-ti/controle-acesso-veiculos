@@ -9,12 +9,15 @@ import {
   accessEntryFormSchema,
   customEntryOption,
   EntryAdditionalDetails,
+  EntryCandidateSearch,
   EntryObjectiveFieldset,
   EntryVehicleTypeField,
   generalAccessCategories,
   registerAccessEntry,
   type AccessEntryFormValues,
+  type AccessEntryCandidate,
   type RegisterAccessEntryInput,
+  vehicleTypeOptions,
 } from "../features/access-records";
 import {
   EventAuthorizationSelector,
@@ -67,6 +70,8 @@ export function NewAccessPage() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [pendingIntent, setPendingIntent] = useState<SubmitIntent | null>(null);
+  const [selectedCandidate, setSelectedCandidate] =
+    useState<AccessEntryCandidate | null>(null);
   const {
     formState: { errors, isSubmitting },
     control,
@@ -90,6 +95,41 @@ export function NewAccessPage() {
     (event) => String(event.id) === selectedEventAuthorizationId,
   );
 
+  function clearSelectedCandidate() {
+    setSelectedCandidate(null);
+  }
+
+  function selectCandidate(candidate: AccessEntryCandidate) {
+    setSelectedCandidate(candidate);
+    clearErrors(["plate", "driverName", "vehicleType", "vehicleTypeOther"]);
+    setValue("plate", candidate.plate, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setValue("driverName", candidate.driverName, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+
+    if (!candidate.vehicleType) return;
+    const knownVehicleType = vehicleTypeOptions.find(
+      (option) =>
+        option !== customEntryOption && option === candidate.vehicleType,
+    );
+    setValue("vehicleType", knownVehicleType ?? customEntryOption, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setValue(
+      "vehicleTypeOther",
+      knownVehicleType ? "" : candidate.vehicleType,
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      },
+    );
+  }
+
   function selectEventAuthorization(event: EventAuthorization | null) {
     clearErrors("eventAuthorizationId");
     setValue("eventAuthorizationId", event ? String(event.id) : "", {
@@ -104,7 +144,7 @@ export function NewAccessPage() {
     setPendingIntent(intent);
 
     try {
-      const input: RegisterAccessEntryInput = {
+      const entryFields = {
         categoryName: values.categoryName,
         driverName: values.driverName,
         objective:
@@ -118,10 +158,16 @@ export function NewAccessPage() {
             ? values.vehicleTypeOther
             : values.vehicleType || undefined,
       };
+      const input: RegisterAccessEntryInput = selectedCandidate
+        ? {
+            ...entryFields,
+            personId: selectedCandidate.personId,
+            vehicleId: selectedCandidate.vehicleId,
+          }
+        : entryFields;
       if (values.eventAuthorizationId) {
         input.eventAuthorizationId = Number(values.eventAuthorizationId);
       }
-
       await registerAccessEntry(input);
       if (intent === "review") {
         navigate("/acessos/abertos", {
@@ -131,6 +177,7 @@ export function NewAccessPage() {
       }
 
       reset(defaultValues);
+      setSelectedCandidate(null);
       setEventSectionOpen(false);
       setAdditionalDetailsOpen(false);
       setSuccessNotice(
@@ -230,6 +277,12 @@ export function NewAccessPage() {
           </div>
 
           <div className="space-y-7 p-5 sm:p-7">
+            <EntryCandidateSearch
+              onClear={clearSelectedCandidate}
+              onSelect={selectCandidate}
+              selectedCandidate={selectedCandidate}
+            />
+
             <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <label
@@ -241,13 +294,14 @@ export function NewAccessPage() {
                 <input
                   aria-describedby={errors.plate ? "plate-error" : undefined}
                   aria-invalid={Boolean(errors.plate)}
-                  autoFocus
                   autoCapitalize="characters"
                   className={fieldClass}
                   id="plate"
                   maxLength={10}
                   placeholder="Ex.: DEM-1A23"
-                  {...register("plate")}
+                  {...register("plate", {
+                    onChange: clearSelectedCandidate,
+                  })}
                 />
                 <FieldError id="plate-error" message={errors.plate?.message} />
               </div>
@@ -269,7 +323,9 @@ export function NewAccessPage() {
                   id="driverName"
                   maxLength={200}
                   placeholder="Ex.: Pessoa de demonstração"
-                  {...register("driverName")}
+                  {...register("driverName", {
+                    onChange: clearSelectedCandidate,
+                  })}
                 />
                 <FieldError
                   id="driverName-error"
