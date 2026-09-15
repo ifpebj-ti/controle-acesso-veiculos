@@ -9,6 +9,7 @@ import {
   type AccessRecord,
   vehicleTypeOptions,
 } from "../features/access-records";
+import { searchAccessEntryCandidates } from "../features/access-records/services/accessRecordsService";
 import {
   EventAuthorizationsContractError,
   searchEventAuthorizations,
@@ -25,6 +26,15 @@ vi.mock("../features/access-records", async () => {
   >("../features/access-records");
   return { ...actual, registerAccessEntry: vi.fn() };
 });
+vi.mock(
+  "../features/access-records/services/accessRecordsService",
+  async () => {
+    const actual = await vi.importActual<
+      typeof import("../features/access-records/services/accessRecordsService")
+    >("../features/access-records/services/accessRecordsService");
+    return { ...actual, searchAccessEntryCandidates: vi.fn() };
+  },
+);
 vi.mock(
   "../features/event-authorizations/services/eventAuthorizationsService",
   async () => {
@@ -49,6 +59,17 @@ const createdRecord: AccessRecord = {
   status: "Aberto",
   updatedById: null,
   vehicleId: 3,
+};
+
+const recurringCandidate = {
+  brand: "Marca fictícia",
+  color: "Prata",
+  driverName: "Condutor recorrente fictício",
+  model: "Modelo fictício",
+  personId: 22,
+  plate: "REC1A23",
+  vehicleId: 33,
+  vehicleType: "Automóvel",
 };
 
 const plateEvent: EventAuthorization = {
@@ -152,6 +173,164 @@ describe("NewAccessPage", () => {
     vi.mocked(searchEventAuthorizations).mockResolvedValue(
       eventPage([plateEvent, quotaEvent]),
     );
+    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([]);
+  });
+
+  it("fills and submits both canonical candidate identifiers together", async () => {
+    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
+      recurringCandidate,
+    ]);
+    vi.mocked(registerAccessEntry).mockResolvedValue({
+      ...createdRecord,
+      driverName: recurringCandidate.driverName,
+      personId: recurringCandidate.personId,
+      plate: recurringCandidate.plate,
+      vehicleId: recurringCandidate.vehicleId,
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(
+      screen.getByRole("combobox", {
+        name: "Buscar por placa ou nome do condutor",
+      }),
+      "REC",
+    );
+    await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
+    expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("REC1A23");
+    expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
+      recurringCandidate.driverName,
+    );
+    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("Automóvel");
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+
+    await waitFor(() => expect(registerAccessEntry).toHaveBeenCalledTimes(1));
+    expect(registerAccessEntry).toHaveBeenCalledWith({
+      categoryName: "Visitante",
+      driverName: recurringCandidate.driverName,
+      objective: "Atendimento em setor",
+      observation: undefined,
+      personId: 22,
+      plate: "REC1A23",
+      vehicleId: 33,
+      vehicleType: "Automóvel",
+    });
+    await waitFor(() =>
+      expect(screen.getByLabelText(/Placa do veículo/)).toHaveFocus(),
+    );
+    expect(screen.queryByText(/Dados recuperados/)).not.toBeInTheDocument();
+  });
+
+  it("invalidates candidate identifiers after a manual plate edit", async () => {
+    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
+      recurringCandidate,
+    ]);
+    vi.mocked(registerAccessEntry).mockResolvedValue(createdRecord);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(
+      screen.getByRole("combobox", {
+        name: "Buscar por placa ou nome do condutor",
+      }),
+      "REC",
+    );
+    await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
+    const plate = screen.getByLabelText(/Placa do veículo/);
+    await user.type(plate, "9");
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+
+    await waitFor(() => expect(registerAccessEntry).toHaveBeenCalledTimes(1));
+    expect(registerAccessEntry).toHaveBeenCalledWith(
+      expect.not.objectContaining({ personId: 22, vehicleId: 33 }),
+    );
+    expect(screen.queryByText(/Dados recuperados/)).not.toBeInTheDocument();
+  });
+
+  it("clears a candidate without losing unrelated entry values", async () => {
+    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
+      recurringCandidate,
+    ]);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(
+      screen.getByLabelText(/Categoria do acesso/),
+      "Entrega",
+    );
+    await user.click(screen.getByRole("radio", { name: "Reunião" }));
+    const observation = await fillObservation(user, "Observação fictícia");
+    await user.type(
+      screen.getByRole("combobox", {
+        name: "Buscar por placa ou nome do condutor",
+      }),
+      "REC",
+    );
+    await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
+    await user.click(
+      screen.getByRole("button", { name: "Usar preenchimento manual" }),
+    );
+
+    expect(screen.getByLabelText(/Categoria do acesso/)).toHaveValue("Entrega");
+    expect(screen.getByRole("radio", { name: "Reunião" })).toBeChecked();
+    expect(observation).toHaveValue("Observação fictícia");
+    expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("REC1A23");
+  });
+
+  it("preserves a selected candidate after a submission conflict", async () => {
+    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
+      recurringCandidate,
+    ]);
+    let rejectRequest: ((reason: unknown) => void) | undefined;
+    vi.mocked(registerAccessEntry).mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          rejectRequest = reject;
+        }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(
+      screen.getByRole("combobox", {
+        name: "Buscar por placa ou nome do condutor",
+      }),
+      "REC",
+    );
+    await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
+    );
+    await user.dblClick(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+    expect(registerAccessEntry).toHaveBeenCalledTimes(1);
+    rejectRequest?.(
+      apiError(409, {
+        errors: {
+          accessRecord: [
+            "O veículo ou condutor selecionado não está mais disponível.",
+          ],
+        },
+      }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "não está mais disponível",
+    );
+    expect(registerAccessEntry).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/Dados recuperados/)).toBeVisible();
+    expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("REC1A23");
   });
 
   it("uses primary ink throughout the solid quick-check surface", () => {
