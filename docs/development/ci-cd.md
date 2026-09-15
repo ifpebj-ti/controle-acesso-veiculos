@@ -17,6 +17,7 @@ produção.
 | ---------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CI - Backend           | Alterações do backend e de suas regras de formato     | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura                                                                                                                                                                              |
 | CI - Frontend          | Alterações do frontend                                | `npm ci`, ESLint e build Vite                                                                                                                                                                                                                                                |
+| Quality Gate           | Backend, frontend ou configuração de análise          | análise centralizada de manutenibilidade, confiabilidade, segurança, duplicação e cobertura; ativação protegida e pendente até o projeto externo estar configurado                                                                                                           |
 | CI - Containers        | Código, Dockerfiles, Compose ou contexto Docker       | build isolado, Trivy e SBOM de frontend e backend em `linux/amd64` e `linux/arm64`; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, publicação das variantes verificadas, montagem do manifesto multi-plataforma e atestação de proveniência e SBOM |
 | CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários                                                                                                                                                                                        |
 | Dependency Review      | Toda Pull Request                                     | bloqueio de novas dependências com vulnerabilidade alta ou crítica                                                                                                                                                                                                           |
@@ -31,6 +32,11 @@ Todos os workflows cancelam execuções obsoletas da mesma referência e possuem
 timeout.
 
 Os resultados TRX e Cobertura do backend são mantidos por 14 dias. Cobertura é evidência de apoio; não substitui revisão de cenários, risco e qualidade dos testes.
+
+A integração centralizada planejada na Issue #219 está documentada em
+[`quality-gate.md`](quality-gate.md). O workflow permanece inativo até que um
+projeto real, variables e secret existam; não há badge ou aprovação externa
+enquanto essa ativação não for comprovada.
 
 ## Dependabot
 
