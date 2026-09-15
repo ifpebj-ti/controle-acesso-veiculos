@@ -163,6 +163,12 @@ describe("NewAccessPage", () => {
 
     expect(quickCheck).toHaveClass("bg-[#B8C9A4]", "text-ink");
     expect(quickCheck?.querySelector(".text-ink-soft")).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Utilizações da frota" }),
+    ).toHaveAttribute("href", "/utilizacoes-institucionais");
+    expect(
+      screen.getByRole("link", { name: "Utilizações da frota" }),
+    ).toHaveClass("font-bold", "text-ink");
   });
 
   it("submits documented fields once and opens accesses when requested", async () => {
@@ -188,6 +194,23 @@ describe("NewAccessPage", () => {
     expect(
       await screen.findByRole("heading", { name: "Acessos carregados" }),
     ).toBeInTheDocument();
+  });
+
+  it("identifies the unlinked event choice as the default", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Vincular uma autorização de evento",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("radio", { name: /Sem autorização de evento/ }),
+    ).toBeChecked();
+    expect(screen.getByText("Padrão")).toBeInTheDocument();
+    expect(screen.getAllByText("Veículos autorizados")).toHaveLength(2);
   });
 
   it.each([

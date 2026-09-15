@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -335,20 +335,25 @@ export function NewAccessPage() {
             </div>
 
             <section
-              className="rounded-2xl border border-ink/10 bg-[#BDD8F1]/20 p-4 sm:p-5"
+              className="rounded-3xl border border-[#AFCBE3] bg-[#BDD8F1]/20 p-4 sm:p-5"
               aria-labelledby="event-link-title"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3
-                    className="font-display text-xl text-ink"
-                    id="event-link-title"
-                  >
-                    Autorização de evento
-                  </h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3
+                      className="font-display text-xl text-ink"
+                      id="event-link-title"
+                    >
+                      Autorização de evento
+                    </h3>
+                    <span className="rounded-full border border-ink/15 bg-white/75 px-2.5 py-1 text-xs font-bold text-ink-soft">
+                      Opcional
+                    </span>
+                  </div>
                   <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-soft">
-                    Associação opcional. Nenhum evento é escolhido
-                    automaticamente.
+                    Escolha uma autorização vigente ou mantenha a entrada sem
+                    vínculo.
                   </p>
                   {selectedEvent && !eventSectionOpen && (
                     <p className="mt-2 text-sm font-bold text-brand-dark">
@@ -357,17 +362,24 @@ export function NewAccessPage() {
                   )}
                 </div>
                 <button
+                  aria-label={
+                    eventSectionOpen
+                      ? "Ocultar autorizações de evento"
+                      : selectedEvent
+                        ? "Alterar autorização vinculada"
+                        : "Vincular uma autorização de evento"
+                  }
                   aria-controls="event-authorization-options"
                   aria-expanded={eventSectionOpen}
-                  className="min-h-11 rounded-xl border border-brand-dark px-4 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
+                  className="min-h-11 rounded-xl border border-brand-dark bg-white/60 px-4 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
                   onClick={() => setEventSectionOpen((current) => !current)}
                   type="button"
                 >
                   {eventSectionOpen
-                    ? "Ocultar autorizações de evento"
+                    ? "Ocultar"
                     : selectedEvent
-                      ? "Alterar autorização vinculada"
-                      : "Vincular uma autorização de evento"}
+                      ? "Alterar"
+                      : "Vincular a evento"}
                 </button>
               </div>
 
@@ -453,8 +465,14 @@ export function NewAccessPage() {
                   Veículo institucional
                 </p>
                 <p className="mt-1 text-xs leading-5 text-ink-soft">
-                  Saída, quilometragem, motorista e retorno pertencem ao fluxo
-                  próprio da frota.
+                  Saída, quilometragem, motorista e retorno são registrados em
+                  <Link
+                    className="ml-1 inline rounded font-bold text-ink underline decoration-ink/45 underline-offset-2 hover:decoration-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                    to="/utilizacoes-institucionais"
+                  >
+                    Utilizações da frota
+                  </Link>
+                  .
                 </p>
               </div>
             </div>
