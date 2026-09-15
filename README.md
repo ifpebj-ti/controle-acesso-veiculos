@@ -55,7 +55,8 @@ Os contratos operacionais e administrativos disponíveis são:
 | `DELETE /users/{id}` | desativa uma conta, revoga seus JWTs na próxima requisição e preserva o histórico |
 | `POST /users/{id}/reactivation` | reativa a conta e limpa bloqueio temporário e tentativas anteriores |
 | `GET /audits` | consulta a trilha por período, ação, entidade, registro e ator, restrita a Administrador |
-| `POST /access-records/entries` | registra entrada e cria ou reutiliza pessoa, veículo, vínculo e categoria em uma transação |
+| `GET /access-records/entry-candidates` | pesquisa pares ativos de veículo e condutor para o fluxo recorrente, com resposta mínima e limite de resultados |
+| `POST /access-records/entries` | registra entrada e cria ou reutiliza pessoa, veículo, vínculo e categoria em uma transação; uma seleção recorrente é revalidada no servidor |
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
 | `GET /access-records/history` | pesquisa acessos por período, placa, condutor, categoria ou status para Portaria, Vigilância, Transporte e Administração |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |

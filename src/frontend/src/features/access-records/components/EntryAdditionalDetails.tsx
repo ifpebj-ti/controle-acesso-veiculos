@@ -41,7 +41,7 @@ export function EntryAdditionalDetails({
               : "observation-help"
           }
           aria-invalid={Boolean(errors.observation)}
-          className={`${fieldClass} min-h-24 py-3`}
+          className={`${fieldClass} min-h-24 resize-none py-3`}
           id="observation"
           maxLength={1000}
           placeholder="Inclua somente informação necessária para a operação."

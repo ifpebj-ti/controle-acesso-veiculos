@@ -183,7 +183,7 @@ export function AccessCorrectionDialog({
               Registro #{record.id}
             </p>
             <h2
-              className="mt-1 font-display text-3xl text-ink"
+              className="mt-2 font-display text-3xl text-ink"
               id="access-correction-title"
             >
               Corrigir registro

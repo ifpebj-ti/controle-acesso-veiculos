@@ -7,6 +7,8 @@ public sealed class VehicleAccessService(
     IVehicleAccessStore vehicleAccessStore,
     TimeProvider timeProvider)
 {
+    private const int CandidateSearchLimit = 10;
+
     public async Task<RegisterVehicleEntryResult> RegisterEntryAsync(
         RegisterVehicleEntryCommand command,
         int actorUserId,
@@ -35,7 +37,9 @@ public sealed class VehicleAccessService(
             NormalizeOptional(command.Color),
             command.Year,
             NormalizeOptional(command.Observation),
-            command.EventAuthorizationId);
+            command.EventAuthorizationId,
+            command.VehicleId,
+            command.PersonId);
 
         var stored = await vehicleAccessStore.TryRegisterEntryAsync(
             entry,
@@ -57,9 +61,43 @@ public sealed class VehicleAccessService(
                 RegisterVehicleEntryResult.Conflict("A placa ou o tipo do veículo não está autorizado para o evento."),
             VehicleAccessStoreRegistrationStatus.EventQuotaExceeded =>
                 RegisterVehicleEntryResult.Conflict("A cota de veículos do evento foi atingida."),
+            VehicleAccessStoreRegistrationStatus.CandidateUnavailable =>
+                RegisterVehicleEntryResult.Conflict(
+                    "O veículo ou condutor selecionado não está mais disponível."),
             _ => RegisterVehicleEntryResult.Conflict(
                 "O veículo já possui um acesso aberto ou os dados informados estão inativos.")
         };
+    }
+
+    public async Task<SearchAccessEntryCandidatesResult> SearchEntryCandidatesAsync(
+        SearchAccessEntryCandidatesCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var query = command.Query?.Trim();
+        if (query is null || query.Length is < 3 or > 80)
+        {
+            return new(
+                SearchAccessEntryCandidatesStatus.Invalid,
+                [],
+                new Dictionary<string, string[]>
+                {
+                    ["query"] = ["A busca deve possuir entre 3 e 80 caracteres."]
+                });
+        }
+
+        var platePrefix = NormalizeCandidatePlatePrefix(query);
+        var items = await vehicleAccessStore.SearchEntryCandidatesAsync(
+            new AccessEntryCandidateSearchCriteria(
+                query,
+                platePrefix,
+                DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime),
+                CandidateSearchLimit),
+            cancellationToken);
+
+        return new(
+            SearchAccessEntryCandidatesStatus.Success,
+            items,
+            new Dictionary<string, string[]>());
     }
 
     public Task<IReadOnlyList<VehicleAccessRecord>> ListOpenAsync(
@@ -235,6 +273,14 @@ public sealed class VehicleAccessService(
                 ["O identificador da autorização de evento deve ser positivo."];
         }
 
+        var hasVehicleId = command.VehicleId.HasValue;
+        var hasPersonId = command.PersonId.HasValue;
+        if (hasVehicleId != hasPersonId || command.VehicleId is <= 0 || command.PersonId is <= 0)
+        {
+            errors["candidate"] =
+                ["Veículo e condutor selecionados devem ser informados juntos."];
+        }
+
         if (command.Year is <= 0 || command.Year > currentYear + 1)
         {
             errors["year"] = ["O ano do veículo deve ser positivo e não pode exceder o próximo ano."];
@@ -357,6 +403,18 @@ public sealed class VehicleAccessService(
 
     private static string? NormalizePlate(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : Veiculo.NormalizarPlaca(value);
+
+    private static string NormalizeCandidatePlatePrefix(string value)
+    {
+        try
+        {
+            return Veiculo.NormalizarPlaca(value);
+        }
+        catch (ArgumentException)
+        {
+            return string.Empty;
+        }
+    }
 
     private static bool TryParseStatus(
         string value,
