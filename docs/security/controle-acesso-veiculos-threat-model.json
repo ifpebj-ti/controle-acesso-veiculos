@@ -165,6 +165,16 @@
                   "mitigation": "Negar por padrão e aplicar políticas no servidor por recurso e operação. A matriz técnica está coberta por testes; a matriz institucional final ainda será homologada.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000013"
+                },
+                {
+                  "status": "Mitigated",
+                  "severity": "Medium",
+                  "title": "TM-23 — Enumeração ou adulteração de vínculo recorrente",
+                  "type": "Tampering / Information disclosure",
+                  "description": "Uma busca irrestrita pode enumerar pessoas, ou um cliente adulterado pode enviar identificadores, placa e nome que não correspondem ao vínculo escolhido.",
+                  "mitigation": "Restringir à política operacional, limitar termo e resultados, aplicar rate limiting, omitir documento, e-mail e histórico, e revalidar no servidor o par ativo usando seus valores canônicos. Integração visual e calibração institucional permanecem nas Issues #214 e #162.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000023"
                 }
               ]
             }

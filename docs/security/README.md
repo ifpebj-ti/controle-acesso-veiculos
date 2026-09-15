@@ -36,7 +36,7 @@ externo:
 Antes da apresentação, confira se o relatório contém:
 
 - 1 ator, 5 processos, 4 depósitos, 8 fluxos e 5 fronteiras;
-- as ameaças `TM-01` a `TM-22` sem duplicidade;
+- as ameaças `TM-01` a `TM-23` sem duplicidade;
 - distinção entre controles mitigados e riscos ainda abertos;
 - OCI, HTTPS, backup externo, observabilidade operada e homologação como
   pendências, não como funcionalidades prontas.
