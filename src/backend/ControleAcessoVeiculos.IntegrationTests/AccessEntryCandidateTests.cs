@@ -125,13 +125,14 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
                 vehicleId = eligible.VehicleId,
                 personId = institutional.PersonId
             });
-        var incompatibleBody = await incompatibleResponse.Content.ReadAsStringAsync();
+        var incompatibleBody = await incompatibleResponse.Content
+            .ReadFromJsonAsync<ConflictResponse>();
 
         Assert.Equal(HttpStatusCode.Conflict, incompatibleResponse.StatusCode);
-        Assert.Contains(
-            "não está mais disponível",
-            incompatibleBody,
-            StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(incompatibleBody);
+        Assert.Equal(
+            "O veículo ou condutor selecionado não está mais disponível.",
+            Assert.Single(incompatibleBody.Errors["accessRecord"]));
     }
 
     [Fact]
@@ -300,6 +301,8 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
         string Plate,
         int PersonId,
         string DriverName);
+
+    private sealed record ConflictResponse(Dictionary<string, string[]> Errors);
 
     private sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
 }
