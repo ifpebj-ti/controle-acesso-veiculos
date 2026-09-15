@@ -54,18 +54,18 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
         var eligible = await CreateCandidateAsync(
             $"Condutor recorrente {suffix}",
             suffix[..7],
-            $"DOC-{suffix}",
+            $"DOC{suffix[..12]}",
             $"candidate-{suffix}@example.test");
         var institutional = await CreateCandidateAsync(
             $"Condutor recorrente {suffix}",
             suffix[7..14],
-            $"INST-{suffix}",
+            $"INS{suffix[..12]}",
             $"institutional-{suffix}@example.test",
             isInstitutional: true);
         await CreateCandidateAsync(
             $"Condutor recorrente {suffix}",
             suffix[14..21],
-            $"OLD-{suffix}",
+            $"OLD{suffix[..12]}",
             $"expired-{suffix}@example.test",
             relationshipEnd: DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1));
 
@@ -148,7 +148,7 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
             await CreateCandidateAsync(
                 $"Busca limitada {suffix} {index}",
                 $"{suffix[..4]}{index:D3}",
-                $"LIMIT-{suffix}-{index}",
+                $"LIM{suffix}{index:D2}",
                 null);
         }
 
@@ -169,7 +169,7 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
         var candidate = await CreateCandidateAsync(
             $"Condutor concorrente {suffix}",
             suffix[..7],
-            $"CONCURRENT-{suffix}",
+            $"CON{suffix[..12]}",
             null);
         var request = new
         {
