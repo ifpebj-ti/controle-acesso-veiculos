@@ -35,7 +35,7 @@ export function InstitutionalDriverCatalog({
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
             Autorizações ativas
           </p>
-          <h2 className="mt-1 font-display text-2xl text-ink">
+          <h2 className="mt-2 font-display text-2xl text-ink">
             Motoristas institucionais
           </h2>
           {status === "ready" && (

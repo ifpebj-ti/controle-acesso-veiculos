@@ -75,7 +75,7 @@ export function InstitutionalUsageHistory({
           Supervisão da frota
         </p>
         <h2
-          className="mt-1 font-display text-2xl"
+          className="mt-2 font-display text-2xl"
           id="institutional-history-title"
         >
           Histórico institucional
