@@ -95,8 +95,41 @@ export function NewAccessPage() {
     (event) => String(event.id) === selectedEventAuthorizationId,
   );
 
-  function clearSelectedCandidate() {
+  function clearSelectedCandidateAfterEdit(
+    editedField: "plate" | "driverName",
+  ) {
+    if (!selectedCandidate) return;
     setSelectedCandidate(null);
+    setValue(editedField === "plate" ? "driverName" : "plate", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    setValue("vehicleType", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    setValue("vehicleTypeOther", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+  }
+
+  function useManualEntry() {
+    setSelectedCandidate(null);
+    setValue("plate", "", { shouldDirty: true, shouldValidate: false });
+    setValue("driverName", "", { shouldDirty: true, shouldValidate: false });
+    setValue("vehicleType", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    setValue("vehicleTypeOther", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    clearErrors(["plate", "driverName", "vehicleType", "vehicleTypeOther"]);
+    window.requestAnimationFrame(() =>
+      document.getElementById("plate")?.focus(),
+    );
   }
 
   function selectCandidate(candidate: AccessEntryCandidate) {
@@ -111,6 +144,14 @@ export function NewAccessPage() {
       shouldValidate: true,
     });
 
+    setValue("vehicleType", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    setValue("vehicleTypeOther", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
     if (!candidate.vehicleType) return;
     const knownVehicleType = vehicleTypeOptions.find(
       (option) =>
@@ -278,7 +319,7 @@ export function NewAccessPage() {
 
           <div className="space-y-7 p-5 sm:p-7">
             <EntryCandidateSearch
-              onClear={clearSelectedCandidate}
+              onClear={useManualEntry}
               onSelect={selectCandidate}
               selectedCandidate={selectedCandidate}
             />
@@ -300,7 +341,7 @@ export function NewAccessPage() {
                   maxLength={10}
                   placeholder="Ex.: DEM-1A23"
                   {...register("plate", {
-                    onChange: clearSelectedCandidate,
+                    onChange: () => clearSelectedCandidateAfterEdit("plate"),
                   })}
                 />
                 <FieldError id="plate-error" message={errors.plate?.message} />
@@ -324,7 +365,8 @@ export function NewAccessPage() {
                   maxLength={200}
                   placeholder="Ex.: Pessoa de demonstração"
                   {...register("driverName", {
-                    onChange: clearSelectedCandidate,
+                    onChange: () =>
+                      clearSelectedCandidateAfterEdit("driverName"),
                   })}
                 />
                 <FieldError

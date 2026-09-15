@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoSeriousAccessibilityViolations } from "../../../test/accessibility";
@@ -96,7 +96,7 @@ describe("EntryCandidateSearch", () => {
     );
   });
 
-  it("supports arrows, Enter, clearing and a predictable focus return", async () => {
+  it("supports arrows, Enter and explicit clearing", async () => {
     vi.mocked(searchAccessEntryCandidates).mockResolvedValue([candidate]);
     const user = userEvent.setup();
     render(<Harness />);
@@ -114,7 +114,34 @@ describe("EntryCandidateSearch", () => {
     await user.click(
       screen.getByRole("button", { name: "Usar preenchimento manual" }),
     );
-    expect(search).toHaveFocus();
+    expect(screen.queryByText(/Dados recuperados/)).not.toBeInTheDocument();
+  });
+
+  it("consumes Enter when no result is active", async () => {
+    const request = deferred<AccessEntryCandidate[]>();
+    vi.mocked(searchAccessEntryCandidates).mockReturnValue(request.promise);
+    const onSubmit = vi.fn((event: FormEvent) => event.preventDefault());
+    const user = userEvent.setup();
+    render(
+      <form onSubmit={onSubmit}>
+        <Harness />
+      </form>,
+    );
+    const search = screen.getByRole("combobox");
+
+    await user.type(search, "REC");
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Buscando veículos e condutores",
+      ),
+    );
+    await user.keyboard("{Enter}");
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    request.resolve([candidate]);
+    await screen.findByRole("option", { name: /REC1A23/ });
+    await user.keyboard("{Enter}");
+    expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.queryByText(/Dados recuperados/)).not.toBeInTheDocument();
   });
 

@@ -35,7 +35,6 @@ export function EntryCandidateSearch({
   const listId = `entry-candidate-results-${generatedId}`;
   const guidanceId = `entry-candidate-guidance-${generatedId}`;
   const statusId = `entry-candidate-status-${generatedId}`;
-  const inputRef = useRef<HTMLInputElement>(null);
   const requestId = useRef(0);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AccessEntryCandidate[]>([]);
@@ -96,7 +95,6 @@ export function EntryCandidateSearch({
   }
 
   function handleQueryChange(value: string) {
-    if (selectedCandidate) onClear();
     setQuery(value);
     setOpen(true);
     if (value.trim().length < 3) {
@@ -108,6 +106,14 @@ export function EntryCandidateSearch({
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (status === "ready" && open && activeIndex >= 0) {
+        selectCandidate(results[activeIndex]);
+      }
+      return;
+    }
+
     if (event.key === "Escape") {
       setOpen(false);
       setActiveIndex(-1);
@@ -123,11 +129,6 @@ export function EntryCandidateSearch({
         return current <= 0 ? results.length - 1 : current - 1;
       });
       return;
-    }
-
-    if (event.key === "Enter" && open && activeIndex >= 0) {
-      event.preventDefault();
-      selectCandidate(results[activeIndex]);
     }
   }
 
@@ -180,7 +181,6 @@ export function EntryCandidateSearch({
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Ex.: DEM-1A23 ou Pessoa de demonstração"
-          ref={inputRef}
           role="combobox"
           type="search"
           value={query}
@@ -255,10 +255,7 @@ export function EntryCandidateSearch({
             </div>
             <button
               className="min-h-10 rounded-xl border border-ink/20 px-4 text-sm font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
-              onClick={() => {
-                onClear();
-                inputRef.current?.focus();
-              }}
+              onClick={onClear}
               type="button"
             >
               Usar preenchimento manual

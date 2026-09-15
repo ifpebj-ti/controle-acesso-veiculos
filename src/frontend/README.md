@@ -66,7 +66,10 @@ um candidato é escolhido, `vehicleId` e `personId` são enviados juntos; qualqu
 edição manual da placa ou do condutor remove esse vínculo antes do envio. A
 seleção reduz digitação, mas não autoriza a entrada: o backend revalida o par e
 usa os dados canônicos. A utilidade e a linguagem desse atalho ainda dependem da
-homologação institucional da Issue #162.
+homologação institucional da Issue #162. Iniciar outra pesquisa mantém o
+candidato atual até que outro resultado seja escolhido. O retorno explícito ao
+preenchimento manual limpa placa, condutor e tipo derivados, preservando
+categoria, objetivo, evento e observação.
 
 A lista de acessos em aberto usa linhas compactas no desktop e cartões compactos
 no mobile. O tempo transcorrido é somente informativo e permanece separado do
