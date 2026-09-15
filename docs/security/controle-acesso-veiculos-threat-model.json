@@ -14,8 +14,8 @@
       {
         "cells": [
           {
-            "position": { "x": 25, "y": 335 },
-            "size": { "width": 160, "height": 80 },
+            "position": { "x": 50, "y": 520 },
+            "size": { "width": 200, "height": 100 },
             "attrs": { "text": { "text": "Usuário autorizado" }, "body": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
             "shape": "actor",
             "id": "00000000-0000-4000-8000-000000000001",
@@ -44,8 +44,8 @@
             }
           },
           {
-            "position": { "x": 245, "y": 325 },
-            "size": { "width": 120, "height": 100 },
+            "position": { "x": 400, "y": 510 },
+            "size": { "width": 160, "height": 120 },
             "attrs": { "text": { "text": "Navegador" }, "body": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
             "shape": "process",
             "id": "00000000-0000-4000-8000-000000000002",
@@ -62,8 +62,8 @@
             }
           },
           {
-            "position": { "x": 445, "y": 325 },
-            "size": { "width": 130, "height": 100 },
+            "position": { "x": 750, "y": 510 },
+            "size": { "width": 190, "height": 120 },
             "attrs": { "text": { "text": "Frontend React\ne Nginx" }, "body": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
             "shape": "process",
             "id": "00000000-0000-4000-8000-000000000003",
@@ -101,8 +101,8 @@
             }
           },
           {
-            "position": { "x": 700, "y": 315 },
-            "size": { "width": 140, "height": 120 },
+            "position": { "x": 1150, "y": 500 },
+            "size": { "width": 200, "height": 140 },
             "attrs": { "text": { "text": "API ASP.NET Core" }, "body": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
             "shape": "process",
             "id": "00000000-0000-4000-8000-000000000004",
@@ -170,8 +170,8 @@
             }
           },
           {
-            "position": { "x": 970, "y": 300 },
-            "size": { "width": 170, "height": 80 },
+            "position": { "x": 1550, "y": 410 },
+            "size": { "width": 220, "height": 100 },
             "attrs": { "text": { "text": "PostgreSQL" }, "topLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null }, "bottomLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
             "shape": "store",
             "id": "00000000-0000-4000-8000-000000000005",
@@ -233,8 +233,8 @@
             }
           },
           {
-            "position": { "x": 970, "y": 500 },
-            "size": { "width": 170, "height": 80 },
+            "position": { "x": 1550, "y": 700 },
+            "size": { "width": 220, "height": 100 },
             "attrs": { "text": { "text": "Logs e auditoria" }, "topLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null }, "bottomLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
             "shape": "store",
             "id": "00000000-0000-4000-8000-000000000006",
@@ -286,8 +286,8 @@
             }
           },
           {
-            "position": { "x": 1240, "y": 300 },
-            "size": { "width": 170, "height": 80 },
+            "position": { "x": 1950, "y": 410 },
+            "size": { "width": 220, "height": 100 },
             "attrs": { "text": { "text": "Backup protegido" }, "topLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null }, "bottomLine": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
             "shape": "store",
             "id": "00000000-0000-4000-8000-000000000007",
@@ -319,8 +319,8 @@
             }
           },
           {
-            "position": { "x": 700, "y": 55 },
-            "size": { "width": 140, "height": 100 },
+            "position": { "x": 750, "y": 90 },
+            "size": { "width": 200, "height": 120 },
             "attrs": { "text": { "text": "GitHub Actions" }, "body": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
             "shape": "process",
             "id": "00000000-0000-4000-8000-000000000008",
@@ -358,8 +358,8 @@
             }
           },
           {
-            "position": { "x": 970, "y": 65 },
-            "size": { "width": 170, "height": 80 },
+            "position": { "x": 1150, "y": 100 },
+            "size": { "width": 220, "height": 100 },
             "attrs": { "text": { "text": "GitHub Container\nRegistry" }, "topLine": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null }, "bottomLine": { "stroke": "#333333", "strokeWidth": 1, "strokeDasharray": null } },
             "shape": "store",
             "id": "00000000-0000-4000-8000-000000000009",
@@ -380,8 +380,8 @@
             }
           },
           {
-            "position": { "x": 1240, "y": 55 },
-            "size": { "width": 150, "height": 100 },
+            "position": { "x": 1550, "y": 90 },
+            "size": { "width": 220, "height": 120 },
             "attrs": { "text": { "text": "OCI futura" }, "body": { "stroke": "#777777", "strokeWidth": 1, "strokeDasharray": "5 5" } },
             "shape": "process",
             "id": "00000000-0000-4000-8000-000000000010",
@@ -400,10 +400,12 @@
           {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000001",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Credenciais e dados operacionais" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Operação" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000001" },
             "target": { "cell": "00000000-0000-4000-8000-000000000002" },
             "data": { "type": "tm.Flow", "name": "Credenciais e dados operacionais", "description": "Entrada de dados pelo usuário.", "protocol": "Interface local", "isEncrypted": false, "isPublicNetwork": false, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
@@ -411,10 +413,12 @@
           {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#d97706", "strokeWidth": 2, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000002",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "UI HTTP/HTTPS" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Interface" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000002" },
             "target": { "cell": "00000000-0000-4000-8000-000000000003" },
             "data": {
@@ -445,10 +449,12 @@
           {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#d97706", "strokeWidth": 2, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000003",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "API, JWT e cookie protegido" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "API segura" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000003" },
             "target": { "cell": "00000000-0000-4000-8000-000000000004" },
             "data": {
@@ -499,10 +505,12 @@
           {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000004",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Npgsql e transações" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Dados" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000004" },
             "target": { "cell": "00000000-0000-4000-8000-000000000005" },
             "data": { "type": "tm.Flow", "name": "Npgsql e transações", "description": "Consultas parametrizadas, migrations e transações.", "protocol": "PostgreSQL/Npgsql", "isEncrypted": false, "isPublicNetwork": false, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
@@ -510,21 +518,26 @@
           {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000005",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Eventos técnicos e de negócio" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Auditoria" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000004" },
             "target": { "cell": "00000000-0000-4000-8000-000000000006" },
+            "vertices": [{ "x": 1450, "y": 570 }, { "x": 1450, "y": 750 }],
             "data": { "type": "tm.Flow", "name": "Eventos técnicos e de negócio", "description": "Logs mínimos, correlation ID, auditoria transacional e OTLP opcional.", "protocol": "Aplicação/OTLP", "isEncrypted": false, "isPublicNetwork": false, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
           },
           {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#d97706", "strokeWidth": 2, "targetMarker": { "name": "block" }, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000006",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Dump e restauração" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Backup" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000005" },
             "target": { "cell": "00000000-0000-4000-8000-000000000007" },
             "data": { "type": "tm.Flow", "name": "Dump e restauração", "description": "Verificado localmente; transporte e armazenamento protegido de produção permanecem pendentes.", "protocol": "pg_dump/pg_restore", "isEncrypted": false, "isPublicNetwork": false, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
@@ -532,10 +545,12 @@
           {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000007",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Imagens, SBOM e proveniência" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Imagem + SBOM" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000008" },
             "target": { "cell": "00000000-0000-4000-8000-000000000009" },
             "data": { "type": "tm.Flow", "name": "Imagens, SBOM e proveniência", "description": "Publicação após build e scan independentes no commit da main.", "protocol": "HTTPS/OCI", "isEncrypted": true, "isPublicNetwork": true, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
@@ -543,10 +558,12 @@
           {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#777777", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000008",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Deploy futuro" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Promoção futura" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000009" },
             "target": { "cell": "00000000-0000-4000-8000-000000000010" },
             "data": { "type": "tm.Flow", "name": "Deploy futuro", "description": "Fluxo planejado; política de admissão e ambiente institucional ainda não definidos.", "protocol": "HTTPS/OCI", "isEncrypted": true, "isPublicNetwork": true, "isTrustBoundary": false, "outOfScope": true, "reasonOutOfScope": "Implantação institucional futura.", "hasOpenThreats": false, "threats": [] }
@@ -554,56 +571,66 @@
           {
             "shape": "trust-boundary-curve",
             "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
             "zIndex": 15,
             "connector": "smooth",
             "id": "30000000-0000-4000-8000-000000000001",
-            "source": { "x": 205, "y": 230 },
-            "target": { "x": 205, "y": 520 },
-            "labels": [{ "attrs": { "text": { "text": "B1 — dispositivo do usuário" } } }],
+            "source": { "x": 325, "y": 390 },
+            "target": { "x": 325, "y": 710 },
+            "labels": [{ "attrs": { "text": { "text": "B1 • usuário/dispositivo" } } }],
             "data": { "type": "tm.Boundary", "name": "B1 — dispositivo do usuário", "description": "A pessoa e o ambiente físico não são implicitamente confiáveis.", "isTrustBoundary": true, "hasOpenThreats": false }
           },
           {
             "shape": "trust-boundary-curve",
             "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
             "zIndex": 15,
             "connector": "smooth",
             "id": "30000000-0000-4000-8000-000000000002",
-            "source": { "x": 635, "y": 225 },
-            "target": { "x": 635, "y": 610 },
-            "labels": [{ "attrs": { "text": { "text": "B2 — navegador para API" } } }],
+            "source": { "x": 1040, "y": 380 },
+            "target": { "x": 1040, "y": 720 },
+            "labels": [{ "attrs": { "text": { "text": "B2 • cliente/API" } } }],
             "data": { "type": "tm.Boundary", "name": "B2 — navegador para API", "description": "Todo dado do cliente é não confiável e deve ser validado e autorizado no servidor.", "isTrustBoundary": true, "hasOpenThreats": false }
           },
           {
             "shape": "trust-boundary-curve",
             "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
             "zIndex": 15,
             "connector": "smooth",
             "id": "30000000-0000-4000-8000-000000000003",
-            "source": { "x": 905, "y": 220 },
-            "target": { "x": 905, "y": 620 },
-            "labels": [{ "attrs": { "text": { "text": "B3/B4 — API para dados e auditoria" } } }],
+            "source": { "x": 1450, "y": 330 },
+            "target": { "x": 1450, "y": 850 },
+            "labels": [{ "attrs": { "text": { "text": "B3/B4 • persistência" } } }],
             "data": { "type": "tm.Boundary", "name": "B3/B4 — API para dados e auditoria", "description": "Credenciais, rede e privilégios separam a aplicação da persistência.", "isTrustBoundary": true, "hasOpenThreats": false }
           },
           {
             "shape": "trust-boundary-curve",
             "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
             "zIndex": 15,
             "connector": "smooth",
             "id": "30000000-0000-4000-8000-000000000004",
-            "source": { "x": 1185, "y": 220 },
-            "target": { "x": 1185, "y": 620 },
-            "labels": [{ "attrs": { "text": { "text": "B5 — banco para backup" } } }],
+            "source": { "x": 1860, "y": 330 },
+            "target": { "x": 1860, "y": 580 },
+            "labels": [{ "attrs": { "text": { "text": "B5 • backup" } } }],
             "data": { "type": "tm.Boundary", "name": "B5 — banco para backup", "description": "O dump deixa o banco e precisa de proteção equivalente ou superior.", "isTrustBoundary": true, "hasOpenThreats": false }
           },
           {
             "shape": "trust-boundary-curve",
             "attrs": { "line": { "targetMarker": "", "sourceMarker": "", "stroke": "#6b7280", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "width": 200,
+            "height": 100,
             "zIndex": 15,
             "connector": "smooth",
             "id": "30000000-0000-4000-8000-000000000005",
-            "source": { "x": 1185, "y": 20 },
-            "target": { "x": 1185, "y": 195 },
-            "labels": [{ "attrs": { "text": { "text": "B6/B7 — registry para OCI" } } }],
+            "source": { "x": 1450, "y": 35 },
+            "target": { "x": 1450, "y": 265 },
+            "labels": [{ "attrs": { "text": { "text": "B6/B7 • entrega" } } }],
             "data": { "type": "tm.Boundary", "name": "B6/B7 — registry para OCI", "description": "A publicação verificada não substitui a política de admissão do ambiente de destino.", "isTrustBoundary": true, "hasOpenThreats": false }
           }
         ],
