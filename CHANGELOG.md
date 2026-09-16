@@ -12,9 +12,11 @@ from its first published release.
 
 - Structured Issue forms for defects, improvements, and documentation.
 - Pull Request checklist for traceability, validation, security, privacy, and operations.
+- Project favicon based on the vehicle-access artwork.
 - Multi-platform `linux/amd64` and `linux/arm64` container validation and publication.
 - Architecture-specific SPDX SBOMs attached to each published multi-platform manifest.
 - Reproducible frontend coverage and protected centralized Quality Gate workflow.
+- Passive OWASP ZAP baseline reports for the disposable integrated stack.
 
 ### Changed
 

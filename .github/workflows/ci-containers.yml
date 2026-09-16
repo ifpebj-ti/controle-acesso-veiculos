@@ -7,6 +7,7 @@ on:
     paths:
       - ".dockerignore"
       - "infrastructure/docker/**"
+      - "infrastructure/security/**"
       - "src/backend/**"
       - "src/frontend/**"
       - ".github/workflows/ci-containers.yml"
@@ -14,6 +15,7 @@ on:
     paths:
       - ".dockerignore"
       - "infrastructure/docker/**"
+      - "infrastructure/security/**"
       - "src/backend/**"
       - "src/frontend/**"
       - ".github/workflows/ci-containers.yml"
@@ -140,7 +142,7 @@ jobs:
   compose-smoke-test:
     name: Run integrated Compose smoke test
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       COMPOSE_PROJECT_NAME: cav-smoke-${{ github.run_id }}-${{ github.run_attempt }}
       POSTGRES_DB: cav_smoke
@@ -266,6 +268,66 @@ jobs:
 
           verify_headers "${frontend_headers}"
           verify_headers "${proxy_error_headers}"
+
+      - name: Run passive OWASP ZAP baseline
+        shell: bash
+        run: |
+          report_directory="${GITHUB_WORKSPACE}/artifacts/zap"
+          install --directory --mode 0777 "${report_directory}"
+          cp infrastructure/security/zap-baseline.conf \
+            "${report_directory}/zap-baseline.conf"
+
+          set +e
+          docker run --rm \
+            --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            --network "${COMPOSE_PROJECT_NAME}_app-network" \
+            --volume "${report_directory}:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:2.17.0@sha256:781a2bdaea47324e7bab583e2263f21d257b0aee61ed51521a5be45f5f5081ef \
+            zap-baseline.py \
+            -t http://frontend:8080 \
+            -m 1 \
+            -c zap-baseline.conf \
+            -J zap-report.json \
+            -r zap-report.html \
+            -w zap-report.md
+          zap_exit_code=$?
+          set -e
+
+          for report in zap-report.json zap-report.html zap-report.md; do
+            if [[ ! -s "${report_directory}/${report}" ]]; then
+              echo "ZAP report was not generated: ${report}" >&2
+              exit 1
+            fi
+          done
+
+          case "${zap_exit_code}" in
+            0)
+              echo "OWASP ZAP baseline completed without alerts." \
+                >> "${GITHUB_STEP_SUMMARY}"
+              ;;
+            2)
+              echo "OWASP ZAP baseline completed with reviewed warnings. See the attached report." \
+                >> "${GITHUB_STEP_SUMMARY}"
+              ;;
+            1)
+              echo "OWASP ZAP found an alert classified as FAIL." >&2
+              exit 1
+              ;;
+            *)
+              echo "OWASP ZAP failed to complete (exit code ${zap_exit_code})." >&2
+              exit "${zap_exit_code}"
+              ;;
+          esac
+
+      - name: Upload OWASP ZAP reports
+        if: ${{ always() && hashFiles('artifacts/zap/zap-report.*') != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zap-baseline-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/zap/zap-report.*
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Show Compose diagnostics
         if: failure()
