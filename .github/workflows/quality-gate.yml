@@ -1,0 +1,166 @@
+name: Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/backend/**"
+      - "src/frontend/**"
+      - ".editorconfig"
+      - ".gitattributes"
+      - ".nvmrc"
+      - "sonar-project.properties"
+      - ".github/workflows/quality-gate.yml"
+  pull_request:
+    paths:
+      - "src/backend/**"
+      - "src/frontend/**"
+      - ".editorconfig"
+      - ".gitattributes"
+      - ".nvmrc"
+      - "sonar-project.properties"
+      - ".github/workflows/quality-gate.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+
+jobs:
+  analyze:
+    name: Analyze backend and frontend
+    if: >-
+      vars.SONAR_ENABLED == 'true' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository with analysis history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Validate protected analysis configuration
+        env:
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z "$SONAR_ORGANIZATION" || -z "$SONAR_PROJECT_KEY" || -z "$SONAR_TOKEN" ]]; then
+            echo "SONAR_ENABLED requires SONAR_ORGANIZATION, SONAR_PROJECT_KEY, and SONAR_TOKEN."
+            exit 1
+          fi
+
+      - name: Install locked frontend dependencies
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: Restore backend dependencies
+        run: dotnet restore src/backend/ControleAcessoVeiculos.slnx
+
+      - name: Install pinned Sonar scanner
+        run: dotnet tool install --global dotnet-sonarscanner --version 11.3.0
+
+      - name: Begin centralized analysis
+        env:
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: bash
+        run: >-
+          dotnet sonarscanner begin
+          /k:"$SONAR_PROJECT_KEY"
+          /o:"$SONAR_ORGANIZATION"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.token="$SONAR_TOKEN"
+          /d:sonar.qualitygate.wait="true"
+          /d:sonar.qualitygate.timeout="300"
+          /d:sonar.cs.opencover.reportsPaths="artifacts/quality-gate/backend/**/coverage.opencover.xml"
+          /d:sonar.javascript.lcov.reportPaths="src/frontend/coverage/lcov.info"
+          /d:sonar.test.inclusions="src/frontend/src/**/*.test.ts,src/frontend/src/**/*.test.tsx"
+          /d:sonar.exclusions="**/bin/**,**/obj/**,**/node_modules/**,**/coverage/**,**/artifacts/**,**/dist/**"
+          /d:sonar.coverage.exclusions="src/backend/**/Data/Migrations/**"
+
+      - name: Verify backend formatting and analyzers
+        run: >-
+          dotnet format src/backend/ControleAcessoVeiculos.slnx
+          --verify-no-changes
+          --no-restore
+
+      - name: Build backend for analysis
+        run: >-
+          dotnet build src/backend/ControleAcessoVeiculos.slnx
+          --configuration Release
+          --no-restore
+          --no-incremental
+          -warnaserror
+
+      - name: Test backend with OpenCover evidence
+        run: >-
+          dotnet test src/backend/ControleAcessoVeiculos.slnx
+          --configuration Release
+          --no-build
+          --no-restore
+          --collect:"XPlat Code Coverage"
+          --logger trx
+          --results-directory artifacts/quality-gate/backend
+          --verbosity normal
+          --
+          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: Test frontend with LCOV evidence
+        working-directory: src/frontend
+        run: npm run test:coverage
+
+      - name: Lint frontend
+        working-directory: src/frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: src/frontend
+        run: npm run build
+
+      - name: Complete analysis and enforce Quality Gate
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+
+      - name: Upload Quality Gate evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: quality-gate-evidence-${{ github.run_number }}
+          path: |
+            artifacts/quality-gate/backend/**
+            src/frontend/coverage/cobertura-coverage.xml
+            src/frontend/coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 14
