@@ -22,6 +22,10 @@ from its first published release.
 - Container scanning now rejects every critical vulnerability, including findings
   without an available fix, while continuing to reject fixable high-severity findings.
 
+### Fixed
+
+- OCI attestation jobs can persist artifact storage metadata with job-scoped permission.
+
 ## Release process
 
 Before publishing a release:

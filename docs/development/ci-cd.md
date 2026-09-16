@@ -24,9 +24,10 @@ produção.
 Todas as actions de terceiros estão fixadas por SHA de commit e acompanhadas do
 número da release auditada. Os jobs de validação usam apenas `contents: read`. O
 job de publicação, restrito a push na `main`, acrescenta `packages: write`,
-`id-token: write` e `attestations: write`. O token OIDC é efêmero e usado pela
-action oficial do GitHub para assinar a atestação; Pull Requests não recebem
-essas permissões.
+`id-token: write` e `attestations: write`. Somente o job que publica o manifesto
+também recebe `artifact-metadata: write`, necessário para a action oficial
+registrar onde o artefato atestado está armazenado. O token OIDC é efêmero e
+usado para assinar a atestação; Pull Requests não recebem essas permissões.
 Todos os workflows cancelam execuções obsoletas da mesma referência e possuem
 timeout.
 
