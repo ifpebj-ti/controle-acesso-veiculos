@@ -15,6 +15,7 @@ from its first published release.
 - Project favicon based on the vehicle-access artwork.
 - Multi-platform `linux/amd64` and `linux/arm64` container validation and publication.
 - Architecture-specific SPDX SBOMs attached to each published multi-platform manifest.
+- Passive OWASP ZAP baseline reports for the disposable integrated stack.
 
 ### Changed
 
