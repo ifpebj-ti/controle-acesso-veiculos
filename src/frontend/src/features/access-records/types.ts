@@ -1,14 +1,16 @@
 import type { z } from "zod";
 
 import type {
+  accessEntryCandidateSchema,
   accessRecordSchema,
   pagedAccessRecordsSchema,
 } from "./schemas/accessRecordSchemas";
 
 export type AccessRecord = z.infer<typeof accessRecordSchema>;
+export type AccessEntryCandidate = z.infer<typeof accessEntryCandidateSchema>;
 export type PagedAccessRecords = z.infer<typeof pagedAccessRecordsSchema>;
 
-export interface RegisterAccessEntryInput {
+interface RegisterAccessEntryFields {
   plate: string;
   driverName: string;
   categoryName: string;
@@ -17,6 +19,12 @@ export interface RegisterAccessEntryInput {
   observation?: string;
   eventAuthorizationId?: number;
 }
+
+export type RegisterAccessEntryInput = RegisterAccessEntryFields &
+  (
+    | { vehicleId?: never; personId?: never }
+    | { vehicleId: number; personId: number }
+  );
 
 export interface CorrectAccessRecordInput {
   objective: string;
