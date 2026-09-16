@@ -93,7 +93,7 @@
                   "title": "TM-22 — Conteúdo indevido ou incorporação externa",
                   "type": "Tampering",
                   "description": "Conteúdo não autorizado pode ser carregado ou a aplicação pode ser incorporada por uma página externa.",
-                  "mitigation": "CSP same-origin, bloqueio de frames, MIME sniffing desabilitado, política de referência e permissões mínimas. HTTPS e HSTS ainda dependem do ambiente institucional.",
+                  "mitigation": "CSP same-origin, bloqueio de frames, MIME sniffing desabilitado, política de referência, permissões mínimas e baseline DAST passiva no ambiente descartável. HTTPS e HSTS ainda dependem do ambiente institucional.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000022"
                 }
@@ -337,7 +337,7 @@
             "zIndex": 8,
             "data": {
               "name": "GitHub Actions",
-              "description": "Executa build, testes, análise e SBOM por arquitetura, smoke tests e publicação multi-plataforma verificada.",
+              "description": "Executa build, testes, análise, SBOM por arquitetura, smoke tests, baseline DAST passiva e publicação multi-plataforma verificada.",
               "type": "tm.Process",
               "isTrustBoundary": false,
               "outOfScope": false,

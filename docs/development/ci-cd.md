@@ -3,7 +3,7 @@
 ## Estado
 
 Esta página documenta a fundação de integração contínua iniciada na Issue #25 e
-ampliada pelas Issues #90, #104 e #218. Os workflows validam código e imagens em Pull
+ampliada pelas Issues #90, #104, #218 e #227. Os workflows validam código e imagens em Pull
 Requests e publicam imagens verificadas no GitHub Container Registry após
 integração na `main`. Frontend e backend são verificados para `linux/amd64` e
 `linux/arm64`; cada digest de manifesto publicado recebe proveniência assinada e
@@ -13,13 +13,13 @@ produção.
 
 ## Workflows
 
-| Workflow               | Gatilho                                               | Verificações                                                                                                                                                                                                                                                                 |
-| ---------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CI - Backend           | Alterações do backend e de suas regras de formato     | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura                                                                                                                                                                              |
-| CI - Frontend          | Alterações do frontend                                | `npm ci`, ESLint e build Vite                                                                                                                                                                                                                                                |
-| CI - Containers        | Código, Dockerfiles, Compose ou contexto Docker       | build isolado, Trivy e SBOM de frontend e backend em `linux/amd64` e `linux/arm64`; smoke test integrado de PostgreSQL, API e frontend; após push na `main`, publicação das variantes verificadas, montagem do manifesto multi-plataforma e atestação de proveniência e SBOM |
-| CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários                                                                                                                                                                                        |
-| Dependency Review      | Toda Pull Request                                     | bloqueio de novas dependências com vulnerabilidade alta ou crítica                                                                                                                                                                                                           |
+| Workflow               | Gatilho                                               | Verificações                                                                                                                                                                                                                                                                                                      |
+| ---------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI - Backend           | Alterações do backend e de suas regras de formato     | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura                                                                                                                                                                                                                   |
+| CI - Frontend          | Alterações do frontend                                | `npm ci`, ESLint e build Vite                                                                                                                                                                                                                                                                                     |
+| CI - Containers        | Código, Dockerfiles, Compose ou contexto Docker       | build isolado, Trivy e SBOM de frontend e backend em `linux/amd64` e `linux/arm64`; smoke test integrado de PostgreSQL, API e frontend; baseline DAST passiva com OWASP ZAP; após push na `main`, publicação das variantes verificadas, montagem do manifesto multi-plataforma e atestação de proveniência e SBOM |
+| CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários                                                                                                                                                                                                                             |
+| Dependency Review      | Toda Pull Request                                     | bloqueio de novas dependências com vulnerabilidade alta ou crítica                                                                                                                                                                                                                                                |
 
 Todas as actions de terceiros estão fixadas por SHA de commit e acompanhadas do
 número da release auditada. Os jobs de validação usam apenas `contents: read`. O
@@ -83,6 +83,20 @@ O job não aplica migrations, não cria usuário, não usa dados institucionais 
 substitui testes funcionais ou homologação. A publicação no GHCR depende do smoke
 test, impedindo a distribuição automática de uma revisão cuja stack integrada
 não inicia.
+
+## Análise dinâmica passiva
+
+Depois da readiness e das verificações de cabeçalhos, o mesmo ambiente
+descartável recebe o OWASP ZAP Baseline Scan. O scanner entra apenas na rede do
+Compose, acessa o frontend pelo nome interno e executa spider tradicional e
+regras passivas; nenhum Active Scan é usado.
+
+A imagem oficial ZAP 2.17.0 está fixada por digest. A política em
+`infrastructure/security/zap-baseline.conf` reprova achados de segurança
+classificados como `FAIL`, mantém hipóteses e informações em `WARN` e trata erro
+do scanner ou relatório ausente como falha. HTML, JSON e Markdown são anexados à
+execução por 14 dias. A classificação, baseline e limites estão documentados em
+[`dynamic-application-security-testing.md`](../security/dynamic-application-security-testing.md).
 
 ## Análise de imagens
 
@@ -230,9 +244,10 @@ Antes do merge:
 
 1. Confirmar que todos os checks foram executados.
 2. Revisar alertas do Trivy e do Dependency Review.
-3. Confirmar que nenhum segredo apareceu no diff ou nos logs.
-4. Verificar que alterações de dependência possuem justificativa.
-5. Registrar exceções e riscos residuais na Pull Request.
+3. Revisar alertas e relatórios do OWASP ZAP quando o job integrado executar.
+4. Confirmar que nenhum segredo apareceu no diff ou nos logs.
+5. Verificar que alterações de dependência possuem justificativa.
+6. Registrar exceções e riscos residuais na Pull Request.
 
 ## Referências oficiais
 
@@ -243,3 +258,4 @@ Antes do merge:
 - [Dependabot options](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference)
 - [NGINX unprivileged image](https://github.com/nginx/docker-nginx-unprivileged)
 - [Trivy Action](https://github.com/aquasecurity/trivy-action)
+- [OWASP ZAP Baseline Scan](https://www.zaproxy.org/docs/docker/baseline-scan/)
