@@ -108,6 +108,10 @@ describe("EntryCandidateSearch", () => {
     await screen.findByRole("option", { name: /REC1A23/ });
     await user.keyboard("{ArrowDown}{Enter}");
 
+    const selectionAnnouncement = screen.getByText(
+      /Atenção: os dados recuperados não autorizam automaticamente a entrada/,
+    );
+    expect(selectionAnnouncement).toHaveAttribute("aria-live", "assertive");
     expect(
       screen.getByText(/A seleção não autoriza a entrada automaticamente/),
     ).toBeVisible();

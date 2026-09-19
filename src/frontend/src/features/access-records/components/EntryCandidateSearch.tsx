@@ -225,6 +225,16 @@ export function EntryCandidateSearch({
         {statusMessage}
       </p>
 
+      <p aria-atomic="true" aria-live="assertive" className="sr-only">
+        {selectedCandidate && (
+          <>
+            {selectedCandidate.plate} e {selectedCandidate.driverName}{" "}
+            selecionados para conferência. Atenção: os dados recuperados não
+            autorizam automaticamente a entrada.
+          </>
+        )}
+      </p>
+
       {status === "empty" && (
         <p className="mt-3 text-sm text-ink-soft">{statusMessage}</p>
       )}
@@ -239,10 +249,7 @@ export function EntryCandidateSearch({
       )}
 
       {selectedCandidate && (
-        <div
-          className="mt-4 rounded-xl border border-brand-dark/25 bg-white p-4"
-          role="status"
-        >
+        <div className="mt-4 rounded-xl border border-brand-dark/25 bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-bold text-ink">
