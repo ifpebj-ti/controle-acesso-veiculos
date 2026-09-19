@@ -139,6 +139,73 @@ describe("OpenAccessPage", () => {
     expect(listOpenAccessRecords).toHaveBeenCalledTimes(1);
   });
 
+  it("combines clickable category options with the existing local search", async () => {
+    vi.mocked(listOpenAccessRecords).mockResolvedValue([record, secondRecord]);
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText("2 em aberto");
+    const allOption = screen.getByRole("button", { name: "Todos" });
+    const visitorOption = screen.getByRole("button", { name: "Visitante" });
+    const deliveryOption = screen.getByRole("button", { name: "Entrega" });
+    const search = screen.getByLabelText("Buscar acesso aberto");
+
+    expect(allOption).toHaveAttribute("aria-pressed", "true");
+    expect(visitorOption).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.queryByRole("button", { name: "Prestador de serviço" }),
+    ).not.toBeInTheDocument();
+
+    deliveryOption.focus();
+    await user.keyboard("{Enter}");
+    expect(deliveryOption).toHaveAttribute("aria-pressed", "true");
+    expect(within(mobileList()).queryByText("DEM1A23")).not.toBeInTheDocument();
+    expect(within(mobileList()).getByText("DMO2B34")).toBeInTheDocument();
+
+    await user.type(search, "Pessoa");
+    expect(
+      screen.getByText("Nenhum acesso aberto encontrado"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("2 em aberto · 0 exibido(s)")).toBeInTheDocument();
+
+    await user.clear(search);
+    expect(deliveryOption).toHaveAttribute("aria-pressed", "true");
+    expect(within(mobileList()).getByText("DMO2B34")).toBeInTheDocument();
+
+    await user.type(search, "DEM1");
+    allOption.focus();
+    await user.keyboard(" ");
+    expect(search).toHaveValue("DEM1");
+    expect(allOption).toHaveAttribute("aria-pressed", "true");
+    expect(within(mobileList()).getByText("DEM1A23")).toBeInTheDocument();
+    expect(within(mobileList()).queryByText("DMO2B34")).not.toBeInTheDocument();
+    expect(listOpenAccessRecords).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns to all categories when a refresh removes the selected option", async () => {
+    vi.mocked(listOpenAccessRecords)
+      .mockResolvedValueOnce([record, secondRecord])
+      .mockResolvedValueOnce([record]);
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText("2 em aberto");
+    await user.click(screen.getByRole("button", { name: "Entrega" }));
+    await user.click(screen.getByRole("button", { name: "Atualizar lista" }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Entrega" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: "Todos" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(mobileList()).getByText("DEM1A23")).toBeInTheDocument();
+    expect(screen.getByText("1 em aberto")).toBeInTheDocument();
+  });
+
   it("keeps previous records visible while a manual refresh succeeds", async () => {
     const refresh = deferred<AccessRecord[]>();
     vi.mocked(listOpenAccessRecords)
