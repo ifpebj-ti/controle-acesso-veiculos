@@ -1,5 +1,6 @@
 export { generalAccessCategories } from "./model/accessCategories";
 export { AccessExitDialog } from "./components/AccessExitDialog";
+export { EntryCandidateSearch } from "./components/EntryCandidateSearch";
 export { EntryAdditionalDetails } from "./components/EntryAdditionalDetails";
 export { EntryObjectiveFieldset } from "./components/EntryObjectiveFieldset";
 export { EntryVehicleTypeField } from "./components/EntryVehicleTypeField";
@@ -20,6 +21,7 @@ export {
   correctAccessRecord,
   listOpenAccessRecords,
   registerAccessEntry,
+  searchAccessEntryCandidates,
   searchAccessHistory,
 } from "./services/accessRecordsService";
 export {
@@ -32,6 +34,7 @@ export type {
 } from "./schemas/accessRecordSchemas";
 export type {
   AccessHistoryFilters,
+  AccessEntryCandidate,
   AccessRecord,
   CorrectAccessRecordInput,
   PagedAccessRecords,
