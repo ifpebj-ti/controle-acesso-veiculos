@@ -100,14 +100,14 @@ public sealed class InstitutionalVehicleUsageStore(
             .Where(item => item.DataHoraSaida >= criteria.FromUtc &&
                 item.DataHoraSaida <= criteria.ToUtc);
 
-        if (criteria.VehicleId.HasValue)
+        if (criteria.VehicleId is { } vehicleId)
         {
-            usages = usages.Where(item => item.VeiculoId == criteria.VehicleId.Value);
+            usages = usages.Where(item => item.VeiculoId == vehicleId);
         }
 
-        if (criteria.DriverId.HasValue)
+        if (criteria.DriverId is { } driverId)
         {
-            usages = usages.Where(item => item.MotoristaId == criteria.DriverId.Value);
+            usages = usages.Where(item => item.MotoristaId == driverId);
         }
 
         if (criteria.Plate is not null)
