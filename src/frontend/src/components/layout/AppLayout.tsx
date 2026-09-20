@@ -70,7 +70,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                 {section.to ? (
                   <NavLink
                     className={({ isActive }) =>
-                      `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+                      `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-xl border border-transparent px-4 py-3 font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
                         isActive
                           ? "sidebar-primary-item--active font-semibold text-ink"
                           : "text-ink hover:bg-white/45 hover:text-ink"
@@ -109,7 +109,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                           <li key={item.to}>
                             <NavLink
                               className={({ isActive }) =>
-                                `sidebar-primary-item flex min-h-10 items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+                                `sidebar-primary-item flex min-h-10 items-center gap-2.5 rounded-xl border border-transparent px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
                                   isActive
                                     ? "sidebar-primary-item--active font-semibold text-ink"
                                     : "text-ink hover:bg-white/45 hover:text-ink"
