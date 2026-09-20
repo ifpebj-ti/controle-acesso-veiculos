@@ -8,23 +8,51 @@ from its first published release.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-20
+
 ### Added
 
+- Integrated vehicle-access MVP for general entries, open records, exits,
+  audited descriptive corrections, history, recurring-candidate API,
+  institutional fleet and drivers, vehicle usages, event authorizations, daily
+  summaries, user accounts, and audit-trail consultation.
+- Individual authentication with short-lived access tokens, server-controlled
+  renewable sessions, protected cookies, CSRF validation, rotation, revocation,
+  logout, account lockout, and progressive password-hash upgrades.
+- Responsive React interface with profile-aware navigation, accessible feedback,
+  keyboard flows, mobile layouts, and automated accessibility checks.
 - Structured Issue forms for defects, improvements, and documentation.
 - Pull Request checklist for traceability, validation, security, privacy, and operations.
 - Project favicon based on the vehicle-access artwork.
+- PostgreSQL persistence with versioned Entity Framework Core migrations,
+  transactionally consistent auditing, constraints, and concurrency controls.
+- Disposable PostgreSQL recovery and integrated Compose smoke-test workflows.
+- OpenTelemetry instrumentation for configurable OTLP export.
 - Multi-platform `linux/amd64` and `linux/arm64` container validation and publication.
 - Architecture-specific SPDX SBOMs attached to each published multi-platform manifest.
 - Passive OWASP ZAP baseline reports for the disposable integrated stack.
+- Semantic container tags associated with reviewed Git tags and GitHub Releases.
 
 ### Changed
 
 - Container scanning now rejects every critical vulnerability, including findings
   without an available fix, while continuing to reject fixable high-severity findings.
+- Backend and frontend runtime containers use non-root users, read-only root
+  filesystems, dropped capabilities, and defensive HTTP headers.
 
 ### Fixed
 
 - OCI attestation jobs can persist artifact storage metadata with job-scoped permission.
+
+### Security
+
+- GitHub Actions use job-scoped minimum permissions and third-party actions pinned
+  to reviewed commit SHAs.
+- Published manifests include signed provenance and architecture-specific SBOM
+  attestations bound to their immutable digest.
+
+This is a technical MVP release for demonstration and evaluation. It is not an
+institutional production approval or deployment.
 
 ## Release process
 
@@ -40,4 +68,5 @@ Changes merged before this changelog was introduced remain traceable through the
 Git history, Pull Requests, Issues, and project Wiki. They must not be
 retroactively presented as a published release without an evidence-based review.
 
-[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/commits/main
+[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.2.0
