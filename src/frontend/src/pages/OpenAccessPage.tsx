@@ -226,44 +226,70 @@ export function OpenAccessPage() {
 
           {accessRecords.status === "ready" &&
             availableCategories.length > 0 && (
-              <fieldset className="mt-5">
-                <legend className="text-sm font-semibold text-ink">
-                  Filtrar por categoria
-                </legend>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <button
-                    aria-pressed={selectedCategory === null}
-                    className={`min-h-11 rounded-full border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
-                      selectedCategory === null
-                        ? "border-brand-dark bg-brand-dark text-white"
-                        : "border-ink/15 bg-white text-ink hover:bg-cream/60"
-                    }`}
-                    onClick={() => setSelectedCategory(null)}
-                    type="button"
+              <div className="mt-5">
+                <div className="sm:hidden">
+                  <label
+                    className="text-sm font-semibold text-ink"
+                    htmlFor="open-category-filter"
                   >
-                    Todos
-                  </button>
-                  {availableCategories.map((category) => {
-                    const isSelected = selectedCategory === category;
-
-                    return (
-                      <button
-                        aria-pressed={isSelected}
-                        className={`min-h-11 rounded-full border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
-                          isSelected
-                            ? "border-brand-dark bg-brand-dark text-white"
-                            : "border-ink/15 bg-white text-ink hover:bg-cream/60"
-                        }`}
-                        key={category}
-                        onClick={() => setSelectedCategory(category)}
-                        type="button"
-                      >
+                    Categoria
+                  </label>
+                  <select
+                    className="mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-white px-4 text-ink outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
+                    id="open-category-filter"
+                    onChange={(event) =>
+                      setSelectedCategory(event.target.value || null)
+                    }
+                    value={selectedCategory ?? ""}
+                  >
+                    <option value="">Todas as categorias</option>
+                    {availableCategories.map((category) => (
+                      <option key={category} value={category}>
                         {category}
-                      </button>
-                    );
-                  })}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </fieldset>
+
+                <fieldset className="hidden sm:block">
+                  <legend className="text-sm font-semibold text-ink">
+                    Filtrar por categoria
+                  </legend>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      aria-pressed={selectedCategory === null}
+                      className={`min-h-11 rounded-full border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
+                        selectedCategory === null
+                          ? "border-brand-dark bg-brand-dark text-white"
+                          : "border-ink/15 bg-white text-ink hover:bg-cream/60"
+                      }`}
+                      onClick={() => setSelectedCategory(null)}
+                      type="button"
+                    >
+                      Todos
+                    </button>
+                    {availableCategories.map((category) => {
+                      const isSelected = selectedCategory === category;
+
+                      return (
+                        <button
+                          aria-pressed={isSelected}
+                          className={`min-h-11 rounded-full border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
+                            isSelected
+                              ? "border-brand-dark bg-brand-dark text-white"
+                              : "border-ink/15 bg-white text-ink hover:bg-cream/60"
+                          }`}
+                          key={category}
+                          onClick={() => setSelectedCategory(category)}
+                          type="button"
+                        >
+                          {category}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              </div>
             )}
 
           {accessRecords.isRefreshing && (
