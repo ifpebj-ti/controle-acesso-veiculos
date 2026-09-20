@@ -332,9 +332,9 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                     category.Nome == criteria.CategoryName));
         }
 
-        if (criteria.Status.HasValue)
+        if (criteria.Status is { } status)
         {
-            accessRecords = accessRecords.Where(item => item.Status == criteria.Status.Value);
+            accessRecords = accessRecords.Where(item => item.Status == status);
         }
 
         var totalCount = await accessRecords.CountAsync(cancellationToken);
@@ -580,7 +580,8 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             into eventRules
         from eventRule in eventRules.DefaultIfEmpty()
         join eventAuthorization in dbContext.EventosAcesso.AsNoTracking()
-            on eventRule.EventoAcessoId equals eventAuthorization.Id
+            on (eventRule == null ? null : (int?)eventRule.EventoAcessoId)
+            equals (int?)eventAuthorization.Id
             into eventAuthorizations
         from eventAuthorization in eventAuthorizations.DefaultIfEmpty()
         select new VehicleAccessRecord(

@@ -44,8 +44,8 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
     [Fact]
     public async Task ReadinessReturnsServiceUnavailableWithoutDatabase()
     {
-        using var unavailableDatabaseFactory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder =>
+        using var baseFactory = new WebApplicationFactory<Program>();
+        using var unavailableDatabaseFactory = baseFactory.WithWebHostBuilder(builder =>
             {
                 builder.UseEnvironment("Testing");
                 builder.UseSetting(

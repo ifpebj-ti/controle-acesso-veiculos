@@ -1,10 +1,12 @@
 import { api } from "../../../services/api";
 import {
+  accessEntryCandidateListSchema,
   accessRecordListSchema,
   accessRecordSchema,
   pagedAccessRecordsSchema,
 } from "../schemas/accessRecordSchemas";
 import type {
+  AccessEntryCandidate,
   AccessHistoryFilters,
   AccessRecord,
   CorrectAccessRecordInput,
@@ -31,6 +33,17 @@ export async function registerAccessEntry(
 ): Promise<AccessRecord> {
   const response = await api.post<unknown>("/access-records/entries", input);
   return parseContract(accessRecordSchema.safeParse(response.data));
+}
+
+export async function searchAccessEntryCandidates(
+  query: string,
+  signal?: AbortSignal,
+): Promise<AccessEntryCandidate[]> {
+  const response = await api.get<unknown>("/access-records/entry-candidates", {
+    params: { query },
+    signal,
+  });
+  return parseContract(accessEntryCandidateListSchema.safeParse(response.data));
 }
 
 export async function listOpenAccessRecords(): Promise<AccessRecord[]> {

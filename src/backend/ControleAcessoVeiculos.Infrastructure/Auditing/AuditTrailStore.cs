@@ -17,9 +17,9 @@ public sealed class AuditTrailStore(ControleAcessoVeiculosDbContext dbContext)
                 audit.DataHora >= criteria.FromUtc &&
                 audit.DataHora < criteria.ToUtc);
 
-        if (criteria.Action.HasValue)
+        if (criteria.Action is { } action)
         {
-            query = query.Where(audit => audit.TipoAcao == criteria.Action.Value);
+            query = query.Where(audit => audit.TipoAcao == action);
         }
 
         if (criteria.Entity is not null)
@@ -27,14 +27,14 @@ public sealed class AuditTrailStore(ControleAcessoVeiculosDbContext dbContext)
             query = query.Where(audit => EF.Functions.ILike(audit.Entidade, criteria.Entity));
         }
 
-        if (criteria.RecordId.HasValue)
+        if (criteria.RecordId is { } recordId)
         {
-            query = query.Where(audit => audit.RegistroId == criteria.RecordId.Value);
+            query = query.Where(audit => audit.RegistroId == recordId);
         }
 
-        if (criteria.ActorUserId.HasValue)
+        if (criteria.ActorUserId is { } actorUserId)
         {
-            query = query.Where(audit => audit.UsuarioId == criteria.ActorUserId.Value);
+            query = query.Where(audit => audit.UsuarioId == actorUserId);
         }
 
         if (criteria.SystemOnly.HasValue)

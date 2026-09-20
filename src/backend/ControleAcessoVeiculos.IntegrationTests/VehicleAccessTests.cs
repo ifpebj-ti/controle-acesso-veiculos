@@ -304,8 +304,8 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.NotNull(closed.ExitAtUtc);
         Assert.NotNull(corrected.ExitAtUtc);
         Assert.Equal(
-            closed.ExitAtUtc.Value,
-            corrected.ExitAtUtc.Value,
+            closed.ExitAtUtc.GetValueOrDefault(),
+            corrected.ExitAtUtc.GetValueOrDefault(),
             TimeSpan.FromMilliseconds(1));
         Assert.Equal("Encerrado", corrected.Status);
         Assert.Equal(creatorUserId, corrected.CreatedById);
