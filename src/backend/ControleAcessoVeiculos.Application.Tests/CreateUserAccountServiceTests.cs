@@ -29,7 +29,7 @@ public sealed class CreateUserAccountServiceTests
     }
 
     [Fact]
-    public async Task CreateSendsOnlyPasswordHashToPersistence()
+    public async Task AdministrativeCreationRejectsAdministratorProvidedPassword()
     {
         const string password = "Test-only-password-123!";
         var store = new FakeUserAccountStore();
@@ -42,13 +42,9 @@ public sealed class CreateUserAccountServiceTests
             ProfileNames.Doorman),
             actorUserId: 7);
 
-        Assert.Equal(CreateUserAccountStatus.Success, result.Status);
-        Assert.Equal("person@example.test", store.CapturedEmail);
-        Assert.Equal($"HASH::{password}", store.CapturedPasswordHash);
-        Assert.NotEqual(password, store.CapturedPasswordHash);
-        Assert.Equal(7, store.CapturedAudit?.ActorUserId);
-        Assert.Equal(FixedNow.UtcDateTime, store.CapturedAudit?.OccurredAtUtc);
-        Assert.Equal(AccountCreationOrigin.Administration, store.CapturedAudit?.Origin);
+        Assert.Equal(CreateUserAccountStatus.Invalid, result.Status);
+        Assert.Contains("password", result.Errors.Keys);
+        Assert.Null(store.CapturedPasswordHash);
     }
 
     [Fact]
@@ -67,6 +63,7 @@ public sealed class CreateUserAccountServiceTests
         Assert.Null(store.CapturedAudit?.ActorUserId);
         Assert.Equal(FixedNow.UtcDateTime, store.CapturedAudit?.OccurredAtUtc);
         Assert.Equal(AccountCreationOrigin.Bootstrap, store.CapturedAudit?.Origin);
+        Assert.Equal("HASH::Test-only-password-123!", store.CapturedPasswordHash);
         Assert.Null(store.CapturedTemporaryCredentialExpiresAtUtc);
     }
 

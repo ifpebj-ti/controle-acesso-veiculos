@@ -244,6 +244,34 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task AdministratorCannotChooseAnotherUsersInitialPassword()
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(
+            client,
+            administrator.Email,
+            PermanentPassword);
+        var suffix = Guid.NewGuid().ToString("N");
+        var email = $"administrator-password-{suffix}@example.test";
+
+        var response = await client.PostAsJsonAsync("/users", new
+        {
+            name = $"Rejected Password {suffix}",
+            email,
+            password = PermanentPassword,
+            profileName = ProfileNames.Doorman
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.False(await dbContext.Usuarios.AnyAsync(item => item.Email == email));
+        Assert.False(await dbContext.Pessoas.AnyAsync(item => item.Email == email));
+    }
+
+    [Fact]
     public async Task ExpiredTemporaryCredentialReturnsGenericUnauthorized()
     {
         var user = await CreateUserAsync(

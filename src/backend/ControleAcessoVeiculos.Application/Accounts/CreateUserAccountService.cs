@@ -53,10 +53,9 @@ public sealed class CreateUserAccountService(
         var normalizedEmail = Usuario.NormalizarEmail(command.Email);
         var isAdministrativeCreation =
             audit.Origin == AccountCreationOrigin.Administration;
-        var generatedCredential = isAdministrativeCreation &&
-            string.IsNullOrWhiteSpace(command.Password)
-                ? temporaryCredentialGenerator.Create()
-                : null;
+        var generatedCredential = isAdministrativeCreation
+            ? temporaryCredentialGenerator.Create()
+            : null;
         var password = generatedCredential ?? command.Password!;
         var temporaryCredentialExpiresAtUtc = isAdministrativeCreation
             ? audit.OccurredAtUtc.Add(temporaryCredentialPolicy.Lifetime)
@@ -102,17 +101,17 @@ public sealed class CreateUserAccountService(
             errors["email"] = ["Informe um e-mail válido com até 254 caracteres."];
         }
 
-        if (origin == AccountCreationOrigin.Bootstrap &&
+        if (origin == AccountCreationOrigin.Administration &&
+            command.Password is not null)
+        {
+            errors["password"] =
+                ["Não informe senha: o servidor gera a credencial temporária."];
+        }
+        else if (origin == AccountCreationOrigin.Bootstrap &&
             (string.IsNullOrWhiteSpace(command.Password) ||
              command.Password.Length is < 12 or > 128))
         {
             errors["password"] = ["A senha deve possuir entre 12 e 128 caracteres."];
-        }
-        else if (!string.IsNullOrEmpty(command.Password) &&
-                 command.Password.Length is < 12 or > 128)
-        {
-            errors["password"] =
-                ["A credencial inicial deve possuir entre 12 e 128 caracteres."];
         }
 
         if (!ProfileNames.Supported.Contains(command.ProfileName))

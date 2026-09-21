@@ -304,7 +304,6 @@ public sealed class AuthenticationTests(ApiFactory factory)
     public async Task AdministratorCanCreateIndividualAccount()
     {
         const string adminPassword = "Test-only-admin-password-123!";
-        const string newUserPassword = "Test-only-user-password-123!";
         var adminEmail = await CreateUserAsync(ProfileNames.Administrator, adminPassword);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, adminEmail, adminPassword);
@@ -315,7 +314,6 @@ public sealed class AuthenticationTests(ApiFactory factory)
         {
             name = $"Pessoa Criada {suffix}",
             email = newUserEmail,
-            password = newUserPassword,
             profileName = ProfileNames.Doorman
         });
         var created = await response.Content.ReadFromJsonAsync<CreateUserResponse>();
@@ -324,12 +322,13 @@ public sealed class AuthenticationTests(ApiFactory factory)
         Assert.NotNull(created);
         Assert.Equal(newUserEmail, created.Email);
         Assert.Equal(ProfileNames.Doorman, created.ProfileName);
+        Assert.False(string.IsNullOrWhiteSpace(created.TemporaryCredential));
 
         using var loginClient = factory.CreateClient();
         var login = await loginClient.PostAsJsonAsync("/auth/login", new
         {
             email = newUserEmail,
-            password = newUserPassword
+            password = created.TemporaryCredential
         });
         login.EnsureSuccessStatusCode();
 
@@ -342,7 +341,10 @@ public sealed class AuthenticationTests(ApiFactory factory)
         Assert.Equal(await GetUserIdAsync(adminEmail), audit.UsuarioId);
         var auditContent = string.Join(' ', audit.DadosAnteriores, audit.DadosNovos, audit.Detalhes);
         Assert.DoesNotContain(newUserEmail, auditContent, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(newUserPassword, auditContent, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            created.TemporaryCredential,
+            auditContent,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("hash", auditContent, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -363,7 +365,6 @@ public sealed class AuthenticationTests(ApiFactory factory)
             {
                 name = $"Pessoa Rollback {suffix}",
                 email = newUserEmail,
-                password = "Test-only-user-password-123!",
                 profileName = ProfileNames.Doorman
             });
 
@@ -576,6 +577,10 @@ public sealed class AuthenticationTests(ApiFactory factory)
         string Email,
         string ProfileName,
         bool RequiresPasswordChange);
-    private sealed record CreateUserResponse(int Id, string Email, string ProfileName);
+    private sealed record CreateUserResponse(
+        int Id,
+        string Email,
+        string ProfileName,
+        string? TemporaryCredential);
     private sealed record ErrorResponse(string Message);
 }
