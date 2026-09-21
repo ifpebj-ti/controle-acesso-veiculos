@@ -1,7 +1,13 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   registerAccessEntry,
@@ -189,13 +195,23 @@ async function fillObservation(user: TestUser, value: string) {
   return field;
 }
 
+async function advanceCandidateSearchDebounce() {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(350);
+  });
+}
+
 describe("NewAccessPage", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     vi.mocked(searchEventAuthorizations).mockResolvedValue(
       eventPage([plateEvent, quotaEvent]),
     );
     vi.mocked(searchAccessEntryCandidates).mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("fills and submits both canonical candidate identifiers together", async () => {
@@ -348,11 +364,19 @@ describe("NewAccessPage", () => {
       name: "Buscar por placa ou nome do condutor",
     });
 
-    await user.type(search, "REC");
+    await user.click(search);
+    vi.useFakeTimers();
+    fireEvent.change(search, { target: { value: "REC" } });
+    await advanceCandidateSearchDebounce();
+    vi.useRealTimers();
     await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
     expect(screen.getByText(/REC1A23 · Condutor recorrente/)).toBeVisible();
 
-    await user.type(search, "ALT");
+    await user.click(search);
+    vi.useFakeTimers();
+    fireEvent.change(search, { target: { value: "ALT" } });
+    await advanceCandidateSearchDebounce();
+    vi.useRealTimers();
     const alternateOption = await screen.findByRole("option", {
       name: /ALT4B56/,
     });
@@ -379,12 +403,14 @@ describe("NewAccessPage", () => {
     renderPage();
 
     await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Van");
-    await user.type(
-      screen.getByRole("combobox", {
-        name: "Buscar por placa ou nome do condutor",
-      }),
-      "SEM",
-    );
+    const search = screen.getByRole("combobox", {
+      name: "Buscar por placa ou nome do condutor",
+    });
+    await user.click(search);
+    vi.useFakeTimers();
+    fireEvent.change(search, { target: { value: "SEM" } });
+    await advanceCandidateSearchDebounce();
+    vi.useRealTimers();
     await user.click(await screen.findByRole("option", { name: /SEM6C78/ }));
 
     expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("");
