@@ -3,9 +3,10 @@
 ## Estado
 
 Esta página documenta a fundação de integração contínua iniciada na Issue #25 e
-ampliada pelas Issues #90, #104, #218 e #227. Os workflows validam código e imagens em Pull
-Requests e publicam imagens verificadas no GitHub Container Registry após
-integração na `main`. Frontend e backend são verificados para `linux/amd64` e
+ampliada pelas Issues #90, #104, #218, #227 e #243. Os workflows validam código
+e imagens em Pull Requests e publicam imagens verificadas no GitHub Container Registry após
+integração na `main`. Tags de release revisadas revalidam a stack e associam um
+número semântico ao manifesto imutável já publicado. Frontend e backend são verificados para `linux/amd64` e
 `linux/arm64`; cada digest de manifesto publicado recebe proveniência assinada e
 um SBOM SPDX 2.3 de cada arquitetura. A
 publicação no registry não realiza deploy nem torna o sistema pronto para
@@ -13,13 +14,13 @@ produção.
 
 ## Workflows
 
-| Workflow               | Gatilho                                               | Verificações                                                                                                                                                                                                                                                                                                      |
-| ---------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CI - Backend           | Alterações do backend e de suas regras de formato     | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura                                                                                                                                                                                                                   |
-| CI - Frontend          | Alterações do frontend                                | `npm ci`, ESLint e build Vite                                                                                                                                                                                                                                                                                     |
-| CI - Containers        | Código, Dockerfiles, Compose ou contexto Docker       | build isolado, Trivy e SBOM de frontend e backend em `linux/amd64` e `linux/arm64`; smoke test integrado de PostgreSQL, API e frontend; baseline DAST passiva com OWASP ZAP; após push na `main`, publicação das variantes verificadas, montagem do manifesto multi-plataforma e atestação de proveniência e SBOM |
-| CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários                                                                                                                                                                                                                             |
-| Dependency Review      | Toda Pull Request                                     | bloqueio de novas dependências com vulnerabilidade alta ou crítica                                                                                                                                                                                                                                                |
+| Workflow               | Gatilho                                                                   | Verificações                                                                                                                                                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI - Backend           | Alterações do backend e de suas regras de formato                         | restore, `dotnet format`, build Release com warnings como erros, suíte automatizada e cobertura                                                                                                                                                                     |
+| CI - Frontend          | Alterações do frontend                                                    | `npm ci`, ESLint e build Vite                                                                                                                                                                                                                                       |
+| CI - Containers        | Código, Dockerfiles, Compose, contexto Docker ou tag `vMAJOR.MINOR.PATCH` | build isolado, Trivy e SBOM de frontend e backend em `linux/amd64` e `linux/arm64`; smoke test integrado e baseline DAST passiva com OWASP ZAP; publicação e atestação do manifesto na `main`; associação da versão semântica ao digest aprovado em tags de release |
+| CI - Database recovery | Scripts de backup ou configuração local do PostgreSQL                     | dump lógico, restauração completa em banco isolado e limpeza dos recursos temporários                                                                                                                                                                               |
+| Dependency Review      | Toda Pull Request                                                         | bloqueio de novas dependências com vulnerabilidade alta ou crítica                                                                                                                                                                                                  |
 
 Todas as actions de terceiros estão fixadas por SHA de commit e acompanhadas do
 número da release auditada. Os jobs de validação usam apenas `contents: read`. O
@@ -129,19 +130,42 @@ Depois que uma alteração é integrada à `main`, o workflow publica:
 | Backend    | `ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend`  |
 | Frontend   | `ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend` |
 
-Cada pacote recebe duas tags de consumo:
+Cada pacote recebe duas tags contínuas de consumo:
 
 - `sha-<commit>`: referência imutável por convenção para rastrear exatamente o
   código que originou a imagem;
 - `main`: referência móvel para o último commit integrado e aprovado pela
   esteira.
 
+Quando uma tag Git revisada no formato `vMAJOR.MINOR.PATCH` é criada a partir da
+`main`, o pipeline reconstrói e analisa as quatro variantes localmente, executa
+o smoke test e exige que o manifesto `sha-<commit>` já publicado contenha
+exatamente AMD64 e ARM64. Somente então acrescenta a tag OCI
+`MAJOR.MINOR.PATCH` ao mesmo digest, sem reconstruir ou sobrescrever a referência
+imutável. Por exemplo, a tag Git `v0.2.0` publica `0.2.0` para backend e frontend.
+A versão legível facilita operação e demonstração, mas não substitui o digest
+nem a tag por commit como evidência imutável.
+
 O pipeline também mantém `sha-<commit>-amd64` e `sha-<commit>-arm64` como
 referências imutáveis das variantes efetivamente analisadas. Elas formam o
 manifesto e permitem auditoria por arquitetura; consumidores normais devem usar
 `sha-<commit>` ou seu digest.
 
-Exemplo de download da imagem rastreável do backend:
+Exemplo de download da versão do backend associada a uma release:
+
+```bash
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.2.0
+```
+
+Para fixar exatamente o conteúdo, use o digest com `@`, e não como se fosse uma
+tag:
+
+```bash
+docker pull \
+  ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend@sha256:<digest>
+```
+
+Exemplo de download da imagem rastreável por commit:
 
 ```bash
 docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:sha-<commit>
@@ -165,6 +189,11 @@ docker pull --platform linux/arm64 \
 O workflow usa o `GITHUB_TOKEN` efêmero do job e autentica somente depois do
 scan. Pull Requests não executam o job de publicação e permanecem sem
 `packages: write`. Nenhum token de registry deve ser adicionado ao repositório.
+
+A tag Git e a GitHub Release são criadas somente depois que o Pull Request do
+release é revisado e integrado à `main`. A execução da tag deve terminar com os
+dois manifestos aprovados antes da publicação da Release no GitHub. Uma release
+do MVP não representa homologação institucional nem autorização de deploy.
 
 Depois de montar e validar exatamente as plataformas `linux/amd64` e
 `linux/arm64`, o workflow resolve o digest da tag `sha-<commit>`, exige o formato
