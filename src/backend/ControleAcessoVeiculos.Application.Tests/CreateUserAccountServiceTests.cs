@@ -67,16 +67,48 @@ public sealed class CreateUserAccountServiceTests
         Assert.Null(store.CapturedAudit?.ActorUserId);
         Assert.Equal(FixedNow.UtcDateTime, store.CapturedAudit?.OccurredAtUtc);
         Assert.Equal(AccountCreationOrigin.Bootstrap, store.CapturedAudit?.Origin);
+        Assert.Null(store.CapturedTemporaryCredentialExpiresAtUtc);
+    }
+
+    [Fact]
+    public async Task AdministrativeCreationGeneratesExpiringTemporaryCredential()
+    {
+        var store = new FakeUserAccountStore();
+        var service = CreateService(store);
+
+        var result = await service.CreateAsync(new CreateUserAccountCommand(
+            "Novo Operador",
+            "operator@example.test",
+            Password: null,
+            ProfileNames.Doorman),
+            actorUserId: 7);
+
+        Assert.Equal(CreateUserAccountStatus.Success, result.Status);
+        Assert.Equal("Generated-temporary-credential-123!", result.TemporaryCredential);
+        Assert.Equal(FixedNow.UtcDateTime.AddMinutes(30),
+            result.TemporaryCredentialExpiresAtUtc);
+        Assert.Equal(
+            "HASH::Generated-temporary-credential-123!",
+            store.CapturedPasswordHash);
+        Assert.Equal(
+            FixedNow.UtcDateTime.AddMinutes(30),
+            store.CapturedTemporaryCredentialExpiresAtUtc);
     }
 
     private static CreateUserAccountService CreateService(FakeUserAccountStore store) =>
-        new(store, new FakePasswordHashService(), new FixedTimeProvider(FixedNow));
+        new(
+            store,
+            new FakePasswordHashService(),
+            new FakeTemporaryCredentialGenerator(),
+            new TemporaryCredentialPolicy(TimeSpan.FromMinutes(30)),
+            new FixedTimeProvider(FixedNow));
 
     private sealed class FakeUserAccountStore : IUserAccountStore
     {
         public string? CapturedEmail { get; private set; }
         public string? CapturedPasswordHash { get; private set; }
         public AccountCreationAudit? CapturedAudit { get; private set; }
+        public DateTime? CapturedTemporaryCredentialExpiresAtUtc { get; private set; }
 
         public Task<bool> HasAnyUserAsync(CancellationToken cancellationToken) =>
             Task.FromResult(false);
@@ -86,12 +118,14 @@ public sealed class CreateUserAccountServiceTests
             string normalizedEmail,
             string passwordHash,
             string profileName,
+            DateTime? temporaryCredentialExpiresAtUtc,
             AccountCreationAudit audit,
             CancellationToken cancellationToken)
         {
             CapturedEmail = normalizedEmail;
             CapturedPasswordHash = passwordHash;
             CapturedAudit = audit;
+            CapturedTemporaryCredentialExpiresAtUtc = temporaryCredentialExpiresAtUtc;
             return Task.FromResult<CreatedUserAccount?>(
                 new CreatedUserAccount(1, normalizedEmail, profileName));
         }
@@ -108,6 +142,21 @@ public sealed class CreateUserAccountServiceTests
             DateTime updatedAtUtc,
             CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
+        public Task<AdministrativeCredentialResetStoreResult> TryResetCredentialAsync(
+            int userId,
+            int actorUserId,
+            string passwordHash,
+            DateTime occurredAtUtc,
+            DateTime expiresAtUtc,
+            string reason,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class FakeTemporaryCredentialGenerator : ITemporaryCredentialGenerator
+    {
+        public string Create() => "Generated-temporary-credential-123!";
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider

@@ -95,6 +95,7 @@ public sealed class UserAccountLifecycleServiceTests
             string normalizedEmail,
             string passwordHash,
             string profileName,
+            DateTime? temporaryCredentialExpiresAtUtc,
             AccountCreationAudit audit,
             CancellationToken cancellationToken) =>
             throw new NotSupportedException();
@@ -124,5 +125,15 @@ public sealed class UserAccountLifecycleServiceTests
             UpdatedAtUtc = updatedAtUtc;
             return Task.FromResult(UserAccountStoreStateStatus.Success);
         }
+
+        public Task<AdministrativeCredentialResetStoreResult> TryResetCredentialAsync(
+            int userId,
+            int actorUserId,
+            string passwordHash,
+            DateTime occurredAtUtc,
+            DateTime expiresAtUtc,
+            string reason,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 }

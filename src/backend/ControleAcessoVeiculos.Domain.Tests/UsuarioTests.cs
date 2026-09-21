@@ -103,4 +103,84 @@ public sealed class UsuarioTests
 
         Assert.Equal(1, usuario.VersaoCredencial);
     }
+
+    [Fact]
+    public void TemporaryCredentialRequiresExpirationAndStopsAuthenticationAfterIt()
+    {
+        var now = DateTime.UtcNow;
+        var expiresAt = now.AddMinutes(30);
+        var usuario = new Usuario(
+            "temporary@example.com",
+            "temporary-hash",
+            1,
+            1,
+            trocaSenhaObrigatoria: true,
+            credencialTemporariaExpiraEm: expiresAt);
+
+        Assert.True(usuario.TrocaSenhaObrigatoria);
+        Assert.Equal(expiresAt, usuario.CredencialTemporariaExpiraEm);
+        Assert.True(usuario.PodeAutenticar(now));
+        Assert.False(usuario.PodeAutenticar(expiresAt));
+    }
+
+    [Fact]
+    public void TemporaryCredentialCanBeConsumedOnlyOnce()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario(
+            "temporary@example.com",
+            "temporary-hash",
+            1,
+            1,
+            trocaSenhaObrigatoria: true,
+            credencialTemporariaExpiraEm: now.AddMinutes(30));
+
+        usuario.ConsumirCredencialTemporaria(now);
+
+        Assert.Equal(now, usuario.CredencialTemporariaUtilizadaEm);
+        Assert.False(usuario.PodeAutenticar(now.AddSeconds(1)));
+        Assert.Throws<InvalidOperationException>(
+            () => usuario.ConsumirCredencialTemporaria(now.AddSeconds(1)));
+    }
+
+    [Fact]
+    public void PasswordChangeCompletesTemporaryCredentialSetup()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario(
+            "temporary@example.com",
+            "temporary-hash",
+            1,
+            1,
+            trocaSenhaObrigatoria: true,
+            credencialTemporariaExpiraEm: now.AddMinutes(30));
+
+        usuario.TrocarSenhaHash("permanent-hash", now.AddMinutes(1));
+
+        Assert.False(usuario.TrocaSenhaObrigatoria);
+        Assert.Null(usuario.CredencialTemporariaExpiraEm);
+        Assert.Null(usuario.CredencialTemporariaUtilizadaEm);
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.Equal("permanent-hash", usuario.SenhaHash);
+    }
+
+    [Fact]
+    public void AdministrativeResetRotatesCredentialAndClearsLockout()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("user@example.com", "old-hash", 1, 1);
+        usuario.RegistrarTentativaFalha(now, 1, TimeSpan.FromMinutes(15));
+
+        usuario.DefinirCredencialTemporaria(
+            "temporary-hash",
+            now.AddMinutes(30),
+            now.AddMinutes(1));
+
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.True(usuario.TrocaSenhaObrigatoria);
+        Assert.Equal(now.AddMinutes(30), usuario.CredencialTemporariaExpiraEm);
+        Assert.Null(usuario.CredencialTemporariaUtilizadaEm);
+        Assert.Equal(0, usuario.TentativasFalhas);
+        Assert.Null(usuario.BloqueadoAte);
+    }
 }

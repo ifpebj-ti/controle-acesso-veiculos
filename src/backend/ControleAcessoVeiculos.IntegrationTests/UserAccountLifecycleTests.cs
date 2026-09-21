@@ -39,7 +39,7 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         Assert.True(account.Active);
         Assert.Equal(1, result.TotalCount);
         Assert.DoesNotContain("senhaHash", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("password", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("passwordHash", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("hash", json, StringComparison.OrdinalIgnoreCase);
     }
 

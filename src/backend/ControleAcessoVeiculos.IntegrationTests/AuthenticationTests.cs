@@ -58,7 +58,9 @@ public sealed class AuthenticationTests(ApiFactory factory)
                 .Select(property => property.Name)
                 .Order()
                 .ToArray();
-            Assert.Equal(["email", "id", "profileName"], userProperties);
+            Assert.Equal(
+                ["email", "id", "profileName", "requiresPasswordChange"],
+                userProperties);
             Assert.False(responseJson.RootElement.TryGetProperty("refreshToken", out _));
         }
 
@@ -569,7 +571,11 @@ public sealed class AuthenticationTests(ApiFactory factory)
         string AccessToken,
         DateTime ExpiresAtUtc,
         LoginUserResponse User);
-    private sealed record LoginUserResponse(int Id, string Email, string ProfileName);
+    private sealed record LoginUserResponse(
+        int Id,
+        string Email,
+        string ProfileName,
+        bool RequiresPasswordChange);
     private sealed record CreateUserResponse(int Id, string Email, string ProfileName);
     private sealed record ErrorResponse(string Message);
 }
