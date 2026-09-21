@@ -13,7 +13,7 @@ from its first published release.
 ### Added
 
 - Integrated vehicle-access MVP for general entries, open records, exits,
-  audited descriptive corrections, history, recurring-candidate API,
+  audited descriptive corrections, history, recurring vehicle-and-driver lookup,
   institutional fleet and drivers, vehicle usages, event authorizations, daily
   summaries, user accounts, and audit-trail consultation.
 - Individual authentication with short-lived access tokens, server-controlled
@@ -21,6 +21,8 @@ from its first published release.
   logout, account lockout, and progressive password-hash upgrades.
 - Responsive React interface with profile-aware navigation, accessible feedback,
   keyboard flows, mobile layouts, and automated accessibility checks.
+- Operational shortcuts for reusing canonical recurring vehicle and driver data
+  and filtering open accesses by the categories present in the current result.
 - Structured Issue forms for defects, improvements, and documentation.
 - Pull Request checklist for traceability, validation, security, privacy, and operations.
 - Project favicon based on the vehicle-access artwork.
@@ -35,6 +37,8 @@ from its first published release.
 
 ### Changed
 
+- Authenticated navigation now uses a contained active state and the accessible
+  drawer through tablet widths, preserving the fixed sidebar for wide screens.
 - Container scanning now rejects every critical vulnerability, including findings
   without an available fix, while continuing to reject fixable high-severity findings.
 - Backend and frontend runtime containers use non-root users, read-only root
@@ -42,6 +46,9 @@ from its first published release.
 
 ### Fixed
 
+- Warning-level GitHub Code Quality Reliability findings in backend queries and tests.
+- Intermittent recurring-search tests by isolating mock state and controlling only
+  the debounce clock in the affected scenarios.
 - OCI attestation jobs can persist artifact storage metadata with job-scoped permission.
 
 ### Security
