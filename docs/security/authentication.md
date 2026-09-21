@@ -2,7 +2,7 @@
 
 ## Estado
 
-A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor, e a Issue #251 acrescenta a troca autenticada de senha. A validação institucional da matriz, dos tempos operacionais e do canal de recuperação permanece nas Issues #75, #162 e #220.
+A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor, a Issue #251 acrescenta a troca autenticada de senha e a Issue #258 acrescenta credencial temporária, troca obrigatória e redefinição administrativa. A validação institucional da matriz, dos tempos operacionais e do canal definitivo de recuperação permanece nas Issues #75, #162 e #220.
 
 ## Decisões implementadas
 
@@ -13,7 +13,7 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - Cinco senhas incorretas bloqueiam a conta por 15 minutos.
 - O login também possui limite padrão de 30 requisições por minuto por endereço da conexão, sem fila; excesso retorna HTTP 429 sem revelar a existência da conta.
 - O login válido zera as tentativas anteriores.
-- A resposta de login válido expõe somente JWT, expiração, identificador, e-mail normalizado e perfil ativo; nome, hash, bloqueio e demais estados internos da conta não fazem parte do contrato.
+- A resposta de login válido expõe somente JWT, expiração, identificador, e-mail normalizado, perfil ativo e o indicador `requiresPasswordChange`; nome, hash, bloqueio e demais estados internos da conta não fazem parte do contrato.
 - O access token é assinado com HMAC-SHA256 e expira em 15 minutos.
 - O login também cria uma família de sessão com duração absoluta inicial de 12 horas e inatividade máxima inicial de 60 minutos; ambos os valores são configuráveis e ainda são hipóteses do MVP.
 - O token de renovação possui 256 bits gerados pelo gerador criptográfico do sistema, é opaco e é entregue somente em cookie `HttpOnly`, `SameSite=Strict` e de caminho restrito.
@@ -31,6 +31,10 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - OpenAPI não é publicado fora do ambiente `Development`.
 - O primeiro administrador é criado somente por comando explícito, fora da superfície HTTP.
 - Depois do bootstrap, somente `users:manage` pode criar uma conta individual em `POST /users`.
+- A criação administrativa aceita omitir `password`; nesse caso o servidor gera uma credencial temporária com 144 bits de entropia, devolvida uma única vez com `Cache-Control: no-store`. O campo antigo permanece temporariamente compatível, mas seu valor também é apenas uma credencial inicial e exige troca.
+- Credenciais temporárias expiram em 30 minutos por padrão e são consumidas atomicamente no primeiro login. Tentativas posteriores recebem o mesmo HTTP 401 genérico; a sessão restrita criada no primeiro uso continua válida apenas para troca de senha, renovação e logout. Somente o hash e os estados técnicos mínimos são persistidos, e a conta não acessa operações de negócio antes de concluir `POST /auth/password`.
+- `POST /users/{id}/temporary-credential` permite somente ao Administrador redefinir outra conta ativa com motivo categorizado. A operação incrementa a versão, revoga sessões, registra auditoria transacional e retorna a nova credencial uma única vez.
+- Porteiro, Vigilante e Setor de Transporte não recebem poder de redefinição. Entrega presencial, delegação e canal institucional continuam como hipóteses a validar.
 - Login bem-sucedido e o momento do bloqueio temporário geram auditoria `Login` associada ao usuário, na mesma unidade de trabalho da mudança de estado.
 - Somente `users:manage` consulta, desativa ou reativa contas; auto-desativação e remoção do último Administrador ativo são rejeitadas.
 - A API confirma a cada requisição autenticada que a conta e o perfil do JWT permanecem ativos.
@@ -125,6 +129,11 @@ A troca de senha possui limite próprio por usuário autenticado, configurável 
 `RateLimiting__PasswordChangeWindowSeconds`. Os valores iniciais permitem cinco
 tentativas por minuto, sem fila.
 
+A validade da credencial temporária é configurável por
+`TemporaryCredential__LifetimeMinutes`. O startup aceita de 5 minutos a 24
+horas; o valor padrão de 30 minutos é hipótese operacional do MVP. Alterar essa
+configuração não substitui a validação do canal de entrega com a instituição.
+
 ## Provisionamento inicial
 
 Depois de aplicar as migrations, configure temporariamente `BootstrapAdmin__Name`, `BootstrapAdmin__Email` e `BootstrapAdmin__Password` e execute:
@@ -135,7 +144,7 @@ dotnet run --project src/backend/ControleAcessoVeiculos.API -- --bootstrap-admin
 
 O comando cria uma pessoa, o perfil `Administrador` e a primeira conta somente quando a tabela de usuários está vazia. Pessoa, conta e auditoria são persistidas na mesma transação. A auditoria usa ator nulo e origem explícita de sistema, sem nome, e-mail, senha ou hash. O comando não abre endpoint anônimo nem imprime credenciais. Remova as três variáveis logo após o uso.
 
-Administradores autenticados podem criar outras contas pelo endpoint `POST /users`. Neste MVP, nome, e-mail, senha de 12 a 128 caracteres e um perfil preliminar são obrigatórios. A API persiste apenas o hash. `GET /users` pesquisa nome ou e-mail, filtra pelo estado e limita cada página a 100 itens. `DELETE /users/{id}` desativa sem apagar o histórico; `POST /users/{id}/reactivation` reativa e limpa tentativas e bloqueio temporário anteriores.
+Administradores autenticados podem criar outras contas pelo endpoint `POST /users`. Nome, e-mail e perfil preliminar são obrigatórios; omitindo a senha legada, a API gera a credencial temporária. A resposta é o único momento em que o valor bruto aparece, e o Administrador deve entregá-lo diretamente ao titular sem copiar para planilhas, issues, logs ou mensageria não aprovada. O titular usa essa credencial uma vez, fica restrito ao fluxo de troca e define sua senha permanente. Se perder a sessão antes de concluir, precisa solicitar nova redefinição; reabrir o uso do mesmo segredo enfraqueceria o controle contra reutilização. `GET /users` pesquisa nome ou e-mail, informa o estado da credencial sem expor segredo e limita cada página a 100 itens. `DELETE /users/{id}` desativa sem apagar o histórico; `POST /users/{id}/reactivation` reativa e limpa tentativas e bloqueio temporário anteriores. Uma credencial temporária vencida exige nova redefinição administrativa.
 
 ## Políticas preliminares
 
@@ -168,4 +177,4 @@ substitui o Porteiro quando necessário.
 
 ## Validação automatizada
 
-Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, atualização progressiva de hash sem regravação desnecessária, atomicidade da atualização, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. O ciclo de sessão acrescenta testes de cookie, ausência de segredo no corpo e no banco, CSRF, rotação, replay, concorrência, inatividade, duração absoluta, logout, perfil inativo, revogação por desativação e rollback. A troca autenticada acrescenta testes de senha atual incorreta, reutilização, validação, revogação, invalidação imediata do JWT, concorrência, rate limiting, auditoria mínima e rollback. Os testes de persistência usam PostgreSQL real e dados, senhas e chaves fictícios exclusivos do ambiente temporário.
+Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, atualização progressiva de hash sem regravação desnecessária, atomicidade da atualização, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. O ciclo de sessão acrescenta testes de cookie, ausência de segredo no corpo e no banco, CSRF, rotação, replay, concorrência, inatividade, duração absoluta, logout, perfil inativo, revogação por desativação e rollback. A troca autenticada acrescenta testes de senha atual incorreta, reutilização, validação, revogação, invalidação imediata do JWT, concorrência, rate limiting, auditoria mínima e rollback. Credenciais temporárias acrescentam geração pelo servidor, expiração, restrição operacional, troca obrigatória, autorização administrativa, revogação, concorrência, auditoria sem segredo e rollback transacional. Os testes de persistência usam PostgreSQL real e dados, senhas e chaves fictícios exclusivos do ambiente temporário.
