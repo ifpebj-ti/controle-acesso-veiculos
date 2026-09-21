@@ -17,12 +17,18 @@ public sealed class ApiRateLimitOptions
 
     public int LoginWindowSeconds { get; set; } = 60;
 
+    public int PasswordChangePermitLimit { get; set; } = 5;
+
+    public int PasswordChangeWindowSeconds { get; set; } = 60;
+
     public void Validate()
     {
         ValidatePositive(GlobalPermitLimit, nameof(GlobalPermitLimit));
         ValidatePositive(GlobalWindowSeconds, nameof(GlobalWindowSeconds));
         ValidatePositive(LoginPermitLimit, nameof(LoginPermitLimit));
         ValidatePositive(LoginWindowSeconds, nameof(LoginWindowSeconds));
+        ValidatePositive(PasswordChangePermitLimit, nameof(PasswordChangePermitLimit));
+        ValidatePositive(PasswordChangeWindowSeconds, nameof(PasswordChangeWindowSeconds));
     }
 
     private static void ValidatePositive(int value, string propertyName)
@@ -38,6 +44,7 @@ public sealed class ApiRateLimitOptions
 public static class ApiRateLimiting
 {
     public const string LoginPolicy = "LoginRateLimit";
+    public const string PasswordChangePolicy = "PasswordChangeRateLimit";
 
     public static void Configure(
         RateLimiterOptions options,
@@ -55,6 +62,12 @@ public static class ApiRateLimiting
                 $"login:{ResolveConnectionAddress(context)}",
                 limits.LoginPermitLimit,
                 limits.LoginWindowSeconds));
+        options.AddPolicy(
+            PasswordChangePolicy,
+            context => CreateFixedWindowPartition(
+                $"password-change:{ResolveClientKey(context)}",
+                limits.PasswordChangePermitLimit,
+                limits.PasswordChangeWindowSeconds));
         options.OnRejected = WriteRejectedResponseAsync;
     }
 

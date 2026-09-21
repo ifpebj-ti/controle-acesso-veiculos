@@ -33,7 +33,7 @@ public sealed class SessaoAutenticacaoConfiguration
                 "ck_sessoes_autenticacao_motivo_revogacao",
                 "motivo_revogacao IS NULL OR motivo_revogacao IN (" +
                 "'Rotacao', 'Logout', 'Expiracao', 'ContaDesativada', " +
-                "'ReutilizacaoDetectada')");
+                "'ReutilizacaoDetectada', 'SenhaAlterada')");
         });
 
         builder.HasKey(session => session.Id)

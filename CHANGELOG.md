@@ -8,6 +8,17 @@ from its first published release.
 
 ## [Unreleased]
 
+### Added
+
+- Authenticated password changes require the current credential and atomically
+  replace its hash, revoke renewable sessions, invalidate previously issued
+  access tokens, and write a credential-free audit record.
+
+### Security
+
+- JWT validation now checks a server-side credential version, and password
+  changes have a dedicated per-user rate limit and PostgreSQL concurrency lock.
+
 ## [0.2.0] - 2026-09-20
 
 ### Added

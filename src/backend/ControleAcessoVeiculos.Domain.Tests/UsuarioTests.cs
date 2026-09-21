@@ -77,4 +77,30 @@ public sealed class UsuarioTests
         Assert.Throws<ArgumentException>(() =>
             usuario.AtualizarSenhaHash(" ", DateTime.UtcNow));
     }
+
+    [Fact]
+    public void PasswordChangeIncrementsCredentialVersionAndClearsLockout()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("user@example.com", "old-hash", 1, 1);
+        usuario.RegistrarTentativaFalha(now, 1, TimeSpan.FromMinutes(15));
+
+        usuario.TrocarSenhaHash("new-hash", now.AddMinutes(1));
+
+        Assert.Equal("new-hash", usuario.SenhaHash);
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.Equal(0, usuario.TentativasFalhas);
+        Assert.Null(usuario.BloqueadoAte);
+        Assert.Equal(now.AddMinutes(1), usuario.DataAlteracao);
+    }
+
+    [Fact]
+    public void PasswordHashUpgradeDoesNotInvalidateExistingCredentialVersion()
+    {
+        var usuario = new Usuario("user@example.com", "old-hash", 1, 1);
+
+        usuario.AtualizarSenhaHash("upgraded-hash", DateTime.UtcNow);
+
+        Assert.Equal(1, usuario.VersaoCredencial);
+    }
 }

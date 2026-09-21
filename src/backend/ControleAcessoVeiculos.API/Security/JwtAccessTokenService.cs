@@ -13,8 +13,14 @@ public sealed class JwtAccessTokenService(
 {
     private readonly JwtOptions _options = options.Value;
 
-    public AccessToken Issue(int userId, string email, string profileName)
+    public AccessToken Issue(
+        int userId,
+        string email,
+        string profileName,
+        int credentialVersion)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(credentialVersion);
+
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var expiresAt = now.AddMinutes(_options.ExpirationMinutes);
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey));
@@ -23,6 +29,9 @@ public sealed class JwtAccessTokenService(
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email),
             new Claim(ClaimTypes.Role, profileName),
+            new Claim(
+                AuthenticationClaimTypes.CredentialVersion,
+                credentialVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
         var token = new JwtSecurityToken(

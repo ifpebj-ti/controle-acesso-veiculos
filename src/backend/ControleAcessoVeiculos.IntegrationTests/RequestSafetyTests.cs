@@ -129,7 +129,8 @@ public sealed class RequestSafetyTests(ApiFactory factory)
         var accessToken = tokenService.Issue(
             1,
             "request-safety@example.test",
-            ProfileNames.Administrator);
+            ProfileNames.Administrator,
+            1);
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken.Value);
 

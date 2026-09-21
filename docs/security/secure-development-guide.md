@@ -90,6 +90,8 @@ Referência:
 - impor inatividade e duração absoluta no servidor, sem sessão indefinida;
 - proteger toda operação autenticada por cookie contra CSRF;
 - revogar a família no logout, na desativação e na detecção de reutilização;
+- exigir a credencial atual na troca autenticada, revogar todas as sessões e
+  invalidar access tokens anteriores por uma versão de credencial verificada no servidor;
 - proteger operações administrativas e auditoria separadamente;
 - não implementar algoritmo criptográfico próprio;
 - não registrar senha, token ou header de autorização.
@@ -97,8 +99,9 @@ Referência:
 As decisões atuais de token, hash, bloqueio, ciclo administrativo de contas,
 sessões e políticas estão em [Autenticação e autorização](authentication.md). A
 Issue #190 implementa renovação rotativa, revogação no servidor e logout; a
-Issue #191 integra esse contrato no frontend. Recuperação de acesso e matriz
-final de perfis permanecem pendentes.
+Issue #191 integra esse contrato no frontend. A Issue #251 implementa a troca
+autenticada sem criar um canal fictício de recuperação. Recuperação de acesso e
+matriz final de perfis permanecem pendentes de validação institucional.
 
 Referências:
 

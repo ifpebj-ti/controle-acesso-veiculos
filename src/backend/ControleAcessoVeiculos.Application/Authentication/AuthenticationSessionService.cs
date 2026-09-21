@@ -90,7 +90,8 @@ public sealed class AuthenticationSessionService(
                 var accessToken = accessTokenService.Issue(
                     authenticationSession.User.Id,
                     authenticationSession.User.Email,
-                    authenticationSession.ProfileName);
+                    authenticationSession.ProfileName,
+                    authenticationSession.User.VersaoCredencial);
 
                 return RenewSessionResult.Success(
                     accessToken,
