@@ -80,7 +80,8 @@ public sealed class LoginService(
         var token = accessTokenService.Issue(
             authenticationUser.User.Id,
             authenticationUser.User.Email,
-            authenticationUser.ProfileName);
+            authenticationUser.ProfileName,
+            authenticationUser.User.VersaoCredencial);
 
         return LoginResult.Success(
             token,

@@ -66,6 +66,12 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
             .HasColumnName("bloqueado_ate")
             .HasColumnType("timestamp with time zone");
 
+        builder.Property(usuario => usuario.VersaoCredencial)
+            .HasColumnName("versao_credencial")
+            .HasColumnType("integer")
+            .HasDefaultValue(1)
+            .IsRequired();
+
         builder.HasIndex(usuario => usuario.Email)
             .IsUnique()
             .HasDatabaseName("ux_usuarios_email");

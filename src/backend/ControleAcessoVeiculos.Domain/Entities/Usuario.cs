@@ -18,6 +18,7 @@ public class Usuario
         PessoaId = pessoaId;
         PerfilId = perfilId;
         Ativo = true;
+        VersaoCredencial = 1;
         DataCriacao = DateTime.UtcNow;
     }
 
@@ -31,6 +32,7 @@ public class Usuario
     public DateTime? DataAlteracao { get; private set; }
     public int TentativasFalhas { get; private set; }
     public DateTime? BloqueadoAte { get; private set; }
+    public int VersaoCredencial { get; private set; }
 
     public bool PodeAutenticar(DateTime agoraUtc) =>
         Ativo && (!BloqueadoAte.HasValue || BloqueadoAte <= agoraUtc);
@@ -75,6 +77,17 @@ public class Usuario
         ArgumentException.ThrowIfNullOrWhiteSpace(senhaHash);
 
         SenhaHash = senhaHash;
+        DataAlteracao = agoraUtc;
+    }
+
+    public void TrocarSenhaHash(string senhaHash, DateTime agoraUtc)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(senhaHash);
+
+        SenhaHash = senhaHash;
+        VersaoCredencial = checked(VersaoCredencial + 1);
+        TentativasFalhas = 0;
+        BloqueadoAte = null;
         DataAlteracao = agoraUtc;
     }
 

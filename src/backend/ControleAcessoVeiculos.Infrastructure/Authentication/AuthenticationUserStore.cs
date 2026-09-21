@@ -31,12 +31,16 @@ public sealed class AuthenticationUserStore(ControleAcessoVeiculosDbContext dbCo
         return new AuthenticationUser(user, profile.Nome, profile.Ativo);
     }
 
-    public Task<bool> IsActiveAsync(
+    public Task<bool> IsAuthenticationStateValidAsync(
         int userId,
+        int credentialVersion,
         CancellationToken cancellationToken) =>
         dbContext.Usuarios
             .AsNoTracking()
-            .Where(user => user.Id == userId && user.Ativo)
+            .Where(user =>
+                user.Id == userId &&
+                user.Ativo &&
+                user.VersaoCredencial == credentialVersion)
             .Join(
                 dbContext.Perfis.AsNoTracking().Where(profile => profile.Ativo),
                 user => user.PerfilId,

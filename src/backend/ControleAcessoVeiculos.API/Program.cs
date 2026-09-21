@@ -138,10 +138,24 @@ builder.Services
                     return;
                 }
 
+                var credentialVersionClaim = context.Principal.FindFirst(
+                    AuthenticationClaimTypes.CredentialVersion)?.Value;
+                if (!int.TryParse(
+                        credentialVersionClaim,
+                        System.Globalization.NumberStyles.None,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var credentialVersion) ||
+                    credentialVersion <= 0)
+                {
+                    context.Fail("Invalid credential version.");
+                    return;
+                }
+
                 var userStore = context.HttpContext.RequestServices
                     .GetRequiredService<IAuthenticationUserStore>();
-                if (!await userStore.IsActiveAsync(
+                if (!await userStore.IsAuthenticationStateValidAsync(
                         userId,
+                        credentialVersion,
                         context.HttpContext.RequestAborted))
                 {
                     context.Fail("Inactive user account.");
@@ -209,6 +223,7 @@ builder.Services.AddSingleton(institutionalTimeZone);
 builder.Services.AddSingleton<IPasswordHashService, AspNetPasswordHashService>();
 builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
 builder.Services.AddScoped<IAuthenticationSessionStore, AuthenticationSessionStore>();
+builder.Services.AddScoped<IAuthenticatedPasswordChangeStore, AuthenticatedPasswordChangeStore>();
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
 builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
@@ -222,6 +237,7 @@ builder.Services.AddSingleton<IRefreshTokenService, CryptographicRefreshTokenSer
 builder.Services.AddScoped<AuthenticationSessionCookie>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<AuthenticationSessionService>();
+builder.Services.AddScoped<AuthenticatedPasswordChangeService>();
 builder.Services.AddScoped<CreateUserAccountService>();
 builder.Services.AddScoped<UserAccountLifecycleService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
@@ -428,6 +444,45 @@ app.MapPost("/auth/logout", async (
 .WithName("Logout")
 .Produces(StatusCodes.Status204NoContent);
 
+app.MapPost("/auth/password", async (
+    AuthenticatedPasswordChangeRequest request,
+    AuthenticatedPasswordChangeService passwordChangeService,
+    AuthenticationSessionCookie sessionCookie,
+    HttpContext httpContext,
+    CancellationToken cancellationToken) =>
+{
+    SetAuthenticationResponseHeaders(httpContext.Response);
+
+    if (!AuthenticatedUser.TryGetId(httpContext.User, out var userId))
+    {
+        return Results.Unauthorized();
+    }
+
+    var result = await passwordChangeService.ChangeAsync(
+        userId,
+        request.CurrentPassword,
+        request.NewPassword,
+        cancellationToken);
+
+    if (result.Status == AuthenticatedPasswordChangeStatus.Success)
+    {
+        sessionCookie.Delete(httpContext.Response);
+        return Results.NoContent();
+    }
+
+    return result.Status switch
+    {
+        AuthenticatedPasswordChangeStatus.Unauthorized => Results.Unauthorized(),
+        _ => Results.ValidationProblem(result.Errors)
+    };
+})
+.RequireRateLimiting(ApiRateLimiting.PasswordChangePolicy)
+.WithName("ChangeAuthenticatedPassword")
+.Produces(StatusCodes.Status204NoContent)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.Produces(StatusCodes.Status401Unauthorized)
+.Produces(StatusCodes.Status429TooManyRequests);
+
 if (args.Contains("--bootstrap-admin", StringComparer.OrdinalIgnoreCase))
 {
     await using var scope = app.Services.CreateAsyncScope();
@@ -499,6 +554,9 @@ public partial class Program
 }
 
 public sealed record LoginRequest(string Email, string Password);
+public sealed record AuthenticatedPasswordChangeRequest(
+    string CurrentPassword,
+    string NewPassword);
 public sealed record LoginResponse(
     string AccessToken,
     DateTime ExpiresAtUtc,
