@@ -20,7 +20,9 @@ public sealed record UserAccountRecord(
     bool Active,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc,
-    DateTime? LockedUntilUtc);
+    DateTime? LockedUntilUtc,
+    bool RequiresPasswordChange,
+    DateTime? TemporaryCredentialExpiresAtUtc);
 
 public sealed record PagedUserAccountResult(
     IReadOnlyList<UserAccountRecord> Items,

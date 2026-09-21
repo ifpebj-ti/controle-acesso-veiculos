@@ -9,6 +9,7 @@ public interface IUserAccountStore
         string normalizedEmail,
         string passwordHash,
         string profileName,
+        DateTime? temporaryCredentialExpiresAtUtc,
         AccountCreationAudit audit,
         CancellationToken cancellationToken);
 
@@ -21,6 +22,15 @@ public interface IUserAccountStore
         bool active,
         int actorUserId,
         DateTime updatedAtUtc,
+        CancellationToken cancellationToken);
+
+    Task<AdministrativeCredentialResetStoreResult> TryResetCredentialAsync(
+        int userId,
+        int actorUserId,
+        string passwordHash,
+        DateTime occurredAtUtc,
+        DateTime expiresAtUtc,
+        string reason,
         CancellationToken cancellationToken);
 }
 
@@ -36,3 +46,16 @@ public enum AccountCreationOrigin
     Administration = 1,
     Bootstrap = 2
 }
+
+public enum AdministrativeCredentialResetStoreStatus
+{
+    Success = 1,
+    NotFound = 2,
+    Inactive = 3,
+    SelfReset = 4
+}
+
+public sealed record AdministrativeCredentialResetStoreResult(
+    AdministrativeCredentialResetStoreStatus Status,
+    int? PreviousCredentialVersion = null,
+    int? CurrentCredentialVersion = null);

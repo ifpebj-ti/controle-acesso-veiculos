@@ -8,6 +8,8 @@ namespace ControleAcessoVeiculos.Application.Accounts;
 public sealed class CreateUserAccountService(
     IUserAccountStore userAccountStore,
     IPasswordHashService passwordHashService,
+    ITemporaryCredentialGenerator temporaryCredentialGenerator,
+    TemporaryCredentialPolicy temporaryCredentialPolicy,
     TimeProvider timeProvider)
 {
     public Task<CreateUserAccountResult> CreateAsync(
@@ -41,7 +43,7 @@ public sealed class CreateUserAccountService(
         AccountCreationAudit audit,
         CancellationToken cancellationToken = default)
     {
-        var errors = Validate(command);
+        var errors = Validate(command, audit.Origin);
 
         if (errors.Count > 0)
         {
@@ -49,11 +51,22 @@ public sealed class CreateUserAccountService(
         }
 
         var normalizedEmail = Usuario.NormalizarEmail(command.Email);
+        var isAdministrativeCreation =
+            audit.Origin == AccountCreationOrigin.Administration;
+        var generatedCredential = isAdministrativeCreation &&
+            string.IsNullOrWhiteSpace(command.Password)
+                ? temporaryCredentialGenerator.Create()
+                : null;
+        var password = generatedCredential ?? command.Password!;
+        var temporaryCredentialExpiresAtUtc = isAdministrativeCreation
+            ? audit.OccurredAtUtc.Add(temporaryCredentialPolicy.Lifetime)
+            : (DateTime?)null;
         var createdAccount = await userAccountStore.TryCreateAsync(
             command.Name.Trim(),
             normalizedEmail,
-            passwordHashService.Hash(command.Password),
+            passwordHashService.Hash(password),
             command.ProfileName,
+            temporaryCredentialExpiresAtUtc,
             audit,
             cancellationToken);
 
@@ -64,10 +77,14 @@ public sealed class CreateUserAccountService(
             : CreateUserAccountResult.Success(
                 createdAccount.UserId,
                 createdAccount.Email,
-                createdAccount.ProfileName);
+                createdAccount.ProfileName,
+                generatedCredential,
+                temporaryCredentialExpiresAtUtc);
     }
 
-    private static Dictionary<string, string[]> Validate(CreateUserAccountCommand command)
+    private static Dictionary<string, string[]> Validate(
+        CreateUserAccountCommand command,
+        AccountCreationOrigin origin)
     {
         var errors = new Dictionary<string, string[]>();
 
@@ -85,10 +102,17 @@ public sealed class CreateUserAccountService(
             errors["email"] = ["Informe um e-mail válido com até 254 caracteres."];
         }
 
-        if (string.IsNullOrWhiteSpace(command.Password) ||
-            command.Password.Length is < 12 or > 128)
+        if (origin == AccountCreationOrigin.Bootstrap &&
+            (string.IsNullOrWhiteSpace(command.Password) ||
+             command.Password.Length is < 12 or > 128))
         {
             errors["password"] = ["A senha deve possuir entre 12 e 128 caracteres."];
+        }
+        else if (!string.IsNullOrEmpty(command.Password) &&
+                 command.Password.Length is < 12 or > 128)
+        {
+            errors["password"] =
+                ["A credencial inicial deve possuir entre 12 e 128 caracteres."];
         }
 
         if (!ProfileNames.Supported.Contains(command.ProfileName))
