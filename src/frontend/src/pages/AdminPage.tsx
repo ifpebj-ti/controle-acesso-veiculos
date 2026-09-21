@@ -1,8 +1,10 @@
 import { useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
+import { SectionHeader } from "../components/ui/SectionHeader";
 import { AuditTrailPanel } from "../features/audit-trail";
 import { useAuthenticatedSession } from "../features/authentication";
 import {
@@ -92,21 +94,22 @@ export function AdminPage() {
       {activeArea === "accounts" &&
         accounts.errorMessage &&
         accounts.status !== "loading" && (
-          <div
-            className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-            role="alert"
-          >
-            <p>{accounts.errorMessage}</p>
-            {accounts.status === "error" && (
-              <button
-                className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-200"
-                onClick={accounts.retry}
-                type="button"
-              >
-                Tentar novamente
-              </button>
-            )}
-          </div>
+          <ContentState
+            action={
+              accounts.status === "error" ? (
+                <button
+                  className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
+                  onClick={accounts.retry}
+                  type="button"
+                >
+                  Tentar novamente
+                </button>
+              ) : undefined
+            }
+            className="mt-6"
+            title={accounts.errorMessage}
+            variant="error"
+          />
         )}
 
       {activeArea === "accounts" && accounts.formOpen && (
@@ -131,18 +134,12 @@ export function AdminPage() {
 
       {activeArea === "accounts" ? (
         <section className="mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]">
-          <div className="px-5 pt-5 sm:px-6">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-              Consulta autenticada
-            </p>
-            <h2 className="mt-2 font-display text-2xl text-ink">
-              Contas do sistema
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
-              Pesquise por nome ou e-mail. Desativar revoga o acesso na próxima
-              requisição protegida, mas preserva registros e autoria.
-            </p>
-          </div>
+          <SectionHeader
+            className="px-5 pt-5 sm:px-6"
+            description="Pesquise por nome ou e-mail. Desativar revoga o acesso na próxima requisição protegida, mas preserva registros e autoria."
+            eyebrow="Consulta autenticada"
+            title="Contas do sistema"
+          />
           <UserAccountFiltersForm
             disabled={
               accounts.pendingAction !== null || accounts.status === "loading"

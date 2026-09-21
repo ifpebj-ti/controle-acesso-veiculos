@@ -4,6 +4,7 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoSeriousAccessibilityViolations } from "../../../test/accessibility";
+import { selectFieldOption } from "../../../test/selectField";
 import {
   AccessRecordsContractError,
   correctAccessRecord,
@@ -88,7 +89,7 @@ async function submitValidCorrection(user: ReturnType<typeof userEvent.setup>) {
   const objective = screen.getByLabelText("Objetivo");
   await user.clear(objective);
   await user.type(objective, "Entrega corrigida");
-  await user.selectOptions(screen.getByLabelText("Categoria"), "Entrega");
+  await selectFieldOption(user, screen.getByLabelText("Categoria"), "Entrega");
   const observation = screen.getByLabelText(/Observação/);
   await user.clear(observation);
   await user.type(observation, "Conferido na portaria");
@@ -113,7 +114,7 @@ describe("AccessCorrectionDialog", () => {
     expect(screen.getByLabelText("Objetivo")).toHaveValue(
       "Atendimento fictício",
     );
-    expect(screen.getByLabelText("Categoria")).toHaveValue("Visitante");
+    expect(screen.getByLabelText("Categoria")).toHaveTextContent("Visitante");
     expect(screen.getByLabelText(/Observação/)).toHaveValue(
       "Observação inicial fictícia",
     );
@@ -222,7 +223,7 @@ describe("AccessCorrectionDialog", () => {
       expect(screen.getByLabelText(label)).toHaveAttribute("aria-describedby");
     }
     expect(screen.getByLabelText("Objetivo")).toHaveValue("Entrega corrigida");
-    expect(screen.getByLabelText("Categoria")).toHaveValue("Entrega");
+    expect(screen.getByLabelText("Categoria")).toHaveTextContent("Entrega");
     expect(screen.getByLabelText(/Observação/)).toHaveValue(
       "Conferido na portaria",
     );

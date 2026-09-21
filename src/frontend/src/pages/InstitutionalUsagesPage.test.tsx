@@ -34,6 +34,7 @@ import {
   getApiValidationErrors,
 } from "../services/api-errors";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { selectFieldOption } from "../test/selectField";
 import { InstitutionalUsagesPage } from "./InstitutionalUsagesPage";
 
 vi.mock("../features/authentication", () => ({
@@ -144,8 +145,16 @@ async function openAndFillDeparture(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     await screen.findByRole("button", { name: "Registrar saída" }),
   );
-  await user.selectOptions(screen.getByLabelText("Veículo institucional"), "4");
-  await user.selectOptions(screen.getByLabelText("Motorista autorizado"), "8");
+  await selectFieldOption(
+    user,
+    screen.getByLabelText("Veículo institucional"),
+    "4",
+  );
+  await selectFieldOption(
+    user,
+    screen.getByLabelText("Motorista autorizado"),
+    "8",
+  );
   const mileage = screen.getByLabelText("Quilometragem de saída");
   await user.clear(mileage);
   await user.type(mileage, "12500");
@@ -405,11 +414,13 @@ describe("InstitutionalUsagesPage", () => {
     renderPage("SetorTransporte");
     await screen.findAllByText(openUsage.driverName);
     await user.type(screen.getByLabelText("Placa"), vehicle.plate ?? "");
-    await user.selectOptions(
+    await selectFieldOption(
+      user,
       screen.getByLabelText("Veículo ativo"),
       String(vehicle.id),
     );
-    await user.selectOptions(
+    await selectFieldOption(
+      user,
       screen.getByLabelText("Motorista ativo"),
       String(driver.personId),
     );

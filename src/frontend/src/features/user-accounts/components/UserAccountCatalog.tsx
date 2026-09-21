@@ -1,4 +1,5 @@
 import { profileLabels } from "../../authentication";
+import { ContentState } from "../../../components/ui/ContentState";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { UserAccount, UserAccountPage } from "../types";
 
@@ -23,22 +24,23 @@ export function UserAccountCatalog({
 }: UserAccountCatalogProps) {
   if (status === "loading") {
     return (
-      <p className="p-6 text-sm font-semibold text-ink-soft" role="status">
-        Carregando contas…
-      </p>
+      <ContentState
+        className="m-5 sm:m-6"
+        title="Carregando contas…"
+        variant="loading"
+      />
     );
   }
   if (status !== "ready" || !page) return null;
   if (page.items.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <h3 className="font-display text-2xl text-ink">
-          Nenhuma conta encontrada
-        </h3>
-        <p className="mt-2 text-sm text-ink-soft">
-          Ajuste os filtros ou crie uma nova conta individual.
-        </p>
-      </div>
+      <ContentState
+        className="m-5 sm:m-6"
+        description="Ajuste os filtros ou crie uma nova conta individual."
+        icon="users"
+        title="Nenhuma conta encontrada"
+        variant="empty"
+      />
     );
   }
 
@@ -47,7 +49,7 @@ export function UserAccountCatalog({
       <p className="px-5 pt-5 text-sm text-ink-soft sm:px-6">
         {page.totalCount} conta(s) encontrada(s)
       </p>
-      <div className="space-y-3 p-4 md:hidden">
+      <div className="grid gap-3 p-4 sm:p-5 md:grid-cols-2 xl:hidden">
         {page.items.map((account) => (
           <AccountCard
             account={account}
@@ -57,7 +59,7 @@ export function UserAccountCatalog({
           />
         ))}
       </div>
-      <div className="hidden overflow-x-auto md:block">
+      <div className="hidden overflow-x-auto xl:block">
         <table className="w-full min-w-[54rem] border-collapse text-left text-sm">
           <caption className="sr-only">Contas de acesso do sistema</caption>
           <thead>

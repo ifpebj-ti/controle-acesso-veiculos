@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, type ChangeEvent } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
+import { SelectField } from "../../../components/ui/SelectField";
 import { profileLabels } from "../../authentication";
 import {
   createUserAccountFormSchema,
@@ -43,6 +44,7 @@ export function UserAccountForm({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const {
     formState: { errors, isSubmitting },
+    control,
     handleSubmit,
     register,
     resetField,
@@ -65,7 +67,7 @@ export function UserAccountForm({
     const registered = register(field);
     return {
       ...registered,
-      onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      onChange: (event: ChangeEvent<HTMLInputElement>) => {
         onFieldChange(field);
         void registered.onChange(event);
       },
@@ -91,7 +93,7 @@ export function UserAccountForm({
           Acesso individual
         </p>
         <h2
-          className="mt-2 font-display text-2xl text-ink"
+          className="mt-3 font-display text-2xl text-ink"
           id="account-form-title"
           ref={titleRef}
           tabIndex={-1}
@@ -190,22 +192,31 @@ export function UserAccountForm({
           >
             Perfil de acesso
           </label>
-          <select
-            aria-describedby={
-              errorFor("profileName") ? errorId("profileName") : undefined
-            }
-            aria-invalid={Boolean(errorFor("profileName"))}
-            className={fieldClass}
-            disabled={disabled}
-            id="account-profile"
-            {...registration("profileName")}
-          >
-            {Object.entries(profileLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="profileName"
+            render={({ field }) => (
+              <SelectField
+                aria-describedby={
+                  errorFor("profileName") ? errorId("profileName") : undefined
+                }
+                aria-invalid={Boolean(errorFor("profileName"))}
+                className={fieldClass}
+                disabled={disabled}
+                id="account-profile"
+                name={field.name}
+                onBlur={field.onBlur}
+                onValueChange={(value) => {
+                  onFieldChange("profileName");
+                  field.onChange(value);
+                }}
+                options={Object.entries(profileLabels).map(
+                  ([value, label]) => ({ label, value }),
+                )}
+                value={field.value}
+              />
+            )}
+          />
           <FieldError
             id={errorId("profileName")}
             message={errorFor("profileName")}

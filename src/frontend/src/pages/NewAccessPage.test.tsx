@@ -23,6 +23,7 @@ import {
   type EventAuthorizationPage,
 } from "../features/event-authorizations";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { selectFieldOption } from "../test/selectField";
 import { operationalProfiles } from "../routes/routeMetadata";
 import { NewAccessPage } from "./NewAccessPage";
 
@@ -239,7 +240,9 @@ describe("NewAccessPage", () => {
     expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
       recurringCandidate.driverName,
     );
-    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("Automóvel");
+    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveTextContent(
+      "Automóvel",
+    );
     await user.click(
       screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
@@ -282,7 +285,9 @@ describe("NewAccessPage", () => {
     const plate = screen.getByLabelText(/Placa do veículo/);
     await user.type(plate, "9");
     expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue("");
-    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("");
+    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveTextContent(
+      "Não informado",
+    );
     expect(screen.queryByText(/Dados recuperados/)).not.toBeInTheDocument();
     await user.type(
       screen.getByLabelText(/Nome do condutor/),
@@ -315,7 +320,8 @@ describe("NewAccessPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.selectOptions(
+    await selectFieldOption(
+      user,
       screen.getByLabelText(/Categoria do acesso/),
       "Entrega",
     );
@@ -341,13 +347,17 @@ describe("NewAccessPage", () => {
       screen.getByRole("button", { name: "Usar preenchimento manual" }),
     );
 
-    expect(screen.getByLabelText(/Categoria do acesso/)).toHaveValue("Entrega");
+    expect(screen.getByLabelText(/Categoria do acesso/)).toHaveTextContent(
+      "Entrega",
+    );
     expect(screen.getByRole("radio", { name: "Reunião" })).toBeChecked();
     expect(observation).toHaveValue("Observação fictícia");
     expect(eventOption).toBeChecked();
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("");
     expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue("");
-    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("");
+    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveTextContent(
+      "Não informado",
+    );
     await waitFor(() =>
       expect(screen.getByLabelText(/Placa do veículo/)).toHaveFocus(),
     );
@@ -392,7 +402,7 @@ describe("NewAccessPage", () => {
     expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
       alternateCandidate.driverName,
     );
-    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("Van");
+    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveTextContent("Van");
   });
 
   it("clears a previous vehicle type when a candidate has no type", async () => {
@@ -402,7 +412,11 @@ describe("NewAccessPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Van");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText(/Tipo do veículo/),
+      "Van",
+    );
     const search = screen.getByRole("combobox", {
       name: "Buscar por placa ou nome do condutor",
     });
@@ -413,7 +427,9 @@ describe("NewAccessPage", () => {
     vi.useRealTimers();
     await user.click(await screen.findByRole("option", { name: /SEM6C78/ }));
 
-    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("");
+    expect(screen.getByLabelText(/Tipo do veículo/)).toHaveTextContent(
+      "Não informado",
+    );
     expect(
       screen.queryByLabelText(/Outro tipo de veículo/),
     ).not.toBeInTheDocument();
@@ -564,7 +580,8 @@ describe("NewAccessPage", () => {
       screen.getByLabelText(/Nome do condutor/),
       "Pessoa fictícia",
     );
-    await user.selectOptions(
+    await selectFieldOption(
+      user,
       screen.getByLabelText(/Tipo do veículo/),
       "Automóvel",
     );
@@ -854,7 +871,8 @@ describe("NewAccessPage", () => {
         screen.getByLabelText(/Nome do condutor/),
         "Pessoa fictícia",
       );
-      await user.selectOptions(
+      await selectFieldOption(
+        user,
         screen.getByLabelText(/Tipo do veículo/),
         "Automóvel",
       );
@@ -871,7 +889,9 @@ describe("NewAccessPage", () => {
       expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
         "Pessoa fictícia",
       );
-      expect(screen.getByLabelText(/Tipo do veículo/)).toHaveValue("Automóvel");
+      expect(screen.getByLabelText(/Tipo do veículo/)).toHaveTextContent(
+        "Automóvel",
+      );
       expect(
         screen.getByRole("radio", { name: "Participação em atividade" }),
       ).toBeChecked();
@@ -1010,7 +1030,8 @@ describe("NewAccessPage", () => {
         screen.getByLabelText(/Nome do condutor/),
         "Pessoa fictícia",
       );
-      await user.selectOptions(
+      await selectFieldOption(
+        user,
         screen.getByLabelText(/Categoria do acesso/),
         "Entrega",
       );
@@ -1034,7 +1055,8 @@ describe("NewAccessPage", () => {
       renderPage();
 
       await fillRequiredFields(user, "TIP-1A23");
-      await user.selectOptions(
+      await selectFieldOption(
+        user,
         screen.getByLabelText(/Tipo do veículo/),
         vehicleType,
       );
@@ -1060,7 +1082,11 @@ describe("NewAccessPage", () => {
       "Pessoa fictícia",
     );
     await chooseCustomObjective(user, "Visita técnica fictícia");
-    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Outro");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText(/Tipo do veículo/),
+      "Outro",
+    );
     const customVehicleType = await screen.findByLabelText(
       /Outro tipo de veículo/,
     );
@@ -1092,7 +1118,11 @@ describe("NewAccessPage", () => {
     await user.click(screen.getByRole("radio", { name: "Outro" }));
     const objectiveOther = await screen.findByLabelText(/Outro objetivo/);
     await waitFor(() => expect(objectiveOther).toHaveFocus());
-    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Outro");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText(/Tipo do veículo/),
+      "Outro",
+    );
     const vehicleTypeOther = await screen.findByLabelText(
       /Outro tipo de veículo/,
     );
@@ -1135,7 +1165,11 @@ describe("NewAccessPage", () => {
       user,
       "Objetivo fictício",
     );
-    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Outro");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText(/Tipo do veículo/),
+      "Outro",
+    );
     const vehicleTypeOther = await screen.findByLabelText(
       /Outro tipo de veículo/,
     );
@@ -1189,7 +1223,11 @@ describe("NewAccessPage", () => {
       user,
       "Objetivo fictício personalizado",
     );
-    await user.selectOptions(screen.getByLabelText(/Tipo do veículo/), "Outro");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText(/Tipo do veículo/),
+      "Outro",
+    );
     const vehicleTypeOther = await screen.findByLabelText(
       /Outro tipo de veículo/,
     );

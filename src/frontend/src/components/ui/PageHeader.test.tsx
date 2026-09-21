@@ -16,6 +16,6 @@ describe("PageHeader", () => {
     expect(screen.getByText("Contexto fictício")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 1, name: "Título fictício" }),
-    ).toHaveClass("mt-2");
+    ).toHaveClass("mt-3");
   });
 });

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { ContentState } from "../../../components/ui/ContentState";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { AccessHistoryRequestStatus } from "../hooks/useAccessHistory";
 import type { AccessRecord, PagedAccessRecords } from "../types";
@@ -55,19 +56,19 @@ export function AccessHistoryResults({
   if (requestStatus === "error") {
     return (
       <div className="border-t border-ink/8 p-5 sm:p-6">
-        <div
-          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-          role="alert"
-        >
-          <p>{errorMessage ?? "Não foi possível consultar o histórico."}</p>
-          <button
-            className="min-h-10 rounded-xl border border-red-300 px-4 font-bold"
-            onClick={onRetry}
-            type="button"
-          >
-            Tentar novamente
-          </button>
-        </div>
+        <ContentState
+          action={
+            <button
+              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
+              onClick={onRetry}
+              type="button"
+            >
+              Tentar novamente
+            </button>
+          }
+          title={errorMessage ?? "Não foi possível consultar o histórico."}
+          variant="error"
+        />
       </div>
     );
   }
@@ -75,9 +76,7 @@ export function AccessHistoryResults({
   if (requestStatus === "loading") {
     return (
       <div className="border-t border-ink/8 p-5 sm:p-6" aria-busy="true">
-        <div className="rounded-2xl bg-cream/35 p-8 text-center" role="status">
-          Carregando histórico…
-        </div>
+        <ContentState title="Carregando histórico…" variant="loading" />
       </div>
     );
   }
@@ -96,15 +95,16 @@ export function AccessHistoryResults({
       </div>
 
       {records.length === 0 ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-8 text-center">
-          <p className="font-bold text-ink">Nenhum registro encontrado</p>
-          <p className="mt-1 text-sm text-ink-soft">
-            Ajuste o período ou limpe os filtros para tentar novamente.
-          </p>
-        </div>
+        <ContentState
+          className="mt-5"
+          description="Ajuste o período ou limpe os filtros para tentar novamente."
+          icon="history"
+          title="Nenhum registro encontrado"
+          variant="empty"
+        />
       ) : (
         <>
-          <div className="mt-5 space-y-3 lg:hidden">
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:hidden">
             {records.map((record) => (
               <article
                 className="rounded-2xl border border-ink/10 bg-cream/25 p-4"
@@ -164,7 +164,7 @@ export function AccessHistoryResults({
             ))}
           </div>
 
-          <div className="mt-4 hidden overflow-x-auto lg:block">
+          <div className="mt-4 hidden overflow-x-auto xl:block">
             <table className="w-full min-w-[64rem] border-collapse text-left text-sm">
               <caption className="sr-only">
                 Histórico de acessos retornado pela API

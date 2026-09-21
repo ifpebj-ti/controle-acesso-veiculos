@@ -34,7 +34,10 @@ export function OpenAccessList({
 
   return (
     <>
-      <div className="mt-4 space-y-3 xl:hidden" data-testid="open-access-cards">
+      <div
+        className="mt-4 grid gap-3 md:grid-cols-2 xl:hidden"
+        data-testid="open-access-cards"
+      >
         {records.map((record) => (
           <article
             className="rounded-2xl border border-ink/10 bg-cream/25 p-4"

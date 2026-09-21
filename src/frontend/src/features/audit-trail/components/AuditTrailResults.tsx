@@ -1,4 +1,4 @@
-import { Icon } from "../../../components/ui/Icon";
+import { ContentState } from "../../../components/ui/ContentState";
 import type { AuditEntry, AuditTrailPage, JsonValue } from "../types";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -28,12 +28,11 @@ export function AuditTrailResults({
 }: AuditTrailResultsProps) {
   if (status === "loading") {
     return (
-      <p
-        className="p-8 text-center text-sm font-semibold text-ink-soft"
-        role="status"
-      >
-        Carregando eventos de auditoria…
-      </p>
+      <ContentState
+        className="m-5 sm:m-6"
+        title="Carregando eventos de auditoria…"
+        variant="loading"
+      />
     );
   }
   if (status !== "ready" || !page) return null;
@@ -44,17 +43,13 @@ export function AuditTrailResults({
         {page.totalCount} evento(s) encontrado(s)
       </p>
       {page.items.length === 0 ? (
-        <div className="m-5 rounded-2xl border border-dashed border-ink/20 bg-cream/40 p-10 text-center sm:m-6">
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-soft/45">
-            <Icon name="history" />
-          </span>
-          <h3 className="mt-4 font-display text-2xl text-ink">
-            Nenhum evento encontrado
-          </h3>
-          <p className="mt-2 text-sm text-ink-soft">
-            Ajuste os filtros ou consulte outro período.
-          </p>
-        </div>
+        <ContentState
+          className="m-5 sm:m-6"
+          description="Ajuste os filtros ou consulte outro período."
+          icon="history"
+          title="Nenhum evento encontrado"
+          variant="empty"
+        />
       ) : (
         <ol className="grid gap-4 p-5 sm:p-6 xl:grid-cols-2">
           {page.items.map((entry) => (

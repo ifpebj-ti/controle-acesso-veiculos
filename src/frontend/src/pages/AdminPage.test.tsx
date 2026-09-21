@@ -21,6 +21,7 @@ import {
   getApiValidationErrors,
 } from "../services/api-errors";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { selectFieldOption } from "../test/selectField";
 import { AdminPage } from "./AdminPage";
 
 vi.mock("../features/authentication", () => ({
@@ -123,7 +124,8 @@ async function fillAccountForm(user: ReturnType<typeof userEvent.setup>) {
     screen.getByLabelText("Senha temporária"),
     "Senha-ficticia-2030",
   );
-  await user.selectOptions(
+  await selectFieldOption(
+    user,
     screen.getByLabelText("Perfil de acesso"),
     "SetorTransporte",
   );
@@ -295,7 +297,7 @@ describe("AdminPage", () => {
     await screen.findByText(unsafeValue);
     expect(document.querySelector("img[src='x']")).toBeNull();
     await user.type(screen.getByLabelText("Entidade"), "Usuario");
-    await user.selectOptions(screen.getByLabelText("Ação"), "Alteracao");
+    await selectFieldOption(user, screen.getByLabelText("Ação"), "Alteracao");
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
     await waitFor(() => expect(searchAuditTrail).toHaveBeenCalledTimes(2));
     await user.click(screen.getByRole("button", { name: "Próxima" }));
@@ -371,7 +373,7 @@ describe("AdminPage", () => {
     expect(await screen.findAllByText(activeAccount.name)).not.toHaveLength(0);
 
     await user.type(screen.getByLabelText("Nome ou e-mail"), "porteiro");
-    await user.selectOptions(screen.getByLabelText("Situação"), "true");
+    await selectFieldOption(user, screen.getByLabelText("Situação"), "true");
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 
     await waitFor(() =>
@@ -397,7 +399,7 @@ describe("AdminPage", () => {
     await screen.findAllByText(activeAccount.name);
 
     await user.type(screen.getByLabelText("Nome ou e-mail"), "porteiro");
-    await user.selectOptions(screen.getByLabelText("Situação"), "true");
+    await selectFieldOption(user, screen.getByLabelText("Situação"), "true");
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
     await waitFor(() => expect(searchUserAccounts).toHaveBeenCalledTimes(2));
     expect(screen.queryByText(inactiveAccount.name)).not.toBeInTheDocument();
@@ -409,7 +411,7 @@ describe("AdminPage", () => {
     await user.click(screen.getByRole("button", { name: "Contas de acesso" }));
 
     expect(screen.getByLabelText("Nome ou e-mail")).toHaveValue("porteiro");
-    expect(screen.getByLabelText("Situação")).toHaveValue("true");
+    expect(screen.getByLabelText("Situação")).toHaveTextContent("Ativas");
     expect(screen.getAllByText(activeAccount.name)).not.toHaveLength(0);
     expect(screen.queryByText(inactiveAccount.name)).not.toBeInTheDocument();
     expect(searchUserAccounts).toHaveBeenCalledTimes(2);

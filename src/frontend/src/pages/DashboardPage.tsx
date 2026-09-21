@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import {
   profileLabels,
@@ -136,7 +137,7 @@ export function DashboardPage() {
               Movimentações do dia
             </p>
             <h2
-              className="mt-2 font-display text-3xl text-ink"
+              className="mt-3 font-display text-3xl text-ink"
               id="daily-summary-title"
             >
               Resumo do dia
@@ -159,31 +160,29 @@ export function DashboardPage() {
         </div>
 
         {operationalSummary.status === "loading" && (
-          <div
-            className="mt-6 rounded-2xl bg-cream/60 p-6 text-sm font-semibold text-ink-soft"
-            role="status"
-          >
-            Carregando resumo operacional…
-          </div>
+          <ContentState
+            className="mt-6"
+            title="Carregando resumo operacional…"
+            variant="loading"
+          />
         )}
 
         {operationalSummary.status === "error" && (
-          <div
-            className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-900"
-            role="alert"
-          >
-            <div>
-              <h3 className="font-bold">Resumo indisponível</h3>
-              <p className="mt-1">{operationalSummary.errorMessage}</p>
-            </div>
-            <button
-              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-200"
-              onClick={operationalSummary.retry}
-              type="button"
-            >
-              Tentar novamente
-            </button>
-          </div>
+          <ContentState
+            action={
+              <button
+                className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
+                onClick={operationalSummary.retry}
+                type="button"
+              >
+                Tentar novamente
+              </button>
+            }
+            className="mt-6"
+            description={operationalSummary.errorMessage ?? undefined}
+            title="Resumo indisponível"
+            variant="error"
+          />
         )}
 
         {operationalSummary.status === "ready" &&

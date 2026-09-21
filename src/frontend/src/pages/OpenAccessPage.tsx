@@ -2,8 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
+import { SelectField } from "../components/ui/SelectField";
 import {
   AccessExitDialog,
   OpenAccessList,
@@ -142,22 +144,23 @@ export function OpenAccessPage() {
       )}
 
       {accessRecords.queryError && (
-        <div
-          className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-          role="alert"
-        >
-          <p>{accessRecords.queryError}</p>
-          <button
-            className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30 disabled:cursor-wait disabled:opacity-60"
-            disabled={
-              accessRecords.isRefreshing || accessRecords.closingId !== null
-            }
-            onClick={() => void accessRecords.refresh()}
-            type="button"
-          >
-            Tentar novamente
-          </button>
-        </div>
+        <ContentState
+          action={
+            <button
+              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30 disabled:cursor-wait disabled:opacity-60"
+              disabled={
+                accessRecords.isRefreshing || accessRecords.closingId !== null
+              }
+              onClick={() => void accessRecords.refresh()}
+              type="button"
+            >
+              Tentar novamente
+            </button>
+          }
+          className="mt-6"
+          title={accessRecords.queryError}
+          variant="error"
+        />
       )}
 
       <section
@@ -234,21 +237,21 @@ export function OpenAccessPage() {
                   >
                     Categoria
                   </label>
-                  <select
+                  <SelectField
                     className="mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-white px-4 text-ink outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
                     id="open-category-filter"
-                    onChange={(event) =>
-                      setSelectedCategory(event.target.value || null)
+                    onValueChange={(value) =>
+                      setSelectedCategory(value || null)
                     }
+                    options={[
+                      { label: "Todas as categorias", value: "" },
+                      ...availableCategories.map((category) => ({
+                        label: category,
+                        value: category,
+                      })),
+                    ]}
                     value={selectedCategory ?? ""}
-                  >
-                    <option value="">Todas as categorias</option>
-                    {availableCategories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <fieldset className="hidden sm:block">
@@ -302,24 +305,24 @@ export function OpenAccessPage() {
           )}
 
           {accessRecords.status === "loading" ? (
-            <div
-              className="my-10 rounded-2xl bg-cream/35 p-8 text-center"
-              role="status"
-            >
-              Carregando acessos em aberto…
-            </div>
+            <ContentState
+              className="my-8"
+              title="Carregando acessos em aberto…"
+              variant="loading"
+            />
           ) : accessRecords.status ===
             "error" ? null : filteredRecords.length === 0 ? (
-            <div className="my-10 rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-8 text-center">
-              <p className="font-bold text-ink">
-                Nenhum acesso aberto encontrado
-              </p>
-              <p className="mt-1 text-sm text-ink-soft">
-                {hasActiveFilters
+            <ContentState
+              className="my-8"
+              description={
+                hasActiveFilters
                   ? "Ajuste a busca ou escolha outra categoria para ver outros acessos."
-                  : "Registre uma nova entrada quando necessário."}
-              </p>
-            </div>
+                  : "Registre uma nova entrada quando necessário."
+              }
+              icon="car"
+              title="Nenhum acesso aberto encontrado"
+              variant="empty"
+            />
           ) : (
             <OpenAccessList
               closingId={accessRecords.closingId}

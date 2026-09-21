@@ -1,6 +1,7 @@
 import type { InstitutionalDriver } from "../../institutional-drivers";
 import type { InstitutionalVehicle } from "../../institutional-vehicles";
 import { Icon } from "../../../components/ui/Icon";
+import { SelectField } from "../../../components/ui/SelectField";
 import type {
   InstitutionalUsageHistoryFilters,
   InstitutionalUsageHistoryFilterErrors,
@@ -75,7 +76,7 @@ export function InstitutionalUsageHistory({
           Supervisão da frota
         </p>
         <h2
-          className="mt-2 font-display text-2xl"
+          className="mt-3 font-display text-2xl"
           id="institutional-history-title"
         >
           Histórico institucional
@@ -199,7 +200,7 @@ export function InstitutionalUsageHistory({
           >
             Veículo ativo
           </label>
-          <select
+          <SelectField
             aria-describedby={
               serverErrors.vehicleId ? "usage-history-vehicle-error" : undefined
             }
@@ -207,23 +208,21 @@ export function InstitutionalUsageHistory({
             className={fieldClass}
             disabled={disabled || !catalogsReady}
             id="usage-history-vehicle"
-            onChange={(event) =>
+            onValueChange={(value) =>
               onChange({
                 ...draft,
-                vehicleId: event.target.value
-                  ? Number(event.target.value)
-                  : undefined,
+                vehicleId: value ? Number(value) : undefined,
               })
             }
-            value={draft.vehicleId ?? ""}
-          >
-            <option value="">Todos</option>
-            {vehicles.map((vehicle) => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicleLabel(vehicle)}
-              </option>
-            ))}
-          </select>
+            options={[
+              { label: "Todos", value: "" },
+              ...vehicles.map((vehicle) => ({
+                label: vehicleLabel(vehicle),
+                value: String(vehicle.id),
+              })),
+            ]}
+            value={draft.vehicleId ? String(draft.vehicleId) : ""}
+          />
           {serverErrors.vehicleId && (
             <p
               className="mt-1.5 text-sm text-red-800"
@@ -241,7 +240,7 @@ export function InstitutionalUsageHistory({
           >
             Motorista ativo
           </label>
-          <select
+          <SelectField
             aria-describedby={
               serverErrors.driverId ? "usage-history-driver-error" : undefined
             }
@@ -249,23 +248,21 @@ export function InstitutionalUsageHistory({
             className={fieldClass}
             disabled={disabled || !catalogsReady}
             id="usage-history-driver"
-            onChange={(event) =>
+            onValueChange={(value) =>
               onChange({
                 ...draft,
-                driverId: event.target.value
-                  ? Number(event.target.value)
-                  : undefined,
+                driverId: value ? Number(value) : undefined,
               })
             }
-            value={draft.driverId ?? ""}
-          >
-            <option value="">Todos</option>
-            {drivers.map((driver) => (
-              <option key={driver.id} value={driver.personId}>
-                {driver.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { label: "Todos", value: "" },
+              ...drivers.map((driver) => ({
+                label: driver.name,
+                value: String(driver.personId),
+              })),
+            ]}
+            value={draft.driverId ? String(draft.driverId) : ""}
+          />
           {serverErrors.driverId && (
             <p
               className="mt-1.5 text-sm text-red-800"

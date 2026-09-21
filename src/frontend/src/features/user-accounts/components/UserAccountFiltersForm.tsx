@@ -1,3 +1,4 @@
+import { SelectField } from "../../../components/ui/SelectField";
 import type { UserAccountFilters } from "../types";
 
 interface UserAccountFiltersFormProps {
@@ -60,26 +61,24 @@ export function UserAccountFiltersForm({
         >
           Situação
         </label>
-        <select
+        <SelectField
           className={fieldClass}
           disabled={disabled}
           id="account-active"
-          onChange={(event) =>
+          onValueChange={(value) =>
             onChange({
               ...draft,
-              active:
-                event.target.value === ""
-                  ? undefined
-                  : event.target.value === "true",
+              active: value === "" ? undefined : value === "true",
               page: 1,
             })
           }
+          options={[
+            { label: "Todas", value: "" },
+            { label: "Ativas", value: "true" },
+            { label: "Desativadas", value: "false" },
+          ]}
           value={draft.active === undefined ? "" : String(draft.active)}
-        >
-          <option value="">Todas</option>
-          <option value="true">Ativas</option>
-          <option value="false">Desativadas</option>
-        </select>
+        />
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <button

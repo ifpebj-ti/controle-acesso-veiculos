@@ -11,6 +11,7 @@ import {
 } from "../features/access-records/services/accessRecordsService";
 import { describeApiError } from "../services/api-errors";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { selectFieldOption } from "../test/selectField";
 import { OpenAccessPage } from "./OpenAccessPage";
 
 vi.mock(
@@ -108,6 +109,8 @@ describe("OpenAccessPage", () => {
 
     const table = await screen.findByTestId("open-access-table");
     const cards = screen.getByTestId("open-access-cards");
+    expect(cards).toHaveClass("md:grid-cols-2", "xl:hidden");
+    expect(table).toHaveClass("xl:block");
     expect(
       within(table).getByRole("columnheader", { name: "Placa" }),
     ).toBeInTheDocument();
@@ -190,26 +193,16 @@ describe("OpenAccessPage", () => {
     await screen.findByText("2 em aberto");
     const categorySelect = screen.getByLabelText("Categoria");
 
-    expect(categorySelect).toHaveValue("");
-    expect(
-      within(categorySelect).getByRole("option", {
-        name: "Todas as categorias",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(categorySelect).queryByRole("option", {
-        name: "Prestador de serviço",
-      }),
-    ).not.toBeInTheDocument();
+    expect(categorySelect).toHaveTextContent("Todas as categorias");
 
-    await user.selectOptions(categorySelect, "Entrega");
-    expect(categorySelect).toHaveValue("Entrega");
+    await selectFieldOption(user, categorySelect, "Entrega");
+    expect(categorySelect).toHaveTextContent("Entrega");
     expect(within(mobileList()).queryByText("DEM1A23")).not.toBeInTheDocument();
     expect(within(mobileList()).getByText("DMO2B34")).toBeInTheDocument();
     expect(screen.getByText("2 em aberto · 1 exibido(s)")).toBeInTheDocument();
 
-    await user.selectOptions(categorySelect, "");
-    expect(categorySelect).toHaveValue("");
+    await selectFieldOption(user, categorySelect, "");
+    expect(categorySelect).toHaveTextContent("Todas as categorias");
     expect(within(mobileList()).getByText("DEM1A23")).toBeInTheDocument();
     expect(within(mobileList()).getByText("DMO2B34")).toBeInTheDocument();
     expect(listOpenAccessRecords).toHaveBeenCalledTimes(1);

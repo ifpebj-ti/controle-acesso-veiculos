@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
+import { SelectField } from "../components/ui/SelectField";
 import {
   accessEntryFormSchema,
   customEntryOption,
@@ -312,7 +313,7 @@ export function NewAccessPage() {
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
               Fluxo geral de veículos
             </p>
-            <h2 className="mt-2 font-display text-2xl text-ink">
+            <h2 className="mt-3 font-display text-2xl text-ink">
               Dados da entrada
             </h2>
           </div>
@@ -382,19 +383,29 @@ export function NewAccessPage() {
                 >
                   Categoria do acesso <span className="text-red-700">*</span>
                 </label>
-                <select
-                  aria-describedby={
-                    errors.categoryName ? "categoryName-error" : undefined
-                  }
-                  aria-invalid={Boolean(errors.categoryName)}
-                  className={fieldClass}
-                  id="categoryName"
-                  {...register("categoryName")}
-                >
-                  {generalAccessCategories.map((option) => (
-                    <option key={option}>{option}</option>
-                  ))}
-                </select>
+                <Controller
+                  control={control}
+                  name="categoryName"
+                  render={({ field }) => (
+                    <SelectField
+                      aria-describedby={
+                        errors.categoryName ? "categoryName-error" : undefined
+                      }
+                      aria-invalid={Boolean(errors.categoryName)}
+                      className={fieldClass}
+                      id="categoryName"
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      onValueChange={field.onChange}
+                      options={generalAccessCategories.map((option) => ({
+                        label: option,
+                        value: option,
+                      }))}
+                      required
+                      value={field.value}
+                    />
+                  )}
+                />
                 <FieldError
                   id="categoryName-error"
                   message={errors.categoryName?.message}
@@ -403,6 +414,7 @@ export function NewAccessPage() {
 
               <EntryVehicleTypeField
                 clearErrors={clearErrors}
+                control={control}
                 errors={errors}
                 register={register}
                 selectedVehicleType={selectedVehicleType}

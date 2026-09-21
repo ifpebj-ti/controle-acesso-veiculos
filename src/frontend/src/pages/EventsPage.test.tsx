@@ -20,6 +20,7 @@ import {
   getApiValidationErrors,
 } from "../services/api-errors";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { selectFieldOption } from "../test/selectField";
 import { EventsPage } from "./EventsPage";
 
 vi.mock("../features/authentication", () => ({
@@ -302,7 +303,7 @@ describe("EventsPage", () => {
       screen.getByLabelText("Buscar pelo nome do evento"),
       "Encontro",
     );
-    await user.selectOptions(screen.getByLabelText("Situação"), "all");
+    await selectFieldOption(user, screen.getByLabelText("Situação"), "all");
     await user.click(screen.getByRole("button", { name: "Aplicar" }));
     await waitFor(() =>
       expect(searchEventAuthorizations).toHaveBeenLastCalledWith(

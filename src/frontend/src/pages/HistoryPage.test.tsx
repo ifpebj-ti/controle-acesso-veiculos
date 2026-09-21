@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,6 +17,7 @@ import {
 } from "../features/authentication";
 import { describeApiError } from "../services/api-errors";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { selectFieldOption } from "../test/selectField";
 import { HistoryPage } from "./HistoryPage";
 
 vi.mock("../features/access-records/services/accessRecordsService", () => ({
@@ -128,6 +129,23 @@ describe("HistoryPage", () => {
     expect(screen.getByText("0 registro(s)")).toBeInTheDocument();
   });
 
+  it("keeps compact cards through tablet widths and reserves the table for wide desktop", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([record]));
+
+    renderPage();
+
+    const table = await screen.findByRole("table", {
+      name: "Histórico de acessos retornado pela API",
+    });
+    const card = screen
+      .getAllByText("DEM1A23")
+      .map((element) => element.closest("article"))
+      .find((element): element is HTMLElement => element !== null);
+
+    expect(card?.parentElement).toHaveClass("md:grid-cols-2", "xl:hidden");
+    expect(table.parentElement).toHaveClass("xl:block");
+  });
+
   it("retries a failed history request", async () => {
     vi.mocked(searchAccessHistory)
       .mockRejectedValueOnce(new Error("network"))
@@ -158,8 +176,16 @@ describe("HistoryPage", () => {
 
     await user.type(screen.getByLabelText("Placa"), "DEM-1A23");
     await user.type(screen.getByLabelText("Condutor"), "Pessoa fictícia");
-    await user.selectOptions(screen.getByLabelText("Situação"), "Encerrado");
-    await user.selectOptions(screen.getByLabelText("Categoria"), "Mototáxi");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Situação"),
+      "Encerrado",
+    );
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Categoria"),
+      "Mototáxi",
+    );
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 
     await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
@@ -365,18 +391,25 @@ describe("HistoryPage", () => {
     renderPage();
 
     await screen.findAllByText("DEM1A23");
-    await user.selectOptions(screen.getByLabelText("Categoria"), "Visitante");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Categoria"),
+      "Visitante",
+    );
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
     await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
-    await user.selectOptions(screen.getByLabelText("Categoria"), "Entrega");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Categoria"),
+      "Entrega",
+    );
 
     await user.click(
       screen.getAllByRole("button", { name: /Corrigir registro/ })[0],
     );
-    await user.selectOptions(
-      screen.getByLabelText("Categoria", {
-        selector: "select#correction-category",
-      }),
+    await selectFieldOption(
+      user,
+      within(screen.getByRole("dialog")).getByLabelText("Categoria"),
       "Entrega",
     );
     await user.type(
@@ -396,7 +429,7 @@ describe("HistoryPage", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText("0 registro(s)")).toBeInTheDocument();
     expect(screen.getByText("Página 1 de 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Categoria")).toHaveValue("Entrega");
+    expect(screen.getByLabelText("Categoria")).toHaveTextContent("Entrega");
     expect(screen.getByRole("status")).toHaveTextContent(
       "Registro #10 corrigido com sucesso.",
     );
@@ -502,7 +535,11 @@ describe("HistoryPage", () => {
     renderPage();
 
     await screen.findAllByText("DEM1A23");
-    await user.selectOptions(screen.getByLabelText("Categoria"), "Visitante");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Categoria"),
+      "Visitante",
+    );
     await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
     await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
     await user.click(screen.getByRole("button", { name: "2" }));
@@ -511,10 +548,9 @@ describe("HistoryPage", () => {
     await user.click(
       screen.getAllByRole("button", { name: /Corrigir registro/ })[0],
     );
-    await user.selectOptions(
-      screen.getByLabelText("Categoria", {
-        selector: "select#correction-category",
-      }),
+    await selectFieldOption(
+      user,
+      within(screen.getByRole("dialog")).getByLabelText("Categoria"),
       "Entrega",
     );
     await user.type(
