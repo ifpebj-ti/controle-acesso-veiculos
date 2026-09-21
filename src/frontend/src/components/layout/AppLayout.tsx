@@ -70,9 +70,9 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                 {section.to ? (
                   <NavLink
                     className={({ isActive }) =>
-                      `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-l-2xl px-4 py-3 font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+                      `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-xl border border-transparent px-4 py-3 font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
                         isActive
-                          ? "sidebar-primary-item--active bg-cream text-ink"
+                          ? "sidebar-primary-item--active font-semibold text-ink"
                           : "text-ink hover:bg-white/45 hover:text-ink"
                       }`
                     }
@@ -109,9 +109,9 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                           <li key={item.to}>
                             <NavLink
                               className={({ isActive }) =>
-                                `sidebar-primary-item flex min-h-10 items-center gap-2.5 rounded-l-2xl px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+                                `sidebar-primary-item flex min-h-10 items-center gap-2.5 rounded-xl border border-transparent px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
                                   isActive
-                                    ? "sidebar-primary-item--active bg-cream font-semibold text-ink"
+                                    ? "sidebar-primary-item--active font-semibold text-ink"
                                     : "text-ink hover:bg-white/45 hover:text-ink"
                                 }`
                               }
@@ -222,11 +222,11 @@ export function AppLayout() {
         Ir para o conteúdo
       </a>
 
-      <aside className="sidebar-scroll fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft lg:block">
+      <aside className="sidebar-scroll fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft xl:block">
         <SidebarContent />
       </aside>
 
-      <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-ink/10 bg-cream/95 px-4 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-ink/10 bg-cream/95 px-4 backdrop-blur xl:hidden">
         <button
           aria-expanded={menuOpen}
           aria-label="Abrir menu"
@@ -242,7 +242,7 @@ export function AppLayout() {
       </header>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-40 xl:hidden">
           <button
             aria-hidden="true"
             aria-label="Fechar menu"
@@ -273,7 +273,7 @@ export function AppLayout() {
       )}
 
       <main
-        className="min-h-svh min-w-0 max-w-full bg-cream lg:pl-72"
+        className="min-h-svh min-w-0 max-w-full bg-cream xl:pl-72"
         id="conteudo-principal"
         tabIndex={-1}
       >

@@ -28,6 +28,21 @@ export const accessRecordSchema = z.object({
 
 export const accessRecordListSchema = z.array(accessRecordSchema);
 
+export const accessEntryCandidateSchema = z.object({
+  vehicleId: z.number().int().positive(),
+  personId: z.number().int().positive(),
+  plate: z.string(),
+  driverName: z.string(),
+  vehicleType: z.string().nullable(),
+  brand: z.string().nullable(),
+  model: z.string().nullable(),
+  color: z.string().nullable(),
+});
+
+export const accessEntryCandidateListSchema = z.array(
+  accessEntryCandidateSchema,
+);
+
 export const pagedAccessRecordsSchema = z.object({
   items: accessRecordListSchema,
   page: z.number().int().positive(),

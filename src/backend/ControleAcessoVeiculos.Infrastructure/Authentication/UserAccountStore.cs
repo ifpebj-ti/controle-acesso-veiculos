@@ -118,9 +118,9 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 item.Person.Nome.ToLower().Contains(criteria.Search));
         }
 
-        if (criteria.Active.HasValue)
+        if (criteria.Active is { } active)
         {
-            query = query.Where(item => item.User.Ativo == criteria.Active.Value);
+            query = query.Where(item => item.User.Ativo == active);
         }
 
         var totalCount = await query.CountAsync(cancellationToken);

@@ -6,6 +6,7 @@ import {
   correctAccessRecord,
   listOpenAccessRecords,
   registerAccessEntry,
+  searchAccessEntryCandidates,
   searchAccessHistory,
 } from "./accessRecordsService";
 
@@ -80,6 +81,39 @@ describe("accessRecordsService", () => {
       vehicleType: "Automóvel",
     });
     expect(result.eventAuthorizationName).toBe("Evento Fictício");
+  });
+
+  it("searches entry candidates with the query and cancellation signal", async () => {
+    const controller = new AbortController();
+    const candidate = {
+      brand: "Marca fictícia",
+      color: "Prata",
+      driverName: "Condutor recorrente fictício",
+      model: "Modelo fictício",
+      personId: 2,
+      plate: "REC1A23",
+      vehicleId: 3,
+      vehicleType: "Automóvel",
+    };
+    vi.mocked(api.get).mockResolvedValue({ data: [candidate] });
+
+    const result = await searchAccessEntryCandidates("REC", controller.signal);
+
+    expect(api.get).toHaveBeenCalledWith("/access-records/entry-candidates", {
+      params: { query: "REC" },
+      signal: controller.signal,
+    });
+    expect(result).toEqual([candidate]);
+  });
+
+  it("rejects candidate data outside the documented response", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: [{ driverName: "Pessoa fictícia", vehicleId: 3 }],
+    });
+
+    await expect(searchAccessEntryCandidates("Pessoa")).rejects.toMatchObject({
+      name: "AccessRecordsContractError",
+    });
   });
 
   it("uses the correction endpoint with only the supported fields", async () => {

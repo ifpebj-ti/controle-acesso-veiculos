@@ -82,6 +82,19 @@ function renderNavigableLayout() {
 }
 
 describe("AppLayout", () => {
+  it.each<ProfileName>([
+    "Porteiro",
+    "Vigilante",
+    "SetorTransporte",
+    "Administrador",
+  ])("uses the tablet-collapsed navigation shell for %s", (profileName) => {
+    renderLayout(profileName);
+
+    expect(screen.getByRole("complementary")).toHaveClass("hidden", "xl:block");
+    expect(screen.getByRole("banner")).toHaveClass("xl:hidden");
+    expect(screen.getByRole("main")).toHaveClass("xl:pl-72");
+  });
+
   it("announces an unavailable session renewal assertively", () => {
     renderLayout("Porteiro", "renewal-unavailable");
 

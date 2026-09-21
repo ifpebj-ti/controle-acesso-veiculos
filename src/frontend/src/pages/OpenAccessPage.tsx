@@ -30,6 +30,7 @@ export function OpenAccessPage() {
   const location = useLocation();
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [navigationNotice, setNavigationNotice] = useState(
     (location.state as LocationState | null)?.notice ?? null,
   );
@@ -38,19 +39,44 @@ export function OpenAccessPage() {
   );
   const accessRecords = useOpenAccessRecords();
 
+  const availableCategories = useMemo(
+    () => [
+      ...new Set(accessRecords.records.map((record) => record.categoryName)),
+    ],
+    [accessRecords.records],
+  );
+  const categoriesKey = JSON.stringify(availableCategories);
+  const [previousCategoriesKey, setPreviousCategoriesKey] =
+    useState(categoriesKey);
+
+  if (previousCategoriesKey !== categoriesKey) {
+    setPreviousCategoriesKey(categoriesKey);
+    if (
+      selectedCategory !== null &&
+      !availableCategories.includes(selectedCategory)
+    ) {
+      setSelectedCategory(null);
+    }
+  }
+
   const filteredRecords = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
-    return accessRecords.records.filter((record) =>
-      [
-        record.plate,
-        record.driverName,
-        record.categoryName,
-        record.objective,
-      ].some((value) =>
-        value.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
-      ),
+    return accessRecords.records.filter(
+      (record) =>
+        (selectedCategory === null ||
+          record.categoryName === selectedCategory) &&
+        [
+          record.plate,
+          record.driverName,
+          record.categoryName,
+          record.objective,
+        ].some((value) =>
+          value.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
+        ),
     );
-  }, [accessRecords.records, query]);
+  }, [accessRecords.records, query, selectedCategory]);
+
+  const hasActiveFilters = query.trim() !== "" || selectedCategory !== null;
 
   const notice = accessRecords.notice ?? navigationNotice;
 
@@ -171,7 +197,8 @@ export function OpenAccessPage() {
                 <div className="text-sm text-ink-soft">
                   <p aria-live="polite" className="font-bold text-ink">
                     {accessRecords.records.length} em aberto
-                    {query.trim() && ` · ${filteredRecords.length} exibido(s)`}
+                    {hasActiveFilters &&
+                      ` · ${filteredRecords.length} exibido(s)`}
                   </p>
                   {accessRecords.lastUpdatedAt && (
                     <p className="mt-0.5 text-xs">
@@ -197,6 +224,74 @@ export function OpenAccessPage() {
             )}
           </div>
 
+          {accessRecords.status === "ready" &&
+            availableCategories.length > 0 && (
+              <div className="mt-5">
+                <div className="sm:hidden">
+                  <label
+                    className="text-sm font-semibold text-ink"
+                    htmlFor="open-category-filter"
+                  >
+                    Categoria
+                  </label>
+                  <select
+                    className="mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-white px-4 text-ink outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
+                    id="open-category-filter"
+                    onChange={(event) =>
+                      setSelectedCategory(event.target.value || null)
+                    }
+                    value={selectedCategory ?? ""}
+                  >
+                    <option value="">Todas as categorias</option>
+                    {availableCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <fieldset className="hidden sm:block">
+                  <legend className="text-sm font-semibold text-ink">
+                    Filtrar por categoria
+                  </legend>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      aria-pressed={selectedCategory === null}
+                      className={`min-h-11 rounded-full border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
+                        selectedCategory === null
+                          ? "border-brand-dark bg-brand-dark text-white"
+                          : "border-ink/15 bg-white text-ink hover:bg-cream/60"
+                      }`}
+                      onClick={() => setSelectedCategory(null)}
+                      type="button"
+                    >
+                      Todos
+                    </button>
+                    {availableCategories.map((category) => {
+                      const isSelected = selectedCategory === category;
+
+                      return (
+                        <button
+                          aria-pressed={isSelected}
+                          className={`min-h-11 rounded-full border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
+                            isSelected
+                              ? "border-brand-dark bg-brand-dark text-white"
+                              : "border-ink/15 bg-white text-ink hover:bg-cream/60"
+                          }`}
+                          key={category}
+                          onClick={() => setSelectedCategory(category)}
+                          type="button"
+                        >
+                          {category}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              </div>
+            )}
+
           {accessRecords.isRefreshing && (
             <p
               className="mt-3 text-sm font-semibold text-ink-soft"
@@ -220,8 +315,8 @@ export function OpenAccessPage() {
                 Nenhum acesso aberto encontrado
               </p>
               <p className="mt-1 text-sm text-ink-soft">
-                {query.trim()
-                  ? "Limpe ou ajuste a busca para ver outros acessos."
+                {hasActiveFilters
+                  ? "Ajuste a busca ou escolha outra categoria para ver outros acessos."
                   : "Registre uma nova entrada quando necessário."}
               </p>
             </div>

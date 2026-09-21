@@ -75,9 +75,9 @@ public sealed class EventAuthorizationStore(
                 EF.Functions.ILike(entity.Nome, $"%{criteria.Name}%"));
         }
 
-        if (criteria.Active.HasValue)
+        if (criteria.Active is { } active)
         {
-            query = query.Where(entity => entity.Ativo == criteria.Active.Value);
+            query = query.Where(entity => entity.Ativo == active);
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
