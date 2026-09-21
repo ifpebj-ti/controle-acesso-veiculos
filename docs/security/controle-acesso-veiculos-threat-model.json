@@ -36,7 +36,7 @@
                   "title": "TM-01 — Conta compartilhada ou credencial roubada",
                   "type": "Spoofing",
                   "description": "Uma conta compartilhada ou comprometida impede atribuir com confiança a operação ao responsável real.",
-                  "mitigation": "Usar contas individuais, hash de senha, bloqueio temporário, ciclo administrativo, auditoria e validação operacional. Recuperação de acesso e homologação permanecem pendentes.",
+                  "mitigation": "Usar contas individuais, hash de senha, bloqueio temporário, troca autenticada com versão de credencial, revogação transacional, auditoria e validação operacional. Recuperação de acesso e homologação permanecem pendentes.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000001"
                 }

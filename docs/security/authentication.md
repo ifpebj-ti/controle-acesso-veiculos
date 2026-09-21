@@ -2,7 +2,7 @@
 
 ## Estado
 
-A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor. A validação institucional da matriz e dos tempos operacionais permanece nas Issues #75 e #162.
+A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor, e a Issue #251 acrescenta a troca autenticada de senha. A validação institucional da matriz, dos tempos operacionais e do canal de recuperação permanece nas Issues #75, #162 e #220.
 
 ## Decisões implementadas
 
@@ -20,6 +20,11 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - Somente o SHA-256 do token de renovação é persistido. O valor bruto não integra DTO, banco, auditoria nem log.
 - `POST /auth/refresh` rotaciona o token em uma transação, preserva a expiração absoluta e rejeita reutilização. A reutilização revoga toda a família conhecida.
 - `POST /auth/logout` revoga a família no servidor e expira o cookie. A desativação da conta também revoga suas sessões na mesma transação.
+- `POST /auth/password` exige JWT válido, senha atual e uma nova senha de 12 a 128 caracteres. A nova senha não pode reutilizar a credencial atual.
+- Cada conta possui uma versão de credencial incluída no JWT. A troca incrementa essa versão, portanto access tokens anteriores falham já na próxima requisição, sem aguardar os 15 minutos de validade.
+- Troca do hash, incremento da versão, revogação de todas as sessões renováveis e auditoria ocorrem na mesma transação com bloqueio da conta no PostgreSQL. Duas requisições concorrentes não podem aceitar a mesma senha atual.
+- A auditoria da troca registra somente as versões anterior e nova da credencial. Senha atual, senha nova, hashes, e-mail, JWT e refresh token não são copiados.
+- A migration atribui versão `1` às contas existentes. JWTs emitidos por versões anteriores da API não possuem essa claim e são rejeitados após o deploy, exigindo novo login; essa invalidação conservadora é intencional.
 - Renovação e logout exigem o par de tokens antifalsificação emitido por `GET /auth/csrf`; ausência ou inconsistência retorna HTTP 400 antes de acessar a sessão.
 - O token contém apenas identificador do usuário, e-mail, perfil e identificador único do token.
 - A política global exige autenticação. Login, health checks e OpenAPI em desenvolvimento são exceções explícitas.
@@ -32,7 +37,7 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - Desativação e reativação são auditadas atomicamente sem duplicar nome ou e-mail.
 - Criação administrativa registra o Administrador como ator; o bootstrap registra origem `Bootstrap` com ator nulo, pois ainda não existe usuário autenticado.
 
-O servidor possui renovação, rotação, revogação e logout, mas não mantém uma lista de JWTs: o access token continua curto e a API confirma conta e perfil ativos em cada requisição. A família persistida controla somente a renovação. Não armazenar JWT ou refresh token em `localStorage`, `sessionStorage`, logs ou mensagens de erro. A identidade retornada ajuda a montar a interface, mas o frontend não decide autorização: cada operação continua sendo validada pelas políticas da API. A auditoria de autenticação não guarda e-mail, senha, JWT, refresh token, hash, cookie, IP ou tentativas para usuário inexistente. Se a persistência obrigatória de sessão e auditoria de um login válido falhar, a API não emite credencial.
+O servidor possui renovação, rotação, revogação e logout, mas não mantém uma lista de JWTs: o access token continua curto e a API confirma conta, perfil e versão da credencial em cada requisição. A família persistida controla a renovação, enquanto a versão invalida em conjunto os JWTs anteriores após troca de senha. Não armazenar JWT ou refresh token em `localStorage`, `sessionStorage`, logs ou mensagens de erro. A identidade retornada ajuda a montar a interface, mas o frontend não decide autorização: cada operação continua sendo validada pelas políticas da API. A auditoria de autenticação não guarda e-mail, senha, JWT, refresh token, hash, cookie, IP ou tentativas para usuário inexistente. Se a persistência obrigatória de sessão e auditoria de um login válido falhar, a API não emite credencial.
 
 ## Integração do frontend
 
@@ -115,6 +120,11 @@ NAT compartilhado, observabilidade e teste de carga. A aplicação usa somente o
 endereço da conexão e não confia em cabeçalhos encaminhados antes da configuração
 explícita de proxies conhecidos.
 
+A troca de senha possui limite próprio por usuário autenticado, configurável por
+`RateLimiting__PasswordChangePermitLimit` e
+`RateLimiting__PasswordChangeWindowSeconds`. Os valores iniciais permitem cinco
+tentativas por minuto, sem fila.
+
 ## Provisionamento inicial
 
 Depois de aplicar as migrations, configure temporariamente `BootstrapAdmin__Name`, `BootstrapAdmin__Email` e `BootstrapAdmin__Password` e execute:
@@ -149,13 +159,13 @@ substitui o Porteiro quando necessário.
 
 - validar ajustes solicitados durante a homologação da matriz da Issue #75;
 - validar o resumo operacional diário durante a homologação e definir se haverá conferência formal ou exportação;
-- definir redefinição e recuperação de senha;
+- definir responsáveis e canal confiável para recuperação de acesso na Issue #220;
 - decidir se haverá integração com identidade institucional;
 - concluir a integração frontend da Issue #191 e homologar os tempos na Issue #162;
 - definir retenção e limpeza operacional das sessões revogadas e expiradas;
-- registrar auditoria de troca de perfil e redefinição de senha quando esses fluxos existirem;
+- registrar auditoria de troca de perfil quando esse fluxo existir;
 - proteger os endpoints de negócio com as políticas validadas.
 
 ## Validação automatizada
 
-Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, atualização progressiva de hash sem regravação desnecessária, atomicidade da atualização, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. O ciclo de sessão acrescenta testes de cookie, ausência de segredo no corpo e no banco, CSRF, rotação, replay, concorrência, inatividade, duração absoluta, logout, perfil inativo, revogação por desativação e rollback. Os testes de persistência usam PostgreSQL real e dados, senhas e chaves fictícios exclusivos do ambiente temporário.
+Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, atualização progressiva de hash sem regravação desnecessária, atomicidade da atualização, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. O ciclo de sessão acrescenta testes de cookie, ausência de segredo no corpo e no banco, CSRF, rotação, replay, concorrência, inatividade, duração absoluta, logout, perfil inativo, revogação por desativação e rollback. A troca autenticada acrescenta testes de senha atual incorreta, reutilização, validação, revogação, invalidação imediata do JWT, concorrência, rate limiting, auditoria mínima e rollback. Os testes de persistência usam PostgreSQL real e dados, senhas e chaves fictícios exclusivos do ambiente temporário.

@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 3.1
+**Versão:** 3.2
 
-**Data de referência:** 15 de setembro de 2026
+**Data de referência:** 21 de setembro de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218 e #227
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218, #227 e #251
 
 ## Objetivo e limites
 
@@ -149,7 +149,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 
 | ID    | STRIDE                             | Cenário                                                                                                        |   P |   I | Nível | Mitigação e rastreabilidade                                                                                                                                                                                                                                                  | Estado                                                                                                                                                                                                                                 |
 | ----- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- | --: | --: | ----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TM-01 | Spoofing                           | Conta compartilhada ou credencial roubada impede identificar o operador                                        |   3 |   3 |     9 | Contas individuais, hash de senha, login uniforme, bloqueio, ciclo administrativo, auditoria mínima e testes — #29, #71 e #73                                                                                                                                                | Parcialmente mitigado; recuperação de acesso e validação operacional pendentes                                                                                                                                                         |
+| TM-01 | Spoofing                           | Conta compartilhada ou credencial roubada impede identificar o operador                                        |   3 |   3 |     9 | Contas individuais, hash de senha, login uniforme, bloqueio, troca autenticada com versão de credencial, revogação transacional, auditoria mínima e testes — #29, #71, #73 e #251                                                                                          | Parcialmente mitigado; troca autenticada invalida sessões e JWTs anteriores, enquanto recuperação de acesso e validação operacional permanecem pendentes na #220                                                                       |
 | TM-02 | Spoofing                           | Usuário acessa frontend ou API falsos em rede não confiável                                                    |   2 |   3 |     6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura                                                                                                                                                                                  | Planejado                                                                                                                                                                                                                              |
 | TM-03 | Tampering                          | Cliente altera IDs, status, horários, quilometragem, evento ou identificação de frota enviados à API           |   3 |   3 |     9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor, FK e unicidade/transação — #29, #31, #47, #53, #55, #61, #65 e #82                                                                                                                                | Associação de evento validada e imutável após a entrada; correção geral limitada a campos descritivos; correções institucionais pendentes                                                                                              |
 | TM-04 | Tampering                          | Acesso direto ao banco altera ou remove histórico                                                              |   2 |   3 |     6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67                                                                                                                                                                                       | Ensaio local de recuperação implementado; controles de produção pendentes                                                                                                                                                              |
@@ -192,6 +192,8 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - rotas do frontend exigem sessão e apresentam acesso negado para perfil
   incompatível, sem substituir a autorização do backend;
 - hash de senha com salt e derivação, bloqueio temporário e resposta uniforme de login;
+- troca autenticada exige a senha atual, incrementa uma versão verificada em cada
+  JWT, revoga sessões e audita a operação na mesma transação, sem copiar credenciais;
 - login bem-sucedido e bloqueio temporário auditados atomicamente sem credenciais, token, e-mail ou IP, com emissão de token impedida quando a auditoria falha;
 - consulta de contas paginada e restrita a Administrador, sem exposição de hash;
 - desativação e reativação auditadas atomicamente, com auto-desativação proibida e serialização das mudanças para preservar ao menos um Administrador ativo;
