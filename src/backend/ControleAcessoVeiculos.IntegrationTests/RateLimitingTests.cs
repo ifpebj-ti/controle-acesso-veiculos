@@ -89,6 +89,28 @@ public sealed class RateLimitingTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task PasswordChangeUsesDedicatedAuthenticatedLimit()
+    {
+        using var limitedFactory = CreateLimitedFactory(
+            globalPermitLimit: 100,
+            loginPermitLimit: 100,
+            passwordChangePermitLimit: 2);
+        var token = await CreateUserAndIssueTokenAsync(limitedFactory);
+        using var client = CreateAuthenticatedClient(limitedFactory, token);
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var response = await SendInvalidPasswordChangeAsync(client);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        var rejected = await SendInvalidPasswordChangeAsync(client);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+        Assert.NotNull(rejected.Headers.RetryAfter?.Delta);
+    }
+
+    [Fact]
     public void InvalidLimitsShouldFailDuringStartup()
     {
         using var invalidFactory = factory.WithWebHostBuilder(builder =>
@@ -105,7 +127,8 @@ public sealed class RateLimitingTests(ApiFactory factory)
 
     private WebApplicationFactory<Program> CreateLimitedFactory(
         int globalPermitLimit,
-        int loginPermitLimit) =>
+        int loginPermitLimit,
+        int passwordChangePermitLimit = 100) =>
         factory.WithWebHostBuilder(builder =>
         {
             builder.UseSetting(
@@ -116,6 +139,10 @@ public sealed class RateLimitingTests(ApiFactory factory)
                 "RateLimiting:LoginPermitLimit",
                 loginPermitLimit.ToString());
             builder.UseSetting("RateLimiting:LoginWindowSeconds", "60");
+            builder.UseSetting(
+                "RateLimiting:PasswordChangePermitLimit",
+                passwordChangePermitLimit.ToString());
+            builder.UseSetting("RateLimiting:PasswordChangeWindowSeconds", "60");
         });
 
     private static async Task<HttpResponseMessage> SendInvalidLoginAsync(
@@ -124,6 +151,14 @@ public sealed class RateLimitingTests(ApiFactory factory)
         {
             email = "missing-rate-limit-user@example.test",
             password = "Invalid-test-password-123!"
+        });
+
+    private static async Task<HttpResponseMessage> SendInvalidPasswordChangeAsync(
+        HttpClient client) =>
+        await client.PostAsJsonAsync("/auth/password", new
+        {
+            currentPassword = "Wrong-test-password-123!",
+            newPassword = "New-test-password-456!"
         });
 
     private static async Task<string> CreateUserAndIssueTokenAsync(
@@ -163,7 +198,8 @@ public sealed class RateLimitingTests(ApiFactory factory)
         return tokenService.Issue(
             user.Id,
             email,
-            ProfileNames.Administrator).Value;
+            ProfileNames.Administrator,
+            user.VersaoCredencial).Value;
     }
 
     private static HttpClient CreateAuthenticatedClient(
