@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
+import { SelectField } from "../../../components/ui/SelectField";
 import type { InstitutionalDriver } from "../../institutional-drivers";
 import type { InstitutionalVehicle } from "../../institutional-vehicles";
 import {
@@ -51,6 +52,7 @@ export function InstitutionalDepartureForm({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const {
     formState: { errors, isSubmitting },
+    control,
     handleSubmit,
     register,
   } = useForm<InstitutionalDepartureFormValues>({
@@ -91,7 +93,7 @@ export function InstitutionalDepartureForm({
           Movimentação da frota
         </p>
         <h2
-          className="mt-2 font-display text-2xl text-ink"
+          className="mt-3 font-display text-2xl text-ink"
           id="institutional-departure-title"
           ref={titleRef}
           tabIndex={-1}
@@ -121,42 +123,66 @@ export function InstitutionalDepartureForm({
           <label className="text-sm font-semibold" htmlFor="usage-vehicle">
             Veículo institucional
           </label>
-          <select
-            aria-describedby={vehicleError ? "usage-vehicle-error" : undefined}
-            aria-invalid={Boolean(vehicleError)}
-            className={fieldClass}
-            disabled={disabled}
-            id="usage-vehicle"
-            {...register("vehicleId")}
-          >
-            <option value={0}>Selecione um veículo</option>
-            {vehicles.map((vehicle) => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicleLabel(vehicle)}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="vehicleId"
+            render={({ field }) => (
+              <SelectField
+                aria-describedby={
+                  vehicleError ? "usage-vehicle-error" : undefined
+                }
+                aria-invalid={Boolean(vehicleError)}
+                className={fieldClass}
+                disabled={disabled}
+                id="usage-vehicle"
+                name={field.name}
+                onBlur={field.onBlur}
+                onValueChange={(value) => field.onChange(Number(value))}
+                options={[
+                  { label: "Selecione um veículo", value: "0" },
+                  ...vehicles.map((vehicle) => ({
+                    label: vehicleLabel(vehicle),
+                    value: String(vehicle.id),
+                  })),
+                ]}
+                required
+                value={String(field.value)}
+              />
+            )}
+          />
           <ErrorMessage id="usage-vehicle-error" message={vehicleError} />
         </div>
         <div>
           <label className="text-sm font-semibold" htmlFor="usage-driver">
             Motorista autorizado
           </label>
-          <select
-            aria-describedby={driverError ? "usage-driver-error" : undefined}
-            aria-invalid={Boolean(driverError)}
-            className={fieldClass}
-            disabled={disabled}
-            id="usage-driver"
-            {...register("driverId")}
-          >
-            <option value={0}>Selecione um motorista</option>
-            {drivers.map((driver) => (
-              <option key={driver.id} value={driver.personId}>
-                {driver.name}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="driverId"
+            render={({ field }) => (
+              <SelectField
+                aria-describedby={
+                  driverError ? "usage-driver-error" : undefined
+                }
+                aria-invalid={Boolean(driverError)}
+                className={fieldClass}
+                disabled={disabled}
+                id="usage-driver"
+                name={field.name}
+                onBlur={field.onBlur}
+                onValueChange={(value) => field.onChange(Number(value))}
+                options={[
+                  { label: "Selecione um motorista", value: "0" },
+                  ...drivers.map((driver) => ({
+                    label: driver.name,
+                    value: String(driver.personId),
+                  })),
+                ]}
+                required
+                value={String(field.value)}
+              />
+            )}
+          />
           <ErrorMessage id="usage-driver-error" message={driverError} />
         </div>
         <div>

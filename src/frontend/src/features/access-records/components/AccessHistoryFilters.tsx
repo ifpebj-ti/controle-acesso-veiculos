@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 
+import { SelectField } from "../../../components/ui/SelectField";
 import { generalAccessCategories } from "../model/accessCategories";
 import type {
   AccessHistoryFilterDraft,
@@ -47,7 +48,7 @@ export function AccessHistoryFilters({
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
               Filtros da consulta
             </p>
-            <h2 className="mt-2 font-display text-2xl text-ink">
+            <h2 className="mt-3 font-display text-2xl text-ink">
               Encontre um registro
             </h2>
           </div>
@@ -131,16 +132,17 @@ export function AccessHistoryFilters({
             >
               Situação
             </label>
-            <select
+            <SelectField
               className={fieldClass}
               id="history-status"
-              onChange={(event) => update({ status: event.target.value })}
+              onValueChange={(value) => update({ status: value })}
+              options={[
+                { label: "Todas", value: "" },
+                { label: "Em aberto", value: "Aberto" },
+                { label: "Concluídos", value: "Encerrado" },
+              ]}
               value={draft.status}
-            >
-              <option value="">Todas</option>
-              <option value="Aberto">Em aberto</option>
-              <option value="Encerrado">Concluídos</option>
-            </select>
+            />
           </div>
           <div>
             <label
@@ -149,17 +151,19 @@ export function AccessHistoryFilters({
             >
               Categoria
             </label>
-            <select
+            <SelectField
               className={fieldClass}
               id="history-category"
-              onChange={(event) => update({ categoryName: event.target.value })}
+              onValueChange={(value) => update({ categoryName: value })}
+              options={[
+                { label: "Todas", value: "" },
+                ...generalAccessCategories.map((option) => ({
+                  label: option,
+                  value: option,
+                })),
+              ]}
               value={draft.categoryName}
-            >
-              <option value="">Todas</option>
-              {generalAccessCategories.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 

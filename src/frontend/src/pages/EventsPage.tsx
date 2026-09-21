@@ -1,6 +1,8 @@
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
+import { SectionHeader } from "../components/ui/SectionHeader";
 import { useAuthenticatedSession } from "../features/authentication";
 import {
   EventAuthorizationCatalog,
@@ -65,21 +67,22 @@ export function EventsPage() {
       )}
 
       {events.errorMessage && events.status !== "loading" && (
-        <div
-          className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-          role="alert"
-        >
-          <p>{events.errorMessage}</p>
-          {events.status === "error" && (
-            <button
-              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-200"
-              onClick={events.retry}
-              type="button"
-            >
-              Tentar novamente
-            </button>
-          )}
-        </div>
+        <ContentState
+          action={
+            events.status === "error" ? (
+              <button
+                className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
+                onClick={events.retry}
+                type="button"
+              >
+                Tentar novamente
+              </button>
+            ) : undefined
+          }
+          className="mt-6"
+          title={events.errorMessage}
+          variant="error"
+        />
       )}
 
       {events.formOpen && (
@@ -103,14 +106,11 @@ export function EventsPage() {
       )}
 
       <section className="mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]">
-        <div className="px-5 pt-5 sm:px-6">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-            Consulta integrada
-          </p>
-          <h2 className="mt-2 font-display text-2xl text-ink">
-            Autorizações cadastradas
-          </h2>
-        </div>
+        <SectionHeader
+          className="px-5 pt-5 sm:px-6"
+          eyebrow="Consulta integrada"
+          title="Autorizações cadastradas"
+        />
         <EventAuthorizationFilterForm
           disabled={
             events.pendingAction !== null || events.status === "loading"

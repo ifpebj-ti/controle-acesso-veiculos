@@ -155,7 +155,7 @@ export function OpenInstitutionalUsages({
           Operação atual
         </p>
         <h2
-          className="mt-2 font-display text-2xl"
+          className="mt-3 font-display text-2xl"
           id="open-institutional-title"
         >
           Veículos em uso

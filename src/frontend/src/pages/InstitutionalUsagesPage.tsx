@@ -1,4 +1,5 @@
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAuthenticatedSession } from "../features/authentication";
@@ -108,19 +109,20 @@ export function InstitutionalUsagesPage() {
       )}
 
       {operations.status === "error" && operations.errorMessage && (
-        <div
-          className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-          role="alert"
-        >
-          <p>{operations.errorMessage}</p>
-          <button
-            className="min-h-10 rounded-xl border border-red-300 px-4 font-bold"
-            onClick={() => void operations.load()}
-            type="button"
-          >
-            Tentar novamente
-          </button>
-        </div>
+        <ContentState
+          action={
+            <button
+              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
+              onClick={() => void operations.load()}
+              type="button"
+            >
+              Tentar novamente
+            </button>
+          }
+          className="mt-6"
+          title={operations.errorMessage}
+          variant="error"
+        />
       )}
 
       {canOperate && operations.departureOpen && (

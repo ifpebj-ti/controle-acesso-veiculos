@@ -1,3 +1,4 @@
+import { SelectField } from "../../../components/ui/SelectField";
 import { auditActions, type AuditTrailFilters } from "../types";
 import type { AuditTrailFilterErrors } from "../types";
 
@@ -90,27 +91,27 @@ export function AuditTrailFilters({
         <label className="text-sm font-semibold" htmlFor="audit-action">
           Ação
         </label>
-        <select
+        <SelectField
           aria-describedby={errors.action ? "audit-action-error" : undefined}
           aria-invalid={Boolean(errors.action)}
           className={fieldClass}
           disabled={disabled}
           id="audit-action"
-          onChange={(event) =>
+          onValueChange={(value) =>
             onChange({
               ...draft,
-              action: event.target.value as AuditTrailFilters["action"],
+              action: value as AuditTrailFilters["action"],
             })
           }
+          options={[
+            { label: "Todas", value: "" },
+            ...auditActions.map((action) => ({
+              label: actionLabels[action],
+              value: action,
+            })),
+          ]}
           value={draft.action}
-        >
-          <option value="">Todas</option>
-          {auditActions.map((action) => (
-            <option key={action} value={action}>
-              {actionLabels[action]}
-            </option>
-          ))}
-        </select>
+        />
         {errors.action && (
           <FieldError id="audit-action-error" message={errors.action} />
         )}
@@ -166,21 +167,23 @@ export function AuditTrailFilters({
         <label className="text-sm font-semibold" htmlFor="audit-actor-type">
           Origem
         </label>
-        <select
+        <SelectField
           aria-describedby={actorDescription}
           aria-invalid={Boolean(errors.actor)}
           className={fieldClass}
           disabled={disabled}
           id="audit-actor-type"
-          onChange={(event) =>
+          onValueChange={(value) =>
             onChange({
               ...draft,
-              systemOnly:
-                event.target.value === ""
-                  ? undefined
-                  : event.target.value === "system",
+              systemOnly: value === "" ? undefined : value === "system",
             })
           }
+          options={[
+            { label: "Todas", value: "" },
+            { label: "Pessoa usuária", value: "human" },
+            { label: "Sistema", value: "system" },
+          ]}
           value={
             draft.systemOnly === undefined
               ? ""
@@ -188,11 +191,7 @@ export function AuditTrailFilters({
                 ? "system"
                 : "human"
           }
-        >
-          <option value="">Todas</option>
-          <option value="human">Pessoa usuária</option>
-          <option value="system">Sistema</option>
-        </select>
+        />
       </div>
       <div>
         <label className="text-sm font-semibold" htmlFor="audit-actor-id">

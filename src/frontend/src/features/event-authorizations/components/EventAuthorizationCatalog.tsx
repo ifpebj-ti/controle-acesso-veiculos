@@ -1,4 +1,4 @@
-import { Icon } from "../../../components/ui/Icon";
+import { ContentState } from "../../../components/ui/ContentState";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { EventAuthorization, EventAuthorizationPage } from "../types";
 
@@ -47,24 +47,19 @@ export function EventAuthorizationCatalog({
         </p>
       )}
       {status === "loading" ? (
-        <div
-          className="m-5 rounded-2xl bg-cream/50 p-10 text-center"
-          role="status"
-        >
-          Carregando autorizações de eventos…
-        </div>
+        <ContentState
+          className="m-5 sm:m-6"
+          title="Carregando autorizações de eventos…"
+          variant="loading"
+        />
       ) : status === "error" ? null : page?.items.length === 0 ? (
-        <div className="m-5 rounded-2xl border border-dashed border-ink/20 bg-cream/40 p-10 text-center sm:m-6">
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-soft/45">
-            <Icon name="calendar" />
-          </span>
-          <p className="mt-4 font-bold text-ink">
-            Nenhuma autorização encontrada
-          </p>
-          <p className="mt-1 text-sm text-ink-soft">
-            Revise os filtros ou cadastre uma nova autorização.
-          </p>
-        </div>
+        <ContentState
+          className="m-5 sm:m-6"
+          description="Revise os filtros ou cadastre uma nova autorização."
+          icon="calendar"
+          title="Nenhuma autorização encontrada"
+          variant="empty"
+        />
       ) : page ? (
         <>
           <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-2">

@@ -1,3 +1,4 @@
+import { ContentState } from "../../../components/ui/ContentState";
 import { Icon } from "../../../components/ui/Icon";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { InstitutionalVehicle } from "../types";
@@ -39,7 +40,7 @@ export function InstitutionalVehicleCatalog({
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
             Catálogo ativo
           </p>
-          <h2 className="mt-2 font-display text-2xl text-ink">
+          <h2 className="mt-3 font-display text-2xl text-ink">
             Veículos institucionais
           </h2>
           {status === "ready" && (
@@ -76,30 +77,29 @@ export function InstitutionalVehicleCatalog({
       </div>
 
       {status === "loading" ? (
-        <div
-          className="m-5 rounded-2xl bg-cream/50 p-10 text-center"
-          role="status"
-        >
-          Carregando frota institucional…
-        </div>
+        <ContentState
+          className="m-5 sm:m-6"
+          title="Carregando frota institucional…"
+          variant="loading"
+        />
       ) : status === "error" ? null : filteredVehicles.length === 0 ? (
-        <div className="m-5 rounded-2xl border border-dashed border-ink/20 bg-cream/40 p-10 text-center sm:m-6">
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-soft/45">
-            <Icon name="car" />
-          </span>
-          <p className="mt-4 font-bold text-ink">
-            {vehicles.length === 0
-              ? "Nenhum veículo ativo cadastrado"
-              : "Nenhum veículo corresponde à busca"}
-          </p>
-          <p className="mt-1 text-sm text-ink-soft">
-            {vehicles.length === 0 && canManage
+        <ContentState
+          className="m-5 sm:m-6"
+          description={
+            vehicles.length === 0 && canManage
               ? "Cadastre o primeiro veículo institucional para iniciar o catálogo."
               : vehicles.length === 0
                 ? "O setor responsável ainda não disponibilizou veículos ativos."
-                : "Revise o termo informado ou limpe a busca."}
-          </p>
-        </div>
+                : "Revise o termo informado ou limpe a busca."
+          }
+          icon="car"
+          title={
+            vehicles.length === 0
+              ? "Nenhum veículo ativo cadastrado"
+              : "Nenhum veículo corresponde à busca"
+          }
+          variant="empty"
+        />
       ) : (
         <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
           {filteredVehicles.map((vehicle) => (

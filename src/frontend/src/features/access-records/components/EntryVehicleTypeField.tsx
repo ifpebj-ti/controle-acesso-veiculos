@@ -1,10 +1,13 @@
 import { useEffect, useRef } from "react";
 import type {
+  Control,
   FieldErrors,
   UseFormClearErrors,
   UseFormRegister,
 } from "react-hook-form";
+import { Controller } from "react-hook-form";
 
+import { SelectField } from "../../../components/ui/SelectField";
 import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
 import { customEntryOption, vehicleTypeOptions } from "../model/entryOptions";
 
@@ -13,6 +16,7 @@ const fieldClass =
 
 interface EntryVehicleTypeFieldProps {
   clearErrors: UseFormClearErrors<AccessEntryFormValues>;
+  control: Control<AccessEntryFormValues>;
   errors: FieldErrors<AccessEntryFormValues>;
   register: UseFormRegister<AccessEntryFormValues>;
   selectedVehicleType: AccessEntryFormValues["vehicleType"];
@@ -20,6 +24,7 @@ interface EntryVehicleTypeFieldProps {
 
 export function EntryVehicleTypeField({
   clearErrors,
+  control,
   errors,
   register,
   selectedVehicleType,
@@ -47,20 +52,31 @@ export function EntryVehicleTypeField({
         Tipo do veículo{" "}
         <span className="font-normal text-ink-soft">(opcional)</span>
       </label>
-      <select
-        aria-describedby={errors.vehicleType ? "vehicleType-error" : undefined}
-        aria-invalid={Boolean(errors.vehicleType)}
-        className={fieldClass}
-        id="vehicleType"
-        {...register("vehicleType")}
-      >
-        <option value="">Não informado</option>
-        {vehicleTypeOptions.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+      <Controller
+        control={control}
+        name="vehicleType"
+        render={({ field }) => (
+          <SelectField
+            aria-describedby={
+              errors.vehicleType ? "vehicleType-error" : undefined
+            }
+            aria-invalid={Boolean(errors.vehicleType)}
+            className={fieldClass}
+            id="vehicleType"
+            name={field.name}
+            onBlur={field.onBlur}
+            onValueChange={field.onChange}
+            options={[
+              { label: "Não informado", value: "" },
+              ...vehicleTypeOptions.map((option) => ({
+                label: option,
+                value: option,
+              })),
+            ]}
+            value={field.value}
+          />
+        )}
+      />
       {errors.vehicleType?.message && (
         <p className="mt-1.5 text-sm text-red-800" id="vehicleType-error">
           {errors.vehicleType.message}

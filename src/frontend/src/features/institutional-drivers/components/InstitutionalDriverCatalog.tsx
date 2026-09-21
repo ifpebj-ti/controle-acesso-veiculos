@@ -1,3 +1,4 @@
+import { ContentState } from "../../../components/ui/ContentState";
 import { Icon } from "../../../components/ui/Icon";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { InstitutionalDriver } from "../types";
@@ -35,7 +36,7 @@ export function InstitutionalDriverCatalog({
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
             Autorizações ativas
           </p>
-          <h2 className="mt-2 font-display text-2xl text-ink">
+          <h2 className="mt-3 font-display text-2xl text-ink">
             Motoristas institucionais
           </h2>
           {status === "ready" && (
@@ -71,30 +72,29 @@ export function InstitutionalDriverCatalog({
       </div>
 
       {status === "loading" ? (
-        <div
-          className="m-5 rounded-2xl bg-cream/50 p-10 text-center"
-          role="status"
-        >
-          Carregando motoristas autorizados…
-        </div>
+        <ContentState
+          className="m-5 sm:m-6"
+          title="Carregando motoristas autorizados…"
+          variant="loading"
+        />
       ) : status === "error" ? null : filteredDrivers.length === 0 ? (
-        <div className="m-5 rounded-2xl border border-dashed border-ink/20 bg-cream/40 p-10 text-center sm:m-6">
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-soft/45">
-            <Icon name="users" />
-          </span>
-          <p className="mt-4 font-bold text-ink">
-            {drivers.length === 0
-              ? "Nenhum motorista autorizado"
-              : "Nenhum motorista corresponde à busca"}
-          </p>
-          <p className="mt-1 text-sm text-ink-soft">
-            {drivers.length === 0 && canManage
+        <ContentState
+          className="m-5 sm:m-6"
+          description={
+            drivers.length === 0 && canManage
               ? "Autorize o primeiro motorista institucional para iniciar o catálogo."
               : drivers.length === 0
                 ? "O setor responsável ainda não disponibilizou motoristas ativos."
-                : "Revise o nome informado ou limpe a busca."}
-          </p>
-        </div>
+                : "Revise o nome informado ou limpe a busca."
+          }
+          icon="users"
+          title={
+            drivers.length === 0
+              ? "Nenhum motorista autorizado"
+              : "Nenhum motorista corresponde à busca"
+          }
+          variant="empty"
+        />
       ) : (
         <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
           {filteredDrivers.map((driver) => (

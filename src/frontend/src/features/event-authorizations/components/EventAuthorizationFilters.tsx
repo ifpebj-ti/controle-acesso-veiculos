@@ -1,3 +1,4 @@
+import { SelectField } from "../../../components/ui/SelectField";
 import type { EventAuthorizationFilters as Filters } from "../types";
 
 interface EventAuthorizationFilterFormProps {
@@ -97,22 +98,23 @@ export function EventAuthorizationFilterForm({
         >
           Situação
         </label>
-        <select
+        <SelectField
           className={fieldClass}
           disabled={disabled}
           id="event-filter-active"
-          onChange={(event) =>
+          onValueChange={(value) =>
             onChange({
               ...draft,
-              active: event.target.value as Filters["active"],
+              active: value as Filters["active"],
             })
           }
+          options={[
+            { label: "Ativos", value: "true" },
+            { label: "Cancelados", value: "false" },
+            { label: "Todos", value: "all" },
+          ]}
           value={draft.active}
-        >
-          <option value="true">Ativos</option>
-          <option value="false">Cancelados</option>
-          <option value="all">Todos</option>
-        </select>
+        />
       </div>
       <div className="flex gap-2 sm:col-span-2 xl:col-span-1">
         <button

@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
+import { SelectField } from "../../../components/ui/SelectField";
 import {
   describeApiError,
   getApiValidationErrors,
@@ -58,6 +59,7 @@ export function AccessCorrectionDialog({
   const [requestError, setRequestError] = useState<string | null>(null);
   const {
     formState: { errors, isSubmitting },
+    control,
     handleSubmit,
     register,
     setError,
@@ -183,7 +185,7 @@ export function AccessCorrectionDialog({
               Registro #{record.id}
             </p>
             <h2
-              className="mt-2 font-display text-3xl text-ink"
+              className="mt-3 font-display text-3xl text-ink"
               id="access-correction-title"
             >
               Corrigir registro
@@ -290,22 +292,31 @@ export function AccessCorrectionDialog({
             <label className="font-bold text-ink" htmlFor="correction-category">
               Categoria
             </label>
-            <select
-              {...register("categoryName")}
-              aria-describedby={
-                errors.categoryName ? "correction-category-error" : undefined
-              }
-              aria-invalid={Boolean(errors.categoryName)}
-              className={fieldClass}
-              disabled={isSubmitting}
-              id="correction-category"
-            >
-              {generalAccessCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name="categoryName"
+              render={({ field }) => (
+                <SelectField
+                  aria-describedby={
+                    errors.categoryName
+                      ? "correction-category-error"
+                      : undefined
+                  }
+                  aria-invalid={Boolean(errors.categoryName)}
+                  className={fieldClass}
+                  disabled={isSubmitting}
+                  id="correction-category"
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  onValueChange={field.onChange}
+                  options={generalAccessCategories.map((category) => ({
+                    label: category,
+                    value: category,
+                  }))}
+                  value={field.value}
+                />
+              )}
+            />
             <FieldError
               id="correction-category-error"
               message={errors.categoryName?.message}

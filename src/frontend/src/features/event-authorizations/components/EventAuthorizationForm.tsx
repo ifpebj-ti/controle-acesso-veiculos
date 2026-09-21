@@ -136,7 +136,7 @@ export function EventAuthorizationForm({
           Autorização antecipada
         </p>
         <h2
-          className="mt-2 font-display text-2xl text-ink"
+          className="mt-3 font-display text-2xl text-ink"
           id="event-form-title"
           ref={titleRef}
           tabIndex={-1}

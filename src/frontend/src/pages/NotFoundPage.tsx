@@ -10,7 +10,7 @@ export function NotFoundPage() {
         <p className="mt-10 text-xs font-bold uppercase tracking-[0.16em] text-brand-dark">
           Erro 404
         </p>
-        <h1 className="mt-2 font-display text-4xl">Página não encontrada</h1>
+        <h1 className="mt-3 font-display text-4xl">Página não encontrada</h1>
         <p className="mt-3 leading-7 text-ink-soft">
           O endereço informado não faz parte dos fluxos disponíveis neste
           protótipo.
