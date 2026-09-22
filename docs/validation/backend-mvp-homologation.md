@@ -1,6 +1,6 @@
 # Homologação integrada do MVP
 
-**Status:** roteiro técnico preliminar para validação com usuários<br>
+**Status:** direção funcional do MVP aceita; validação observada com os quatro perfis ainda pendente<br>
 **Escopo:** frontend, backend, PostgreSQL, infraestrutura local, UX e QA<br>
 **Rastreabilidade:** Issues #88, #108, #112, #162, #167, #175, #176, #177, #178 e #180; PRs #164, #168, #170, #183, #184, #185, #186 e #187
 
@@ -292,6 +292,69 @@ confirmados no GitHub.
 
 A Issue #163 continua sendo uma pesquisa separada. Presença de servidores e
 terceirizados não deve ser demonstrada como funcionalidade pronta deste MVP.
+
+### 3.10. Retorno institucional de 21 de setembro de 2026
+
+Uma apresentação ao contato principal do processo e à coordenação acadêmica
+confirmou que a direção funcional do MVP veicular representa a rotina esperada e
+pode seguir para a próxima etapa. Esse retorno é um aceite do recorte funcional,
+não uma autorização de produção e nem substitui a sessão observada com pessoas
+que exercerão os quatro perfis.
+
+Foram confirmadas as seguintes decisões:
+
+- cada operador terá conta individual;
+- a direção futura é usar matrícula ou outro identificador institucional único
+  no login, mantendo nome e perfil separados;
+- matrícula não será usada como senha temporária;
+- dois Administradores funcionais serão responsáveis por contas, recuperação de
+  acesso e manutenção de autorizações de eventos;
+- a credencial temporária será gerada aleatoriamente pelo servidor, entregue
+  diretamente pelo Administrador e substituída obrigatoriamente no primeiro
+  acesso;
+- alunos e docentes responsáveis pelo projeto exercerão manutenção técnica e
+  transferência de conhecimento, sem assumir a aprovação funcional diária;
+- o Vigilante usará a própria conta ao substituir o Porteiro, inclusive nos
+  intervalos, e a troca de operador exigirá logout;
+- a sessão poderá ser renovada durante o uso, será bloqueada após 15 minutos sem
+  atividade e terá duração absoluta limitada ao turno;
+- o fechamento operacional ocorre às 22h; depois desse horário, vínculo com o
+  campus isoladamente não autoriza entrada;
+- a exceção posterior ao fechamento dependerá de motivo e autorização
+  verificável da Administração, Direção, responsável pelo evento ou setor, ou
+  lista previamente cadastrada;
+- correções preservarão valor anterior, valor novo, motivo, horário e ator na
+  auditoria;
+- Administrador e Setor de Transporte poderão consultar a auditoria;
+- documentos serão apenas conferidos presencialmente no recorte atual; fotos e
+  cópias não serão armazenadas;
+- as planilhas oficiais continuarão como contingência durante indisponibilidade;
+  a reconciliação posterior deverá preservar horário observado, autoria do papel,
+  responsável pela digitação e momento da transcrição;
+- permanências curtas usarão previsão informada na entrada e alerta quando o
+  tempo for ultrapassado, sem uma regra exclusiva para mototáxi;
+- pedestres, bicicletas e os demais formulários físicos serão estudados como
+  evolução posterior para evitar operação simultânea em papel e sistema.
+
+Continuam pendentes antes de produção:
+
+- observar Porteiro e Vigilante executando os fluxos e medir um volume de pico
+  representativo;
+- comprovar formato, unicidade, estabilidade e cobertura do identificador
+  institucional para todos os vínculos, inclusive terceirizados;
+- definir a política institucional para estudantes autorizados a conduzir ou
+  manter veículo no campus, sem armazenar imagem de documento;
+- identificar o enquadramento e a fonte normativa da retenção. A reunião relatou
+  cinco anos, enquanto a tabela federal de atividades-meio de 2024 apresenta
+  prazo de dois anos para controle de visitas e visitantes; o setor arquivístico
+  ou a referência institucional de proteção de dados precisa decidir o caso
+  aplicável;
+- confirmar responsável pelo backup e restauração, ambiente definitivo, RPO,
+  RTO, proteção de chaves e periodicidade dos exercícios;
+- definir quem confere a transcrição da contingência e o destino do papel;
+- definir conteúdo, destinatário, periodicidade e formato dos relatórios;
+- transformar cada mudança aprovada em issue independente antes de alterar o
+  comportamento implementado.
 
 ## 4. Ordem da demonstração
 
