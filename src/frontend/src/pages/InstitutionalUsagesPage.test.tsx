@@ -4,11 +4,13 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ConfirmationProvider } from "../components/ui/ConfirmationProvider";
 import {
   type ProfileName,
   useAuthenticatedSession,
@@ -135,9 +137,11 @@ function renderPage(profileName: ProfileName) {
     user: { email: "usuario@example.test", id: 1, profileName },
   });
   return render(
-    <MemoryRouter>
-      <InstitutionalUsagesPage />
-    </MemoryRouter>,
+    <ConfirmationProvider>
+      <MemoryRouter>
+        <InstitutionalUsagesPage />
+      </MemoryRouter>
+    </ConfirmationProvider>,
   );
 }
 
@@ -294,7 +298,6 @@ describe("InstitutionalUsagesPage", () => {
   });
 
   it("validates and confirms a return before calling the API", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(registerInstitutionalReturn).mockResolvedValue({
       ...openUsage,
       returnAtUtc: "2030-06-10T13:00:00Z",
@@ -311,8 +314,10 @@ describe("InstitutionalUsagesPage", () => {
     await user.type(mileage, "12540");
     await user.click(screen.getByRole("button", { name: "Confirmar retorno" }));
 
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining("12540 km"),
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("12540 km");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Confirmar retorno" }),
     );
     await waitFor(() =>
       expect(registerInstitutionalReturn).toHaveBeenCalledWith(12, {
@@ -322,7 +327,6 @@ describe("InstitutionalUsagesPage", () => {
   });
 
   it("does not confirm or submit a return with a lower mileage", async () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(registerInstitutionalReturn).mockResolvedValue({
       ...openUsage,
       returnAtUtc: "2030-06-10T13:00:00Z",
@@ -344,20 +348,23 @@ describe("InstitutionalUsagesPage", () => {
         "A quilometragem de retorno não pode ser inferior à de saída.",
       ),
     ).toBeInTheDocument();
-    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(registerInstitutionalReturn).not.toHaveBeenCalled();
 
     await user.clear(mileage);
     await user.type(mileage, "12540");
     await user.click(screen.getByRole("button", { name: "Confirmar retorno" }));
-    expect(confirm).toHaveBeenCalledTimes(1);
+    await user.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", {
+        name: "Confirmar retorno",
+      }),
+    );
     await waitFor(() =>
       expect(registerInstitutionalReturn).toHaveBeenCalledTimes(1),
     );
   });
 
   it("associates an API return mileage error with its field", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(registerInstitutionalReturn).mockRejectedValue(
       new Error("validation"),
     );
@@ -372,6 +379,11 @@ describe("InstitutionalUsagesPage", () => {
     await user.clear(mileage);
     await user.type(mileage, "12540");
     await user.click(screen.getByRole("button", { name: "Confirmar retorno" }));
+    await user.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", {
+        name: "Confirmar retorno",
+      }),
+    );
 
     const message = await screen.findByText(
       "A quilometragem informada não é válida.",
@@ -556,7 +568,6 @@ describe("InstitutionalUsagesPage", () => {
   });
 
   it("retries a failed refresh without repeating a saved return", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(listOpenInstitutionalUsages)
       .mockResolvedValueOnce([openUsage])
       .mockRejectedValueOnce(new Error("network"))
@@ -576,6 +587,11 @@ describe("InstitutionalUsagesPage", () => {
     await user.clear(mileage);
     await user.type(mileage, "12540");
     await user.click(screen.getByRole("button", { name: "Confirmar retorno" }));
+    await user.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", {
+        name: "Confirmar retorno",
+      }),
+    );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "O retorno foi registrado, mas não foi possível recarregar",

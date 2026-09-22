@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ConfirmationProvider } from "../components/ui/ConfirmationProvider";
 import {
   type ProfileName,
   useAuthenticatedSession,
@@ -65,9 +66,11 @@ function renderPage(profileName: ProfileName = "Administrador") {
   });
 
   return render(
-    <MemoryRouter>
-      <FleetPage />
-    </MemoryRouter>,
+    <ConfirmationProvider>
+      <MemoryRouter>
+        <FleetPage />
+      </MemoryRouter>
+    </ConfirmationProvider>,
   );
 }
 
@@ -213,7 +216,6 @@ describe("FleetPage", () => {
       color: "Prata",
     });
     vi.mocked(deactivateInstitutionalVehicle).mockResolvedValue();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("DEM1A23");
@@ -225,6 +227,11 @@ describe("FleetPage", () => {
 
     expect(await screen.findByText("Prata · 2024")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Desativar" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("DEM1A23");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Desativar veículo" }),
+    );
     await waitFor(() =>
       expect(deactivateInstitutionalVehicle).toHaveBeenCalledWith(4),
     );
