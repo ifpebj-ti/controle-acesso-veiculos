@@ -24,6 +24,7 @@ export const loginResponseSchema = z
         email: z.string().email(),
         id: z.number().int().positive(),
         profileName: z.enum(profileNames),
+        requiresPasswordChange: z.boolean(),
       })
       .strict(),
   })

@@ -256,6 +256,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       try {
         const session = await authenticate(credentials);
         applySession(session);
+        return session.user;
       } catch (error) {
         endSession(null, false);
         throw error;

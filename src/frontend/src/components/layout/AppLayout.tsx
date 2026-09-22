@@ -160,7 +160,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
   );
 }
 
-export function AppLayout() {
+function StandardAppLayout() {
   const { sessionNotice } = useAuthenticatedSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuDialogRef = useRef<HTMLElement>(null);
@@ -307,5 +307,61 @@ export function AppLayout() {
         </div>
       </main>
     </div>
+  );
+}
+
+function MandatoryPasswordChangeLayout() {
+  const { logout, sessionNotice } = useAuthenticatedSession();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    void logout();
+    navigate("/login", { replace: true });
+  }
+
+  return (
+    <div className="min-h-svh bg-cream text-ink">
+      <header className="border-b border-ink/10 bg-white/80 px-4 py-4 backdrop-blur sm:px-6">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4">
+          <Brand compact className="max-w-[10rem]" />
+          <button
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-ink/20 bg-white px-4 font-semibold text-ink transition-colors hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/35"
+            onClick={handleLogout}
+            type="button"
+          >
+            <Icon name="log-out" size={19} />
+            Sair
+          </button>
+        </div>
+      </header>
+
+      <main
+        className="mx-auto min-h-[calc(100svh-5rem)] w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-10"
+        id="conteudo-principal"
+        tabIndex={-1}
+      >
+        {sessionNotice === "renewal-unavailable" && (
+          <div
+            aria-atomic="true"
+            className="mb-5 rounded-2xl border border-amber-500 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"
+            role="alert"
+          >
+            Não foi possível renovar a sessão agora. Verifique a conexão antes
+            de trocar sua senha.
+          </div>
+        )}
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+export function AppLayout() {
+  const { user } = useAuthenticatedSession();
+
+  return user.requiresPasswordChange ? (
+    <MandatoryPasswordChangeLayout />
+  ) : (
+    <StandardAppLayout />
   );
 }

@@ -88,13 +88,21 @@ export function LoginPage() {
   }
 
   if (user && status === "authenticated") {
-    return <Navigate replace to={redirectTo} />;
+    return (
+      <Navigate
+        replace
+        to={user.requiresPasswordChange ? "/conta/senha" : redirectTo}
+      />
+    );
   }
 
   const submitLogin = handleSubmit(async (values) => {
     try {
-      await login(values);
-      navigate(redirectTo, { replace: true });
+      const authenticatedUser = await login(values);
+      navigate(
+        authenticatedUser.requiresPasswordChange ? "/conta/senha" : redirectTo,
+        { replace: true },
+      );
     } catch (error) {
       setError("root.server", { message: loginErrorMessage(error) });
     }
