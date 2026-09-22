@@ -57,6 +57,7 @@ const vehicle: InstitutionalVehicle = {
 
 function renderPage(profileName: ProfileName = "Administrador") {
   vi.mocked(useAuthenticatedSession).mockReturnValue({
+    completePasswordChange: vi.fn(),
     expiresAtUtc: "2026-09-03T22:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),

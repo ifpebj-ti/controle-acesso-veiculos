@@ -133,8 +133,23 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
         </ul>
       </nav>
 
+      <NavLink
+        className={({ isActive }) =>
+          `sidebar-primary-item mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left text-base font-semibold transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+            isActive
+              ? "sidebar-primary-item--active text-ink"
+              : "text-ink hover:bg-white/45"
+          }`
+        }
+        onClick={closeMenu}
+        to="/conta/senha"
+      >
+        <Icon name="shield" size={21} />
+        Alterar senha
+      </NavLink>
+
       <button
-        className="mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-base font-semibold text-ink transition-colors hover:bg-white/45 focus:outline-none focus-visible:ring-3 focus-visible:ring-ink"
+        className="mt-2 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-base font-semibold text-ink transition-colors hover:bg-white/45 focus:outline-none focus-visible:ring-3 focus-visible:ring-ink"
         onClick={handleLogout}
         type="button"
       >
