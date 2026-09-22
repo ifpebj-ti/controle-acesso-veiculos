@@ -16,6 +16,7 @@ function renderLayout(
   const view = render(
     <SessionContext.Provider
       value={{
+        completePasswordChange: vi.fn(),
         expiresAtUtc: "2026-09-03T23:59:59.000Z",
         login: vi.fn(),
         logout: vi.fn(),
@@ -49,6 +50,7 @@ function renderNavigableLayout() {
   return render(
     <SessionContext.Provider
       value={{
+        completePasswordChange: vi.fn(),
         expiresAtUtc: "2026-09-03T23:59:59.000Z",
         login: vi.fn(),
         logout: vi.fn(),
@@ -161,6 +163,9 @@ describe("AppLayout", () => {
     expect(
       within(dialog).queryByRole("link", { name: "Usuários e permissões" }),
     ).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("link", { name: "Alterar senha" }),
+    ).toHaveAttribute("href", "/conta/senha");
   });
 
   it("announces collapsible groups and preserves a clear active item", async () => {

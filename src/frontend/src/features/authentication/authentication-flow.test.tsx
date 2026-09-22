@@ -32,7 +32,8 @@ function sessionFor(
 }
 
 function SessionIdentity() {
-  const { logout, sessionNotice, user } = useAuthenticatedSession();
+  const { completePasswordChange, logout, sessionNotice, user } =
+    useAuthenticatedSession();
   return (
     <div>
       <p>
@@ -40,6 +41,9 @@ function SessionIdentity() {
       </p>
       <button onClick={logout} type="button">
         Sair
+      </button>
+      <button onClick={completePasswordChange} type="button">
+        Concluir troca de senha
       </button>
       <label>
         Observação
@@ -230,6 +234,30 @@ describe("authentication flow", () => {
     expect(
       await screen.findByRole("heading", { name: "Bem-vindo," }),
     ).toBeInTheDocument();
+  });
+
+  it("clears the local session and announces a completed password change", async () => {
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: sessionFor("Porteiro"),
+    });
+
+    renderAuthenticationFlow();
+    await submitCredentials();
+    await screen.findByText("operator@example.test — Porteiro");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Concluir troca de senha" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Senha alterada com segurança. Entre novamente usando a nova senha.",
+    );
+    expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
+      "aria-describedby",
+      "login-status-message",
+    );
+    expect(
+      screen.queryByText("operator@example.test — Porteiro"),
+    ).not.toBeInTheDocument();
   });
 
   it("clears the local session even when server logout cannot be confirmed", async () => {

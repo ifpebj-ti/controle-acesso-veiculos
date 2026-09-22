@@ -40,6 +40,8 @@ function sessionEndMessage(reason: SessionEndReason) {
       return "Sua sessão expirou. Entre novamente para continuar.";
     case "logout-unconfirmed":
       return "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.";
+    case "password-changed":
+      return "Senha alterada com segurança. Entre novamente usando a nova senha.";
     case "restoration-unavailable":
       return "Não foi possível verificar uma sessão anterior. Você ainda pode entrar novamente.";
     case "unauthorized":

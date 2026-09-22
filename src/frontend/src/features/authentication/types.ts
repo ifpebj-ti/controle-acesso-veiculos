@@ -34,6 +34,7 @@ export interface AuthenticatedSession {
 export type SessionEndReason =
   | "expired"
   | "logout-unconfirmed"
+  | "password-changed"
   | "restoration-unavailable"
   | "unauthorized"
   | null;

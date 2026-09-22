@@ -99,6 +99,7 @@ const auditPage: AuditTrailPage = {
 
 function renderPage(profileName: ProfileName = "Administrador") {
   vi.mocked(useAuthenticatedSession).mockReturnValue({
+    completePasswordChange: vi.fn(),
     expiresAtUtc: "2030-06-10T22:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),
