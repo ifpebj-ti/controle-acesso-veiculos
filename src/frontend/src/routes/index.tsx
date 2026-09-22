@@ -12,6 +12,7 @@ import { LoginPage } from "../pages/LoginPage";
 import { NewAccessPage } from "../pages/NewAccessPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { OpenAccessPage } from "../pages/OpenAccessPage";
+import { PasswordChangePage } from "../pages/PasswordChangePage";
 import { ProfileRoute } from "./ProfileRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { RouteTransitionManager } from "./RouteTransitionManager";
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
                 element: <ProfileRoute />,
                 children: [
                   { path: "/visao-geral", element: <DashboardPage /> },
+                  { path: "/conta/senha", element: <PasswordChangePage /> },
                   { path: "/acessos/novo", element: <NewAccessPage /> },
                   { path: "/acessos/abertos", element: <OpenAccessPage /> },
                   { path: "/acessos/historico", element: <HistoryPage /> },

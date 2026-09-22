@@ -280,9 +280,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [endSession]);
 
+  const completePasswordChange = useCallback(() => {
+    endSession("password-changed", true);
+  }, [endSession]);
+
   const value = useMemo<SessionContextValue>(
-    () => ({ ...state, login, logout }),
-    [login, logout, state],
+    () => ({ ...state, completePasswordChange, login, logout }),
+    [completePasswordChange, login, logout, state],
   );
 
   return (

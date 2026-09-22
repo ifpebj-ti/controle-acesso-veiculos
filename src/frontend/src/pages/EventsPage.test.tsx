@@ -91,6 +91,7 @@ const emptyPage: EventAuthorizationPage = {
 
 function renderPage(profileName: ProfileName = "Administrador") {
   vi.mocked(useAuthenticatedSession).mockReturnValue({
+    completePasswordChange: vi.fn(),
     expiresAtUtc: "2030-05-01T22:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),

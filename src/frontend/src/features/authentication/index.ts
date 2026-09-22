@@ -1,3 +1,4 @@
+export { PasswordChangeForm } from "./components/PasswordChangeForm";
 export { SessionProvider } from "./session/SessionProvider";
 export { useAuthenticatedSession, useSession } from "./session/useSession";
 export { AuthenticationContractError } from "./services/authenticationService";

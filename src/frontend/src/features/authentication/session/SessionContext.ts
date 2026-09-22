@@ -8,6 +8,7 @@ import type {
 } from "../types";
 
 export interface SessionContextValue {
+  completePasswordChange: () => void;
   expiresAtUtc: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;

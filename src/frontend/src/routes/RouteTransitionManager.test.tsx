@@ -32,6 +32,7 @@ const routeTitles = [
 
 function sessionValue(profileName: ProfileName = "Administrador") {
   return {
+    completePasswordChange: vi.fn(),
     expiresAtUtc: "2030-09-10T23:59:59.000Z",
     login: vi.fn(),
     logout: vi.fn(),

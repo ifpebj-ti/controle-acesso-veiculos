@@ -162,6 +162,10 @@ e não pode ser lido pelo frontend. O fluxo implementado:
   a expiração efetiva do access token;
 - encerra imediatamente o estado local no logout e tenta revogar a sessão no
   servidor, informando quando essa confirmação não for possível;
+- permite que qualquer perfil autenticado altere a própria senha por
+  `POST /auth/password`, sem repetir automaticamente essa mutação;
+- encerra o estado local depois da troca de senha bem-sucedida e solicita uma
+  nova entrada, pois o servidor revoga as sessões anteriores;
 - usa bloqueio exclusivo do navegador para coordenar renovações entre abas e
   comunica somente o encerramento da sessão, sem transmitir tokens.
 
@@ -336,7 +340,7 @@ src/
 
 ## Limites atuais
 
-- recuperação e redefinição de senha;
+- recuperação de senha sem sessão e redefinição administrativa de senha;
 - suporte à renovação transparente em navegadores sem Web Locks API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;

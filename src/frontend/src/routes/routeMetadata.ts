@@ -12,6 +12,7 @@ export const allProfiles = [
 
 export type ProtectedRoutePath =
   | "/visao-geral"
+  | "/conta/senha"
   | "/acessos/novo"
   | "/acessos/abertos"
   | "/acessos/historico"
@@ -91,6 +92,10 @@ const profileSectionOrder: Readonly<
 
 export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
   "/login": { focusSelector: "#email", title: "Entrar" },
+  "/conta/senha": {
+    allowedProfiles: allProfiles,
+    title: "Alterar senha",
+  },
   "/visao-geral": {
     allowedProfiles: allProfiles,
     navigation: {

@@ -3,11 +3,13 @@ import axios, { AxiosHeaders, type InternalAxiosRequestConfig } from "axios";
 declare module "axios" {
   interface AxiosRequestConfig {
     sessionRetryAttempted?: boolean;
+    skipSessionRetry?: boolean;
     skipSessionRefresh?: boolean;
   }
 
   interface InternalAxiosRequestConfig {
     sessionRetryAttempted?: boolean;
+    skipSessionRetry?: boolean;
     sessionTokenVersion?: number;
     skipSessionRefresh?: boolean;
   }
@@ -57,6 +59,11 @@ api.interceptors.response.use(
 
     const config = error.config as InternalAxiosRequestConfig | undefined;
     const isSessionEndpoint = sessionEndpointPattern.test(config?.url ?? "");
+
+    if (config?.skipSessionRetry) {
+      unauthorizedHandler?.();
+      return Promise.reject(error);
+    }
 
     if (
       !config ||
