@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useConfirmation } from "../../../components/ui/confirmationContext";
 import {
   describeApiError,
   getApiValidationErrors,
@@ -64,6 +65,7 @@ function hasValidPeriod(filters: EventAuthorizationFilters) {
 }
 
 export function useEventAuthorizations() {
+  const confirmAction = useConfirmation();
   const [firstFilters] = useState(initialFilters);
   const requestId = useRef(0);
   const [draft, setDraft] = useState<EventAuthorizationFilters>(firstFilters);
@@ -222,12 +224,14 @@ export function useEventAuthorizations() {
 
   async function cancelAuthorization(event: EventAuthorization) {
     if (pendingAction) return;
-    if (
-      !window.confirm(
-        `Cancelar a autorização “${event.name}”? O histórico será preservado e a autorização deixará de aceitar novas entradas.`,
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      confirmLabel: "Cancelar autorização",
+      description: `A autorização “${event.name}” deixará de aceitar novas entradas. O histórico será preservado.`,
+      eyebrow: "Autorização de evento",
+      title: "Cancelar autorização?",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     setPendingAction(`cancel-${event.id}`);
     setNotice(null);
     setErrorMessage(null);

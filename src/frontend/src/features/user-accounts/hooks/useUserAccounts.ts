@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useConfirmation } from "../../../components/ui/confirmationContext";
 import {
   describeApiError,
   getApiValidationErrors,
@@ -39,6 +40,7 @@ function createFieldErrors(error: unknown) {
 }
 
 export function useUserAccounts(enabled = true) {
+  const confirmAction = useConfirmation();
   const requestId = useRef(0);
   const [draft, setDraft] = useState<UserAccountFilters>(initialFilters);
   const [applied, setApplied] = useState<UserAccountFilters>(initialFilters);
@@ -197,16 +199,16 @@ export function useUserAccounts(enabled = true) {
   async function changeAccountState(account: UserAccount) {
     if (pendingAction) return;
     const action = account.active ? "desativar" : "reativar";
-    if (
-      !window.confirm(
-        `${account.active ? "Desativar" : "Reativar"} a conta de ${account.name}? ${
-          account.active
-            ? "O histórico e a autoria serão preservados."
-            : "O acesso voltará a ser permitido conforme o perfil cadastrado."
-        }`,
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      confirmLabel: account.active ? "Desativar conta" : "Reativar conta",
+      description: account.active
+        ? `A conta de ${account.name} perderá o acesso ao sistema. O histórico e a autoria serão preservados.`
+        : `A conta de ${account.name} voltará a acessar o sistema conforme o perfil cadastrado.`,
+      eyebrow: "Conta de usuário",
+      title: account.active ? "Desativar conta?" : "Reativar conta?",
+      tone: account.active ? "danger" : "positive",
+    });
+    if (!confirmed) return;
 
     setPendingAction(`${action}-${account.id}`);
     setNotice(null);
