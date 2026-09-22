@@ -13,7 +13,10 @@ vi.mock("../features/authentication/services/passwordChangeService", () => ({
   changeAuthenticatedPassword: vi.fn(),
 }));
 
-function renderPage(profileName: ProfileName = "Porteiro") {
+function renderPage(
+  profileName: ProfileName = "Porteiro",
+  requiresPasswordChange = false,
+) {
   const completePasswordChange = vi.fn();
   const view = render(
     <SessionContext.Provider
@@ -25,7 +28,12 @@ function renderPage(profileName: ProfileName = "Porteiro") {
         sessionEndReason: null,
         sessionNotice: null,
         status: "authenticated",
-        user: { email: "operator@example.test", id: 42, profileName },
+        user: {
+          email: "operator@example.test",
+          id: 42,
+          profileName,
+          requiresPasswordChange,
+        },
       }}
     >
       <MemoryRouter initialEntries={["/conta/senha"]}>
@@ -78,6 +86,23 @@ describe("PasswordChangePage", () => {
       await screen.findByRole("heading", { name: "Novo login necessário" }),
     ).toBeInTheDocument();
     expect(completePasswordChange).toHaveBeenCalledOnce();
+  });
+
+  it("explains mandatory first access without exposing operational actions", () => {
+    renderPage("Vigilante", true);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Crie sua senha permanente",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Substitua a credencial temporária/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Digite novamente a credencial temporária/),
+    ).toBeInTheDocument();
   });
 
   it("has no serious automated accessibility violations", async () => {

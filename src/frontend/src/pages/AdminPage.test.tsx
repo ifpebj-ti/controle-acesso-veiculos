@@ -105,7 +105,12 @@ function renderPage(profileName: ProfileName = "Administrador") {
     logout: vi.fn(),
     sessionEndReason: null,
     status: "authenticated",
-    user: { email: "admin.ficticio@example.test", id: 1, profileName },
+    user: {
+      email: "admin.ficticio@example.test",
+      id: 1,
+      profileName,
+      requiresPasswordChange: false,
+    },
   });
   return render(
     <MemoryRouter>
