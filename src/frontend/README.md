@@ -166,6 +166,13 @@ e não pode ser lido pelo frontend. O fluxo implementado:
   `POST /auth/password`, sem repetir automaticamente essa mutação;
 - encerra o estado local depois da troca de senha bem-sucedida e solicita uma
   nova entrada, pois o servidor revoga as sessões anteriores;
+- valida obrigatoriamente `user.requiresPasswordChange` no login e na
+  renovação; uma resposta sem esse booleano é rejeitada em vez de liberar o
+  painel por padrão;
+- mantém o indicador de troca obrigatória somente na sessão em memória e,
+  quando ativo, exibe apenas a definição da senha permanente e o logout;
+- redireciona qualquer rota operacional digitada durante o primeiro acesso para
+  a troca obrigatória, sem renderizar menus, painéis ou ações de negócio;
 - usa bloqueio exclusivo do navegador para coordenar renovações entre abas e
   comunica somente o encerramento da sessão, sem transmitir tokens.
 
@@ -340,6 +347,8 @@ src/
 
 ## Limites atuais
 
+- a troca obrigatória no primeiro acesso depende da integração coordenada com o
+  contrato de credencial temporária do backend no PR #259;
 - recuperação de senha sem sessão e redefinição administrativa de senha;
 - suporte à renovação transparente em navegadores sem Web Locks API;
 - persistência dos dados demonstrativos;
