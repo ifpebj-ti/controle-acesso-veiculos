@@ -703,6 +703,12 @@ describe("AdminPage", () => {
       await screen.findByText("temporary-test-credential"),
     ).toBeInTheDocument();
 
+    const downgradedUser = {
+      email: "porteiro.ficticio@example.test",
+      id: 2,
+      profileName: "Porteiro" as const,
+      requiresPasswordChange: false,
+    };
     vi.mocked(useAuthenticatedSession).mockReturnValue({
       completePasswordChange: vi.fn(),
       expiresAtUtc: "2030-06-10T22:00:00Z",
@@ -710,11 +716,7 @@ describe("AdminPage", () => {
       logout: vi.fn(),
       sessionEndReason: "expired",
       status: "authenticated",
-      user: {
-        email: "porteiro.ficticio@example.test",
-        id: 2,
-        profileName: "Porteiro",
-      },
+      user: downgradedUser,
     });
     view.rerender(
       <MemoryRouter>
