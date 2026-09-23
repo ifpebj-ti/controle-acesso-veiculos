@@ -3,9 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AppLayout } from "../../components/layout/AppLayout";
 import { LoginPage } from "../../pages/LoginPage";
+import { PasswordChangePage } from "../../pages/PasswordChangePage";
 import { ProfileRoute } from "../../routes/ProfileRoute";
 import { ProtectedRoute } from "../../routes/ProtectedRoute";
+import { RouteTransitionManager } from "../../routes/RouteTransitionManager";
 import {
   api,
   setApiAccessToken,
@@ -19,6 +22,7 @@ import type { AuthenticatedSession, ProfileName } from "./types";
 function sessionFor(
   profileName: ProfileName,
   expiresInMilliseconds = 60_000,
+  requiresPasswordChange = false,
 ): AuthenticatedSession {
   return {
     accessToken: "test-only-access-token",
@@ -27,12 +31,45 @@ function sessionFor(
       email: "operator@example.test",
       id: 42,
       profileName,
+      requiresPasswordChange,
     },
   };
 }
 
+function renderRestrictedApplication(
+  initialEntry: string | { pathname: string; state?: unknown } = "/login",
+) {
+  return render(
+    <SessionProvider>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <Routes>
+          <Route element={<RouteTransitionManager />}>
+            <Route element={<LoginPage />} path="/login" />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route element={<ProfileRoute />}>
+                  <Route
+                    element={<h1>Painel operacional fictício</h1>}
+                    path="/visao-geral"
+                  />
+                  <Route
+                    element={<h1>Operação fictícia</h1>}
+                    path="/acessos/novo"
+                  />
+                  <Route element={<PasswordChangePage />} path="/conta/senha" />
+                </Route>
+              </Route>
+            </Route>
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </SessionProvider>,
+  );
+}
+
 function SessionIdentity() {
-  const { logout, sessionNotice, user } = useAuthenticatedSession();
+  const { completePasswordChange, logout, sessionNotice, user } =
+    useAuthenticatedSession();
   return (
     <div>
       <p>
@@ -40,6 +77,9 @@ function SessionIdentity() {
       </p>
       <button onClick={logout} type="button">
         Sair
+      </button>
+      <button onClick={completePasswordChange} type="button">
+        Concluir troca de senha
       </button>
       <label>
         Observação
@@ -159,7 +199,145 @@ describe("authentication flow", () => {
     expect(window.sessionStorage).toHaveLength(0);
   });
 
-  it("keeps invalid, inactive and temporarily blocked accounts indistinguishable", async () => {
+  it("routes a restricted login directly to mandatory password change", async () => {
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: sessionFor("Porteiro", 60_000, true),
+    });
+
+    renderRestrictedApplication();
+    await submitCredentials();
+
+    const heading = await screen.findByRole("heading", {
+      name: "Crie sua senha permanente",
+    });
+    expect(heading).toHaveFocus();
+    expect(
+      screen.getByText(/credencial temporária usada para entrar/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Senha atual")).toHaveValue("");
+    expect(
+      screen.queryByText("Painel operacional fictício"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Abrir menu" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("routes a normal login to the requested application page", async () => {
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: sessionFor("Porteiro", 60_000, false),
+    });
+
+    renderRestrictedApplication();
+    await submitCredentials();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Painel operacional fictício",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("navigation")).toBeInTheDocument();
+  });
+
+  it("restores a restricted session into password change before rendering a manual operational URL", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: { requestToken: "test-only-csrf-token" },
+    });
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: sessionFor("Vigilante", 60_000, true),
+    });
+
+    renderRestrictedApplication("/acessos/novo");
+
+    expect(screen.getByText("Validando sua sessão…")).toBeInTheDocument();
+    expect(screen.queryByText("Operação fictícia")).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        name: "Crie sua senha permanente",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Operação fictícia")).not.toBeInTheDocument();
+  });
+
+  it("allows logout while the account is restricted", async () => {
+    const post = vi
+      .spyOn(api, "post")
+      .mockImplementation(async (url) =>
+        url === "/auth/login"
+          ? { data: sessionFor("SetorTransporte", 60_000, true) }
+          : { data: undefined },
+      );
+
+    renderRestrictedApplication();
+    await submitCredentials();
+    await screen.findByRole("heading", { name: "Crie sua senha permanente" });
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: { requestToken: "logout-test-csrf-token" },
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Sair" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Bem-vindo," }),
+    ).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith(
+      "/auth/logout",
+      null,
+      expect.objectContaining({ skipSessionRefresh: true }),
+    );
+  });
+
+  it("ends a restricted session after one successful password change and requires a new login", async () => {
+    const currentInput = "fictional-current-input";
+    const permanentInput = "fictional-permanent-input";
+    const consoleSpies = [
+      vi.spyOn(console, "error").mockImplementation(() => undefined),
+      vi.spyOn(console, "info").mockImplementation(() => undefined),
+      vi.spyOn(console, "log").mockImplementation(() => undefined),
+      vi.spyOn(console, "warn").mockImplementation(() => undefined),
+    ];
+    const post = vi
+      .spyOn(api, "post")
+      .mockImplementation(async (url) =>
+        url === "/auth/login"
+          ? { data: sessionFor("Administrador", 60_000, true) }
+          : { data: undefined },
+      );
+
+    renderRestrictedApplication();
+    await submitCredentials();
+    await screen.findByRole("heading", { name: "Crie sua senha permanente" });
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Senha atual"), currentInput);
+    await user.type(screen.getByLabelText("Nova senha"), permanentInput);
+    await user.type(
+      screen.getByLabelText("Confirmar nova senha"),
+      permanentInput,
+    );
+    await user.dblClick(screen.getByRole("button", { name: "Alterar senha" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Senha alterada com segurança. Entre novamente usando a nova senha.",
+    );
+    expect(
+      post.mock.calls.filter(([url]) => url === "/auth/password"),
+    ).toHaveLength(1);
+    expect(
+      screen.queryByText("Painel operacional fictício"),
+    ).not.toBeInTheDocument();
+    expect(window.localStorage).toHaveLength(0);
+    expect(window.sessionStorage).toHaveLength(0);
+    expect(window.location.href).not.toContain(currentInput);
+    expect(window.location.href).not.toContain(permanentInput);
+    for (const consoleSpy of consoleSpies) {
+      expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(currentInput);
+      expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(
+        permanentInput,
+      );
+    }
+  });
+
+  it("keeps invalid, expired, reused, inactive and temporarily blocked credentials indistinguishable", async () => {
     vi.spyOn(api, "post").mockRejectedValue({
       isAxiosError: true,
       response: { data: { message: "Credenciais inválidas." }, status: 401 },
@@ -230,6 +408,30 @@ describe("authentication flow", () => {
     expect(
       await screen.findByRole("heading", { name: "Bem-vindo," }),
     ).toBeInTheDocument();
+  });
+
+  it("clears the local session and announces a completed password change", async () => {
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: sessionFor("Porteiro"),
+    });
+
+    renderAuthenticationFlow();
+    await submitCredentials();
+    await screen.findByText("operator@example.test — Porteiro");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Concluir troca de senha" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Senha alterada com segurança. Entre novamente usando a nova senha.",
+    );
+    expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
+      "aria-describedby",
+      "login-status-message",
+    );
+    expect(
+      screen.queryByText("operator@example.test — Porteiro"),
+    ).not.toBeInTheDocument();
   });
 
   it("clears the local session even when server logout cannot be confirmed", async () => {

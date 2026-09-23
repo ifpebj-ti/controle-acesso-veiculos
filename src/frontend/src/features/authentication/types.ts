@@ -23,6 +23,7 @@ export interface AuthenticatedUser {
   id: number;
   email: string;
   profileName: ProfileName;
+  requiresPasswordChange: boolean;
 }
 
 export interface AuthenticatedSession {
@@ -34,6 +35,7 @@ export interface AuthenticatedSession {
 export type SessionEndReason =
   | "expired"
   | "logout-unconfirmed"
+  | "password-changed"
   | "restoration-unavailable"
   | "unauthorized"
   | null;

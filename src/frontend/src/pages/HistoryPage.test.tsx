@@ -66,6 +66,7 @@ function pageResult(
 
 function renderPage(profileName: ProfileName = "Porteiro") {
   vi.mocked(useAuthenticatedSession).mockReturnValue({
+    completePasswordChange: vi.fn(),
     expiresAtUtc: "2099-01-01T00:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),
@@ -75,6 +76,7 @@ function renderPage(profileName: ProfileName = "Porteiro") {
       email: "operador.ficticio@example.test",
       id: 1,
       profileName,
+      requiresPasswordChange: false,
     },
   });
 

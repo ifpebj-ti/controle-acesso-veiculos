@@ -52,12 +52,18 @@ const driver: InstitutionalDriver = {
 
 function renderPage(profileName: ProfileName = "Administrador") {
   vi.mocked(useAuthenticatedSession).mockReturnValue({
+    completePasswordChange: vi.fn(),
     expiresAtUtc: "2026-09-06T22:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),
     sessionEndReason: null,
     status: "authenticated",
-    user: { email: "usuario@example.test", id: 1, profileName },
+    user: {
+      email: "usuario@example.test",
+      id: 1,
+      profileName,
+      requiresPasswordChange: false,
+    },
   });
 
   return render(

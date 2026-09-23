@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../../services/api";
 import {
   AuthenticationContractError,
+  authenticate,
   logoutAuthentication,
   refreshAuthentication,
 } from "./authenticationService";
@@ -14,6 +15,7 @@ const session = {
     email: "operator@example.test",
     id: 42,
     profileName: "Porteiro",
+    requiresPasswordChange: false,
   },
 };
 
@@ -67,5 +69,41 @@ describe("authentication session service", () => {
       AuthenticationContractError,
     );
     expect(post).not.toHaveBeenCalled();
+  });
+
+  it("rejects a login response without the mandatory password-change indicator", async () => {
+    const incompleteUser = {
+      email: session.user.email,
+      id: session.user.id,
+      profileName: session.user.profileName,
+    };
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: { ...session, user: incompleteUser },
+    });
+
+    await expect(
+      authenticate({
+        email: "operator@example.test",
+        password: "fictional-input-only",
+      }),
+    ).rejects.toBeInstanceOf(AuthenticationContractError);
+  });
+
+  it("rejects a refresh response without the mandatory password-change indicator", async () => {
+    const incompleteUser = {
+      email: session.user.email,
+      id: session.user.id,
+      profileName: session.user.profileName,
+    };
+    vi.spyOn(api, "get").mockResolvedValue({
+      data: { requestToken: "test-only-csrf-token" },
+    });
+    vi.spyOn(api, "post").mockResolvedValue({
+      data: { ...session, user: incompleteUser },
+    });
+
+    await expect(refreshAuthentication()).rejects.toBeInstanceOf(
+      AuthenticationContractError,
+    );
   });
 });

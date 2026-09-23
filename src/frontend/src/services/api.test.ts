@@ -108,6 +108,40 @@ describe("authenticated API requests", () => {
     expect(unauthorizedHandler).toHaveBeenCalledOnce();
   });
 
+  it("sends authentication but never repeats a protected sensitive mutation", async () => {
+    setApiAccessToken("test-only-access-token");
+    const refresh = vi.fn().mockResolvedValue("renewed-test-token");
+    const unauthorizedHandler = vi.fn();
+    setApiSessionRefreshHandler(refresh);
+    setApiUnauthorizedHandler(unauthorizedHandler);
+    let attempts = 0;
+    let authorizationHeader: string | undefined;
+
+    await expect(
+      api.post(
+        "/auth/password",
+        {
+          currentPassword: "current-test-value",
+          newPassword: "new-test-value",
+        },
+        {
+          adapter: async (config) => {
+            attempts += 1;
+            authorizationHeader = config.headers.Authorization as
+              string | undefined;
+            throw unauthorized(config);
+          },
+          skipSessionRetry: true,
+        },
+      ),
+    ).rejects.toMatchObject({ isAxiosError: true });
+
+    expect(authorizationHeader).toBe("Bearer test-only-access-token");
+    expect(attempts).toBe(1);
+    expect(refresh).not.toHaveBeenCalled();
+    expect(unauthorizedHandler).toHaveBeenCalledOnce();
+  });
+
   it.each(["/auth/login", "/auth/refresh", "/auth/logout", "/auth/csrf"])(
     "never renews or retries the session endpoint %s",
     async (url) => {
