@@ -214,7 +214,6 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
-        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
