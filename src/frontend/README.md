@@ -13,8 +13,11 @@ o catálogo de motoristas lista, autoriza e desativa autorizações pela API. A
 A área de utilizações institucionais registra saídas e retornos e consulta usos
 abertos e histórico conforme o perfil autenticado.
 A visão geral consulta o resumo operacional diário agregado da API. A área de
-administração consulta, cria, desativa e reativa contas pela API e também
-consulta a trilha de auditoria em uma área separada da mesma tela.
+administração consulta, cria, desativa e reativa contas pela API, mostra o
+estado mínimo das credenciais temporárias e permite ao Administrador redefinir
+a credencial de outra conta ativa. Credenciais emitidas pelo servidor aparecem
+uma única vez em memória, com cópia explícita e sem persistência no navegador. A
+mesma tela também consulta a trilha de auditoria em uma área separada.
 
 Fluxo sugerido para validação local:
 
@@ -236,8 +239,10 @@ papel e nome acessível e cobrem autenticação, restrição visual por perfil,
 movimentações gerais, estados de carregamento, vazio, falha e acesso negado.
 O resumo operacional possui cobertura de contrato, perfis, seleção de data,
 falha com nova tentativa e resposta diária sem movimentações.
-A administração de contas possui cobertura de contrato, filtros, criação segura,
-mudanças de estado, conflitos, falha de recarga e acessibilidade.
+A administração de contas possui cobertura de contrato, filtros, criação sem
+senha definida pelo Administrador, exibição única e cópia de credencial
+temporária, redefinição categorizada, mudanças de estado, conflitos, rate
+limiting, falha de recarga e acessibilidade.
 A auditoria administrativa possui cobertura de contrato, restrição por perfil,
 filtros locais e da API, paginação, estados vazio e indisponível, nova tentativa
 e renderização segura de detalhes e estados JSON.
@@ -349,7 +354,9 @@ src/
 
 - a troca obrigatória no primeiro acesso depende da integração coordenada com o
   contrato de credencial temporária do backend no PR #259;
-- recuperação de senha sem sessão e redefinição administrativa de senha;
+- recuperação autônoma de senha sem sessão;
+- definição institucional do canal usado para repassar credenciais temporárias
+  criadas ou redefinidas pelo Administrador;
 - suporte à renovação transparente em navegadores sem Web Locks API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;
