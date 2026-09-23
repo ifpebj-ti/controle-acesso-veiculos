@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { profileLabels } from "../../authentication";
 import { ContentState } from "../../../components/ui/ContentState";
@@ -24,6 +24,8 @@ const credentialExpirationFormatter = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short",
 });
 
+const maximumTimerDelay = 2_147_483_647;
+
 export function UserAccountCatalog({
   currentUserId,
   onPageChange,
@@ -33,7 +35,40 @@ export function UserAccountCatalog({
   pendingAction,
   status,
 }: UserAccountCatalogProps) {
-  const [renderedAt] = useState(() => Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (status !== "ready" || !page) return;
+
+    const now = Date.now();
+    const expirations = page.items.flatMap((account) => {
+      if (
+        !account.requiresPasswordChange ||
+        !account.temporaryCredentialExpiresAtUtc
+      ) {
+        return [];
+      }
+      const timestamp = new Date(
+        account.temporaryCredentialExpiresAtUtc,
+      ).getTime();
+      return Number.isFinite(timestamp) ? [timestamp] : [];
+    });
+    const stateIsBehind = expirations.some(
+      (expiration) => expiration <= now && expiration > currentTime,
+    );
+    const nextExpiration = Math.min(
+      ...expirations.filter((expiration) => expiration > now),
+    );
+
+    if (!stateIsBehind && !Number.isFinite(nextExpiration)) return;
+
+    const delay = stateIsBehind
+      ? 0
+      : Math.min(maximumTimerDelay, Math.max(0, nextExpiration - now + 1));
+    const timer = window.setTimeout(() => setCurrentTime(Date.now()), delay);
+    return () => window.clearTimeout(timer);
+  }, [currentTime, page, status]);
+
   if (status === "loading") {
     return (
       <ContentState
@@ -70,7 +105,7 @@ export function UserAccountCatalog({
             onResetCredential={onResetCredential}
             onToggle={onToggle}
             pendingAction={pendingAction}
-            renderedAt={renderedAt}
+            currentTime={currentTime}
           />
         ))}
       </div>
@@ -119,7 +154,10 @@ export function UserAccountCatalog({
                   />
                 </td>
                 <td className="px-4 py-4">
-                  <CredentialStatus account={account} renderedAt={renderedAt} />
+                  <CredentialStatus
+                    account={account}
+                    currentTime={currentTime}
+                  />
                 </td>
                 <td className="px-4 py-4 text-ink-soft">
                   {dateFormatter.format(new Date(account.createdAtUtc))}
@@ -203,14 +241,14 @@ function AccountCard({
   onResetCredential,
   onToggle,
   pendingAction,
-  renderedAt,
+  currentTime,
 }: {
   account: UserAccount;
   currentUserId: number;
   onResetCredential: (account: UserAccount, trigger: HTMLElement) => void;
   onToggle: (account: UserAccount) => void;
   pendingAction: string | null;
-  renderedAt: number;
+  currentTime: number;
 }) {
   return (
     <article className="rounded-2xl border border-ink/10 bg-cream/25 p-4">
@@ -227,7 +265,7 @@ function AccountCard({
         />
       </div>
       <div className="mt-3 border-t border-ink/8 pt-3">
-        <CredentialStatus account={account} renderedAt={renderedAt} />
+        <CredentialStatus account={account} currentTime={currentTime} />
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-ink/8 pt-3">
         <span className="text-sm font-semibold text-brand-dark">
@@ -254,10 +292,10 @@ function AccountCard({
 
 function CredentialStatus({
   account,
-  renderedAt,
+  currentTime,
 }: {
   account: UserAccount;
-  renderedAt: number;
+  currentTime: number;
 }) {
   if (!account.requiresPasswordChange) {
     return <span className="text-xs text-ink-soft">Sem troca pendente</span>;
@@ -265,7 +303,7 @@ function CredentialStatus({
 
   const expiration = account.temporaryCredentialExpiresAtUtc;
   const expired = expiration
-    ? new Date(expiration).getTime() <= renderedAt
+    ? new Date(expiration).getTime() <= currentTime
     : false;
   return (
     <div className="space-y-1">
