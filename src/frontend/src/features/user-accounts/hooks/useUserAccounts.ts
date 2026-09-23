@@ -48,14 +48,12 @@ function createFieldErrors(error: unknown) {
   ) as UserAccountServerErrors;
 }
 
-export function useUserAccounts(enabled = true) {
+export function useUserAccounts() {
   const requestId = useRef(0);
   const [draft, setDraft] = useState<UserAccountFilters>(initialFilters);
   const [applied, setApplied] = useState<UserAccountFilters>(initialFilters);
   const [page, setPage] = useState<UserAccountPage | null>(null);
-  const [status, setStatus] = useState<AccountStatus>(
-    enabled ? "loading" : "idle",
-  );
+  const [status, setStatus] = useState<AccountStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filterError, setFilterError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -72,9 +70,19 @@ export function useUserAccounts(enabled = true) {
     useState<HTMLElement | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
 
+  function clearSensitiveTransientState() {
+    setCredentialDisclosure(null);
+    setResetTarget(null);
+    setResetError(null);
+    setResetReturnFocusTo(null);
+    setFormOpen(false);
+    setFormError(null);
+    setServerErrors({});
+    setFormReturnFocusTo(null);
+  }
+
   const load = useCallback(
     async (filters: UserAccountFilters, persistedMessage?: string) => {
-      if (!enabled) return;
       const currentRequest = ++requestId.current;
       setStatus("loading");
       setPage(null);
@@ -105,11 +113,10 @@ export function useUserAccounts(enabled = true) {
         setNotice(null);
       }
     },
-    [enabled],
+    [],
   );
 
   useEffect(() => {
-    if (!enabled) return;
     const currentRequest = ++requestId.current;
     void searchUserAccounts(initialFilters)
       .then((result) => {
@@ -126,7 +133,7 @@ export function useUserAccounts(enabled = true) {
     return () => {
       requestId.current += 1;
     };
-  }, [enabled]);
+  }, []);
 
   function updateDraft(next: UserAccountFilters) {
     setDraft(next);
@@ -173,6 +180,7 @@ export function useUserAccounts(enabled = true) {
     setFormOpen(false);
     setFormError(null);
     setServerErrors({});
+    setFormReturnFocusTo(null);
   }
 
   function clearServerError(field: keyof UserAccountServerErrors) {
@@ -203,12 +211,14 @@ export function useUserAccounts(enabled = true) {
         credential,
         returnFocusTo: formReturnFocusTo,
       });
+      setFormReturnFocusTo(null);
       setFormOpen(false);
       await load(applied, "Conta criada com sucesso.");
     } catch (error) {
       const description = describeApiError(error);
       const fieldErrors = createFieldErrors(error);
       if (description.kind === "access-denied") {
+        clearSensitiveTransientState();
         setStatus("denied");
         setErrorMessage(description.message);
       } else {
@@ -242,6 +252,7 @@ export function useUserAccounts(enabled = true) {
     if (pendingAction) return;
     setResetError(null);
     setResetTarget(null);
+    setResetReturnFocusTo(null);
   }
 
   async function confirmCredentialReset(reason: CredentialResetReason) {
@@ -260,6 +271,7 @@ export function useUserAccounts(enabled = true) {
         credential,
         returnFocusTo: resetReturnFocusTo,
       });
+      setResetReturnFocusTo(null);
       await load(
         applied,
         `Credencial de ${account.name} redefinida com sucesso.`,
@@ -267,7 +279,7 @@ export function useUserAccounts(enabled = true) {
     } catch (error) {
       const description = describeApiError(error);
       if (description.kind === "access-denied") {
-        setResetTarget(null);
+        clearSensitiveTransientState();
         setStatus("denied");
         setErrorMessage(description.message);
       } else {
@@ -308,7 +320,10 @@ export function useUserAccounts(enabled = true) {
       );
     } catch (error) {
       const description = describeApiError(error);
-      if (description.kind === "access-denied") setStatus("denied");
+      if (description.kind === "access-denied") {
+        clearSensitiveTransientState();
+        setStatus("denied");
+      }
       setErrorMessage(description.message);
     } finally {
       setPendingAction(null);
@@ -328,7 +343,7 @@ export function useUserAccounts(enabled = true) {
     filterError,
     formError,
     formOpen,
-    credentialDisclosure: enabled ? credentialDisclosure : null,
+    credentialDisclosure,
     goToPage,
     notice,
     openCredentialReset,

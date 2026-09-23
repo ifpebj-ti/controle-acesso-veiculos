@@ -23,12 +23,23 @@ export function AdminPage() {
     user.profileName,
     "manage-administration",
   );
+
+  if (!isAdministrator) {
+    return (
+      <AccessDeniedState message="A administração de contas é exclusiva do perfil Administrador." />
+    );
+  }
+
+  return <AdministratorPage currentUserId={user.id} />;
+}
+
+function AdministratorPage({ currentUserId }: { currentUserId: number }) {
   const [activeArea, setActiveArea] = useState<"accounts" | "audit">(
     "accounts",
   );
-  const accounts = useUserAccounts(isAdministrator);
+  const accounts = useUserAccounts();
 
-  if (!isAdministrator || accounts.status === "denied") {
+  if (accounts.status === "denied") {
     return (
       <AccessDeniedState
         message={
@@ -153,7 +164,7 @@ export function AdminPage() {
             onClear={accounts.clearFilters}
           />
           <UserAccountCatalog
-            currentUserId={user.id}
+            currentUserId={currentUserId}
             onPageChange={accounts.goToPage}
             onResetCredential={accounts.openCredentialReset}
             onToggle={(account) => void accounts.changeAccountState(account)}
@@ -163,7 +174,7 @@ export function AdminPage() {
           />
         </section>
       ) : (
-        <AuditTrailPanel enabled={isAdministrator} />
+        <AuditTrailPanel enabled />
       )}
 
       <aside className="mt-6 rounded-3xl border border-[#EFD780] bg-[#EFD780]/30 p-5 text-sm leading-6 text-ink-soft sm:p-6">

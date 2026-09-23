@@ -103,7 +103,7 @@ const auditPage: AuditTrailPage = {
   totalPages: 1,
 };
 
-function renderPage(profileName: ProfileName = "Administrador") {
+function mockAuthenticatedProfile(profileName: ProfileName) {
   vi.mocked(useAuthenticatedSession).mockReturnValue({
     completePasswordChange: vi.fn(),
     expiresAtUtc: "2030-06-10T22:00:00Z",
@@ -113,6 +113,10 @@ function renderPage(profileName: ProfileName = "Administrador") {
     status: "authenticated",
     user: { email: "admin.ficticio@example.test", id: 1, profileName },
   });
+}
+
+function renderPage(profileName: ProfileName = "Administrador") {
+  mockAuthenticatedProfile(profileName);
   return render(
     <MemoryRouter>
       <AdminPage />
@@ -703,21 +707,7 @@ describe("AdminPage", () => {
       await screen.findByText("temporary-test-credential"),
     ).toBeInTheDocument();
 
-    const downgradedUser = {
-      email: "porteiro.ficticio@example.test",
-      id: 2,
-      profileName: "Porteiro" as const,
-      requiresPasswordChange: false,
-    };
-    vi.mocked(useAuthenticatedSession).mockReturnValue({
-      completePasswordChange: vi.fn(),
-      expiresAtUtc: "2030-06-10T22:00:00Z",
-      login: vi.fn(),
-      logout: vi.fn(),
-      sessionEndReason: "expired",
-      status: "authenticated",
-      user: downgradedUser,
-    });
+    mockAuthenticatedProfile("Porteiro");
     view.rerender(
       <MemoryRouter>
         <AdminPage />
@@ -728,6 +718,23 @@ describe("AdminPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByText("temporary-test-credential"),
+    ).not.toBeInTheDocument();
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+    expect(window.location.href).not.toContain("temporary-test-credential");
+
+    mockAuthenticatedProfile("Administrador");
+    view.rerender(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>,
+    );
+    await screen.findAllByText(activeAccount.name);
+    expect(
+      screen.queryByText("temporary-test-credential"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "Credencial temporária criada" }),
     ).not.toBeInTheDocument();
   });
 
