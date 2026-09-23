@@ -76,6 +76,7 @@ function renderPage(profileName: ProfileName = "Porteiro") {
       email: "operador.ficticio@example.test",
       id: 1,
       profileName,
+      requiresPasswordChange: false,
     },
   });
 

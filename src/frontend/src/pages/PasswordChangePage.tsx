@@ -8,7 +8,8 @@ import {
 
 export function PasswordChangePage() {
   const navigate = useNavigate();
-  const { completePasswordChange } = useAuthenticatedSession();
+  const { completePasswordChange, user } = useAuthenticatedSession();
+  const isMandatory = user.requiresPasswordChange;
 
   function handleSuccess() {
     completePasswordChange();
@@ -18,9 +19,13 @@ export function PasswordChangePage() {
   return (
     <div className="min-w-0 pb-8">
       <PageHeader
-        description="Confirme sua senha atual e escolha uma nova senha para proteger sua conta."
-        eyebrow="Segurança da conta"
-        title="Alterar senha"
+        description={
+          isMandatory
+            ? "Substitua a credencial temporária por uma senha permanente antes de acessar o sistema."
+            : "Confirme sua senha atual e escolha uma nova senha para proteger sua conta."
+        }
+        eyebrow={isMandatory ? "Primeiro acesso" : "Segurança da conta"}
+        title={isMandatory ? "Crie sua senha permanente" : "Alterar senha"}
       />
 
       <div className="mt-7 grid min-w-0 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]">
@@ -35,8 +40,9 @@ export function PasswordChangePage() {
             Defina sua nova senha
           </h2>
           <p className="mt-2 text-sm leading-6 text-ink-soft">
-            O servidor confirmará a senha atual e aplicará a política de
-            segurança antes de concluir a alteração.
+            {isMandatory
+              ? "Digite novamente a credencial temporária usada para entrar e escolha uma senha somente sua."
+              : "O servidor confirmará a senha atual e aplicará a política de segurança antes de concluir a alteração."}
           </p>
           <div className="mt-6 max-w-2xl">
             <PasswordChangeForm onSuccess={handleSuccess} />
