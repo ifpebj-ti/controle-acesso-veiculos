@@ -92,6 +92,11 @@ Referência:
 - revogar a família no logout, na desativação e na detecção de reutilização;
 - exigir a credencial atual na troca autenticada, revogar todas as sessões e
   invalidar access tokens anteriores por uma versão de credencial verificada no servidor;
+- não permitir que o Administrador escolha a senha permanente de outra pessoa;
+- gerar credenciais iniciais e de redefinição com fonte criptográfica, prazo curto,
+  uso único transacional, troca obrigatória, resposta sem cache e persistência somente do hash;
+- restringir contas com credencial temporária ao fluxo mínimo de troca e logout;
+- tratar redefinição como operação administrativa auditada e revogar todas as sessões;
 - proteger operações administrativas e auditoria separadamente;
 - não implementar algoritmo criptográfico próprio;
 - não registrar senha, token ou header de autorização.
@@ -100,8 +105,10 @@ As decisões atuais de token, hash, bloqueio, ciclo administrativo de contas,
 sessões e políticas estão em [Autenticação e autorização](authentication.md). A
 Issue #190 implementa renovação rotativa, revogação no servidor e logout; a
 Issue #191 integra esse contrato no frontend. A Issue #251 implementa a troca
-autenticada sem criar um canal fictício de recuperação. Recuperação de acesso e
-matriz final de perfis permanecem pendentes de validação institucional.
+autenticada e a Issue #258 implementa a fundação de credencial temporária e
+redefinição administrativa sem inventar e-mail, SMS ou SSO. Canal de entrega,
+responsáveis institucionais e matriz final de perfis permanecem pendentes de
+validação nas Issues #162 e #220.
 
 Referências:
 

@@ -71,6 +71,18 @@ public sealed class AuthenticationSessionService(
                     return RenewSessionResult.Invalid();
                 }
 
+                if (authenticationSession.User.TrocaSenhaObrigatoria &&
+                    authenticationSession.User.CredencialTemporariaExpiraEm <= now)
+                {
+                    await RevokeFamilyAsync(
+                        session.FamiliaId,
+                        now,
+                        MotivoRevogacaoSessao.Expiracao,
+                        transactionCancellationToken);
+                    await userStore.SaveChangesAsync(null, transactionCancellationToken);
+                    return RenewSessionResult.Invalid();
+                }
+
                 if (!session.PodeSerRenovada(
                         now,
                         sessionPolicy.InactivityTimeout))
@@ -91,7 +103,8 @@ public sealed class AuthenticationSessionService(
                     authenticationSession.User.Id,
                     authenticationSession.User.Email,
                     authenticationSession.ProfileName,
-                    authenticationSession.User.VersaoCredencial);
+                    authenticationSession.User.VersaoCredencial,
+                    authenticationSession.User.TrocaSenhaObrigatoria);
 
                 return RenewSessionResult.Success(
                     accessToken,
@@ -100,7 +113,8 @@ public sealed class AuthenticationSessionService(
                     new LoginUser(
                         authenticationSession.User.Id,
                         authenticationSession.User.Email,
-                        authenticationSession.ProfileName));
+                        authenticationSession.ProfileName,
+                        authenticationSession.User.TrocaSenhaObrigatoria));
             },
             cancellationToken);
     }

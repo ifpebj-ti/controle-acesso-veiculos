@@ -328,7 +328,7 @@ representativo sem acessar o banco diretamente:
 
 Para a API exposta pelo Compose, omita `-ApiBaseUrl` ou use a porta local
 configurada. O script aceita somente loopback, solicita as credenciais do
-Administrador e três senhas temporárias distintas por prompt protegido, e não
+Administrador e três senhas locais de demonstração distintas por prompt protegido, e não
 imprime senha ou token. Ele cria contas e cenários fictícios abertos e
 encerrados pelos endpoints normais da API. Consulte o
 [guia dos dados de demonstração](infrastructure/demo/README.md) antes de executar.

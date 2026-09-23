@@ -151,7 +151,7 @@ outro terminal:
 ```
 
 O script aceita somente uma API em loopback e solicita interativamente a conta
-administrativa e três senhas temporárias distintas. Ele usa os endpoints normais
+administrativa e três senhas locais de demonstração distintas. Ele usa os endpoints normais
 para preservar autorização, validações e auditoria e deixa exemplos abertos e
 encerrados. Não projete os prompts durante a reunião. Em uma segunda execução,
 informe as mesmas senhas para comprovar que os dados não são duplicados.

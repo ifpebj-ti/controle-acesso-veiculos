@@ -10,7 +10,7 @@ import type {
 export interface SessionContextValue {
   completePasswordChange: () => void;
   expiresAtUtc: string | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<AuthenticatedUser>;
   logout: () => Promise<void>;
   sessionEndReason: SessionEndReason;
   sessionNotice?: SessionNotice;

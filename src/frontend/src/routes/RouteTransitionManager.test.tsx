@@ -42,6 +42,7 @@ function sessionValue(profileName: ProfileName = "Administrador") {
       email: "route-test@example.test",
       id: 42,
       profileName,
+      requiresPasswordChange: false,
     },
   };
 }

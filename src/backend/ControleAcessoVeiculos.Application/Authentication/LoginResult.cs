@@ -25,4 +25,8 @@ public sealed record LoginResult(
             user);
 }
 
-public sealed record LoginUser(int Id, string Email, string ProfileName);
+public sealed record LoginUser(
+    int Id,
+    string Email,
+    string ProfileName,
+    bool RequiresPasswordChange);

@@ -20,6 +20,15 @@ public static class UserAccountEndpoints
             .WithName("DeactivateUser");
         group.MapPost("/{id:int}/reactivation", ReactivateAsync)
             .WithName("ReactivateUser");
+        group.MapPost("/{id:int}/temporary-credential", ResetCredentialAsync)
+            .RequireRateLimiting(ApiRateLimiting.PasswordChangePolicy)
+            .WithName("ResetUserCredential")
+            .Produces<TemporaryCredentialResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
+            .Produces(StatusCodes.Status429TooManyRequests);
 
         return endpoints;
     }
@@ -62,18 +71,71 @@ public static class UserAccountEndpoints
             actorUserId,
             cancellationToken);
 
-        return result.Status switch
+        if (result.Status == CreateUserAccountStatus.Success)
         {
-            CreateUserAccountStatus.Success => Results.Created(
+            httpContext.Response.Headers.CacheControl = "no-store";
+            httpContext.Response.Headers.Pragma = "no-cache";
+            return Results.Created(
                 $"/users/{result.UserId}",
                 new CreateUserResponse(
                     result.UserId!.Value,
                     result.Email!,
-                    result.ProfileName!)),
+                    result.ProfileName!,
+                    result.TemporaryCredential,
+                    result.TemporaryCredentialExpiresAtUtc));
+        }
+
+        return result.Status switch
+        {
             CreateUserAccountStatus.Conflict => Results.Conflict(new
             {
                 Message = "Não foi possível criar a conta.",
                 Errors = result.Errors
+            }),
+            _ => Results.ValidationProblem(result.Errors)
+        };
+    }
+
+    private static async Task<IResult> ResetCredentialAsync(
+        int id,
+        AdministrativeCredentialResetRequest request,
+        HttpContext httpContext,
+        AdministrativeCredentialResetService service,
+        CancellationToken cancellationToken)
+    {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await service.ResetAsync(
+            id,
+            actorUserId,
+            request.Reason,
+            cancellationToken);
+
+        if (result.Status == AdministrativeCredentialResetStatus.Success)
+        {
+            httpContext.Response.Headers.CacheControl = "no-store";
+            httpContext.Response.Headers.Pragma = "no-cache";
+            return Results.Ok(new TemporaryCredentialResponse(
+                result.TemporaryCredential!,
+                result.TemporaryCredentialExpiresAtUtc!.Value));
+        }
+
+        return result.Status switch
+        {
+            AdministrativeCredentialResetStatus.NotFound => Results.NotFound(new
+            {
+                Message = "Conta de usuário não encontrada."
+            }),
+            AdministrativeCredentialResetStatus.Inactive => Results.Conflict(new
+            {
+                Message = "Reative a conta antes de redefinir sua credencial."
+            }),
+            AdministrativeCredentialResetStatus.SelfReset => Results.Conflict(new
+            {
+                Message = "Use a troca autenticada para alterar a própria senha."
             }),
             _ => Results.ValidationProblem(result.Errors)
         };
@@ -145,7 +207,18 @@ public sealed record SearchUserAccountsRequest(
 public sealed record CreateUserRequest(
     string Name,
     string Email,
-    string Password,
+    string? Password,
     string ProfileName);
 
-public sealed record CreateUserResponse(int Id, string Email, string ProfileName);
+public sealed record CreateUserResponse(
+    int Id,
+    string Email,
+    string ProfileName,
+    string? TemporaryCredential,
+    DateTime? TemporaryCredentialExpiresAtUtc);
+
+public sealed record AdministrativeCredentialResetRequest(string Reason);
+
+public sealed record TemporaryCredentialResponse(
+    string TemporaryCredential,
+    DateTime TemporaryCredentialExpiresAtUtc);

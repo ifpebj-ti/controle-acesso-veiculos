@@ -100,7 +100,9 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
             .ToArray();
 
         Assert.Equal(["accessToken", "expiresAtUtc", "user"], loginProperties);
-        Assert.Equal(["email", "id", "profileName"], userProperties);
+        Assert.Equal(
+            ["email", "id", "profileName", "requiresPasswordChange"],
+            userProperties);
         Assert.False(paths.TryGetProperty("/weatherforecast", out _));
     }
 

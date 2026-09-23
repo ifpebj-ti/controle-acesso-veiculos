@@ -23,6 +23,7 @@ export interface AuthenticatedUser {
   id: number;
   email: string;
   profileName: ProfileName;
+  requiresPasswordChange: boolean;
 }
 
 export interface AuthenticatedSession {

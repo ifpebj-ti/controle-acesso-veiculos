@@ -9,6 +9,8 @@ export interface UserAccount {
   createdAtUtc: string;
   updatedAtUtc: string | null;
   lockedUntilUtc: string | null;
+  requiresPasswordChange: boolean;
+  temporaryCredentialExpiresAtUtc: string | null;
 }
 
 export interface UserAccountPage {
@@ -29,7 +31,6 @@ export interface UserAccountFilters {
 export interface CreateUserAccountInput {
   name: string;
   email: string;
-  password: string;
   profileName: ProfileName;
 }
 
@@ -37,8 +38,23 @@ export interface CreatedUserAccount {
   id: number;
   email: string;
   profileName: ProfileName;
+  temporaryCredential: string;
+  temporaryCredentialExpiresAtUtc: string;
+}
+
+export const credentialResetReasons = [
+  "Esquecimento",
+  "SuspeitaComprometimento",
+  "ProvisionamentoCorretivo",
+] as const;
+
+export type CredentialResetReason = (typeof credentialResetReasons)[number];
+
+export interface TemporaryCredential {
+  temporaryCredential: string;
+  temporaryCredentialExpiresAtUtc: string;
 }
 
 export type UserAccountServerErrors = Partial<
-  Record<"email" | "name" | "password" | "profileName", string>
+  Record<"email" | "name" | "profileName", string>
 >;

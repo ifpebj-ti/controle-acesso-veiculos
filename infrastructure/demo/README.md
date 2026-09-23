@@ -8,7 +8,8 @@ cria atalhos de autenticação e não contém credenciais ou dados pessoais reai
 
 - aceita somente `localhost`, `127.0.0.1` ou outro endereço IP de loopback;
 - verifica `/health/ready` antes de escrever;
-- solicita credenciais e três senhas temporárias distintas como valores protegidos;
+- solicita credenciais e três senhas locais de demonstração distintas como valores protegidos;
+- provisiona cada conta com uma credencial temporária gerada pelo servidor e conclui a troca obrigatória pela API;
 - não imprime senha, token ou corpo de erro HTTP;
 - reutiliza contas e catálogos fictícios já existentes;
 - preserva um acesso e um uso institucional abertos para a demonstração;
@@ -40,7 +41,7 @@ O endereço padrão é `http://127.0.0.1:8080`. Se a API local usar outra porta:
 ```
 
 O primeiro prompt solicita o e-mail e a senha do Administrador local. Os três
-prompts seguintes solicitam senhas temporárias diferentes para Porteiro,
+prompts seguintes solicitam senhas locais de demonstração diferentes para Porteiro,
 Vigilante e Setor de Transporte. Os valores ficam somente na memória do processo
 e não devem ser colocados na linha de comando, em captura de tela, issue, commit
 ou Wiki.
@@ -53,10 +54,11 @@ O script cria ou reutiliza:
 - uso institucional concluído e uso institucional aberto;
 - evento vigente e acesso vinculado a uma placa autorizada.
 
-Execute novamente contra o mesmo banco e informe as mesmas três senhas
-temporárias para confirmar que o conjunto não é duplicado. Como a API ainda não
-possui redefinição administrativa de senha, uma senha diferente fará a validação
-da respectiva conta falhar sem alterar a credencial existente.
+Execute novamente contra o mesmo banco e informe as mesmas três senhas para
+confirmar que o conjunto não é duplicado. Se uma conta fictícia existente não
+aceitar a senha informada ou ainda exigir troca, o script usa a redefinição
+administrativa auditada, recebe uma nova credencial temporária e conclui a troca
+obrigatória sem imprimir nenhum dos valores.
 
 ## Validação automatizada
 

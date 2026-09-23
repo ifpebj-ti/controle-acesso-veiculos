@@ -7,16 +7,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ControleAcessoVeiculos.Infrastructure.Authentication;
 
-public sealed class AuthenticationUserStore(ControleAcessoVeiculosDbContext dbContext)
+public sealed class AuthenticationUserStore(
+    ControleAcessoVeiculosDbContext dbContext,
+    TimeProvider timeProvider)
     : IAuthenticationUserStore
 {
     public async Task<AuthenticationUser?> FindByEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken)
     {
-        var user = await dbContext.Usuarios.SingleOrDefaultAsync(
-            candidate => candidate.Email == normalizedEmail,
-            cancellationToken);
+        var user = await dbContext.Usuarios
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM dbo.usuarios
+                WHERE email = {normalizedEmail}
+                FOR UPDATE
+                """)
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (user is null)
         {
@@ -34,19 +41,24 @@ public sealed class AuthenticationUserStore(ControleAcessoVeiculosDbContext dbCo
     public Task<bool> IsAuthenticationStateValidAsync(
         int userId,
         int credentialVersion,
-        CancellationToken cancellationToken) =>
-        dbContext.Usuarios
+        CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        return dbContext.Usuarios
             .AsNoTracking()
             .Where(user =>
                 user.Id == userId &&
                 user.Ativo &&
-                user.VersaoCredencial == credentialVersion)
+                user.VersaoCredencial == credentialVersion &&
+                (!user.TrocaSenhaObrigatoria ||
+                 user.CredencialTemporariaExpiraEm > now))
             .Join(
                 dbContext.Perfis.AsNoTracking().Where(profile => profile.Ativo),
                 user => user.PerfilId,
                 profile => profile.Id,
                 (_, _) => true)
             .AnyAsync(cancellationToken);
+    }
 
     public Task SaveChangesAsync(
         AuthenticationAudit? audit,
