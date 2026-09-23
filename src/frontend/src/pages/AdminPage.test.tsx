@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,6 +12,7 @@ import {
   createUserAccount,
   deactivateUserAccount,
   reactivateUserAccount,
+  resetTemporaryCredential,
   searchUserAccounts,
   type UserAccount,
   type UserAccountPage,
@@ -38,6 +39,7 @@ vi.mock("../features/user-accounts/services/userAccountsService", () => ({
   createUserAccount: vi.fn(),
   deactivateUserAccount: vi.fn(),
   reactivateUserAccount: vi.fn(),
+  resetTemporaryCredential: vi.fn(),
   searchUserAccounts: vi.fn(),
 }));
 vi.mock("../features/audit-trail/services/auditTrailService", () => ({
@@ -56,6 +58,8 @@ const activeAccount: UserAccount = {
   lockedUntilUtc: null,
   name: "Porteiro Fictício",
   profileName: "Porteiro",
+  requiresPasswordChange: true,
+  temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
   updatedAtUtc: null,
 };
 
@@ -66,6 +70,8 @@ const inactiveAccount: UserAccount = {
   id: 9,
   name: "Vigilante Fictício",
   profileName: "Vigilante",
+  requiresPasswordChange: false,
+  temporaryCredentialExpiresAtUtc: null,
 };
 
 const accountPage: UserAccountPage = {
@@ -121,10 +127,6 @@ async function fillAccountForm(user: ReturnType<typeof userEvent.setup>) {
     screen.getByLabelText("E-mail de acesso"),
     "nova.pessoa@example.test",
   );
-  await user.type(
-    screen.getByLabelText("Senha temporária"),
-    "Senha-ficticia-2030",
-  );
   await selectFieldOption(
     user,
     screen.getByLabelText("Perfil de acesso"),
@@ -144,15 +146,19 @@ describe("AdminPage", () => {
     vi.mocked(getApiValidationErrors).mockReturnValue({});
   });
 
-  it("does not request administrative data for another profile", async () => {
-    renderPage("Porteiro");
+  it.each(["Porteiro", "Vigilante", "SetorTransporte"] as const)(
+    "does not request administrative data for profile %s",
+    async (profileName) => {
+      renderPage(profileName);
 
-    expect(
-      await screen.findByRole("heading", { name: "Acesso negado" }),
-    ).toBeInTheDocument();
-    expect(searchUserAccounts).not.toHaveBeenCalled();
-    expect(searchAuditTrail).not.toHaveBeenCalled();
-  });
+      expect(
+        await screen.findByRole("heading", { name: "Acesso negado" }),
+      ).toBeInTheDocument();
+      expect(searchUserAccounts).not.toHaveBeenCalled();
+      expect(searchAuditTrail).not.toHaveBeenCalled();
+      expect(resetTemporaryCredential).not.toHaveBeenCalled();
+    },
+  );
 
   it("loads the audit trail only when the administrator opens it", async () => {
     const user = userEvent.setup();
@@ -424,7 +430,7 @@ describe("AdminPage", () => {
     });
   });
 
-  it("clears the password and associates an API error with its field", async () => {
+  it("does not request a password and associates an API error with a creation field", async () => {
     vi.mocked(createUserAccount).mockRejectedValue(new Error("validation"));
     vi.mocked(describeApiError).mockReturnValue({
       kind: "validation",
@@ -432,31 +438,27 @@ describe("AdminPage", () => {
       status: 400,
     });
     vi.mocked(getApiValidationErrors).mockReturnValue({
-      password: "A senha temporária não atende aos requisitos.",
+      email: "O e-mail informado já está em uso.",
     });
     const user = userEvent.setup();
     renderPage();
     await screen.findAllByText(activeAccount.name);
     await fillAccountForm(user);
-    const password = screen.getByLabelText("Senha temporária");
+    expect(screen.queryByLabelText(/Senha/)).not.toBeInTheDocument();
+    const email = screen.getByLabelText("E-mail de acesso");
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
 
     const message = await screen.findByText(
-      "A senha temporária não atende aos requisitos.",
+      "O e-mail informado já está em uso.",
     );
-    expect(password).toHaveValue("");
-    expect(password).toHaveAttribute("aria-invalid", "true");
-    expect(password).toHaveAttribute(
-      "aria-describedby",
-      expect.stringContaining("account-password-error"),
-    );
-    expect(message).toHaveAttribute("id", "account-password-error");
+    expect(email).toHaveAttribute("aria-invalid", "true");
+    expect(message).toHaveAttribute("id", "account-email-error");
 
-    await user.type(password, "Outra-senha-ficticia");
+    await user.type(email, ".br");
     expect(
-      screen.queryByText("A senha temporária não atende aos requisitos."),
+      screen.queryByText("O e-mail informado já está em uso."),
     ).not.toBeInTheDocument();
-    expect(password).toHaveAttribute("aria-invalid", "false");
+    expect(email).toHaveAttribute("aria-invalid", "false");
   });
 
   it("retries a failed refresh without creating the account again", async () => {
@@ -464,6 +466,8 @@ describe("AdminPage", () => {
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
+      temporaryCredential: "temporary-test-credential",
+      temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
     });
     vi.mocked(searchUserAccounts)
       .mockResolvedValueOnce(accountPage)
@@ -481,17 +485,391 @@ describe("AdminPage", () => {
     expect(createUserAccount).toHaveBeenCalledWith({
       email: "nova.pessoa@example.test",
       name: "Nova Pessoa",
-      password: "Senha-ficticia-2030",
       profileName: "SetorTransporte",
     });
     expect(
       screen.queryByText("Nenhuma conta encontrada"),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Nova conta" })).toBeDisabled();
+    await user.click(
+      screen.getByRole("button", { name: "Fechar e apagar da tela" }),
+    );
     await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(await screen.findAllByText(activeAccount.name)).not.toHaveLength(0);
     expect(createUserAccount).toHaveBeenCalledTimes(1);
     expect(searchUserAccounts).toHaveBeenCalledTimes(3);
+  });
+
+  it("creates an account without a password and reveals the credential only once", async () => {
+    vi.mocked(createUserAccount).mockResolvedValue({
+      email: "nova.pessoa@example.test",
+      id: 10,
+      profileName: "SetorTransporte",
+      temporaryCredential: "temporary-test-credential",
+      temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
+    });
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    await screen.findAllByText(activeAccount.name);
+    const openButton = screen.getByRole("button", { name: "Nova conta" });
+    await fillAccountForm(user);
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Credencial temporária criada",
+    });
+    expect(createUserAccount).toHaveBeenCalledWith({
+      email: "nova.pessoa@example.test",
+      name: "Nova Pessoa",
+      profileName: "SetorTransporte",
+    });
+    expect(vi.mocked(createUserAccount).mock.calls[0][0]).not.toHaveProperty(
+      "password",
+    );
+    expect(dialog).toHaveTextContent("temporary-test-credential");
+    expect(dialog).toHaveTextContent(/não poderá ser recuperada/i);
+    await expectNoSeriousAccessibilityViolations(container);
+    expect(
+      within(dialog).getByRole("button", { name: "Fechar e apagar da tela" }),
+    ).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    expect(
+      screen.queryByText("temporary-test-credential"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /reabrir/i }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(openButton).toHaveFocus());
+  });
+
+  it("does not reveal an invalid creation response", async () => {
+    vi.mocked(createUserAccount).mockRejectedValue(
+      Object.assign(new Error("contract"), {
+        name: "UserAccountsContractError",
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await fillAccountForm(user);
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível consultar as contas.",
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Credencial temporária criada" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("announces clipboard success and failure without persisting the credential", async () => {
+    vi.mocked(createUserAccount).mockResolvedValue({
+      email: "nova.pessoa@example.test",
+      id: 10,
+      profileName: "SetorTransporte",
+      temporaryCredential: "temporary-test-credential",
+      temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
+    });
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, "writeText");
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await fillAccountForm(user);
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+    await screen.findByRole("dialog", { name: "Credencial temporária criada" });
+
+    writeText.mockResolvedValueOnce();
+    await user.click(screen.getByRole("button", { name: "Copiar credencial" }));
+    expect(await screen.findByText("Credencial copiada.")).toBeInTheDocument();
+    expect(writeText).toHaveBeenCalledWith("temporary-test-credential");
+
+    writeText.mockRejectedValueOnce(new Error("clipboard unavailable"));
+    await user.click(screen.getByRole("button", { name: "Copiar credencial" }));
+    expect(
+      await screen.findByText(/Não foi possível copiar/),
+    ).toBeInTheDocument();
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+    expect(window.location.href).not.toContain("temporary-test-credential");
+  });
+
+  it.each([
+    "Esquecimento",
+    "SuspeitaComprometimento",
+    "ProvisionamentoCorretivo",
+  ] as const)("resets another active account for reason %s", async (reason) => {
+    vi.mocked(resetTemporaryCredential).mockResolvedValue({
+      temporaryCredential: "replacement-test-credential",
+      temporaryCredentialExpiresAtUtc: "2030-06-10T12:00:00Z",
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await user.click(
+      screen.getAllByRole("button", { name: "Redefinir credencial" })[0],
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "Redefinir credencial?",
+    });
+    expect(dialog).toHaveTextContent("sessões anteriores serão encerradas");
+    expect(dialog).toHaveTextContent(
+      "credencial temporária anterior será invalidada",
+    );
+    expect(dialog).toHaveTextContent("nova troca obrigatória será exigida");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Motivo da redefinição"),
+      reason,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar redefinição" }),
+    );
+
+    expect(resetTemporaryCredential).toHaveBeenCalledWith(
+      activeAccount.id,
+      reason,
+    );
+    expect(
+      await screen.findByText("replacement-test-credential"),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("dialog", { name: "Credencial temporária criada" }),
+      ).getByRole("button", { name: "Fechar e apagar da tela" }),
+    ).toHaveFocus();
+  });
+
+  it("does not offer self-reset or reset for inactive accounts", async () => {
+    vi.mocked(searchUserAccounts).mockResolvedValue({
+      ...accountPage,
+      items: [{ ...activeAccount, id: 1 }, inactiveAccount],
+    });
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+
+    expect(
+      screen.queryByRole("button", { name: "Redefinir credencial" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows only the pending credential state and its expiration", async () => {
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+
+    expect(screen.getAllByText("Troca obrigatória pendente")).not.toHaveLength(
+      0,
+    );
+    expect(screen.getAllByText(/Expira em/)).not.toHaveLength(0);
+    expect(screen.getAllByText("Sem troca pendente")).not.toHaveLength(0);
+    expect(document.body.textContent).not.toMatch(/hash|versão interna/i);
+  });
+
+  it("closes reset with Escape and restores focus to its trigger", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+    const trigger = screen.getAllByRole("button", {
+      name: "Redefinir credencial",
+    })[0];
+    await user.click(trigger);
+
+    expect(
+      within(
+        screen.getByRole("dialog", { name: "Redefinir credencial?" }),
+      ).getByRole("button", { name: "Cancelar" }),
+    ).toHaveFocus();
+    await user.keyboard("{Escape}");
+    expect(
+      screen.queryByRole("dialog", { name: "Redefinir credencial?" }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("clears a disclosed credential when administrative access is lost", async () => {
+    vi.mocked(createUserAccount).mockResolvedValue({
+      email: "nova.pessoa@example.test",
+      id: 10,
+      profileName: "SetorTransporte",
+      temporaryCredential: "temporary-test-credential",
+      temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
+    });
+    const user = userEvent.setup();
+    const view = renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await fillAccountForm(user);
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+    expect(
+      await screen.findByText("temporary-test-credential"),
+    ).toBeInTheDocument();
+
+    vi.mocked(useAuthenticatedSession).mockReturnValue({
+      completePasswordChange: vi.fn(),
+      expiresAtUtc: "2030-06-10T22:00:00Z",
+      login: vi.fn(),
+      logout: vi.fn(),
+      sessionEndReason: "expired",
+      status: "authenticated",
+      user: {
+        email: "porteiro.ficticio@example.test",
+        id: 2,
+        profileName: "Porteiro",
+      },
+    });
+    view.rerender(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>,
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Acesso negado" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("temporary-test-credential"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("has no serious accessibility violations in the credential reset dialog", async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await user.click(
+      screen.getAllByRole("button", { name: "Redefinir credencial" })[0],
+    );
+    await expectNoSeriousAccessibilityViolations(container);
+  });
+
+  it("requires a reset reason and sends only one request during repeated activation", async () => {
+    let resolveReset!: (value: {
+      temporaryCredential: string;
+      temporaryCredentialExpiresAtUtc: string;
+    }) => void;
+    vi.mocked(resetTemporaryCredential).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveReset = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await user.click(
+      screen.getAllByRole("button", { name: "Redefinir credencial" })[0],
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar redefinição" }),
+    );
+    expect(
+      screen.getByText("Selecione o motivo da redefinição."),
+    ).toBeInTheDocument();
+    expect(resetTemporaryCredential).not.toHaveBeenCalled();
+
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Motivo da redefinição"),
+      "Esquecimento",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar redefinição" }),
+    );
+    const resetDialog = screen.getByRole("dialog", {
+      name: "Redefinir credencial?",
+    });
+    const pendingButton = within(resetDialog).getByRole("button", {
+      name: "Redefinindo…",
+    });
+    expect(pendingButton).toBeDisabled();
+    await user.click(pendingButton);
+    expect(resetTemporaryCredential).toHaveBeenCalledTimes(1);
+
+    await act(async () =>
+      resolveReset({
+        temporaryCredential: "replacement-test-credential",
+        temporaryCredentialExpiresAtUtc: "2030-06-10T12:00:00Z",
+      }),
+    );
+    expect(
+      await screen.findByText("replacement-test-credential"),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["validation", 400, "Selecione um motivo válido."],
+    ["expired session", 401, "Sua sessão não é mais válida."],
+    ["conflict", 409, "Reative a conta antes de redefinir sua credencial."],
+    ["rate limit", 429, "Muitas tentativas em pouco tempo."],
+    ["missing", 404, "A conta não foi encontrada."],
+  ])("keeps the reset dialog safe after %s", async (_case, status, message) => {
+    vi.mocked(resetTemporaryCredential).mockRejectedValue(new Error("request"));
+    vi.mocked(describeApiError).mockReturnValue({
+      kind:
+        status === 400
+          ? "validation"
+          : status === 401
+            ? "session-expired"
+            : status === 409
+              ? "conflict"
+              : status === 429
+                ? "rate-limited"
+                : "unexpected",
+      message,
+      status,
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await user.click(
+      screen.getAllByRole("button", { name: "Redefinir credencial" })[0],
+    );
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Motivo da redefinição"),
+      "Esquecimento",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar redefinição" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.getByLabelText("Motivo da redefinição")).toHaveTextContent(
+      "Esquecimento",
+    );
+    expect(resetTemporaryCredential).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByText("replacement-test-credential"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("closes administrative controls after a forbidden reset", async () => {
+    vi.mocked(resetTemporaryCredential).mockRejectedValue(
+      new Error("forbidden"),
+    );
+    vi.mocked(describeApiError).mockReturnValue({
+      kind: "access-denied",
+      message: "Seu perfil não possui permissão para realizar esta ação.",
+      status: 403,
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+    await user.click(
+      screen.getAllByRole("button", { name: "Redefinir credencial" })[0],
+    );
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Motivo da redefinição"),
+      "Esquecimento",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Confirmar redefinição" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Acesso negado" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "Redefinir credencial?" }),
+    ).not.toBeInTheDocument();
   });
 
   it("confirms and deactivates without deleting account history", async () => {
@@ -571,6 +949,8 @@ describe("AdminPage", () => {
       id: number;
       email: string;
       profileName: "SetorTransporte";
+      temporaryCredential: string;
+      temporaryCredentialExpiresAtUtc: string;
     }) => void;
     vi.mocked(createUserAccount).mockImplementation(
       () =>
@@ -596,6 +976,8 @@ describe("AdminPage", () => {
         email: "nova.pessoa@example.test",
         id: 10,
         profileName: "SetorTransporte",
+        temporaryCredential: "temporary-test-credential",
+        temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
       }),
     );
     expect(

@@ -1,11 +1,14 @@
 import { api } from "../../../services/api";
 import {
   createdUserAccountSchema,
+  temporaryCredentialSchema,
   userAccountPageSchema,
 } from "../schemas/userAccountSchemas";
 import type {
   CreatedUserAccount,
+  CredentialResetReason,
   CreateUserAccountInput,
+  TemporaryCredential,
   UserAccountFilters,
   UserAccountPage,
 } from "../types";
@@ -43,6 +46,17 @@ export async function createUserAccount(
 ): Promise<CreatedUserAccount> {
   const response = await api.post<unknown>("/users", input);
   return parseContract(createdUserAccountSchema.safeParse(response.data));
+}
+
+export async function resetTemporaryCredential(
+  accountId: number,
+  reason: CredentialResetReason,
+): Promise<TemporaryCredential> {
+  const response = await api.post<unknown>(
+    `/users/${accountId}/temporary-credential`,
+    { reason },
+  );
+  return parseContract(temporaryCredentialSchema.safeParse(response.data));
 }
 
 export async function deactivateUserAccount(accountId: number): Promise<void> {

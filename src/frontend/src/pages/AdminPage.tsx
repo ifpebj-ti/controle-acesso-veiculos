@@ -8,6 +8,8 @@ import { SectionHeader } from "../components/ui/SectionHeader";
 import { AuditTrailPanel } from "../features/audit-trail";
 import { useAuthenticatedSession } from "../features/authentication";
 import {
+  CredentialResetDialog,
+  TemporaryCredentialDialog,
   UserAccountCatalog,
   UserAccountFiltersForm,
   UserAccountForm,
@@ -47,7 +49,7 @@ export function AdminPage() {
               disabled={
                 accounts.pendingAction !== null || accounts.status !== "ready"
               }
-              onClick={accounts.openForm}
+              onClick={(event) => accounts.openForm(event.currentTarget)}
               type="button"
             >
               <Icon name="plus" size={18} /> Nova conta
@@ -151,7 +153,9 @@ export function AdminPage() {
             onClear={accounts.clearFilters}
           />
           <UserAccountCatalog
+            currentUserId={user.id}
             onPageChange={accounts.goToPage}
+            onResetCredential={accounts.openCredentialReset}
             onToggle={(account) => void accounts.changeAccountState(account)}
             page={accounts.page}
             pendingAction={accounts.pendingAction}
@@ -165,12 +169,34 @@ export function AdminPage() {
       <aside className="mt-6 rounded-3xl border border-[#EFD780] bg-[#EFD780]/30 p-5 text-sm leading-6 text-ink-soft sm:p-6">
         <h2 className="font-display text-xl text-ink">Limites deste fluxo</h2>
         <p className="mt-2">
-          A API atual permite criar, consultar, desativar e reativar contas.
-          Alterar nome, e-mail, perfil ou senha existente e recuperar senha
-          ainda não possui contrato. A auditoria é somente para consulta e não
-          permite editar nem excluir eventos.
+          A API permite criar, consultar, desativar e reativar contas, além de
+          emitir uma nova credencial temporária para outra conta ativa. O canal
+          institucional usado para repassar essa credencial ainda precisa ser
+          definido. A auditoria é somente para consulta e não permite editar nem
+          excluir eventos.
         </p>
       </aside>
+
+      {accounts.resetTarget && (
+        <CredentialResetDialog
+          account={accounts.resetTarget}
+          busy={accounts.pendingAction === `reset-${accounts.resetTarget.id}`}
+          errorMessage={accounts.resetError}
+          onCancel={accounts.closeCredentialReset}
+          onConfirm={accounts.confirmCredentialReset}
+          returnFocusTo={accounts.resetReturnFocusTo}
+        />
+      )}
+
+      {accounts.credentialDisclosure && (
+        <TemporaryCredentialDialog
+          accountId={accounts.credentialDisclosure.accountId}
+          accountName={accounts.credentialDisclosure.accountName}
+          credential={accounts.credentialDisclosure.credential}
+          onClose={accounts.closeCredentialDisclosure}
+          returnFocusTo={accounts.credentialDisclosure.returnFocusTo}
+        />
+      )}
     </div>
   );
 }

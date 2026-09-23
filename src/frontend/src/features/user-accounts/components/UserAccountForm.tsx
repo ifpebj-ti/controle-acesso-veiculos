@@ -21,7 +21,9 @@ interface UserAccountFormProps {
 const fieldClass =
   "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:opacity-60";
 
-function errorId(field: keyof UserAccountServerErrors) {
+type CreateAccountField = "email" | "name" | "profileName";
+
+function errorId(field: CreateAccountField) {
   return `account-${field}-error`;
 }
 
@@ -47,12 +49,10 @@ export function UserAccountForm({
     control,
     handleSubmit,
     register,
-    resetField,
   } = useForm<CreateUserAccountFormValues>({
     defaultValues: {
       email: "",
       name: "",
-      password: "",
       profileName: "Porteiro",
     },
     resolver: zodResolver(createUserAccountFormSchema),
@@ -63,7 +63,7 @@ export function UserAccountForm({
     titleRef.current?.focus();
   }, []);
 
-  function registration(field: keyof UserAccountServerErrors) {
+  function registration(field: CreateAccountField) {
     const registered = register(field);
     return {
       ...registered,
@@ -74,13 +74,8 @@ export function UserAccountForm({
     };
   }
 
-  function errorFor(field: keyof UserAccountServerErrors) {
+  function errorFor(field: CreateAccountField) {
     return errors[field]?.message ?? serverErrors[field];
-  }
-
-  async function submit(values: CreateUserAccountFormValues) {
-    resetField("password");
-    await onSubmit(values);
   }
 
   return (
@@ -101,15 +96,15 @@ export function UserAccountForm({
           Criar conta
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
-          A senha temporária é enviada somente nesta criação e não volta a ser
-          exibida. Oriente o funcionário por um canal seguro.
+          Informe os dados da pessoa. O sistema criará uma credencial temporária
+          somente depois que a conta for cadastrada com sucesso.
         </p>
       </div>
 
       <form
         className="grid gap-5 p-5 sm:grid-cols-2 sm:p-7"
         noValidate
-        onSubmit={handleSubmit(submit)}
+        onSubmit={handleSubmit(onSubmit)}
       >
         <div>
           <label
@@ -151,38 +146,6 @@ export function UserAccountForm({
             {...registration("email")}
           />
           <FieldError id={errorId("email")} message={errorFor("email")} />
-        </div>
-
-        <div>
-          <label
-            className="text-sm font-semibold text-ink"
-            htmlFor="account-password"
-          >
-            Senha temporária
-          </label>
-          <input
-            aria-describedby={
-              errorFor("password")
-                ? `account-password-help ${errorId("password")}`
-                : "account-password-help"
-            }
-            aria-invalid={Boolean(errorFor("password"))}
-            autoComplete="new-password"
-            className={fieldClass}
-            disabled={disabled}
-            id="account-password"
-            maxLength={128}
-            type="password"
-            {...registration("password")}
-          />
-          <p
-            className="mt-1.5 text-xs text-ink-soft"
-            id="account-password-help"
-          >
-            Use entre 12 e 128 caracteres e não registre a senha em issues ou
-            capturas de tela.
-          </p>
-          <FieldError id={errorId("password")} message={errorFor("password")} />
         </div>
 
         <div>

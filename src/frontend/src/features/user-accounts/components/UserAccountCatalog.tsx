@@ -1,10 +1,14 @@
+import { useState } from "react";
+
 import { profileLabels } from "../../authentication";
 import { ContentState } from "../../../components/ui/ContentState";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { UserAccount, UserAccountPage } from "../types";
 
 interface UserAccountCatalogProps {
+  currentUserId: number;
   onPageChange: (page: number) => void;
+  onResetCredential: (account: UserAccount, trigger: HTMLElement) => void;
   onToggle: (account: UserAccount) => void;
   page: UserAccountPage | null;
   pendingAction: string | null;
@@ -15,13 +19,21 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
 });
 
+const credentialExpirationFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
 export function UserAccountCatalog({
+  currentUserId,
   onPageChange,
+  onResetCredential,
   onToggle,
   page,
   pendingAction,
   status,
 }: UserAccountCatalogProps) {
+  const [renderedAt] = useState(() => Date.now());
   if (status === "loading") {
     return (
       <ContentState
@@ -53,14 +65,17 @@ export function UserAccountCatalog({
         {page.items.map((account) => (
           <AccountCard
             account={account}
+            currentUserId={currentUserId}
             key={account.id}
+            onResetCredential={onResetCredential}
             onToggle={onToggle}
             pendingAction={pendingAction}
+            renderedAt={renderedAt}
           />
         ))}
       </div>
       <div className="hidden overflow-x-auto xl:block">
-        <table className="w-full min-w-[54rem] border-collapse text-left text-sm">
+        <table className="w-full min-w-[64rem] border-collapse text-left text-sm">
           <caption className="sr-only">Contas de acesso do sistema</caption>
           <thead>
             <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
@@ -72,6 +87,9 @@ export function UserAccountCatalog({
               </th>
               <th className="px-4 py-3" scope="col">
                 Situação
+              </th>
+              <th className="px-4 py-3" scope="col">
+                Credencial
               </th>
               <th className="px-4 py-3" scope="col">
                 Criada em
@@ -100,15 +118,27 @@ export function UserAccountCatalog({
                     tone={account.active ? "success" : "neutral"}
                   />
                 </td>
+                <td className="px-4 py-4">
+                  <CredentialStatus account={account} renderedAt={renderedAt} />
+                </td>
                 <td className="px-4 py-4 text-ink-soft">
                   {dateFormatter.format(new Date(account.createdAtUtc))}
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <ToggleButton
-                    account={account}
-                    onToggle={onToggle}
-                    pendingAction={pendingAction}
-                  />
+                  <div className="flex justify-end gap-2">
+                    {account.active && account.id !== currentUserId && (
+                      <ResetButton
+                        account={account}
+                        onResetCredential={onResetCredential}
+                        pendingAction={pendingAction}
+                      />
+                    )}
+                    <ToggleButton
+                      account={account}
+                      onToggle={onToggle}
+                      pendingAction={pendingAction}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}
@@ -169,12 +199,18 @@ function ToggleButton({
 
 function AccountCard({
   account,
+  currentUserId,
+  onResetCredential,
   onToggle,
   pendingAction,
+  renderedAt,
 }: {
   account: UserAccount;
+  currentUserId: number;
+  onResetCredential: (account: UserAccount, trigger: HTMLElement) => void;
   onToggle: (account: UserAccount) => void;
   pendingAction: string | null;
+  renderedAt: number;
 }) {
   return (
     <article className="rounded-2xl border border-ink/10 bg-cream/25 p-4">
@@ -190,16 +226,82 @@ function AccountCard({
           tone={account.active ? "success" : "neutral"}
         />
       </div>
+      <div className="mt-3 border-t border-ink/8 pt-3">
+        <CredentialStatus account={account} renderedAt={renderedAt} />
+      </div>
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-ink/8 pt-3">
         <span className="text-sm font-semibold text-brand-dark">
           {profileLabels[account.profileName]}
         </span>
-        <ToggleButton
-          account={account}
-          onToggle={onToggle}
-          pendingAction={pendingAction}
-        />
+        <div className="flex flex-wrap justify-end gap-2">
+          {account.active && account.id !== currentUserId && (
+            <ResetButton
+              account={account}
+              onResetCredential={onResetCredential}
+              pendingAction={pendingAction}
+            />
+          )}
+          <ToggleButton
+            account={account}
+            onToggle={onToggle}
+            pendingAction={pendingAction}
+          />
+        </div>
       </div>
     </article>
+  );
+}
+
+function CredentialStatus({
+  account,
+  renderedAt,
+}: {
+  account: UserAccount;
+  renderedAt: number;
+}) {
+  if (!account.requiresPasswordChange) {
+    return <span className="text-xs text-ink-soft">Sem troca pendente</span>;
+  }
+
+  const expiration = account.temporaryCredentialExpiresAtUtc;
+  const expired = expiration
+    ? new Date(expiration).getTime() <= renderedAt
+    : false;
+  return (
+    <div className="space-y-1">
+      <StatusBadge
+        label={expired ? "Credencial expirada" : "Troca obrigatória pendente"}
+        tone={expired ? "warning" : "neutral"}
+      />
+      {expiration && (
+        <p className="text-xs text-ink-soft">
+          {expired ? "Expirou em" : "Expira em"}{" "}
+          {credentialExpirationFormatter.format(new Date(expiration))}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ResetButton({
+  account,
+  onResetCredential,
+  pendingAction,
+}: {
+  account: UserAccount;
+  onResetCredential: (account: UserAccount, trigger: HTMLElement) => void;
+  pendingAction: string | null;
+}) {
+  const pending = pendingAction === `reset-${account.id}`;
+  return (
+    <button
+      className="min-h-10 rounded-xl border border-brand-dark/25 px-3 text-xs font-bold text-ink hover:bg-brand-soft/25 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-60"
+      data-reset-account-id={account.id}
+      disabled={pendingAction !== null}
+      onClick={(event) => onResetCredential(account, event.currentTarget)}
+      type="button"
+    >
+      {pending ? "Redefinindo…" : "Redefinir credencial"}
+    </button>
   );
 }

@@ -5,6 +5,7 @@ import {
   createUserAccount,
   deactivateUserAccount,
   reactivateUserAccount,
+  resetTemporaryCredential,
   searchUserAccounts,
 } from "./userAccountsService";
 
@@ -20,6 +21,8 @@ const account = {
   lockedUntilUtc: null,
   name: "Gestor Fictício",
   profileName: "SetorTransporte",
+  requiresPasswordChange: true,
+  temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
   updatedAtUtc: null,
 };
 
@@ -41,13 +44,20 @@ describe("userAccountsService", () => {
         email: account.email,
         id: account.id,
         profileName: account.profileName,
+        temporaryCredential: "temporary-test-credential",
+        temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
+      },
+    });
+    vi.mocked(api.post).mockResolvedValueOnce({
+      data: {
+        temporaryCredential: "replacement-test-credential",
+        temporaryCredentialExpiresAtUtc: "2030-06-10T12:00:00Z",
       },
     });
     vi.mocked(api.delete).mockResolvedValue({ data: undefined });
     const input = {
       email: account.email,
       name: account.name,
-      password: "Senha-ficticia-2030",
       profileName: "SetorTransporte" as const,
     };
 
@@ -58,6 +68,7 @@ describe("userAccountsService", () => {
       search: " gestor ",
     });
     await createUserAccount(input);
+    await resetTemporaryCredential(account.id, "Esquecimento");
     await deactivateUserAccount(account.id);
     await reactivateUserAccount(account.id);
 
@@ -65,8 +76,38 @@ describe("userAccountsService", () => {
       params: { active: true, page: 1, pageSize: 25, search: "gestor" },
     });
     expect(api.post).toHaveBeenNthCalledWith(1, "/users", input);
+    expect(api.post).toHaveBeenNthCalledWith(
+      2,
+      "/users/8/temporary-credential",
+      { reason: "Esquecimento" },
+    );
     expect(api.delete).toHaveBeenCalledWith("/users/8");
-    expect(api.post).toHaveBeenNthCalledWith(2, "/users/8/reactivation");
+    expect(api.post).toHaveBeenNthCalledWith(3, "/users/8/reactivation");
+  });
+
+  it("rejects incomplete creation and reset responses before exposing a credential", async () => {
+    vi.mocked(api.post)
+      .mockResolvedValueOnce({
+        data: {
+          email: account.email,
+          id: account.id,
+          profileName: account.profileName,
+        },
+      })
+      .mockResolvedValueOnce({
+        data: { temporaryCredential: "incomplete-test-credential" },
+      });
+
+    await expect(
+      createUserAccount({
+        email: account.email,
+        name: account.name,
+        profileName: "SetorTransporte",
+      }),
+    ).rejects.toMatchObject({ name: "UserAccountsContractError" });
+    await expect(
+      resetTemporaryCredential(account.id, "ProvisionamentoCorretivo"),
+    ).rejects.toMatchObject({ name: "UserAccountsContractError" });
   });
 
   it("omits an empty search and rejects invalid external data", async () => {
