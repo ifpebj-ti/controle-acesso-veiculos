@@ -131,22 +131,31 @@ describe("EventsPage", () => {
     vi.mocked(getApiValidationErrors).mockReturnValue({});
   });
 
-  it("lets operational profiles confer events without maintenance actions", async () => {
-    renderPage("Porteiro");
-    expect(await screen.findByText(authorization.name)).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Conferir autorizações" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Nova autorização" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Editar" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Cancelar autorização" }),
-    ).not.toBeInTheDocument();
-  });
+  it.each(["Porteiro", "Vigilante", "SetorTransporte"] as const)(
+    "lets %s consult events without maintenance actions",
+    async (profileName) => {
+      renderPage(profileName);
+      expect(await screen.findByText(authorization.name)).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", {
+          name: "Consultar eventos e autorizações",
+        }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Previstos").nextSibling).toHaveTextContent("4");
+      expect(
+        screen.queryByRole("button", { name: "Nova autorização" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Editar" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Cancelar autorização" }),
+      ).not.toBeInTheDocument();
+      expect(createEventAuthorization).not.toHaveBeenCalled();
+      expect(updateEventAuthorization).not.toHaveBeenCalled();
+      expect(cancelEventAuthorization).not.toHaveBeenCalled();
+    },
+  );
 
   it("separates planned capacity, recorded entries and remaining capacity", async () => {
     renderPage();
