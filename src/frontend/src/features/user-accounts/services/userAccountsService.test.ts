@@ -75,14 +75,53 @@ describe("userAccountsService", () => {
     expect(api.get).toHaveBeenCalledWith("/users", {
       params: { active: true, page: 1, pageSize: 25, search: "gestor" },
     });
-    expect(api.post).toHaveBeenNthCalledWith(1, "/users", input);
+    expect(api.post).toHaveBeenNthCalledWith(1, "/users", input, {
+      skipSessionRetry: true,
+    });
     expect(api.post).toHaveBeenNthCalledWith(
       2,
       "/users/8/temporary-credential",
       { reason: "Esquecimento" },
+      { skipSessionRetry: true },
     );
     expect(api.delete).toHaveBeenCalledWith("/users/8");
     expect(api.post).toHaveBeenNthCalledWith(3, "/users/8/reactivation");
+  });
+
+  it("prevents automatic session retries for credential mutations", async () => {
+    vi.mocked(api.post)
+      .mockResolvedValueOnce({
+        data: {
+          email: account.email,
+          id: account.id,
+          profileName: account.profileName,
+          temporaryCredential: "temporary-test-credential",
+          temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          temporaryCredential: "replacement-test-credential",
+          temporaryCredentialExpiresAtUtc: "2030-06-10T12:00:00Z",
+        },
+      });
+
+    await createUserAccount({
+      email: account.email,
+      name: account.name,
+      profileName: "SetorTransporte",
+    });
+    await resetTemporaryCredential(account.id, "Esquecimento");
+
+    expect(api.post).toHaveBeenNthCalledWith(1, "/users", expect.any(Object), {
+      skipSessionRetry: true,
+    });
+    expect(api.post).toHaveBeenNthCalledWith(
+      2,
+      "/users/8/temporary-credential",
+      { reason: "Esquecimento" },
+      { skipSessionRetry: true },
+    );
   });
 
   it("rejects incomplete creation and reset responses before exposing a credential", async () => {

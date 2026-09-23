@@ -44,7 +44,9 @@ export async function searchUserAccounts(
 export async function createUserAccount(
   input: CreateUserAccountInput,
 ): Promise<CreatedUserAccount> {
-  const response = await api.post<unknown>("/users", input);
+  const response = await api.post<unknown>("/users", input, {
+    skipSessionRetry: true,
+  });
   return parseContract(createdUserAccountSchema.safeParse(response.data));
 }
 
@@ -55,6 +57,7 @@ export async function resetTemporaryCredential(
   const response = await api.post<unknown>(
     `/users/${accountId}/temporary-credential`,
     { reason },
+    { skipSessionRetry: true },
   );
   return parseContract(temporaryCredentialSchema.safeParse(response.data));
 }
