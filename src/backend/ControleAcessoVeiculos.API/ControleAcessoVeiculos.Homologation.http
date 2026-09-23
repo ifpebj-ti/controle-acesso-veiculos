@@ -259,10 +259,10 @@ GET {{BaseUrl}}/institutional-vehicle-usages/history?vehicleId={{InstitutionalVe
 Authorization: Bearer {{TransportationToken}}
 Accept: application/json
 
-### 22. Criar evento vigente pelo Transporte — copie id
+### 22. Criar evento vigente pelo Administrador — copie id
 
 POST {{BaseUrl}}/event-authorizations
-Authorization: Bearer {{TransportationToken}}
+Authorization: Bearer {{AdministratorToken}}
 Content-Type: application/json
 
 {
@@ -300,6 +300,27 @@ Content-Type: application/json
 
 {
   "name": "Evento Não Autorizado",
+  "responsible": "Teste negativo",
+  "startsAtUtc": "{{EventStartsAtUtc}}",
+  "endsAtUtc": "{{EventEndsAtUtc}}",
+  "area": "Área de teste",
+  "overnightAllowed": false,
+  "vehicleRules": [
+    {
+      "vehicleType": "Automóvel",
+      "quantity": 1
+    }
+  ]
+}
+
+### 24.1. Transporte tenta criar evento — esperado: 403
+
+POST {{BaseUrl}}/event-authorizations
+Authorization: Bearer {{TransportationToken}}
+Content-Type: application/json
+
+{
+  "name": "Evento Não Autorizado pelo Transporte",
   "responsible": "Teste negativo",
   "startsAtUtc": "{{EventStartsAtUtc}}",
   "endsAtUtc": "{{EventEndsAtUtc}}",

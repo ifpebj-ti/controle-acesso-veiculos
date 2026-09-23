@@ -25,6 +25,8 @@ from its first published release.
   randomness, consumed atomically on first login, stored only as password hashes,
   returned with no-store headers, and restricted from business operations until
   their mandatory replacement.
+- Event authorization creation, changes, and cancellation are restricted to the
+  Administrator profile while read access remains available to all MVP profiles.
 
 ## [0.2.0] - 2026-09-20
 

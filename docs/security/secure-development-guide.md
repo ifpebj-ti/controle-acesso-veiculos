@@ -207,13 +207,15 @@ fica restrito à contingência, com reconciliação posterior, evitando dois con
 permanentes e divergentes. O horário de fechamento não é codificado como bloqueio
 fixo, pois existem exceções autorizadas e residentes.
 
-Na Issue #83, autorizações de eventos separam consulta operacional de gestão:
-Porteiro e Vigilante apenas consultam; Setor de Transporte e Administrador criam,
-alteram e cancelam. Período e quantidade possuem limites, placas são normalizadas
-e constraints do PostgreSQL impedem regras duplicadas. Evento, regras e auditoria
-são persistidos atomicamente. A trilha não copia nome, responsável, área,
-observação ou placa. A associação com entradas e o consumo concorrente de cotas
-permanecem fora desse recorte e são rastreados pela Issue #82.
+Na Issue #83, autorizações de eventos separam consulta operacional de gestão.
+A decisão institucional registrada em setembro de 2026 e aplicada pela Issue
+#270 mantém consulta para os quatro perfis, mas reserva criação, alteração e
+cancelamento ao Administrador. Essa restrição é uma política do servidor, sem
+nomes de pessoas codificados. Período e quantidade possuem limites, placas são
+normalizadas e constraints do PostgreSQL impedem regras duplicadas. Evento,
+regras e auditoria são persistidos atomicamente. A trilha não copia nome,
+responsável, área, observação ou placa. A associação com entradas e o consumo
+concorrente de cotas foram implementados posteriormente pela Issue #82.
 
 Na Issue #82, a associação opcional passa a ser feita dentro da mesma transação da
 entrada. O backend bloqueia a linha do evento, valida estado e janela, prioriza a

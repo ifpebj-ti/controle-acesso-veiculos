@@ -155,6 +155,8 @@ Administradores autenticados podem criar outras contas pelo endpoint `POST /user
 | `access-records:correct` | Porteiro, Vigilante e Administrador |
 | `transportation:review` | Setor de Transporte e Administrador |
 | `operations:summary:read` | Porteiro, Vigilante, Setor de Transporte e Administrador |
+| `event-authorizations:read` | Porteiro, Vigilante, Setor de Transporte e Administrador |
+| `event-authorizations:manage` | Administrador |
 | `users:manage` | Administrador |
 
 Esses nomes estão centralizados e não pertencem ao Domain. A matriz do MVP foi
@@ -162,7 +164,10 @@ registrada na Issue #75 e continua revisável durante a homologação. O Setor d
 Transporte possui leitura do histórico geral por sua responsabilidade de
 supervisão e conferência, sem herdar a política de operação ou correção. Porteiro
 e Vigilante possuem as mesmas permissões operacionais porque o Vigilante apenas
-substitui o Porteiro quando necessário.
+substitui o Porteiro quando necessário. A decisão institucional registrada em
+setembro de 2026 reservou criação, alteração e cancelamento de autorizações de
+eventos ao Administrador; os quatro perfis preservam a consulta necessária ao
+fluxo operacional.
 
 ## Evoluções após a Issue #29
 
