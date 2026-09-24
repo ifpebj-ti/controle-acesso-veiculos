@@ -148,6 +148,85 @@ describe("HistoryPage", () => {
     expect(table.parentElement).toHaveClass("xl:block");
   });
 
+  it("distinguishes normal exit, observed exceptional exit and unknown exit time", async () => {
+    const normal: AccessRecord = {
+      ...record,
+      closureType: "Normal",
+      exitAtUtc: "2026-09-02T14:00:00.000Z",
+      id: 11,
+      plate: "NOR1A11",
+      status: "Encerrado",
+    };
+    const exceptionalObserved: AccessRecord = {
+      ...record,
+      closureType: "Excepcional",
+      exceptionalClosureObservation: "Confirmada pela equipe da portaria.",
+      exceptionalClosureReason: "IndisponibilidadeDoSistema",
+      exitAtUtc: "2026-09-02T14:30:00.000Z",
+      id: 12,
+      plate: "OBS1A12",
+      regularizedAtUtc: "2026-09-02T16:00:00.000Z",
+      status: "Encerrado",
+    };
+    const exceptionalUnknown: AccessRecord = {
+      ...record,
+      closureType: "Excepcional",
+      exceptionalClosureObservation: "Saída confirmada sem horário confiável.",
+      exceptionalClosureReason: "RegistroDeSaidaOmitido",
+      id: 13,
+      plate: "UNK1A13",
+      regularizedAtUtc: "2026-09-02T17:00:00.000Z",
+      status: "Encerrado",
+    };
+    vi.mocked(searchAccessHistory).mockResolvedValue(
+      pageResult([normal, exceptionalObserved, exceptionalUnknown]),
+    );
+
+    renderPage();
+    await screen.findByText("3 registro(s)");
+
+    const normalCard = screen
+      .getAllByText("NOR1A11")
+      .map((element) => element.closest("article"))
+      .find((element): element is HTMLElement => element !== null)!;
+    const observedCard = screen
+      .getAllByText("OBS1A12")
+      .map((element) => element.closest("article"))
+      .find((element): element is HTMLElement => element !== null)!;
+    const unknownCard = screen
+      .getAllByText("UNK1A13")
+      .map((element) => element.closest("article"))
+      .find((element): element is HTMLElement => element !== null)!;
+
+    expect(within(normalCard).getByText("Saída normal")).toBeInTheDocument();
+    expect(
+      within(observedCard).getByText("Encerramento excepcional"),
+    ).toBeInTheDocument();
+    expect(
+      within(observedCard).getByText(/Saída observada:/),
+    ).toBeInTheDocument();
+    expect(
+      within(observedCard).getByText(/Regularizado em:/),
+    ).toBeInTheDocument();
+    expect(
+      within(observedCard).getByText("Motivo: Indisponibilidade do sistema"),
+    ).toBeInTheDocument();
+    expect(
+      within(unknownCard).getByText("Saída observada: horário desconhecido"),
+    ).toBeInTheDocument();
+    expect(
+      within(unknownCard).getByText("Horário de saída desconhecido"),
+    ).toBeInTheDocument();
+    expect(
+      within(unknownCard).getByText(/Regularizado em:/),
+    ).toBeInTheDocument();
+    expect(
+      within(unknownCard).getByText(
+        "Observação: Saída confirmada sem horário confiável.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("retries a failed history request", async () => {
     vi.mocked(searchAccessHistory)
       .mockRejectedValueOnce(new Error("network"))

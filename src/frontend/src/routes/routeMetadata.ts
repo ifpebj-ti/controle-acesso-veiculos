@@ -205,6 +205,7 @@ export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
 
 export type ProfileCapability =
   | "correct-general-access"
+  | "exceptionally-close-general-access"
   | "manage-administration"
   | "manage-event-authorizations"
   | "manage-institutional-catalogs"
@@ -217,6 +218,7 @@ const profileCapabilities: Readonly<
 > = {
   Administrador: [
     "correct-general-access",
+    "exceptionally-close-general-access",
     "manage-administration",
     "manage-event-authorizations",
     "manage-institutional-catalogs",
@@ -226,6 +228,7 @@ const profileCapabilities: Readonly<
   ],
   Porteiro: [
     "correct-general-access",
+    "exceptionally-close-general-access",
     "operate-general-access",
     "operate-institutional-fleet",
   ],
@@ -235,6 +238,7 @@ const profileCapabilities: Readonly<
   ],
   Vigilante: [
     "correct-general-access",
+    "exceptionally-close-general-access",
     "operate-general-access",
     "operate-institutional-fleet",
   ],

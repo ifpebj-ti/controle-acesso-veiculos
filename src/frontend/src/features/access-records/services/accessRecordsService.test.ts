@@ -4,6 +4,7 @@ import { api } from "../../../services/api";
 import {
   closeAccessRecord,
   correctAccessRecord,
+  exceptionallyCloseAccessRecord,
   listOpenAccessRecords,
   registerAccessEntry,
   searchAccessEntryCandidates,
@@ -51,6 +52,33 @@ describe("accessRecordsService", () => {
       plate: "DEM-1A23",
     });
     expect(api.post).toHaveBeenNthCalledWith(2, "/access-records/10/exit");
+  });
+
+  it("uses the exceptional closure endpoint without automatic mutation retry", async () => {
+    const closedRecord = {
+      ...record,
+      closureType: "Excepcional",
+      exceptionalClosureObservation: "Saída confirmada posteriormente.",
+      exceptionalClosureReason: "RegistroDeSaidaOmitido",
+      regularizedAtUtc: "2026-09-02T15:10:00.000Z",
+      status: "Encerrado",
+      updatedById: 7,
+    };
+    vi.mocked(api.post).mockResolvedValue({ data: closedRecord });
+    const input = {
+      observation: "Saída confirmada posteriormente.",
+      observedExitAtUtc: null,
+      reason: "RegistroDeSaidaOmitido" as const,
+    };
+
+    const result = await exceptionallyCloseAccessRecord(10, input);
+
+    expect(api.post).toHaveBeenCalledWith(
+      "/access-records/10/exceptional-closure",
+      input,
+      { skipSessionRetry: true },
+    );
+    expect(result).toEqual(closedRecord);
   });
 
   it("forwards an explicitly selected event authorization", async () => {

@@ -82,6 +82,15 @@ horário da última resposta bem-sucedida da API. A atualização da lista é ma
 não há polling ou classificação de atraso. O volume real representativo de pico
 e a aceitação institucional desse formato permanecem para a Issue #162.
 
+Porteiro, Vigilante e Administrador podem regularizar excepcionalmente uma saída
+que não foi registrada no momento real. Essa ação permanece secundária à saída
+normal e exige motivo e observação. O horário observado é opcional e só deve ser
+informado quando existir fonte confiável; quando estiver vazio, o frontend envia
+`observedExitAtUtc: null` e não cria estimativas. O histórico distingue a saída
+normal, a saída excepcional observada, o horário de saída desconhecido e o
+momento posterior da regularização. O Setor de Transporte permanece somente para
+consulta, e a visibilidade da interface não substitui a autorização da API.
+
 Quando necessário, o operador pode abrir a seção opcional de eventos, consultar
 as autorizações ativas e vigentes e escolher explicitamente uma delas. A interface
 mostra período, área, responsável e saldo das regras, mas não pré-seleciona um
