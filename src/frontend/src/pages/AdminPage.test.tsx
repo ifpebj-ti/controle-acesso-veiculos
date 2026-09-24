@@ -717,9 +717,11 @@ describe("AdminPage", () => {
 
     mockAuthenticatedProfile("Porteiro");
     view.rerender(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>,
+      <ConfirmationProvider>
+        <MemoryRouter>
+          <AdminPage />
+        </MemoryRouter>
+      </ConfirmationProvider>,
     );
     expect(
       await screen.findByRole("heading", { name: "Acesso negado" }),
@@ -733,9 +735,11 @@ describe("AdminPage", () => {
 
     mockAuthenticatedProfile("Administrador");
     view.rerender(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>,
+      <ConfirmationProvider>
+        <MemoryRouter>
+          <AdminPage />
+        </MemoryRouter>
+      </ConfirmationProvider>,
     );
     await screen.findAllByText(activeAccount.name);
     expect(
