@@ -152,6 +152,8 @@ jobs:
       POSTGRES_PORT: "0"
       API_PORT: "0"
       FRONTEND_PORT: "0"
+      DEPLOYMENT_VERSION: 0.2.0
+      ALLOWED_HOSTS: acesso-veiculos.example.test;localhost
 
     steps:
       - name: Check out repository
@@ -170,6 +172,29 @@ jobs:
       - name: Validate Compose configuration
         working-directory: infrastructure/docker
         run: docker compose config --quiet
+
+      - name: Validate production Compose configuration
+        working-directory: infrastructure/docker
+        shell: bash
+        run: |
+          rendered_compose="$(docker compose --file docker-compose.production.yml config)"
+
+          if grep --extended-regexp --quiet '^[[:space:]]+build:' <<< "${rendered_compose}"; then
+            echo "Production Compose must consume published images without build directives." >&2
+            exit 1
+          fi
+
+          jq --exit-status --arg version "${DEPLOYMENT_VERSION}" '
+            .services.backend.image == (
+              "ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:" + $version
+            )
+            and .services.frontend.image == (
+              "ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:" + $version
+            )
+            and (.services.backend.ports == null)
+            and (.services.postgresql.ports == null)
+          ' <<< "$(docker compose --file docker-compose.production.yml config --format json)" \
+            > /dev/null
 
       - name: Start integrated stack
         working-directory: infrastructure/docker
