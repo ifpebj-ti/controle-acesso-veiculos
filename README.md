@@ -217,6 +217,19 @@ docker compose down
 
 Não use `docker compose down --volumes` sem confirmar que os dados locais podem ser descartados.
 
+### Compose com imagens publicadas
+
+Para implantação, use o arquivo separado
+`infrastructure/docker/docker-compose.production.yml`. Ele não recompila o
+código no host: baixa do GHCR a mesma versão semântica do frontend e do backend,
+mantém API e PostgreSQL somente nas redes internas e publica o frontend apenas
+no loopback por padrão. Consulte o
+[guia de implantação com imagens versionadas](docs/operations/versioned-container-deployment.md)
+antes de executar `pull` ou promover uma release.
+
+Esse Compose é uma base operacional reproduzível, não uma declaração de que o
+ambiente institucional de produção já foi provisionado ou aprovado.
+
 ### Backup e restauração local
 
 Com o PostgreSQL saudável e as migrations aplicadas, crie um dump lógico em

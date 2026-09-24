@@ -12,6 +12,13 @@ um SBOM SPDX 2.3 de cada arquitetura. A
 publicação no registry não realiza deploy nem torna o sistema pronto para
 produção.
 
+O Compose local continua responsável por construir e testar o código da árvore
+de trabalho. Para implantação, o
+[`Compose com imagens versionadas`](../operations/versioned-container-deployment.md)
+consome a mesma tag semântica de frontend e backend no GHCR, sem reconstrução no
+host. A CI valida que essa configuração não introduz `build` nem publica as
+portas da API ou do PostgreSQL.
+
 ## Workflows
 
 | Workflow               | Gatilho                                                                   | Verificações                                                                                                                                                                                                                                                        |
