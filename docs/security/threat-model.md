@@ -215,7 +215,8 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - bloqueio transacional do evento impede consumo concorrente acima da cota e preserva a associação por FK;
 - transação e índice único parcial impedem dois usos institucionais abertos para o mesmo veículo;
 - correlation ID validado ou gerado pelo servidor em todas as respostas;
-- logs HTTP estruturados com template de rota, sem valores da URL, query string, corpo ou cabeçalho de autorização;
+- logs HTTP estruturados com método projetado por lista permitida e template de
+  rota, sem valores livres da URL, query string, corpo ou cabeçalho de autorização;
 - métricas HTTP/runtime e traces ASP.NET Core exportáveis por OTLP somente quando habilitados, sem instrumentação de corpo, credenciais, SQL ou logs, com valores de query obrigatoriamente redigidos e health checks excluídos dos traces;
 - exceções inesperadas retornam `ProblemDetails` sem mensagem interna ou stack trace;
 - limite global de 1 MiB para corpos de requisição;
