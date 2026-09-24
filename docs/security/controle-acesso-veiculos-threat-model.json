@@ -162,7 +162,7 @@
                   "title": "TM-13 — Elevação de privilégio por perfil",
                   "type": "Elevation of privilege",
                   "description": "Um usuário tenta executar operação administrativa ou acessar histórico incompatível com seu perfil.",
-                  "mitigation": "Negar por padrão e aplicar políticas no servidor por recurso e operação. A manutenção de autorizações de eventos é restrita ao Administrador, enquanto a consulta necessária permanece disponível aos quatro perfis. A matriz técnica está coberta por testes e decisões futuras continuam sujeitas à homologação institucional.",
+                  "mitigation": "Negar por padrão e aplicar políticas no servidor por recurso e operação. A manutenção de autorizações de eventos é restrita ao Administrador. O encerramento excepcional é limitado a Porteiro, Vigilante e Administrador, sem ampliar a supervisão somente leitura do Setor de Transporte. A matriz técnica está coberta por testes e decisões futuras continuam sujeitas à homologação institucional.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000013"
                 },
@@ -268,7 +268,7 @@
                   "title": "TM-06 — Operador nega uma ação",
                   "type": "Repudiation",
                   "description": "O operador pode negar inclusão, correção ou encerramento se a evidência for insuficiente.",
-                  "mitigation": "Associar usuário, horário, registro, justificativa e correlation ID; preservar auditoria transacional. Imutabilidade por infraestrutura ainda é pendente.",
+                  "mitigation": "Associar usuário, horário, registro, justificativa e correlation ID; no encerramento excepcional, separar saída observada de regularização e preservar auditoria transacional sem duplicar o texto livre. Imutabilidade por infraestrutura ainda é pendente.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000006"
                 },
@@ -278,7 +278,7 @@
                   "title": "TM-18 — Operação persiste sem auditoria",
                   "type": "Repudiation",
                   "description": "Falha na auditoria pode deixar uma operação crítica sem trilha correspondente.",
-                  "mitigation": "Persistir mudança e auditoria na mesma transação e falhar de forma fechada. Alertas e operações futuras ainda precisam de cobertura.",
+                  "mitigation": "Persistir mudança e auditoria na mesma transação, bloquear o registro durante encerramentos concorrentes e falhar de forma fechada. Alertas e operações futuras ainda precisam de cobertura.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000018"
                 },
@@ -485,7 +485,7 @@
                   "title": "TM-03 — Cliente adultera dados operacionais",
                   "type": "Tampering",
                   "description": "O cliente pode alterar IDs, status, horários, evento, quilometragem ou identificação enviados à API.",
-                  "mitigation": "Validar DTOs e regras no servidor, normalizar placas, definir horários no servidor e aplicar FK, unicidade e transações.",
+                  "mitigation": "Validar DTOs e regras no servidor, normalizar placas, definir horários no servidor e aplicar FK, constraints, unicidade e transações. Horário observado opcional nunca é substituído por estimativa e a regularização usa o relógio do servidor.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000003"
                 },

@@ -3,14 +3,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { describeApiError } from "../../../services/api-errors";
 import {
   closeAccessRecord,
+  exceptionallyCloseAccessRecord,
   listOpenAccessRecords,
 } from "../services/accessRecordsService";
-import type { AccessRecord } from "../types";
+import type {
+  AccessRecord,
+  ExceptionallyCloseAccessRecordInput,
+} from "../types";
 
 export type OpenAccessRequestStatus = "loading" | "ready" | "error" | "denied";
 
 interface RefreshOptions {
   exitPlate?: string;
+  regularizedPlate?: string;
   preserveRecords?: boolean;
 }
 
@@ -23,6 +28,9 @@ export function useOpenAccessRecords() {
   const [operationError, setOperationError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<number | null>(null);
+  const [closingOperation, setClosingOperation] = useState<
+    "normal" | "exceptional" | null
+  >(null);
   const requestSequence = useRef(0);
   const hasSuccessfulResponse = useRef(false);
   const closingRef = useRef(false);
@@ -63,7 +71,9 @@ export function useOpenAccessRecords() {
       if (preserveRecords) {
         const context = options.exitPlate
           ? `A saída de ${options.exitPlate} foi registrada, mas não foi possível atualizar a lista.`
-          : "Não foi possível atualizar a lista.";
+          : options.regularizedPlate
+            ? `A saída de ${options.regularizedPlate} foi regularizada, mas não foi possível atualizar a lista.`
+            : "Não foi possível atualizar a lista.";
         setQueryError(
           `${context} Os dados exibidos podem estar desatualizados. Tente novamente sem repetir a saída.`,
         );
@@ -96,6 +106,7 @@ export function useOpenAccessRecords() {
 
       closingRef.current = true;
       setClosingId(record.id);
+      setClosingOperation("normal");
       setOperationError(null);
       setNotice(null);
 
@@ -119,6 +130,51 @@ export function useOpenAccessRecords() {
       } finally {
         closingRef.current = false;
         setClosingId(null);
+        setClosingOperation(null);
+      }
+    },
+    [refresh],
+  );
+
+  const exceptionallyCloseRecord = useCallback(
+    async (
+      record: AccessRecord,
+      input: ExceptionallyCloseAccessRecordInput,
+    ) => {
+      if (closingRef.current) {
+        throw new Error("An access closure is already pending.");
+      }
+
+      closingRef.current = true;
+      setClosingId(record.id);
+      setClosingOperation("exceptional");
+      setOperationError(null);
+      setNotice(null);
+
+      try {
+        const closedRecord = await exceptionallyCloseAccessRecord(
+          record.id,
+          input,
+        );
+        setRecords((current) =>
+          current.filter((item) => item.id !== closedRecord.id),
+        );
+        setNotice(
+          `Saída do veículo ${closedRecord.plate} regularizada com sucesso.`,
+        );
+        void refresh({
+          preserveRecords: true,
+          regularizedPlate: closedRecord.plate,
+        });
+        return closedRecord;
+      } catch (error) {
+        const description = describeApiError(error);
+        if (description.kind === "access-denied") setStatus("denied");
+        throw error;
+      } finally {
+        closingRef.current = false;
+        setClosingId(null);
+        setClosingOperation(null);
       }
     },
     [refresh],
@@ -129,7 +185,9 @@ export function useOpenAccessRecords() {
     clearOperationError: () => setOperationError(null),
     closeRecord,
     closingId,
+    closingOperation,
     isRefreshing,
+    exceptionallyCloseRecord,
     lastUpdatedAt,
     notice,
     operationError,

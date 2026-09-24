@@ -3,6 +3,10 @@ import { useMemo } from "react";
 import { ContentState } from "../../../components/ui/ContentState";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { AccessHistoryRequestStatus } from "../hooks/useAccessHistory";
+import {
+  exceptionalClosureReasonLabels,
+  exceptionalClosureReasons,
+} from "../model/exceptionalClosure";
 import type { AccessRecord, PagedAccessRecords } from "../types";
 
 interface AccessHistoryResultsProps {
@@ -20,7 +24,11 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 function stayDuration(record: AccessRecord) {
-  if (!record.exitAtUtc) return "Em andamento";
+  if (!record.exitAtUtc) {
+    return isExceptionalClosure(record)
+      ? "Horário de saída desconhecido"
+      : "Em andamento";
+  }
   const minutes = Math.max(
     1,
     Math.round(
@@ -31,6 +39,60 @@ function stayDuration(record: AccessRecord) {
   );
   if (minutes < 60) return `${minutes} min`;
   return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, "0")}`;
+}
+
+function isExceptionalClosure(record: AccessRecord) {
+  return record.closureType?.toLocaleLowerCase("pt-BR") === "excepcional";
+}
+
+function closureStatus(record: AccessRecord) {
+  if (isExceptionalClosure(record)) {
+    return { label: "Encerramento excepcional", tone: "warning" as const };
+  }
+  if (record.exitAtUtc) {
+    return { label: "Saída normal", tone: "success" as const };
+  }
+  return { label: "Em aberto", tone: "warning" as const };
+}
+
+function exceptionalReasonLabel(record: AccessRecord) {
+  const reason = record.exceptionalClosureReason;
+  if (!reason) return null;
+  return exceptionalClosureReasons.includes(
+    reason as (typeof exceptionalClosureReasons)[number],
+  )
+    ? exceptionalClosureReasonLabels[
+        reason as (typeof exceptionalClosureReasons)[number]
+      ]
+    : reason;
+}
+
+function ExceptionalClosureDetails({ record }: { record: AccessRecord }) {
+  if (!isExceptionalClosure(record)) return null;
+  const reason = exceptionalReasonLabel(record);
+
+  return (
+    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-ink">
+      <p className="font-bold">Regularização excepcional</p>
+      <p className="mt-1">
+        {record.exitAtUtc
+          ? `Saída observada: ${dateFormatter.format(new Date(record.exitAtUtc))}`
+          : "Saída observada: horário desconhecido"}
+      </p>
+      {record.regularizedAtUtc && (
+        <p>
+          Regularizado em:{" "}
+          {dateFormatter.format(new Date(record.regularizedAtUtc))}
+        </p>
+      )}
+      {reason && <p>Motivo: {reason}</p>}
+      {record.exceptionalClosureObservation?.trim() && (
+        <p className="break-words">
+          Observação: {record.exceptionalClosureObservation}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function linkedEventName(record: AccessRecord) {
@@ -117,10 +179,7 @@ export function AccessHistoryResults({
                       {record.categoryName} • #{record.id}
                     </span>
                   </div>
-                  <StatusBadge
-                    label={record.exitAtUtc ? "Concluído" : "Em aberto"}
-                    tone={record.exitAtUtc ? "success" : "warning"}
-                  />
+                  <StatusBadge {...closureStatus(record)} />
                 </div>
                 <p className="mt-3 text-sm font-semibold text-ink-soft">
                   {record.driverName}
@@ -150,6 +209,7 @@ export function AccessHistoryResults({
                     </dd>
                   </div>
                 </dl>
+                <ExceptionalClosureDetails record={record} />
                 {onCorrect && (
                   <button
                     aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
@@ -222,18 +282,16 @@ export function AccessHistoryResults({
                     </td>
                     <td className="px-3 py-4 text-ink-soft">
                       {stayDuration(record)}
-                      {record.exitAtUtc && (
+                      {record.exitAtUtc && !isExceptionalClosure(record) && (
                         <span className="mt-1 block whitespace-nowrap text-xs text-ink-soft">
                           Saída{" "}
                           {dateFormatter.format(new Date(record.exitAtUtc))}
                         </span>
                       )}
+                      <ExceptionalClosureDetails record={record} />
                     </td>
                     <td className="px-3 py-4">
-                      <StatusBadge
-                        label={record.exitAtUtc ? "Concluído" : "Em aberto"}
-                        tone={record.exitAtUtc ? "success" : "warning"}
-                      />
+                      <StatusBadge {...closureStatus(record)} />
                     </td>
                     {onCorrect && (
                       <td className="px-3 py-4">

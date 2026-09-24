@@ -10,9 +10,32 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
     public void Configure(EntityTypeBuilder<RegistroAcesso> builder)
     {
         builder.ToTable("registros_acesso", "dbo", table =>
+        {
             table.HasCheckConstraint(
                 "ck_registros_acesso_periodo",
-                "data_hora_saida IS NULL OR data_hora_saida >= data_hora_entrada"));
+                "data_hora_saida IS NULL OR data_hora_saida >= data_hora_entrada");
+            table.HasCheckConstraint(
+                "ck_registros_acesso_periodo_regularizacao",
+                "data_hora_regularizacao IS NULL OR " +
+                "(data_hora_regularizacao >= data_hora_entrada AND " +
+                "(data_hora_saida IS NULL OR " +
+                "data_hora_saida <= data_hora_regularizacao))");
+            table.HasCheckConstraint(
+                "ck_registros_acesso_encerramento",
+                "(status <> 'Encerrado' AND tipo_encerramento IS NULL " +
+                "AND motivo_encerramento_excepcional IS NULL " +
+                "AND observacao_encerramento_excepcional IS NULL " +
+                "AND data_hora_regularizacao IS NULL) OR " +
+                "(status = 'Encerrado' AND atualizado_por_id IS NOT NULL AND " +
+                "((tipo_encerramento = 'Regular' AND data_hora_saida IS NOT NULL " +
+                "AND motivo_encerramento_excepcional IS NULL " +
+                "AND observacao_encerramento_excepcional IS NULL " +
+                "AND data_hora_regularizacao IS NULL) OR " +
+                "(tipo_encerramento = 'Excepcional' " +
+                "AND motivo_encerramento_excepcional IS NOT NULL " +
+                "AND observacao_encerramento_excepcional IS NOT NULL " +
+                "AND data_hora_regularizacao IS NOT NULL)))");
+        });
 
         builder.HasKey(registro => registro.Id)
             .HasName("pk_registros_acesso");
@@ -48,6 +71,27 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
 
         builder.Property(registro => registro.DataHoraSaida)
             .HasColumnName("data_hora_saida")
+            .HasColumnType("timestamp with time zone");
+
+        builder.Property(registro => registro.TipoEncerramento)
+            .HasColumnName("tipo_encerramento")
+            .HasColumnType("character varying(20)")
+            .HasMaxLength(20)
+            .HasConversion<string>();
+
+        builder.Property(registro => registro.MotivoEncerramentoExcepcional)
+            .HasColumnName("motivo_encerramento_excepcional")
+            .HasColumnType("character varying(40)")
+            .HasMaxLength(40)
+            .HasConversion<string>();
+
+        builder.Property(registro => registro.ObservacaoEncerramentoExcepcional)
+            .HasColumnName("observacao_encerramento_excepcional")
+            .HasColumnType("character varying(1000)")
+            .HasMaxLength(1000);
+
+        builder.Property(registro => registro.DataHoraRegularizacao)
+            .HasColumnName("data_hora_regularizacao")
             .HasColumnType("timestamp with time zone");
 
         builder.Property(registro => registro.Objetivo)
@@ -109,6 +153,9 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
 
         builder.HasIndex(registro => registro.Status)
             .HasDatabaseName("ix_registros_acesso_status");
+
+        builder.HasIndex(registro => registro.DataHoraRegularizacao)
+            .HasDatabaseName("ix_registros_acesso_data_regularizacao");
 
         builder.HasIndex(registro => registro.VeiculoId)
             .IsUnique()

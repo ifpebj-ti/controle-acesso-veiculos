@@ -7,6 +7,7 @@ public sealed record OperationalSummaryCriteria(
 public sealed record GeneralAccessDailyTotals(
     int Entries,
     int Exits,
+    int ExceptionalClosures,
     int OpenAtStart,
     int OpenAtEnd);
 

@@ -81,7 +81,21 @@ public sealed record VehicleAccessRecord(
     string? Observation,
     int? EventAuthorizationId = null,
     string? EventAuthorizationName = null,
-    int? EventVehicleRuleId = null);
+    int? EventVehicleRuleId = null,
+    string? ClosureType = null,
+    string? ExceptionalClosureReason = null,
+    string? ExceptionalClosureObservation = null,
+    DateTime? RegularizedAtUtc = null);
+
+public sealed record ExceptionallyCloseVehicleAccessCommand(
+    string Reason,
+    string Observation,
+    DateTimeOffset? ObservedExitAtUtc = null);
+
+public sealed record ExceptionalVehicleAccessClosureData(
+    MotivoEncerramentoExcepcional Reason,
+    string Observation,
+    DateTime? ObservedExitAtUtc);
 
 public sealed record SearchVehicleAccessesCommand(
     string? Plate = null,
@@ -185,13 +199,15 @@ public sealed record RegisterVehicleEntryResult(
 public enum CloseVehicleAccessStatus
 {
     Success,
+    Invalid,
     NotFound,
     Conflict
 }
 
 public sealed record CloseVehicleAccessResult(
     CloseVehicleAccessStatus Status,
-    VehicleAccessRecord? AccessRecord);
+    VehicleAccessRecord? AccessRecord,
+    IReadOnlyDictionary<string, string[]>? Errors = null);
 
 public enum VehicleAccessStoreRegistrationStatus
 {

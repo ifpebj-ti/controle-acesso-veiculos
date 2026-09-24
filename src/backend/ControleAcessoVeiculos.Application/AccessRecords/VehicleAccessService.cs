@@ -167,6 +167,38 @@ public sealed class VehicleAccessService(
             cancellationToken);
     }
 
+    public async Task<CloseVehicleAccessResult> CloseExceptionallyAsync(
+        int accessRecordId,
+        ExceptionallyCloseVehicleAccessCommand command,
+        int actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(accessRecordId);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(actorUserId);
+
+        var now = timeProvider.GetUtcNow();
+        var errors = ValidateExceptionalClosure(command, now);
+        if (errors.Count > 0)
+        {
+            return new(CloseVehicleAccessStatus.Invalid, null, errors);
+        }
+
+        Enum.TryParse<MotivoEncerramentoExcepcional>(
+            command.Reason.Trim(),
+            true,
+            out var reason);
+
+        return await vehicleAccessStore.TryCloseExceptionallyAsync(
+            accessRecordId,
+            new ExceptionalVehicleAccessClosureData(
+                reason,
+                command.Observation.Trim(),
+                command.ObservedExitAtUtc?.UtcDateTime),
+            actorUserId,
+            now.UtcDateTime,
+            cancellationToken);
+    }
+
     public async Task<CorrectVehicleAccessResult> CorrectAsync(
         int accessRecordId,
         CorrectVehicleAccessCommand command,
@@ -368,6 +400,36 @@ public sealed class VehicleAccessService(
         {
             errors["justification"] =
                 ["A justificativa é obrigatória e deve possuir entre 10 e 500 caracteres."];
+        }
+
+        return errors;
+    }
+
+    private static Dictionary<string, string[]> ValidateExceptionalClosure(
+        ExceptionallyCloseVehicleAccessCommand command,
+        DateTimeOffset now)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (string.IsNullOrWhiteSpace(command.Reason) ||
+            !Enum.TryParse<MotivoEncerramentoExcepcional>(
+                command.Reason.Trim(), true, out var reason) ||
+            !Enum.IsDefined(reason))
+        {
+            errors["reason"] = ["Informe um motivo de encerramento excepcional válido."];
+        }
+
+        if (string.IsNullOrWhiteSpace(command.Observation) ||
+            command.Observation.Trim().Length is < 10 or > 1000)
+        {
+            errors["observation"] =
+                ["A observação é obrigatória e deve possuir entre 10 e 1000 caracteres."];
+        }
+
+        if (command.ObservedExitAtUtc > now)
+        {
+            errors["observedExitAtUtc"] =
+                ["O horário observado de saída não pode estar no futuro."];
         }
 
         return errors;

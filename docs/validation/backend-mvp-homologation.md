@@ -427,6 +427,14 @@ Setor de Transporte permanece somente leitura. Somente objetivo, categoria e
 observação podem ser alterados, sempre com justificativa. Placa, condutor,
 horários, situação e autoria original permanecem imutáveis.
 
+O encerramento excepcional de uma saída esquecida também é restrito a Porteiro,
+Vigilante e Administrador. Ele exige motivo e observação, mantém o horário de
+saída vazio quando desconhecido e apresenta separadamente o momento em que a
+regularização foi feita. Confirme na interface que a ação exige confirmação
+acessível, não repete a requisição e permanece visualmente distinta da saída
+normal. A integração dessa interface deve ser validada antes de considerar o
+fluxo homologado.
+
 ### Cenário 3 — fronteira do Setor de Transporte
 
 | Campo    | Valor                                                                            |
@@ -513,7 +521,7 @@ apenas coleta evidências e dúvidas que possam apoiar essas decisões.
 | Saúde técnica                   | `GET /health`, `/health/live`, `/health/ready`            | `TechnicalEndpointsTests`                                                                                 |
 | Login e bloqueio                | `POST /auth/login`                                        | `AuthenticationTests`, `UsuarioTests`                                                                     |
 | Administração de contas         | `GET/POST/DELETE /users`, reativação                      | `UserAccountLifecycleTests`, `CreateUserAccountServiceTests`, `UserAccountLifecycleServiceTests`          |
-| Entrada, abertos e saída geral  | `/access-records/entries`, `/open`, `/{id}/exit`          | `VehicleAccessTests`, `VehicleAccessServiceTests`, `RegistroAcessoTests`                                  |
+| Entrada, abertos e saída geral  | `/access-records/entries`, `/open`, `/{id}/exit`, `/{id}/exceptional-closure` | `VehicleAccessTests`, `VehicleAccessServiceTests`, `RegistroAcessoTests`                                  |
 | Histórico e correção geral      | `/access-records/history`, `/{id}/correction`             | `VehicleAccessTests`, `VehicleAccessServiceTests`                                                         |
 | Catálogo de frota               | `/institutional-vehicles`                                 | `InstitutionalVehicleCatalogTests`, `InstitutionalVehicleCatalogServiceTests`, `VeiculoTests`             |
 | Motoristas autorizados          | `/institutional-drivers`                                  | `InstitutionalDriverTests`, `InstitutionalDriverServiceTests`, `MotoristaInstitucionalTests`              |

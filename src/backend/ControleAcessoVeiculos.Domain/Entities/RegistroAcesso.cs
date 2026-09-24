@@ -48,6 +48,10 @@ public class RegistroAcesso
     public int? AutorizacaoVeiculoEventoId { get; private set; }
     public DateTime DataHoraEntrada { get; private set; }
     public DateTime? DataHoraSaida { get; private set; }
+    public TipoEncerramentoAcesso? TipoEncerramento { get; private set; }
+    public MotivoEncerramentoExcepcional? MotivoEncerramentoExcepcional { get; private set; }
+    public string? ObservacaoEncerramentoExcepcional { get; private set; }
+    public DateTime? DataHoraRegularizacao { get; private set; }
     public string Objetivo { get; private set; } = null!;
     public StatusRegistroAcesso Status { get; private set; }
     public int CriadoPorId { get; private set; }
@@ -73,9 +77,52 @@ public class RegistroAcesso
         }
 
         DataHoraSaida = dataHoraSaida;
+        TipoEncerramento = TipoEncerramentoAcesso.Regular;
         AtualizadoPorId = atualizadoPorId;
         Status = StatusRegistroAcesso.Encerrado;
         DataAlteracao = DateTime.UtcNow;
+    }
+
+    public void RegistrarEncerramentoExcepcional(
+        MotivoEncerramentoExcepcional motivo,
+        string observacao,
+        DateTime? dataHoraSaidaObservada,
+        DateTime dataHoraRegularizacao,
+        int atualizadoPorId)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(atualizadoPorId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(observacao);
+
+        if (!Enum.IsDefined(motivo))
+        {
+            throw new ArgumentOutOfRangeException(nameof(motivo));
+        }
+
+        if (Status != StatusRegistroAcesso.Aberto)
+        {
+            throw new InvalidOperationException("O registro de acesso já está encerrado.");
+        }
+
+        if (dataHoraRegularizacao < DataHoraEntrada)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dataHoraRegularizacao));
+        }
+
+        if (dataHoraSaidaObservada.HasValue &&
+            (dataHoraSaidaObservada.Value < DataHoraEntrada ||
+                dataHoraSaidaObservada.Value > dataHoraRegularizacao))
+        {
+            throw new ArgumentOutOfRangeException(nameof(dataHoraSaidaObservada));
+        }
+
+        DataHoraSaida = dataHoraSaidaObservada;
+        TipoEncerramento = TipoEncerramentoAcesso.Excepcional;
+        MotivoEncerramentoExcepcional = motivo;
+        ObservacaoEncerramentoExcepcional = observacao.Trim();
+        DataHoraRegularizacao = dataHoraRegularizacao;
+        AtualizadoPorId = atualizadoPorId;
+        Status = StatusRegistroAcesso.Encerrado;
+        DataAlteracao = dataHoraRegularizacao;
     }
 
     public void MarcarComoPendente(int atualizadoPorId)

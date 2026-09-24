@@ -8,16 +8,24 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { SelectField } from "../components/ui/SelectField";
 import {
   AccessExitDialog,
+  ExceptionalClosureDialog,
   OpenAccessList,
   type AccessRecord,
   useOpenAccessRecords,
 } from "../features/access-records";
+import { useAuthenticatedSession } from "../features/authentication";
+import { profileHasCapability } from "../routes/routeMetadata";
 
 interface LocationState {
   notice?: string;
 }
 
 interface ExitSelection {
+  record: AccessRecord;
+  trigger: HTMLButtonElement;
+}
+
+interface ExceptionalSelection {
   record: AccessRecord;
   trigger: HTMLButtonElement;
 }
@@ -29,6 +37,7 @@ const updateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 export function OpenAccessPage() {
+  const { user } = useAuthenticatedSession();
   const location = useLocation();
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -39,7 +48,13 @@ export function OpenAccessPage() {
   const [exitSelection, setExitSelection] = useState<ExitSelection | null>(
     null,
   );
+  const [exceptionalSelection, setExceptionalSelection] =
+    useState<ExceptionalSelection | null>(null);
   const accessRecords = useOpenAccessRecords();
+  const canExceptionallyClose = profileHasCapability(
+    user.profileName,
+    "exceptionally-close-general-access",
+  );
 
   const availableCategories = useMemo(
     () => [
@@ -103,6 +118,19 @@ export function OpenAccessPage() {
     if (!exitSelection) return;
     const succeeded = await accessRecords.closeRecord(exitSelection.record);
     if (succeeded) setExitSelection(null);
+  }
+
+  function openExceptionalDialog(
+    record: AccessRecord,
+    trigger: HTMLButtonElement,
+  ) {
+    if (!canExceptionallyClose || accessRecords.closingId !== null) return;
+    setExceptionalSelection({ record, trigger });
+  }
+
+  function closeExceptionalDialog() {
+    if (accessRecords.closingId !== null) return;
+    setExceptionalSelection(null);
   }
 
   if (accessRecords.status === "denied") {
@@ -325,7 +353,10 @@ export function OpenAccessPage() {
             />
           ) : (
             <OpenAccessList
+              canExceptionallyClose={canExceptionallyClose}
               closingId={accessRecords.closingId}
+              closingOperation={accessRecords.closingOperation}
+              onExceptionalClosure={openExceptionalDialog}
               onExit={openExitDialog}
               records={filteredRecords}
             />
@@ -341,6 +372,22 @@ export function OpenAccessPage() {
           pending={accessRecords.closingId === exitSelection.record.id}
           record={exitSelection.record}
           returnFocusTo={exitSelection.trigger}
+          successFocusRef={searchRef}
+        />
+      )}
+
+      {exceptionalSelection && (
+        <ExceptionalClosureDialog
+          onCancel={closeExceptionalDialog}
+          onClosed={() => setExceptionalSelection(null)}
+          onConfirm={(input) =>
+            accessRecords.exceptionallyCloseRecord(
+              exceptionalSelection.record,
+              input,
+            )
+          }
+          record={exceptionalSelection.record}
+          returnFocusTo={exceptionalSelection.trigger}
           successFocusRef={searchRef}
         />
       )}

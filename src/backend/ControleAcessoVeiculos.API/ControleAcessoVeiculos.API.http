@@ -115,6 +115,18 @@ Authorization: Bearer {{AccessToken}}
 
 ###
 
+POST {{ControleAcessoVeiculos.API_HostAddress}}/access-records/1/exceptional-closure
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "reason": "RegistroDeSaidaOmitido",
+  "observation": "Saída confirmada posteriormente pelo responsável operacional.",
+  "observedExitAtUtc": null
+}
+
+###
+
 PUT {{ControleAcessoVeiculos.API_HostAddress}}/access-records/1/correction
 Authorization: Bearer {{AccessToken}}
 Content-Type: application/json

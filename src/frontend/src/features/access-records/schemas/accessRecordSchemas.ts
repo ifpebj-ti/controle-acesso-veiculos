@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { generalAccessCategories } from "../model/accessCategories";
+import { exceptionalClosureReasons } from "../model/exceptionalClosure";
 import {
   customEntryOption,
   quickAccessObjectives,
@@ -24,6 +25,10 @@ export const accessRecordSchema = z.object({
   eventAuthorizationId: z.number().int().positive().nullable().optional(),
   eventAuthorizationName: z.string().nullable().optional(),
   eventVehicleRuleId: z.number().int().positive().nullable().optional(),
+  closureType: z.string().nullable().optional(),
+  exceptionalClosureReason: z.string().nullable().optional(),
+  exceptionalClosureObservation: z.string().nullable().optional(),
+  regularizedAtUtc: z.string().nullable().optional(),
 });
 
 export const accessRecordListSchema = z.array(accessRecordSchema);
@@ -143,4 +148,43 @@ export const accessCorrectionFormSchema = z.object({
 
 export type AccessCorrectionFormValues = z.infer<
   typeof accessCorrectionFormSchema
+>;
+
+export const exceptionalClosureFormSchema = z
+  .object({
+    reason: z.union([z.literal(""), z.enum(exceptionalClosureReasons)]),
+    observation: z
+      .string()
+      .trim()
+      .min(10, "A observação deve possuir pelo menos 10 caracteres.")
+      .max(1000, "A observação deve possuir até 1000 caracteres."),
+    observedExitAtLocal: z.string(),
+  })
+  .superRefine((values, context) => {
+    if (!values.reason) {
+      context.addIssue({
+        code: "custom",
+        message: "Selecione o motivo da regularização.",
+        path: ["reason"],
+      });
+    }
+
+    if (values.observedExitAtLocal) {
+      const observedAt = new Date(values.observedExitAtLocal);
+      if (
+        Number.isNaN(observedAt.getTime()) ||
+        observedAt.getTime() > Date.now()
+      ) {
+        context.addIssue({
+          code: "custom",
+          message:
+            "Informe um horário observado válido que não esteja no futuro.",
+          path: ["observedExitAtLocal"],
+        });
+      }
+    }
+  });
+
+export type ExceptionalClosureFormValues = z.infer<
+  typeof exceptionalClosureFormSchema
 >;

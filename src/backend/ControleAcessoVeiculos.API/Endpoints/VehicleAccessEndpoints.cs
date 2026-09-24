@@ -23,6 +23,9 @@ public static class VehicleAccessEndpoints
         group.MapPost("/{accessRecordId:int}/exit", RegisterExitAsync)
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterVehicleExit");
+        group.MapPost("/{accessRecordId:int}/exceptional-closure", CloseExceptionallyAsync)
+            .RequireAuthorization(AuthorizationPolicies.ExceptionallyCloseAccessRecords)
+            .WithName("ExceptionallyCloseVehicleAccess");
         group.MapGet("/history", SearchHistoryAsync)
             .RequireAuthorization(AuthorizationPolicies.ReviewAccessRecords)
             .WithName("SearchVehicleAccessHistory");
@@ -152,6 +155,43 @@ public static class VehicleAccessEndpoints
             : Results.ValidationProblem(result.Errors);
     }
 
+    private static async Task<IResult> CloseExceptionallyAsync(
+        int accessRecordId,
+        ExceptionallyCloseVehicleAccessRequest request,
+        HttpContext httpContext,
+        VehicleAccessService vehicleAccessService,
+        CancellationToken cancellationToken)
+    {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await vehicleAccessService.CloseExceptionallyAsync(
+            accessRecordId,
+            new ExceptionallyCloseVehicleAccessCommand(
+                request.Reason,
+                request.Observation,
+                request.ObservedExitAtUtc),
+            actorUserId,
+            cancellationToken);
+
+        return result.Status switch
+        {
+            CloseVehicleAccessStatus.Success => Results.Ok(result.AccessRecord),
+            CloseVehicleAccessStatus.Invalid =>
+                Results.ValidationProblem(result.Errors!),
+            CloseVehicleAccessStatus.NotFound => Results.NotFound(new
+            {
+                Message = "Registro de acesso não encontrado."
+            }),
+            _ => Results.Conflict(new
+            {
+                Message = "O registro de acesso já foi encerrado."
+            })
+        };
+    }
+
     private static async Task<IResult> CorrectAsync(
         int accessRecordId,
         CorrectVehicleAccessRequest request,
@@ -226,3 +266,8 @@ public sealed record CorrectVehicleAccessRequest(
     string CategoryName,
     string? Observation,
     string Justification);
+
+public sealed record ExceptionallyCloseVehicleAccessRequest(
+    string Reason,
+    string Observation,
+    DateTimeOffset? ObservedExitAtUtc = null);
