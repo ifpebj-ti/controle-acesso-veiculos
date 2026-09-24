@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AccessRecord } from "../features/access-records";
 import {
+  type ProfileName,
+  useAuthenticatedSession,
+} from "../features/authentication";
+import {
   closeAccessRecord,
+  exceptionallyCloseAccessRecord,
   listOpenAccessRecords,
 } from "../features/access-records/services/accessRecordsService";
 import { describeApiError } from "../services/api-errors";
@@ -23,10 +28,18 @@ vi.mock(
     return {
       ...actual,
       closeAccessRecord: vi.fn(),
+      exceptionallyCloseAccessRecord: vi.fn(),
       listOpenAccessRecords: vi.fn(),
     };
   },
 );
+
+vi.mock("../features/authentication", async () => {
+  const actual = await vi.importActual<
+    typeof import("../features/authentication")
+  >("../features/authentication");
+  return { ...actual, useAuthenticatedSession: vi.fn() };
+});
 
 vi.mock("../services/api-errors", () => ({
   describeApiError: vi.fn(),
@@ -69,7 +82,25 @@ function deferred<T>() {
   return { promise, reject, resolve };
 }
 
-function renderPage() {
+function mockProfile(profileName: ProfileName) {
+  vi.mocked(useAuthenticatedSession).mockReturnValue({
+    completePasswordChange: vi.fn(),
+    expiresAtUtc: "2030-06-10T22:00:00Z",
+    login: vi.fn(),
+    logout: vi.fn(),
+    sessionEndReason: null,
+    status: "authenticated",
+    user: {
+      email: "operador.ficticio@example.test",
+      id: 1,
+      profileName,
+      requiresPasswordChange: false,
+    },
+  });
+}
+
+function renderPage(profileName: ProfileName = "Porteiro") {
+  mockProfile(profileName);
   return render(
     <StrictMode>
       <MemoryRouter>
@@ -86,6 +117,12 @@ function mobileList() {
 function exitButton(accessRecord = record) {
   return within(mobileList()).getByRole("button", {
     name: `Registrar saída de ${accessRecord.plate}, condutor ${accessRecord.driverName}`,
+  });
+}
+
+function exceptionalButton(accessRecord = record) {
+  return within(mobileList()).getByRole("button", {
+    name: `Regularizar saída não registrada de ${accessRecord.plate}, condutor ${accessRecord.driverName}`,
   });
 }
 
@@ -340,6 +377,93 @@ describe("OpenAccessPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await waitFor(() => expect(trigger).toHaveFocus());
     expect(closeAccessRecord).not.toHaveBeenCalled();
+  });
+
+  it.each(["Porteiro", "Vigilante", "Administrador"] as const)(
+    "offers exceptional closure to profile %s while preserving normal exit",
+    async (profileName) => {
+      vi.mocked(listOpenAccessRecords).mockResolvedValue([record]);
+      renderPage(profileName);
+
+      await screen.findByText("1 em aberto");
+      expect(exitButton()).toBeInTheDocument();
+      expect(exceptionalButton()).toBeInTheDocument();
+    },
+  );
+
+  it("does not offer exceptional closure to Transportation", async () => {
+    vi.mocked(listOpenAccessRecords).mockResolvedValue([record]);
+    renderPage("SetorTransporte");
+
+    await screen.findByText("1 em aberto");
+    expect(exitButton()).toBeInTheDocument();
+    expect(
+      within(mobileList()).queryByRole("button", {
+        name: /Regularizar saída não registrada/,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("applies the canonical exceptional response before list revalidation", async () => {
+    const mutation = deferred<AccessRecord>();
+    const revalidation = deferred<AccessRecord[]>();
+    vi.mocked(listOpenAccessRecords)
+      .mockResolvedValueOnce([record])
+      .mockReturnValueOnce(revalidation.promise);
+    vi.mocked(exceptionallyCloseAccessRecord).mockReturnValue(mutation.promise);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await waitFor(() => exceptionalButton()));
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Motivo *"),
+      "RegistroDeSaidaOmitido",
+    );
+    await user.type(
+      screen.getByLabelText("Observação *"),
+      "Saída confirmada posteriormente.",
+    );
+    await user.dblClick(
+      screen.getByRole("button", {
+        name: "Confirmar regularização excepcional",
+      }),
+    );
+
+    expect(exceptionallyCloseAccessRecord).toHaveBeenCalledTimes(1);
+    expect(exceptionallyCloseAccessRecord).toHaveBeenCalledWith(10, {
+      observation: "Saída confirmada posteriormente.",
+      observedExitAtUtc: null,
+      reason: "RegistroDeSaidaOmitido",
+    });
+
+    mutation.resolve({
+      ...record,
+      closureType: "Excepcional",
+      exceptionalClosureObservation: "Saída confirmada posteriormente.",
+      exceptionalClosureReason: "RegistroDeSaidaOmitido",
+      regularizedAtUtc: "2026-09-11T15:10:00.000Z",
+      status: "Encerrado",
+      updatedById: 5,
+    });
+
+    expect(
+      await screen.findByText(
+        "Saída do veículo DEM1A23 regularizada com sucesso.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("DEM1A23")).not.toBeInTheDocument();
+    expect(listOpenAccessRecords).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getByText(/dados anteriores continuam disponíveis/i),
+    ).toBeInTheDocument();
+
+    revalidation.resolve([]);
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/dados anteriores continuam disponíveis/i),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it("executes one exit mutation, uses its canonical response and revalidates", async () => {

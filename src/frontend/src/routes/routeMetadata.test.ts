@@ -229,6 +229,21 @@ describe("profile route and navigation metadata", () => {
     for (const profileName of [
       "Porteiro",
       "Vigilante",
+      "Administrador",
+    ] as const) {
+      expect(
+        profileHasCapability(profileName, "exceptionally-close-general-access"),
+      ).toBe(true);
+    }
+    expect(
+      profileHasCapability(
+        "SetorTransporte",
+        "exceptionally-close-general-access",
+      ),
+    ).toBe(false);
+    for (const profileName of [
+      "Porteiro",
+      "Vigilante",
       "SetorTransporte",
     ] as const) {
       expect(
