@@ -153,6 +153,7 @@ Administradores autenticados podem criar outras contas pelo endpoint `POST /user
 | `access:operate` | Porteiro, Vigilante e Administrador |
 | `access-records:review` | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `access-records:correct` | Porteiro, Vigilante e Administrador |
+| `access-records:exceptionally-close` | Porteiro, Vigilante e Administrador |
 | `transportation:review` | Setor de Transporte e Administrador |
 | `operations:summary:read` | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `event-authorizations:read` | Porteiro, Vigilante, Setor de Transporte e Administrador |

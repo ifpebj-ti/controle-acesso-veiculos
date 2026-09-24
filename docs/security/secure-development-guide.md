@@ -207,6 +207,15 @@ fica restrito à contingência, com reconciliação posterior, evitando dois con
 permanentes e divergentes. O horário de fechamento não é codificado como bloqueio
 fixo, pois existem exceções autorizadas e residentes.
 
+Na Issue #271, o encerramento posterior de uma saída não registrada usa política
+dedicada para Porteiro, Vigilante e Administrador; o Setor de Transporte continua
+somente leitura. Motivo categorizado, observação e ator são obrigatórios. Um
+horário observado só é persistido quando informado a partir de fonte confiável;
+caso contrário, permanece nulo e não é apresentado como estimativa. O momento da
+regularização é registrado separadamente. Registro e auditoria falham ou são
+confirmados juntos, com bloqueio da linha contra concorrência; a auditoria não
+duplica o texto livre da observação.
+
 Na Issue #83, autorizações de eventos separam consulta operacional de gestão.
 A decisão institucional registrada em setembro de 2026 e aplicada pela Issue
 #270 mantém consulta para os quatro perfis, mas reserva criação, alteração e

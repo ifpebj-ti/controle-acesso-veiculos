@@ -60,6 +60,7 @@ Os contratos operacionais e administrativos disponíveis são:
 | `GET /access-records/open` | lista veículos com acesso ainda aberto |
 | `GET /access-records/history` | pesquisa acessos por período, placa, condutor, categoria ou status para Portaria, Vigilância, Transporte e Administração |
 | `POST /access-records/{id}/exit` | encerra um acesso usando horário e usuário autenticado do servidor |
+| `POST /access-records/{id}/exceptional-closure` | regulariza uma saída não registrada sem inventar horário e mantém auditoria separada |
 | `PUT /access-records/{id}/correction` | corrige objetivo, categoria e observação com justificativa para Porteiro, Vigilante e Administrador |
 | `GET /institutional-vehicles` | lista a frota institucional ativa para operação e conferência |
 | `POST /institutional-vehicles` | cadastra veículo institucional para `SetorTransporte` ou `Administrador` |
@@ -390,11 +391,23 @@ curl "http://localhost:5118/access-records/history?plate=ABC-1D23&driverName=Con
 curl -X POST http://localhost:5118/access-records/1/exit \
   -H "Authorization: Bearer SEU_TOKEN"
 
+curl -X POST http://localhost:5118/access-records/1/exceptional-closure \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"RegistroDeSaidaOmitido","observation":"Saída confirmada posteriormente pelo responsável operacional."}'
+
 curl -X PUT http://localhost:5118/access-records/1/correction \
   -H "Authorization: Bearer SEU_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"objective":"Entrega autorizada","categoryName":"Entrega","observation":"Conferido","justification":"Categoria e objetivo conferidos pelo vigilante."}'
 ```
+
+Os motivos aceitos no encerramento excepcional são `RegistroDeSaidaOmitido`,
+`IndisponibilidadeDoSistema`, `OperacaoEmContingencia` e `Outro`. O horário
+`observedExitAtUtc` é opcional e só deve ser informado quando houver fonte
+confiável. Quando ausente, a API mantém a saída desconhecida e registra apenas o
+momento da regularização. Porteiro, Vigilante e Administrador podem executar a
+ação; o Setor de Transporte permanece em supervisão somente leitura.
 
 As categorias preliminares aceitas são: `Visitante`, `Prestador de serviço`, `Entrega`, `Evento`, `Treino ou jogo`, `Caminhada com veículo`, `Mototáxi`, `Permanência excepcional` e `Outro acesso autorizado`. Elas são hipóteses do MVP e devem ser revistas após a validação com a portaria. A consulta histórica aceita filtros combináveis por placa, trecho do nome do condutor, categoria, status e período de entrada. Sem período, usa os últimos 30 dias; o intervalo máximo é de 366 dias e cada página contém de 1 a 100 registros. Documento pessoal, objetivo e observação não são parâmetros de busca. A correção exige justificativa e aceita registros abertos ou encerrados; placa, condutor, horários, status e autoria permanecem imutáveis até que outra regra seja validada com o cliente.
 
