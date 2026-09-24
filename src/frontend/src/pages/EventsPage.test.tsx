@@ -1,8 +1,15 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ConfirmationProvider } from "../components/ui/ConfirmationProvider";
 import {
   type ProfileName,
   useAuthenticatedSession,
@@ -105,9 +112,11 @@ function renderPage(profileName: ProfileName = "Administrador") {
     },
   });
   return render(
-    <MemoryRouter>
-      <EventsPage />
-    </MemoryRouter>,
+    <ConfirmationProvider>
+      <MemoryRouter>
+        <EventsPage />
+      </MemoryRouter>
+    </ConfirmationProvider>,
   );
 }
 
@@ -390,7 +399,6 @@ describe("EventsPage", () => {
   });
 
   it("confirms logical cancellation before calling the API", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(cancelEventAuthorization).mockResolvedValue();
     const user = userEvent.setup();
     renderPage();
@@ -398,8 +406,11 @@ describe("EventsPage", () => {
     await user.click(
       screen.getByRole("button", { name: "Cancelar autorização" }),
     );
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining("histórico será preservado"),
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent(authorization.name);
+    expect(dialog).toHaveTextContent("O histórico será preservado");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Cancelar autorização" }),
     );
     await waitFor(() =>
       expect(cancelEventAuthorization).toHaveBeenCalledWith(authorization.id),
@@ -439,7 +450,6 @@ describe("EventsPage", () => {
   });
 
   it("reports a saved cancellation and retries only the list refresh", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(searchEventAuthorizations)
       .mockResolvedValueOnce(populatedPage)
       .mockRejectedValueOnce(new Error("network"))
@@ -450,6 +460,11 @@ describe("EventsPage", () => {
     await screen.findByText(authorization.name);
     await user.click(
       screen.getByRole("button", { name: "Cancelar autorização" }),
+    );
+    await user.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", {
+        name: "Cancelar autorização",
+      }),
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
