@@ -505,6 +505,64 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
         return new CloseVehicleAccessResult(CloseVehicleAccessStatus.Success, result);
     }
 
+    public async Task<CloseVehicleAccessResult> TryCloseExceptionallyAsync(
+        int accessRecordId,
+        ExceptionalVehicleAccessClosureData closure,
+        int actorUserId,
+        DateTime regularizedAtUtc,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            cancellationToken);
+
+        var accessRecord = await dbContext.RegistrosAcesso
+            .FromSqlInterpolated(
+                $"SELECT * FROM dbo.registros_acesso WHERE id = {accessRecordId} FOR UPDATE")
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (accessRecord is null)
+        {
+            return new(CloseVehicleAccessStatus.NotFound, null);
+        }
+
+        if (accessRecord.Status != StatusRegistroAcesso.Aberto)
+        {
+            return new(CloseVehicleAccessStatus.Conflict, null);
+        }
+
+        if (closure.ObservedExitAtUtc < accessRecord.DataHoraEntrada)
+        {
+            return new(
+                CloseVehicleAccessStatus.Invalid,
+                null,
+                new Dictionary<string, string[]>
+                {
+                    ["observedExitAtUtc"] =
+                        ["O horário observado de saída não pode ser anterior à entrada."]
+                });
+        }
+
+        accessRecord.RegistrarEncerramentoExcepcional(
+            closure.Reason,
+            closure.Observation,
+            closure.ObservedExitAtUtc,
+            regularizedAtUtc,
+            actorUserId);
+        dbContext.Auditorias.Add(CreateExceptionalClosureAudit(
+            accessRecord,
+            actorUserId,
+            regularizedAtUtc));
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        var result = await ProjectRecords(dbContext.RegistrosAcesso
+                .AsNoTracking()
+                .Where(item => item.Id == accessRecordId))
+            .SingleAsync(cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+        return new(CloseVehicleAccessStatus.Success, result);
+    }
+
     private static Auditoria CreateEntryAudit(
         RegistroAcesso accessRecord,
         EventoAcesso? eventAuthorization,
@@ -566,6 +624,34 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             }),
             detalhes: justification);
 
+    private static Auditoria CreateExceptionalClosureAudit(
+        RegistroAcesso accessRecord,
+        int actorUserId,
+        DateTime occurredAtUtc) =>
+        new(
+            occurredAtUtc,
+            TipoAcaoAuditoria.Alteracao,
+            nameof(RegistroAcesso),
+            accessRecord.Id,
+            actorUserId,
+            dadosAnteriores: JsonSerializer.Serialize(new
+            {
+                status = StatusRegistroAcesso.Aberto.ToString(),
+                exitAtUtc = (DateTime?)null
+            }),
+            dadosNovos: JsonSerializer.Serialize(new
+            {
+                status = StatusRegistroAcesso.Encerrado.ToString(),
+                closureType = TipoEncerramentoAcesso.Excepcional.ToString(),
+                exceptionalClosureReason =
+                    accessRecord.MotivoEncerramentoExcepcional!.Value.ToString(),
+                exitAtUtc = accessRecord.DataHoraSaida,
+                regularizedAtUtc = accessRecord.DataHoraRegularizacao,
+                observationRecorded = true,
+                source = "Api"
+            }),
+            detalhes: "Vehicle access exceptionally closed.");
+
     private IQueryable<VehicleAccessRecord> ProjectRecords(
         IQueryable<RegistroAcesso> accessRecords) =>
         from accessRecord in accessRecords
@@ -600,7 +686,15 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             accessRecord.Observacao,
             eventAuthorization == null ? null : eventAuthorization.Id,
             eventAuthorization == null ? null : eventAuthorization.Nome,
-            eventRule == null ? null : eventRule.Id);
+            eventRule == null ? null : eventRule.Id,
+            accessRecord.TipoEncerramento == null
+                ? null
+                : accessRecord.TipoEncerramento.ToString(),
+            accessRecord.MotivoEncerramentoExcepcional == null
+                ? null
+                : accessRecord.MotivoEncerramentoExcepcional.ToString(),
+            accessRecord.ObservacaoEncerramentoExcepcional,
+            accessRecord.DataHoraRegularizacao);
 
     private static VehicleAccessRecord Map(
         RegistroAcesso accessRecord,
@@ -624,7 +718,11 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             accessRecord.Observacao,
             eventAuthorization?.Id,
             eventAuthorization?.Nome,
-            accessRecord.AutorizacaoVeiculoEventoId);
+            accessRecord.AutorizacaoVeiculoEventoId,
+            accessRecord.TipoEncerramento?.ToString(),
+            accessRecord.MotivoEncerramentoExcepcional?.ToString(),
+            accessRecord.ObservacaoEncerramentoExcepcional,
+            accessRecord.DataHoraRegularizacao);
 
     private static VehicleAccessStoreRegistration Conflict(
         VehicleAccessStoreRegistrationStatus status =

@@ -31,4 +31,11 @@ public interface IVehicleAccessStore
         int actorUserId,
         DateTime exitAtUtc,
         CancellationToken cancellationToken);
+
+    Task<CloseVehicleAccessResult> TryCloseExceptionallyAsync(
+        int accessRecordId,
+        ExceptionalVehicleAccessClosureData closure,
+        int actorUserId,
+        DateTime regularizedAtUtc,
+        CancellationToken cancellationToken);
 }

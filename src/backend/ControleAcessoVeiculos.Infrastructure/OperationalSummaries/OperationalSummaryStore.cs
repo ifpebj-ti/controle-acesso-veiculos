@@ -22,14 +22,19 @@ public sealed class OperationalSummaryStore(
                     record.DataHoraSaida >= criteria.PeriodStartUtc &&
                     record.DataHoraSaida < criteria.PeriodEndUtcExclusive),
                 records.Count(record =>
+                    record.DataHoraRegularizacao >= criteria.PeriodStartUtc &&
+                    record.DataHoraRegularizacao < criteria.PeriodEndUtcExclusive),
+                records.Count(record =>
                     record.DataHoraEntrada < criteria.PeriodStartUtc &&
-                    (record.DataHoraSaida == null ||
-                        record.DataHoraSaida > criteria.PeriodStartUtc)),
+                    ((record.DataHoraSaida ?? record.DataHoraRegularizacao) == null ||
+                        (record.DataHoraSaida ?? record.DataHoraRegularizacao) >
+                            criteria.PeriodStartUtc)),
                 records.Count(record =>
                     record.DataHoraEntrada < criteria.PeriodEndUtcExclusive &&
-                    (record.DataHoraSaida == null ||
-                        record.DataHoraSaida > criteria.PeriodEndUtcExclusive))))
-            .SingleOrDefaultAsync(cancellationToken) ?? new(0, 0, 0, 0);
+                    ((record.DataHoraSaida ?? record.DataHoraRegularizacao) == null ||
+                        (record.DataHoraSaida ?? record.DataHoraRegularizacao) >
+                            criteria.PeriodEndUtcExclusive))))
+            .SingleOrDefaultAsync(cancellationToken) ?? new(0, 0, 0, 0, 0);
 
         var institutionalUsages = await dbContext.UsosVeiculosInstitucionais
             .AsNoTracking()
