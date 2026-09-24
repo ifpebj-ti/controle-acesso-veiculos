@@ -50,11 +50,19 @@ function DialogHarness({
 }) {
   const [open, setOpen] = useState(false);
   const [closed, setClosed] = useState<AccessRecord | null>(null);
+  const [returnFocusTo, setReturnFocusTo] = useState<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   return (
     <>
-      <button ref={triggerRef} onClick={() => setOpen(true)} type="button">
+      <button
+        ref={triggerRef}
+        onClick={(event) => {
+          setReturnFocusTo(event.currentTarget);
+          setOpen(true);
+        }}
+        type="button"
+      >
         Abrir regularização
       </button>
       {closed && <p role="status">Regularizado: {closed.plate}</p>}
@@ -67,7 +75,7 @@ function DialogHarness({
           }}
           onConfirm={onConfirm}
           record={record}
-          returnFocusTo={triggerRef.current}
+          returnFocusTo={returnFocusTo}
           successFocusRef={triggerRef}
         />
       )}
