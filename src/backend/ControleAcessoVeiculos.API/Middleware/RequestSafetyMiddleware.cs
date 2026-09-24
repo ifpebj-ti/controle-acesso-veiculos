@@ -94,7 +94,7 @@ public sealed class RequestSafetyMiddleware(
             var elapsed = Stopwatch.GetElapsedTime(startedAt);
             logger.LogInformation(
                 "HTTP request completed {RequestMethod} {RequestPath} with {StatusCode} in {ElapsedMilliseconds} ms",
-                context.Request.Method,
+                GetSafeRequestMethod(context.Request.Method),
                 GetSafeRequestPath(context),
                 context.Response.StatusCode,
                 elapsed.TotalMilliseconds);
@@ -105,6 +105,20 @@ public sealed class RequestSafetyMiddleware(
         context.Items.TryGetValue(CorrelationIdItemKey, out var value)
             ? value as string
             : null;
+
+    public static string GetSafeRequestMethod(string? method) => method switch
+    {
+        "GET" => "GET",
+        "HEAD" => "HEAD",
+        "POST" => "POST",
+        "PUT" => "PUT",
+        "DELETE" => "DELETE",
+        "CONNECT" => "CONNECT",
+        "OPTIONS" => "OPTIONS",
+        "TRACE" => "TRACE",
+        "PATCH" => "PATCH",
+        _ => "<other-method>"
+    };
 
     private static string ResolveCorrelationId(IHeaderDictionary headers)
     {

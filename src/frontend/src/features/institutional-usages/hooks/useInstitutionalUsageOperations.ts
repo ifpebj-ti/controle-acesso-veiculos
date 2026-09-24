@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useConfirmation } from "../../../components/ui/confirmationContext";
 import {
   describeApiError,
   getApiValidationErrors,
@@ -17,6 +18,7 @@ import type {
 } from "../types";
 
 export function useInstitutionalUsageOperations(enabled: boolean) {
+  const confirmAction = useConfirmation();
   const requestId = useRef(0);
   const [usages, setUsages] = useState<InstitutionalVehicleUsage[]>([]);
   const [status, setStatus] = useState<
@@ -152,12 +154,14 @@ export function useInstitutionalUsageOperations(enabled: boolean) {
     const usage = returningUsage;
     const vehicleLabel =
       usage.plate ?? usage.vehicleIdentification ?? "veículo";
-    if (
-      !window.confirm(
-        `Confirmar o retorno do ${vehicleLabel} com ${input.returnMileage} km?`,
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      confirmLabel: "Confirmar retorno",
+      description: `O retorno do ${vehicleLabel} será registrado com ${input.returnMileage} km. Confira a quilometragem antes de continuar.`,
+      eyebrow: "Utilização da frota",
+      title: "Confirmar retorno?",
+      tone: "positive",
+    });
+    if (!confirmed) return;
 
     setPendingAction(`return-${usage.id}`);
     setNotice(null);

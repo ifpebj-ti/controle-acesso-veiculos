@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { useConfirmation } from "../components/ui/confirmationContext";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -42,6 +43,7 @@ function isSameFormState(current: FormState, expected: NonNullable<FormState>) {
 }
 
 export function FleetPage() {
+  const confirmAction = useConfirmation();
   const { user } = useAuthenticatedSession();
   const canManageFleet = profileHasCapability(
     user.profileName,
@@ -192,12 +194,14 @@ export function FleetPage() {
   async function deactivateVehicle(vehicle: InstitutionalVehicle) {
     if (pendingAction) return;
     const label = vehicle.plate ?? vehicle.identification ?? "selecionado";
-    if (
-      !window.confirm(
-        `Desativar o veículo ${label}? Ele deixará de aparecer na lista ativa, mas o histórico será preservado.`,
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      confirmLabel: "Desativar veículo",
+      description: `O veículo ${label} deixará de aparecer na lista ativa. O histórico de utilizações será preservado.`,
+      eyebrow: "Catálogo da frota",
+      title: "Desativar veículo?",
+      tone: "danger",
+    });
+    if (!confirmed) return;
 
     setPendingAction(`deactivate-${vehicle.id}`);
     setNotice(null);

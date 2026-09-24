@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ConfirmationProvider } from "../components/ui/ConfirmationProvider";
 import {
   type ProfileName,
   useAuthenticatedSession,
@@ -123,9 +124,11 @@ function mockAuthenticatedProfile(profileName: ProfileName) {
 function renderPage(profileName: ProfileName = "Administrador") {
   mockAuthenticatedProfile(profileName);
   return render(
-    <MemoryRouter>
-      <AdminPage />
-    </MemoryRouter>,
+    <ConfirmationProvider>
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    </ConfirmationProvider>,
   );
 }
 
@@ -714,9 +717,11 @@ describe("AdminPage", () => {
 
     mockAuthenticatedProfile("Porteiro");
     view.rerender(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>,
+      <ConfirmationProvider>
+        <MemoryRouter>
+          <AdminPage />
+        </MemoryRouter>
+      </ConfirmationProvider>,
     );
     expect(
       await screen.findByRole("heading", { name: "Acesso negado" }),
@@ -730,9 +735,11 @@ describe("AdminPage", () => {
 
     mockAuthenticatedProfile("Administrador");
     view.rerender(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>,
+      <ConfirmationProvider>
+        <MemoryRouter>
+          <AdminPage />
+        </MemoryRouter>
+      </ConfirmationProvider>,
     );
     await screen.findAllByText(activeAccount.name);
     expect(
@@ -887,35 +894,40 @@ describe("AdminPage", () => {
   });
 
   it("confirms and deactivates without deleting account history", async () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(deactivateUserAccount).mockResolvedValue();
     const user = userEvent.setup();
     renderPage();
     await screen.findAllByText(activeAccount.name);
     await user.click(screen.getAllByRole("button", { name: "Desativar" })[0]);
 
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("histórico"));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent(activeAccount.name);
+    expect(dialog).toHaveTextContent("histórico e a autoria serão preservados");
+    expect(deactivateUserAccount).not.toHaveBeenCalled();
+    await user.click(
+      within(dialog).getByRole("button", { name: "Desativar conta" }),
+    );
     await waitFor(() => expect(deactivateUserAccount).toHaveBeenCalledWith(8));
     expect(reactivateUserAccount).not.toHaveBeenCalled();
   });
 
   it("confirms and reactivates an inactive account", async () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(reactivateUserAccount).mockResolvedValue();
     const user = userEvent.setup();
     renderPage();
     await screen.findAllByText(inactiveAccount.name);
     await user.click(screen.getAllByRole("button", { name: "Reativar" })[0]);
 
-    expect(confirm).toHaveBeenCalledWith(
-      expect.stringContaining("O acesso voltará a ser permitido"),
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent(inactiveAccount.name);
+    await user.click(
+      within(dialog).getByRole("button", { name: "Reativar conta" }),
     );
     await waitFor(() => expect(reactivateUserAccount).toHaveBeenCalledWith(9));
     expect(deactivateUserAccount).not.toHaveBeenCalled();
   });
 
   it("presents a backend state conflict without a false success", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(deactivateUserAccount).mockRejectedValue(new Error("conflict"));
     vi.mocked(describeApiError).mockReturnValue({
       kind: "conflict",
@@ -926,6 +938,11 @@ describe("AdminPage", () => {
     renderPage();
     await screen.findAllByText(activeAccount.name);
     await user.click(screen.getAllByRole("button", { name: "Desativar" })[0]);
+    await user.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", {
+        name: "Desativar conta",
+      }),
+    );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Um administrador não pode desativar a própria conta.",

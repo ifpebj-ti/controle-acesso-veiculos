@@ -1,0 +1,113 @@
+services:
+  frontend:
+    image: ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:${DEPLOYMENT_VERSION:?Defina DEPLOYMENT_VERSION com uma versao publicada, por exemplo 0.2.0}
+    pull_policy: always
+    ports:
+      - "${FRONTEND_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://127.0.0.1:8080/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - edge
+
+  backend:
+    image: ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:${DEPLOYMENT_VERSION:?Defina DEPLOYMENT_VERSION com uma versao publicada, por exemplo 0.2.0}
+    pull_policy: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      AllowedHosts: ${ALLOWED_HOSTS:?Defina ALLOWED_HOSTS com o host publico da aplicacao}
+      ConnectionStrings__DefaultConnection: "Host=postgresql;Port=5432;Database=${POSTGRES_DB:?Defina POSTGRES_DB};Username=${POSTGRES_USER:?Defina POSTGRES_USER};Password=${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD};GSS Encryption Mode=Disable"
+      Authentication__Jwt__SigningKey: ${JWT_SIGNING_KEY:?Defina JWT_SIGNING_KEY fora do repositorio}
+      Observability__Enabled: ${OTEL_ENABLED:-false}
+      Observability__ServiceName: ${OTEL_SERVICE_NAME:-controle-acesso-veiculos-api}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - /usr/bin/bash
+        - -ec
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080;
+          printf 'GET /health/ready HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3;
+          grep -q '200 OK' <&3
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - edge
+      - data
+
+  postgresql:
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    pull_policy: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Defina POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?Defina POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - data
+
+networks:
+  edge:
+    driver: bridge
+  data:
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres-data:

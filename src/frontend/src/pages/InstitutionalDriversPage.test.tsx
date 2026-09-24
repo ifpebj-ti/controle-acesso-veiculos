@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ConfirmationProvider } from "../components/ui/ConfirmationProvider";
 import {
   type ProfileName,
   useAuthenticatedSession,
@@ -67,9 +68,11 @@ function renderPage(profileName: ProfileName = "Administrador") {
   });
 
   return render(
-    <MemoryRouter>
-      <InstitutionalDriversPage />
-    </MemoryRouter>,
+    <ConfirmationProvider>
+      <MemoryRouter>
+        <InstitutionalDriversPage />
+      </MemoryRouter>
+    </ConfirmationProvider>,
   );
 }
 
@@ -264,7 +267,6 @@ describe("InstitutionalDriversPage", () => {
   });
 
   it("requires confirmation before deactivating an authorization", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(deactivateInstitutionalDriver).mockResolvedValue();
     const user = userEvent.setup();
     renderPage();
@@ -274,8 +276,10 @@ describe("InstitutionalDriversPage", () => {
       screen.getByRole("button", { name: "Desativar autorização" }),
     );
 
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining(driver.name),
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent(driver.name);
+    await user.click(
+      within(dialog).getByRole("button", { name: "Desativar autorização" }),
     );
     await waitFor(() =>
       expect(deactivateInstitutionalDriver).toHaveBeenCalledWith(driver.id),

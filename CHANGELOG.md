@@ -10,6 +10,8 @@ from its first published release.
 
 ### Added
 
+- A production-oriented Compose file consumes matching versioned backend and
+  frontend images from GHCR without rebuilding application images on the host.
 - Authenticated password changes require the current credential and atomically
   replace its hash, revoke renewable sessions, invalidate previously issued
   access tokens, and write a credential-free audit record.

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { useConfirmation } from "../components/ui/confirmationContext";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -28,6 +29,7 @@ const driverFieldNames: Record<string, InstitutionalDriverField> = {
 };
 
 export function InstitutionalDriversPage() {
+  const confirmAction = useConfirmation();
   const { user } = useAuthenticatedSession();
   const canManage = profileHasCapability(
     user.profileName,
@@ -147,12 +149,14 @@ export function InstitutionalDriversPage() {
 
   async function deactivateDriver(driver: InstitutionalDriver) {
     if (pendingAction) return;
-    if (
-      !window.confirm(
-        `Desativar a autorização de ${driver.name}? A pessoa deixará de aparecer na lista ativa, mas os registros anteriores serão preservados.`,
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      confirmLabel: "Desativar autorização",
+      description: `${driver.name} deixará de aparecer na lista de motoristas autorizados. Os registros anteriores serão preservados.`,
+      eyebrow: "Motorista institucional",
+      title: "Desativar autorização?",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     setPendingAction(`deactivate-${driver.id}`);
     setNotice(null);
     setErrorMessage(null);

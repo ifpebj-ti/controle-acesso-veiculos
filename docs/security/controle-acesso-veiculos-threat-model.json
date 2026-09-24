@@ -122,7 +122,7 @@
                   "title": "TM-07 — Erro, log ou telemetria expõe dados",
                   "type": "Information disclosure",
                   "description": "Stack trace, erro, log ou atributo de telemetria pode expor documento, token ou configuração.",
-                  "mitigation": "Usar ProblemDetails seguro, logs mínimos, valores de query redigidos e OTLP opt-in. Collector e retenção ainda precisam de definição.",
+                  "mitigation": "Usar ProblemDetails seguro, logs mínimos, método HTTP projetado por lista permitida, template de rota sem valores livres, valores de query redigidos e OTLP opt-in. Collector e retenção ainda precisam de definição.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000007"
                 },

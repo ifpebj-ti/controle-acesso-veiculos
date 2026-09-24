@@ -5,6 +5,9 @@ using System.Text.Json;
 using ControleAcessoVeiculos.API.Middleware;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
+using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ControleAcessoVeiculos.IntegrationTests;
@@ -104,6 +107,20 @@ public sealed class RequestSafetyTests(ApiFactory factory)
             message => message.Contains("secret-test", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("GET", "GET")]
+    [InlineData("POST", "POST")]
+    [InlineData("CUSTOM", "<other-method>")]
+    [InlineData("GET\r\nInjected: true", "<other-method>")]
+    [InlineData("", "<other-method>")]
+    [InlineData(null, "<other-method>")]
+    public void RequestMethodForLogsShouldUseFixedSafeValues(
+        string? method,
+        string expected)
+    {
+        Assert.Equal(expected, RequestSafetyMiddleware.GetSafeRequestMethod(method));
+    }
+
     [Fact]
     public async Task UnauthorizedResponseShouldUseCorrelatedProblemDetails()
     {
@@ -124,16 +141,9 @@ public sealed class RequestSafetyTests(ApiFactory factory)
     {
         factory.RequestLogs.Clear();
         using var client = factory.CreateClient();
-        using var scope = factory.Services.CreateScope();
-        var tokenService = scope.ServiceProvider.GetRequiredService<IAccessTokenService>();
-        var accessToken = tokenService.Issue(
-            1,
-            "request-safety@example.test",
-            ProfileNames.Administrator,
-            1,
-            requiresPasswordChange: false);
+        var accessToken = await CreateAccessTokenAsync();
         client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", accessToken.Value);
+            new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await client.GetAsync("/__tests/unhandled-error");
         var responseText = await response.Content.ReadAsStringAsync();
@@ -167,6 +177,47 @@ public sealed class RequestSafetyTests(ApiFactory factory)
             "application/problem+json",
             response.Content.Headers.ContentType?.ToString());
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    }
+
+    private async Task<string> CreateAccessTokenAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var passwordHashService = scope.ServiceProvider
+            .GetRequiredService<IPasswordHashService>();
+        var tokenService = scope.ServiceProvider.GetRequiredService<IAccessTokenService>();
+        var profile = await dbContext.Perfis.SingleOrDefaultAsync(item =>
+            item.Nome == ProfileNames.Administrator);
+
+        if (profile is null)
+        {
+            profile = new Perfil(
+                ProfileNames.Administrator,
+                "Perfil criado exclusivamente para teste de integração.");
+            dbContext.Perfis.Add(profile);
+        }
+
+        var suffix = Guid.NewGuid().ToString("N");
+        var person = new Pessoa($"Pessoa Request Safety {suffix}");
+        dbContext.Pessoas.Add(person);
+        await dbContext.SaveChangesAsync();
+
+        var email = $"request-safety-{suffix}@example.test";
+        var user = new Usuario(
+            email,
+            passwordHashService.Hash("Test-only-password-123!"),
+            person.Id,
+            profile.Id);
+        dbContext.Usuarios.Add(user);
+        await dbContext.SaveChangesAsync();
+
+        return tokenService.Issue(
+            user.Id,
+            email,
+            ProfileNames.Administrator,
+            user.VersaoCredencial,
+            requiresPasswordChange: false).Value;
     }
 
     private static string GetCorrelationId(HttpResponseMessage response) =>
