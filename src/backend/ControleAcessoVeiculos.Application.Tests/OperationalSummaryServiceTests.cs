@@ -50,7 +50,7 @@ public sealed class OperationalSummaryServiceTests
         public OperationalSummaryCriteria? Criteria { get; private set; }
 
         public OperationalSummaryTotals Totals { get; } = new(
-            new GeneralAccessDailyTotals(1, 2, 3, 4),
+            new GeneralAccessDailyTotals(1, 2, 3, 4, 5),
             new InstitutionalUsageDailyTotals(5, 6, 7, 8),
             new EventAccessDailyTotals(9, 10));
 

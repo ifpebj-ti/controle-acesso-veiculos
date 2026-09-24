@@ -610,6 +610,191 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.Administrator)]
+    public async Task AuthorizedProfileCanExceptionallyCloseAccessWithoutInventingExitTime(
+        string profileName)
+    {
+        const string password = "Test-only-password-123!";
+        var (userId, email) = await CreateUserAsync(profileName, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Condutor {suffix}",
+            plate = suffix[..7],
+            objective = "Visita técnica",
+            categoryName = AccessCategoryNames.Visitor
+        });
+        var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        entryResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(entry);
+
+        var closureResponse = await client.PostAsJsonAsync(
+            $"/access-records/{entry.Id}/exceptional-closure",
+            new
+            {
+                reason = "RegistroDeSaidaOmitido",
+                observation = "Saída confirmada posteriormente pelo responsável operacional."
+            });
+        var closed = await closureResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, closureResponse.StatusCode);
+        Assert.NotNull(closed);
+        Assert.Equal("Encerrado", closed.Status);
+        Assert.Equal("Excepcional", closed.ClosureType);
+        Assert.Equal("RegistroDeSaidaOmitido", closed.ExceptionalClosureReason);
+        Assert.Null(closed.ExitAtUtc);
+        Assert.NotNull(closed.RegularizedAtUtc);
+        Assert.Equal(userId, closed.UpdatedById);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var audit = await dbContext.Auditorias
+            .AsNoTracking()
+            .SingleAsync(item => item.Entidade == nameof(RegistroAcesso) &&
+                item.RegistroId == entry.Id &&
+                item.Detalhes == "Vehicle access exceptionally closed.");
+        Assert.Equal(userId, audit.UsuarioId);
+        AssertAuditState(audit.DadosAnteriores, "Aberto");
+        AssertAuditState(audit.DadosNovos, "Encerrado");
+        Assert.DoesNotContain(
+            "Saída confirmada",
+            audit.DadosNovos,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ExceptionalClosureEnforcesPermissionAndValidation()
+    {
+        const string password = "Test-only-password-123!";
+        var request = new
+        {
+            reason = "RegistroDeSaidaOmitido",
+            observation = "Saída confirmada posteriormente pelo responsável operacional."
+        };
+        using var anonymousClient = factory.CreateClient();
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await anonymousClient.PostAsJsonAsync(
+                "/access-records/1/exceptional-closure", request)).StatusCode);
+
+        var (_, transportationEmail) = await CreateUserAsync(
+            ProfileNames.TransportationDepartment,
+            password);
+        using var transportationClient = factory.CreateClient();
+        await AuthenticateClientAsync(transportationClient, transportationEmail, password);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await transportationClient.PostAsJsonAsync(
+                "/access-records/1/exceptional-closure", request)).StatusCode);
+
+        var (_, administratorEmail) = await CreateUserAsync(
+            ProfileNames.Administrator,
+            password);
+        using var administratorClient = factory.CreateClient();
+        await AuthenticateClientAsync(administratorClient, administratorEmail, password);
+        var invalid = await administratorClient.PostAsJsonAsync(
+            "/access-records/1/exceptional-closure",
+            new
+            {
+                reason = "Desconhecido",
+                observation = "curta",
+                observedExitAtUtc = DateTimeOffset.UtcNow.AddHours(1)
+            });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [Fact]
+    public async Task ConcurrentExceptionalClosureAttemptsPersistOnlyOnce()
+    {
+        const string password = "Test-only-password-123!";
+        var (userId, email) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Condutor {suffix}",
+            plate = suffix[..7],
+            objective = "Entrega",
+            categoryName = AccessCategoryNames.Delivery
+        });
+        var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        entryResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(entry);
+        var request = new
+        {
+            reason = "RegistroDeSaidaOmitido",
+            observation = "Saída confirmada posteriormente pelo responsável operacional."
+        };
+
+        var responses = await Task.WhenAll(
+            client.PostAsJsonAsync($"/access-records/{entry.Id}/exceptional-closure", request),
+            client.PostAsJsonAsync($"/access-records/{entry.Id}/exceptional-closure", request));
+
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.OK);
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Conflict);
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.Equal(1, await dbContext.Auditorias.CountAsync(item =>
+            item.Entidade == nameof(RegistroAcesso) &&
+            item.RegistroId == entry.Id &&
+            item.UsuarioId == userId &&
+            item.Detalhes == "Vehicle access exceptionally closed."));
+    }
+
+    [Fact]
+    public async Task AuditFailureRollsBackExceptionalClosure()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var suffix = Guid.NewGuid().ToString("N");
+        var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Condutor {suffix}",
+            plate = suffix[..7],
+            objective = "Visita técnica",
+            categoryName = AccessCategoryNames.Visitor
+        });
+        var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>();
+        entryResponse.EnsureSuccessStatusCode();
+        Assert.NotNull(entry);
+
+        await InstallRejectingAuditTriggerAsync();
+        try
+        {
+            var response = await client.PostAsJsonAsync(
+                $"/access-records/{entry.Id}/exceptional-closure",
+                new
+                {
+                    reason = "OperacaoEmContingencia",
+                    observation = "Registro regularizado após operação em contingência."
+                });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        finally
+        {
+            await RemoveRejectingAuditTriggerAsync();
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var record = await dbContext.RegistrosAcesso
+            .AsNoTracking()
+            .SingleAsync(item => item.Id == entry.Id);
+        Assert.Equal(StatusRegistroAcesso.Aberto, record.Status);
+        Assert.Null(record.TipoEncerramento);
+        Assert.Null(record.DataHoraRegularizacao);
+        Assert.Equal(1, await dbContext.Auditorias.CountAsync(item =>
+            item.Entidade == nameof(RegistroAcesso) && item.RegistroId == entry.Id));
+    }
+
     private static async Task AuthenticateClientAsync(
         HttpClient client,
         string email,
@@ -705,7 +890,11 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         DateTime? ExitAtUtc,
         int CreatedById,
         int? UpdatedById,
-        string? Observation);
+        string? Observation,
+        string? ClosureType = null,
+        string? ExceptionalClosureReason = null,
+        string? ExceptionalClosureObservation = null,
+        DateTime? RegularizedAtUtc = null);
 
     private sealed record AccessHistoryResponse(
         List<AccessRecordResponse> Items,

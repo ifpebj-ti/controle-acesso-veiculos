@@ -246,6 +246,54 @@ public sealed class VehicleAccessServiceTests
         Assert.Equal(FixedNow.UtcDateTime, store.LastCorrectedAtUtc);
     }
 
+    [Fact]
+    public async Task CloseExceptionallyAsync_ShouldValidateBeforeCallingStore()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.CloseExceptionallyAsync(
+            5,
+            new ExceptionallyCloseVehicleAccessCommand(
+                "MotivoInexistente",
+                "curta",
+                FixedNow.AddMinutes(1)),
+            actorUserId: 7);
+
+        Assert.Equal(CloseVehicleAccessStatus.Invalid, result.Status);
+        Assert.Equal(0, store.ExceptionalClosureCalls);
+        Assert.Contains("reason", result.Errors!.Keys);
+        Assert.Contains("observation", result.Errors.Keys);
+        Assert.Contains("observedExitAtUtc", result.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task CloseExceptionallyAsync_ShouldNormalizeAndUseServerTime()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+        var observedAt = FixedNow.AddMinutes(-15);
+
+        await service.CloseExceptionallyAsync(
+            5,
+            new ExceptionallyCloseVehicleAccessCommand(
+                " registrodesaidaomitido ",
+                "  Saída confirmada pelo responsável operacional.  ",
+                observedAt),
+            actorUserId: 7);
+
+        Assert.Equal(1, store.ExceptionalClosureCalls);
+        Assert.Equal(5, store.LastExceptionallyClosedAccessRecordId);
+        Assert.Equal(
+            MotivoEncerramentoExcepcional.RegistroDeSaidaOmitido,
+            store.LastExceptionalClosure!.Reason);
+        Assert.Equal(
+            "Saída confirmada pelo responsável operacional.",
+            store.LastExceptionalClosure.Observation);
+        Assert.Equal(observedAt.UtcDateTime, store.LastExceptionalClosure.ObservedExitAtUtc);
+        Assert.Equal(FixedNow.UtcDateTime, store.LastRegularizedAtUtc);
+    }
+
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
@@ -268,6 +316,10 @@ public sealed class VehicleAccessServiceTests
         public VehicleAccessCorrectionData? LastCorrection { get; private set; }
         public int LastCorrectionActorUserId { get; private set; }
         public DateTime LastCorrectedAtUtc { get; private set; }
+        public int ExceptionalClosureCalls { get; private set; }
+        public int LastExceptionallyClosedAccessRecordId { get; private set; }
+        public ExceptionalVehicleAccessClosureData? LastExceptionalClosure { get; private set; }
+        public DateTime LastRegularizedAtUtc { get; private set; }
 
         public Task<VehicleAccessStoreRegistration> TryRegisterEntryAsync(
             VehicleEntryData entry,
@@ -358,5 +410,21 @@ public sealed class VehicleAccessServiceTests
             Task.FromResult(new CloseVehicleAccessResult(
                 CloseVehicleAccessStatus.NotFound,
                 null));
+
+        public Task<CloseVehicleAccessResult> TryCloseExceptionallyAsync(
+            int accessRecordId,
+            ExceptionalVehicleAccessClosureData closure,
+            int actorUserId,
+            DateTime regularizedAtUtc,
+            CancellationToken cancellationToken)
+        {
+            ExceptionalClosureCalls++;
+            LastExceptionallyClosedAccessRecordId = accessRecordId;
+            LastExceptionalClosure = closure;
+            LastRegularizedAtUtc = regularizedAtUtc;
+            return Task.FromResult(new CloseVehicleAccessResult(
+                CloseVehicleAccessStatus.Success,
+                null));
+        }
     }
 }

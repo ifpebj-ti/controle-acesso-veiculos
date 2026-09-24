@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -77,7 +78,7 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
         Assert.Equal("America/Recife", summary.TimeZoneId);
         Assert.Equal(periodStartUtc, summary.PeriodStartUtc);
         Assert.Equal(periodEndUtc, summary.PeriodEndUtcExclusive);
-        Assert.Equal(new DailyTotals(3, 2, 2, 3), summary.GeneralAccess);
+        Assert.Equal(new DailyTotals(3, 2, 1, 3, 3), summary.GeneralAccess);
         Assert.Equal(new InstitutionalTotals(2, 2, 2, 2), summary.InstitutionalUsages);
         Assert.Equal(new EventTotals(3, 2), summary.EventAccess);
         Assert.DoesNotContain(sensitiveName, body, StringComparison.OrdinalIgnoreCase);
@@ -111,7 +112,7 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
         dbContext.AddRange(person, category);
         await dbContext.SaveChangesAsync();
 
-        var generalVehicles = Enumerable.Range(0, 6)
+        var generalVehicles = Enumerable.Range(0, 7)
             .Select(index => new Veiculo($"G{suffix}{index}", "Automóvel", null, false))
             .ToArray();
         var institutionalVehicles = Enumerable.Range(0, 5)
@@ -179,13 +180,23 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
             generalVehicles[4],
             periodStartUtc.AddDays(-1));
         var nextDay = Access(generalVehicles[5], periodEndUtc);
+        var exceptionallyClosed = Access(
+            generalVehicles[6],
+            periodStartUtc.AddDays(-2));
+        exceptionallyClosed.RegistrarEncerramentoExcepcional(
+            MotivoEncerramentoExcepcional.RegistroDeSaidaOmitido,
+            "Saída confirmada posteriormente pelo responsável operacional.",
+            dataHoraSaidaObservada: null,
+            dataHoraRegularizacao: periodStartUtc.AddHours(5),
+            atualizadoPorId: actorUserId);
         dbContext.AddRange(
             carryOverClosed,
             dayClosed,
             dayOpenFirstEvent,
             dayOpenSecondEvent,
             carryOverOpen,
-            nextDay);
+            nextDay,
+            exceptionallyClosed);
 
         var institutionalCarryOverClosed = Usage(
             institutionalVehicles[0],
@@ -311,6 +322,7 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
     private sealed record DailyTotals(
         int Entries,
         int Exits,
+        int ExceptionalClosures,
         int OpenAtStart,
         int OpenAtEnd);
 

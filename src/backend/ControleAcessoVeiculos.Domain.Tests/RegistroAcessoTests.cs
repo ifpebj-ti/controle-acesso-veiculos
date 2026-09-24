@@ -74,6 +74,59 @@ public class RegistroAcessoTests
     }
 
     [Fact]
+    public void RegistrarEncerramentoExcepcional_ShouldPreserveUnknownExitTime()
+    {
+        var registro = CreateRegistro();
+        var regularizedAt = Entrada.AddHours(3);
+
+        registro.RegistrarEncerramentoExcepcional(
+            MotivoEncerramentoExcepcional.RegistroDeSaidaOmitido,
+            "Saída confirmada posteriormente pelo responsável.",
+            dataHoraSaidaObservada: null,
+            regularizedAt,
+            atualizadoPorId: 2);
+
+        Assert.Equal(StatusRegistroAcesso.Encerrado, registro.Status);
+        Assert.Equal(TipoEncerramentoAcesso.Excepcional, registro.TipoEncerramento);
+        Assert.Equal(
+            MotivoEncerramentoExcepcional.RegistroDeSaidaOmitido,
+            registro.MotivoEncerramentoExcepcional);
+        Assert.Null(registro.DataHoraSaida);
+        Assert.Equal(regularizedAt, registro.DataHoraRegularizacao);
+        Assert.Equal(2, registro.AtualizadoPorId);
+    }
+
+    [Fact]
+    public void RegistrarEncerramentoExcepcional_ShouldValidateObservedTimeAndState()
+    {
+        var registro = CreateRegistro();
+        var regularizedAt = Entrada.AddHours(3);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            registro.RegistrarEncerramentoExcepcional(
+                MotivoEncerramentoExcepcional.Outro,
+                "Justificativa válida para o encerramento.",
+                Entrada.AddMinutes(-1),
+                regularizedAt,
+                atualizadoPorId: 2));
+
+        registro.RegistrarEncerramentoExcepcional(
+            MotivoEncerramentoExcepcional.Outro,
+            "Justificativa válida para o encerramento.",
+            Entrada.AddHours(1),
+            regularizedAt,
+            atualizadoPorId: 2);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            registro.RegistrarEncerramentoExcepcional(
+                MotivoEncerramentoExcepcional.Outro,
+                "Nova tentativa não permitida.",
+                null,
+                regularizedAt.AddHours(1),
+                atualizadoPorId: 2));
+    }
+
+    [Fact]
     public void CorrigirDados_ShouldUpdateOnlyCorrectableFields()
     {
         var registro = CreateRegistro();
