@@ -164,6 +164,9 @@ aplicação. Um não substitui o outro.
 Estado implementado nas Issues #49 e #51: toda resposta possui correlation ID;
 logs HTTP registram apenas método, template de rota, status e duração; exceções
 inesperadas geram resposta `ProblemDetails` sem mensagem interna ou stack trace.
+O método HTTP é projetado por lista permitida para um valor constante antes de
+chegar ao log; métodos desconhecidos ou com caracteres de controle usam o rótulo
+`<other-method>`, evitando injeção e cardinalidade controlada pelo cliente.
 O middleware registra somente o tipo da exceção, nunca o objeto ou sua mensagem.
 Entrada, saída, uso institucional e cadastro da frota geram auditoria de negócio
 na mesma transação, com falha fechada e sem duplicar dados pessoais, placa,
