@@ -74,6 +74,7 @@ describe("profile route and navigation metadata", () => {
             label: "Utilizações da frota",
             to: "/utilizacoes-institucionais",
           },
+          { label: "Eventos e autorizações", to: "/eventos" },
         ],
         label: "Supervisão",
         to: undefined,
@@ -85,7 +86,6 @@ describe("profile route and navigation metadata", () => {
             label: "Motoristas autorizados",
             to: "/motoristas-institucionais",
           },
-          { label: "Eventos e autorizações", to: "/eventos" },
         ],
         label: "Gestão",
         to: undefined,
@@ -223,5 +223,17 @@ describe("profile route and navigation metadata", () => {
     expect(profileHasCapability("Administrador", "manage-administration")).toBe(
       true,
     );
+    expect(
+      profileHasCapability("Administrador", "manage-event-authorizations"),
+    ).toBe(true);
+    for (const profileName of [
+      "Porteiro",
+      "Vigilante",
+      "SetorTransporte",
+    ] as const) {
+      expect(
+        profileHasCapability(profileName, "manage-event-authorizations"),
+      ).toBe(false);
+    }
   });
 });
