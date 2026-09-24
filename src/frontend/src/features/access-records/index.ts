@@ -1,5 +1,6 @@
 export { generalAccessCategories } from "./model/accessCategories";
 export { AccessExitDialog } from "./components/AccessExitDialog";
+export { ExceptionalClosureDialog } from "./components/ExceptionalClosureDialog";
 export { EntryCandidateSearch } from "./components/EntryCandidateSearch";
 export { EntryAdditionalDetails } from "./components/EntryAdditionalDetails";
 export { EntryObjectiveFieldset } from "./components/EntryObjectiveFieldset";
@@ -19,6 +20,7 @@ export {
   AccessRecordsContractError,
   closeAccessRecord,
   correctAccessRecord,
+  exceptionallyCloseAccessRecord,
   listOpenAccessRecords,
   registerAccessEntry,
   searchAccessEntryCandidates,
@@ -27,16 +29,19 @@ export {
 export {
   accessCorrectionFormSchema,
   accessEntryFormSchema,
+  exceptionalClosureFormSchema,
 } from "./schemas/accessRecordSchemas";
 export type {
   AccessCorrectionFormValues,
   AccessEntryFormValues,
+  ExceptionalClosureFormValues,
 } from "./schemas/accessRecordSchemas";
 export type {
   AccessHistoryFilters,
   AccessEntryCandidate,
   AccessRecord,
   CorrectAccessRecordInput,
+  ExceptionallyCloseAccessRecordInput,
   PagedAccessRecords,
   RegisterAccessEntryInput,
 } from "./types";

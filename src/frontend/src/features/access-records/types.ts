@@ -5,6 +5,7 @@ import type {
   accessRecordSchema,
   pagedAccessRecordsSchema,
 } from "./schemas/accessRecordSchemas";
+import type { ExceptionalClosureReason } from "./model/exceptionalClosure";
 
 export type AccessRecord = z.infer<typeof accessRecordSchema>;
 export type AccessEntryCandidate = z.infer<typeof accessEntryCandidateSchema>;
@@ -31,6 +32,12 @@ export interface CorrectAccessRecordInput {
   categoryName: string;
   observation: string | null;
   justification: string;
+}
+
+export interface ExceptionallyCloseAccessRecordInput {
+  reason: ExceptionalClosureReason;
+  observation: string;
+  observedExitAtUtc: string | null;
 }
 
 export interface AccessHistoryFilters {
