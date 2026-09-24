@@ -202,7 +202,8 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - consulta da trilha restrita a Administrador por política dedicada, com filtros, paginação, janela máxima e distinção entre ator humano e sistema;
 - autorização deny-by-default e políticas preliminares testadas;
 - políticas distintas para consultar e gerenciar a frota institucional;
-- políticas distintas para consultar e gerenciar autorizações de eventos;
+- políticas distintas para consultar e gerenciar autorizações de eventos, com
+  manutenção restrita ao Administrador e leitura preservada aos quatro perfis;
 - políticas distintas para o histórico geral e o histórico institucional;
 - política de correção separada da operação e da consulta, limitada aos operadores Porteiro e Vigilante e ao acesso excepcional do Administrador;
 - contratos operacionais e catálogo inicial protegidos, com validação no servidor e erros previsíveis;

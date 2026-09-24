@@ -162,7 +162,7 @@
                   "title": "TM-13 — Elevação de privilégio por perfil",
                   "type": "Elevation of privilege",
                   "description": "Um usuário tenta executar operação administrativa ou acessar histórico incompatível com seu perfil.",
-                  "mitigation": "Negar por padrão e aplicar políticas no servidor por recurso e operação. A matriz técnica está coberta por testes; a matriz institucional final ainda será homologada.",
+                  "mitigation": "Negar por padrão e aplicar políticas no servidor por recurso e operação. A manutenção de autorizações de eventos é restrita ao Administrador, enquanto a consulta necessária permanece disponível aos quatro perfis. A matriz técnica está coberta por testes e decisões futuras continuam sujeitas à homologação institucional.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000013"
                 },

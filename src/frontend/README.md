@@ -28,15 +28,17 @@ Fluxo sugerido para validação local:
    com foco na placa; conferir também a associação opcional com uma autorização
    de evento vigente, sem impedir uma entrada comum quando a consulta falhar;
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
-5. como Transporte, consultar e manter os catálogos ativos da frota e de
-   motoristas e manter as autorizações de eventos;
-6. como Administrador, filtrar o histórico, gerenciar contas fictícias e
-   consultar a trilha de auditoria em `/administracao`.
+5. como Transporte, consultar eventos e manter os catálogos ativos da frota e de
+   motoristas;
+6. como Administrador, manter as autorizações de eventos, filtrar o histórico,
+   gerenciar contas fictícias e consultar a trilha de auditoria em
+   `/administracao`.
 
 Porteiro e Vigilante possuem a mesma navegação operacional. O Setor de Transporte
-mantém frota e eventos. O Administrador gerencia contas, frota e eventos e possui
-o acesso operacional excepcional permitido pelo backend, embora entrada e saída
-continuem ocultas de seu menu rotineiro.
+mantém os catálogos da frota e consulta eventos na área de supervisão. O
+Administrador gerencia contas, frota e eventos e possui o acesso operacional
+excepcional permitido pelo backend, embora entrada e saída continuem ocultas de
+seu menu rotineiro.
 
 A navegação apresenta `Operações` e `Consultas de apoio` para Porteiro e
 Vigilante; `Supervisão` e `Gestão` para o Setor de Transporte; e `Supervisão`,
@@ -126,12 +128,14 @@ backend não oferece edição ou consulta de autorizações inativas, portanto o
 frontend não inventa essas operações.
 
 Autorizações de eventos usam `GET`, `POST`, `PUT` e `DELETE` em
-`/event-authorizations`. Os quatro perfis autenticados consultam; somente Setor
-de Transporte e Administrador criam, editam e cancelam. A interface separa a
-vigência da autorização, a quantidade prevista nas regras, as entradas já
-consumidas e a quantidade restante. Placa específica representa exatamente um
-veículo; cota por tipo pode representar de 1 a 1000 veículos. Cancelamento é
-lógico, exige confirmação e não é descrito como exclusão do histórico.
+`/event-authorizations`. Os quatro perfis autenticados consultam; somente o
+Administrador cria, edita e cancela. A visibilidade das ações na interface reduz
+ações enganosas, mas não substitui a política de autorização aplicada pela API.
+A interface separa a vigência da autorização, a quantidade prevista nas regras,
+as entradas já consumidas e a quantidade restante. Placa específica representa
+exatamente um veículo; cota por tipo pode representar de 1 a 1000 veículos.
+Cancelamento é lógico, exige confirmação e não é descrito como exclusão do
+histórico.
 
 Os períodos são preenchidos com controles nativos de data e hora e possuem uma
 instrução textual associada. Essa escolha evita introduzir um calendário
