@@ -13,8 +13,11 @@ o catálogo de motoristas lista, autoriza e desativa autorizações pela API. A
 A área de utilizações institucionais registra saídas e retornos e consulta usos
 abertos e histórico conforme o perfil autenticado.
 A visão geral consulta o resumo operacional diário agregado da API. A área de
-administração consulta, cria, desativa e reativa contas pela API e também
-consulta a trilha de auditoria em uma área separada da mesma tela.
+administração consulta, cria, desativa e reativa contas pela API, mostra o
+estado mínimo das credenciais temporárias e permite ao Administrador redefinir
+a credencial de outra conta ativa. Credenciais emitidas pelo servidor aparecem
+uma única vez em memória, com cópia explícita e sem persistência no navegador. A
+mesma tela também consulta a trilha de auditoria em uma área separada.
 
 Fluxo sugerido para validação local:
 
@@ -25,15 +28,17 @@ Fluxo sugerido para validação local:
    com foco na placa; conferir também a associação opcional com uma autorização
    de evento vigente, sem impedir uma entrada comum quando a consulta falhar;
 4. localizar o veículo em `/acessos/abertos` e registrar a saída;
-5. como Transporte, consultar e manter os catálogos ativos da frota e de
-   motoristas e manter as autorizações de eventos;
-6. como Administrador, filtrar o histórico, gerenciar contas fictícias e
-   consultar a trilha de auditoria em `/administracao`.
+5. como Transporte, consultar eventos e manter os catálogos ativos da frota e de
+   motoristas;
+6. como Administrador, manter as autorizações de eventos, filtrar o histórico,
+   gerenciar contas fictícias e consultar a trilha de auditoria em
+   `/administracao`.
 
 Porteiro e Vigilante possuem a mesma navegação operacional. O Setor de Transporte
-mantém frota e eventos. O Administrador gerencia contas, frota e eventos e possui
-o acesso operacional excepcional permitido pelo backend, embora entrada e saída
-continuem ocultas de seu menu rotineiro.
+mantém os catálogos da frota e consulta eventos na área de supervisão. O
+Administrador gerencia contas, frota e eventos e possui o acesso operacional
+excepcional permitido pelo backend, embora entrada e saída continuem ocultas de
+seu menu rotineiro.
 
 A navegação apresenta `Operações` e `Consultas de apoio` para Porteiro e
 Vigilante; `Supervisão` e `Gestão` para o Setor de Transporte; e `Supervisão`,
@@ -123,12 +128,14 @@ backend não oferece edição ou consulta de autorizações inativas, portanto o
 frontend não inventa essas operações.
 
 Autorizações de eventos usam `GET`, `POST`, `PUT` e `DELETE` em
-`/event-authorizations`. Os quatro perfis autenticados consultam; somente Setor
-de Transporte e Administrador criam, editam e cancelam. A interface separa a
-vigência da autorização, a quantidade prevista nas regras, as entradas já
-consumidas e a quantidade restante. Placa específica representa exatamente um
-veículo; cota por tipo pode representar de 1 a 1000 veículos. Cancelamento é
-lógico, exige confirmação e não é descrito como exclusão do histórico.
+`/event-authorizations`. Os quatro perfis autenticados consultam; somente o
+Administrador cria, edita e cancela. A visibilidade das ações na interface reduz
+ações enganosas, mas não substitui a política de autorização aplicada pela API.
+A interface separa a vigência da autorização, a quantidade prevista nas regras,
+as entradas já consumidas e a quantidade restante. Placa específica representa
+exatamente um veículo; cota por tipo pode representar de 1 a 1000 veículos.
+Cancelamento é lógico, exige confirmação e não é descrito como exclusão do
+histórico.
 
 Os períodos são preenchidos com controles nativos de data e hora e possuem uma
 instrução textual associada. Essa escolha evita introduzir um calendário
@@ -166,6 +173,13 @@ e não pode ser lido pelo frontend. O fluxo implementado:
   `POST /auth/password`, sem repetir automaticamente essa mutação;
 - encerra o estado local depois da troca de senha bem-sucedida e solicita uma
   nova entrada, pois o servidor revoga as sessões anteriores;
+- valida obrigatoriamente `user.requiresPasswordChange` no login e na
+  renovação; uma resposta sem esse booleano é rejeitada em vez de liberar o
+  painel por padrão;
+- mantém o indicador de troca obrigatória somente na sessão em memória e,
+  quando ativo, exibe apenas a definição da senha permanente e o logout;
+- redireciona qualquer rota operacional digitada durante o primeiro acesso para
+  a troca obrigatória, sem renderizar menus, painéis ou ações de negócio;
 - usa bloqueio exclusivo do navegador para coordenar renovações entre abas e
   comunica somente o encerramento da sessão, sem transmitir tokens.
 
@@ -229,8 +243,10 @@ papel e nome acessível e cobrem autenticação, restrição visual por perfil,
 movimentações gerais, estados de carregamento, vazio, falha e acesso negado.
 O resumo operacional possui cobertura de contrato, perfis, seleção de data,
 falha com nova tentativa e resposta diária sem movimentações.
-A administração de contas possui cobertura de contrato, filtros, criação segura,
-mudanças de estado, conflitos, falha de recarga e acessibilidade.
+A administração de contas possui cobertura de contrato, filtros, criação sem
+senha definida pelo Administrador, exibição única e cópia de credencial
+temporária, redefinição categorizada, mudanças de estado, conflitos, rate
+limiting, falha de recarga e acessibilidade.
 A auditoria administrativa possui cobertura de contrato, restrição por perfil,
 filtros locais e da API, paginação, estados vazio e indisponível, nova tentativa
 e renderização segura de detalhes e estados JSON.
@@ -340,7 +356,11 @@ src/
 
 ## Limites atuais
 
-- recuperação de senha sem sessão e redefinição administrativa de senha;
+- a troca obrigatória no primeiro acesso depende da integração coordenada com o
+  contrato de credencial temporária do backend no PR #259;
+- recuperação autônoma de senha sem sessão;
+- definição institucional do canal usado para repassar credenciais temporárias
+  criadas ou redefinidas pelo Administrador;
 - suporte à renovação transparente em navegadores sem Web Locks API;
 - persistência dos dados demonstrativos;
 - integração com PostgreSQL;

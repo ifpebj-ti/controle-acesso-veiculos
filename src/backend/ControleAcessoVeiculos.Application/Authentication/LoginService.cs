@@ -18,6 +18,17 @@ public sealed class LoginService(
         string email,
         string password,
         CancellationToken cancellationToken = default)
+        => await sessionStore.ExecuteInTransactionAsync(
+            transactionCancellationToken => AuthenticateInTransactionAsync(
+                email,
+                password,
+                transactionCancellationToken),
+            cancellationToken);
+
+    private async Task<LoginResult> AuthenticateInTransactionAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken)
     {
         var normalizedEmail = Usuario.NormalizarEmail(email);
         var authenticationUser = await userStore.FindByEmailAsync(
@@ -61,6 +72,11 @@ public sealed class LoginService(
                 now);
         }
 
+        if (authenticationUser.User.TrocaSenhaObrigatoria)
+        {
+            authenticationUser.User.ConsumirCredencialTemporaria(now);
+        }
+
         authenticationUser.User.RegistrarAutenticacaoBemSucedida(now);
         var refreshToken = refreshTokenService.Create();
         var session = new SessaoAutenticacao(
@@ -81,7 +97,8 @@ public sealed class LoginService(
             authenticationUser.User.Id,
             authenticationUser.User.Email,
             authenticationUser.ProfileName,
-            authenticationUser.User.VersaoCredencial);
+            authenticationUser.User.VersaoCredencial,
+            authenticationUser.User.TrocaSenhaObrigatoria);
 
         return LoginResult.Success(
             token,
@@ -90,6 +107,7 @@ public sealed class LoginService(
             new LoginUser(
                 authenticationUser.User.Id,
                 authenticationUser.User.Email,
-                authenticationUser.ProfileName));
+                authenticationUser.ProfileName,
+                authenticationUser.User.TrocaSenhaObrigatoria));
     }
 }

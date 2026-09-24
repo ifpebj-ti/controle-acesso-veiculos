@@ -15,11 +15,11 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 public sealed class EventAuthorizationTests(ApiFactory factory)
 {
     [Fact]
-    public async Task TransportationUserCanManageAndDoormanCanReadEvent()
+    public async Task AdministratorCanManageAndDoormanCanReadEvent()
     {
         const string password = "Test-only-password-123!";
         var (managerId, managerEmail) = await CreateUserAsync(
-            ProfileNames.TransportationDepartment,
+            ProfileNames.Administrator,
             password);
         var (_, doormanEmail) = await CreateUserAsync(ProfileNames.Doorman, password);
         using var manager = factory.CreateClient();
@@ -99,24 +99,23 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         Assert.DoesNotContain(plate, auditContent, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task EndpointsEnforceRoleBoundariesAndValidation()
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task NonAdministratorProfilesCanReadButCannotManageEvents(string profileName)
     {
         const string password = "Test-only-password-123!";
-        using var anonymous = factory.CreateClient();
-        Assert.Equal(
-            HttpStatusCode.Unauthorized,
-            (await anonymous.GetAsync("/event-authorizations")).StatusCode);
+        var (_, email) = await CreateUserAsync(profileName, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
 
-        var (_, doormanEmail) = await CreateUserAsync(ProfileNames.Doorman, password);
-        using var doorman = factory.CreateClient();
-        await AuthenticateClientAsync(doorman, doormanEmail, password);
         Assert.Equal(
             HttpStatusCode.OK,
-            (await doorman.GetAsync("/event-authorizations")).StatusCode);
+            (await client.GetAsync("/event-authorizations")).StatusCode);
         Assert.Equal(
             HttpStatusCode.Forbidden,
-            (await doorman.PostAsJsonAsync(
+            (await client.PostAsJsonAsync(
                 "/event-authorizations",
                 Request(
                     "Evento",
@@ -126,7 +125,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
                     DateTimeOffset.UtcNow.AddDays(2)))).StatusCode);
         Assert.Equal(
             HttpStatusCode.Forbidden,
-            (await doorman.PutAsJsonAsync(
+            (await client.PutAsJsonAsync(
                 "/event-authorizations/1",
                 Request(
                     "Evento",
@@ -136,14 +135,17 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
                     DateTimeOffset.UtcNow.AddDays(2)))).StatusCode);
         Assert.Equal(
             HttpStatusCode.Forbidden,
-            (await doorman.DeleteAsync("/event-authorizations/1")).StatusCode);
+            (await client.DeleteAsync("/event-authorizations/1")).StatusCode);
+    }
 
-        var (_, guardEmail) = await CreateUserAsync(ProfileNames.SecurityGuard, password);
-        using var guard = factory.CreateClient();
-        await AuthenticateClientAsync(guard, guardEmail, password);
+    [Fact]
+    public async Task AnonymousAccessIsRejectedAndAdministratorReachesValidation()
+    {
+        const string password = "Test-only-password-123!";
+        using var anonymous = factory.CreateClient();
         Assert.Equal(
-            HttpStatusCode.OK,
-            (await guard.GetAsync("/event-authorizations")).StatusCode);
+            HttpStatusCode.Unauthorized,
+            (await anonymous.GetAsync("/event-authorizations")).StatusCode);
 
         var (_, administratorEmail) = await CreateUserAsync(
             ProfileNames.Administrator,
@@ -153,25 +155,6 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         Assert.Equal(
             HttpStatusCode.OK,
             (await administrator.GetAsync("/event-authorizations")).StatusCode);
-
-        var (_, managerEmail) = await CreateUserAsync(
-            ProfileNames.TransportationDepartment,
-            password);
-        using var manager = factory.CreateClient();
-        await AuthenticateClientAsync(manager, managerEmail, password);
-        var invalid = await manager.PostAsJsonAsync(
-            "/event-authorizations",
-            new
-            {
-                name = " ",
-                responsible = " ",
-                startsAtUtc = DateTimeOffset.UtcNow.AddDays(2),
-                endsAtUtc = DateTimeOffset.UtcNow.AddDays(1),
-                area = " ",
-                overnightAllowed = false,
-                vehicleRules = Array.Empty<object>()
-            });
-        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
 
         var administratorInvalid = await administrator.PostAsJsonAsync(
             "/event-authorizations",
@@ -193,7 +176,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
     {
         const string password = "Test-only-password-123!";
         var (_, email) = await CreateUserAsync(
-            ProfileNames.TransportationDepartment,
+            ProfileNames.Administrator,
             password);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);

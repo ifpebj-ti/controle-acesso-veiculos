@@ -106,6 +106,38 @@ function Invoke-DemoApi {
   }
 }
 
+function Invoke-DemoLogin {
+  param(
+    [Parameter(Mandatory)][string]$Email,
+    [Parameter(Mandatory)][string]$Password,
+    [Parameter(Mandatory)][string]$Operation
+  )
+
+  $requestUri = [Uri]::new($normalizedBaseUrl, 'auth/login')
+  $body = @{
+    email = $Email
+    password = $Password
+  } | ConvertTo-Json -Compress
+
+  try {
+    return Invoke-RestMethod -Uri $requestUri -Method POST `
+      -ContentType 'application/json; charset=utf-8' -Body $body -ErrorAction Stop
+  }
+  catch {
+    $statusCode = $null
+    if ($null -ne $_.Exception.Response) {
+      $statusCode = [int]$_.Exception.Response.StatusCode
+    }
+
+    if ($statusCode -eq 401) {
+      return $null
+    }
+
+    $statusText = if ($null -eq $statusCode) { 'no HTTP status' } else { "HTTP $statusCode" }
+    throw "$Operation failed ($statusText). No credential or response body was written to the log."
+  }
+}
+
 function Get-EncodedValue {
   param([Parameter(Mandatory)][string]$Value)
   return [Uri]::EscapeDataString($Value)
@@ -136,15 +168,15 @@ if ($null -eq $AdministratorCredential) {
 }
 
 if ($null -eq $DoormanPassword) {
-  $DoormanPassword = Read-Host 'Enter the temporary password for the fictional Porteiro account' -AsSecureString
+  $DoormanPassword = Read-Host 'Enter the local demonstration password for the fictional Porteiro account' -AsSecureString
 }
 
 if ($null -eq $SecurityGuardPassword) {
-  $SecurityGuardPassword = Read-Host 'Enter a different temporary password for the fictional Vigilante account' -AsSecureString
+  $SecurityGuardPassword = Read-Host 'Enter a different local demonstration password for the fictional Vigilante account' -AsSecureString
 }
 
 if ($null -eq $TransportationPassword) {
-  $TransportationPassword = Read-Host 'Enter a different temporary password for the fictional SetorTransporte account' -AsSecureString
+  $TransportationPassword = Read-Host 'Enter a different local demonstration password for the fictional SetorTransporte account' -AsSecureString
 }
 
 $administratorPassword = ConvertFrom-SecureStringForRequest -Value $AdministratorCredential.Password
@@ -187,6 +219,9 @@ $demoAccounts = @(
 $passwordFingerprints = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 foreach ($account in $demoAccounts) {
   $demoPassword = ConvertFrom-SecureStringForRequest -Value $account.password
+  $temporaryCredential = $null
+  $temporaryLogin = $null
+  $accountLogin = $null
   try {
     if ($demoPassword.Length -lt 12 -or $demoPassword.Length -gt 128) {
       throw "The temporary password for $($account.email) must contain between 12 and 128 characters."
@@ -215,12 +250,12 @@ foreach ($account in $demoAccounts) {
       Select-Object -First 1
 
     if ($null -eq $existing) {
-      Invoke-DemoApi -Method POST -Path '/users' -AccessToken $accessToken -Body @{
+      $existing = Invoke-DemoApi -Method POST -Path '/users' -AccessToken $accessToken -Body @{
         name = $account.name
         email = $account.email
-        password = $demoPassword
         profileName = $account.profileName
-      } -Operation "Create fictional account $($account.email)" | Out-Null
+      } -Operation "Create fictional account $($account.email)"
+      $temporaryCredential = $existing.temporaryCredential
     }
     elseif ($existing.profileName -ne $account.profileName) {
       throw "Fictional account $($account.email) exists with an unexpected profile."
@@ -230,17 +265,57 @@ foreach ($account in $demoAccounts) {
         -AccessToken $accessToken -Operation "Reactivate fictional account $($account.email)" | Out-Null
     }
 
-    $accountLogin = Invoke-DemoApi -Method POST -Path '/auth/login' -Body @{
-      email = $account.email
-      password = $demoPassword
-    } -Operation "Validate fictional account $($account.email)"
+    if ([string]::IsNullOrWhiteSpace($temporaryCredential)) {
+      $accountLogin = Invoke-DemoLogin -Email $account.email -Password $demoPassword `
+        -Operation "Validate fictional account $($account.email)"
+    }
 
-    if ($accountLogin.user.profileName -ne $account.profileName) {
+    if ($null -eq $accountLogin -or $accountLogin.user.requiresPasswordChange) {
+      if ([string]::IsNullOrWhiteSpace($temporaryCredential)) {
+        $reset = Invoke-DemoApi -Method POST `
+          -Path "/users/$($existing.id)/temporary-credential" `
+          -AccessToken $accessToken -Body @{ reason = 'ProvisionamentoCorretivo' } `
+          -Operation "Reset fictional account $($account.email)"
+        $temporaryCredential = $reset.temporaryCredential
+        $reset = $null
+      }
+
+      if ([string]::IsNullOrWhiteSpace($temporaryCredential)) {
+        throw "The API did not return a temporary credential for $($account.email)."
+      }
+
+      $temporaryLogin = Invoke-DemoLogin -Email $account.email `
+        -Password $temporaryCredential `
+        -Operation "Use temporary credential for $($account.email)"
+      if ($null -eq $temporaryLogin -or
+          $temporaryLogin.user.profileName -ne $account.profileName -or
+          -not $temporaryLogin.user.requiresPasswordChange) {
+        throw "Fictional account $($account.email) did not enter the mandatory password change state."
+      }
+
+      Invoke-DemoApi -Method POST -Path '/auth/password' `
+        -AccessToken $temporaryLogin.accessToken -Body @{
+          currentPassword = $temporaryCredential
+          newPassword = $demoPassword
+        } -Operation "Complete fictional account $($account.email)" | Out-Null
+
+      $temporaryCredential = $null
+      $temporaryLogin = $null
+      $accountLogin = Invoke-DemoLogin -Email $account.email -Password $demoPassword `
+        -Operation "Validate completed fictional account $($account.email)"
+    }
+
+    if ($null -eq $accountLogin -or
+        $accountLogin.user.profileName -ne $account.profileName -or
+        $accountLogin.user.requiresPasswordChange) {
       throw "Fictional account $($account.email) authenticated with an unexpected profile."
     }
   }
   finally {
     $demoPassword = $null
+    $temporaryCredential = $null
+    $temporaryLogin = $null
+    $accountLogin = $null
   }
 }
 
@@ -452,7 +527,7 @@ $accessToken = $null
 
 Write-Output ''
 Write-Output 'Fictional local demonstration data is ready.'
-Write-Output 'Accounts (use each distinct temporary password entered interactively):'
+Write-Output 'Accounts (use each distinct local demonstration password entered interactively):'
 $demoAccounts | ForEach-Object { Write-Output "- $($_.profileName): $($_.email)" }
 Write-Output "Closed general access: $closedPlate (record $($closedRecord.id))"
 Write-Output "Open general access: $openPlate (record $($openRecord.id))"

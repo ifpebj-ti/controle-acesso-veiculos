@@ -88,6 +88,14 @@ builder.Services.Configure<AuthenticationSessionOptions>(
     builder.Configuration.GetSection(AuthenticationSessionOptions.SectionName));
 builder.Services.AddSingleton(sessionPolicy);
 
+var temporaryCredentialOptions = builder.Configuration
+    .GetSection(TemporaryCredentialOptions.SectionName)
+    .Get<TemporaryCredentialOptions>() ?? new TemporaryCredentialOptions();
+var temporaryCredentialPolicy = temporaryCredentialOptions.Validate();
+builder.Services.Configure<TemporaryCredentialOptions>(
+    builder.Configuration.GetSection(TemporaryCredentialOptions.SectionName));
+builder.Services.AddSingleton(temporaryCredentialPolicy);
+
 var institutionalTimeZoneId =
     builder.Configuration["Institution:TimeZoneId"] ?? "America/Recife";
 TimeZoneInfo institutionalTimeZone;
@@ -206,7 +214,6 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
-        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
@@ -234,11 +241,14 @@ builder.Services.AddScoped<IAuditTrailStore, AuditTrailStore>();
 builder.Services.AddScoped<IOperationalSummaryStore, OperationalSummaryStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddSingleton<IRefreshTokenService, CryptographicRefreshTokenService>();
+builder.Services.AddSingleton<ITemporaryCredentialGenerator,
+    CryptographicTemporaryCredentialGenerator>();
 builder.Services.AddScoped<AuthenticationSessionCookie>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<AuthenticationSessionService>();
 builder.Services.AddScoped<AuthenticatedPasswordChangeService>();
 builder.Services.AddScoped<CreateUserAccountService>();
+builder.Services.AddScoped<AdministrativeCredentialResetService>();
 builder.Services.AddScoped<UserAccountLifecycleService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
@@ -276,6 +286,35 @@ app.UseStatusCodePages();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseRateLimiter();
+app.Use(async (context, next) =>
+{
+    var requiresPasswordChange = string.Equals(
+        context.User.FindFirst(AuthenticationClaimTypes.RequiresPasswordChange)?.Value,
+        bool.TrueString,
+        StringComparison.OrdinalIgnoreCase);
+    var allowedDuringPasswordChange =
+        context.Request.Path.Equals("/auth/password", StringComparison.OrdinalIgnoreCase) ||
+        context.Request.Path.Equals("/auth/logout", StringComparison.OrdinalIgnoreCase) ||
+        context.Request.Path.Equals("/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
+        context.Request.Path.Equals("/auth/csrf", StringComparison.OrdinalIgnoreCase);
+
+    if (context.User.Identity?.IsAuthenticated == true &&
+        requiresPasswordChange &&
+        !allowedDuringPasswordChange)
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            Type = "https://httpstatuses.com/403",
+            Title = "Troca de senha obrigatória.",
+            Status = StatusCodes.Status403Forbidden,
+            Detail = "Defina uma nova senha antes de acessar as operações do sistema."
+        });
+        return;
+    }
+
+    await next();
+});
 app.UseAuthorization();
 app.UseAntiforgery();
 
@@ -351,7 +390,8 @@ app.MapPost("/auth/login", async (
         new LoginUserResponse(
             result.User!.Id,
             result.User.Email,
-            result.User.ProfileName)));
+            result.User.ProfileName,
+            result.User.RequiresPasswordChange)));
 })
 .AllowAnonymous()
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
@@ -413,7 +453,8 @@ app.MapPost("/auth/refresh", async (
         new LoginUserResponse(
             result.User!.Id,
             result.User.Email,
-            result.User.ProfileName)));
+            result.User.ProfileName,
+            result.User.RequiresPasswordChange)));
 })
 .AllowAnonymous()
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
@@ -561,6 +602,10 @@ public sealed record LoginResponse(
     string AccessToken,
     DateTime ExpiresAtUtc,
     LoginUserResponse User);
-public sealed record LoginUserResponse(int Id, string Email, string ProfileName);
+public sealed record LoginUserResponse(
+    int Id,
+    string Email,
+    string ProfileName,
+    bool RequiresPasswordChange);
 public sealed record LoginErrorResponse(string Message);
 public sealed record CsrfTokenResponse(string RequestToken);

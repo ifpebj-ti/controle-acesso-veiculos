@@ -187,7 +187,7 @@ export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
           profiles: [...portariaProfiles, "Administrador"],
           section: "support",
         },
-        { profiles: ["SetorTransporte"], section: "management" },
+        { profiles: ["SetorTransporte"], section: "supervision" },
       ],
     },
     title: "Eventos e autorizações",
@@ -206,6 +206,7 @@ export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
 export type ProfileCapability =
   | "correct-general-access"
   | "manage-administration"
+  | "manage-event-authorizations"
   | "manage-institutional-catalogs"
   | "operate-general-access"
   | "operate-institutional-fleet"
@@ -217,6 +218,7 @@ const profileCapabilities: Readonly<
   Administrador: [
     "correct-general-access",
     "manage-administration",
+    "manage-event-authorizations",
     "manage-institutional-catalogs",
     "operate-general-access",
     "operate-institutional-fleet",

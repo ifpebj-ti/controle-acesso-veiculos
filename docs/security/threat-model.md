@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 3.2
+**Versão:** 3.3
 
 **Data de referência:** 21 de setembro de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218, #227 e #251
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218, #227, #251 e #258
 
 ## Objetivo e limites
 
@@ -149,7 +149,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 
 | ID    | STRIDE                             | Cenário                                                                                                        |   P |   I | Nível | Mitigação e rastreabilidade                                                                                                                                                                                                                                                  | Estado                                                                                                                                                                                                                                 |
 | ----- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- | --: | --: | ----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TM-01 | Spoofing                           | Conta compartilhada ou credencial roubada impede identificar o operador                                        |   3 |   3 |     9 | Contas individuais, hash de senha, login uniforme, bloqueio, troca autenticada com versão de credencial, revogação transacional, auditoria mínima e testes — #29, #71, #73 e #251                                                                                          | Parcialmente mitigado; troca autenticada invalida sessões e JWTs anteriores, enquanto recuperação de acesso e validação operacional permanecem pendentes na #220                                                                       |
+| TM-01 | Spoofing                           | Conta compartilhada, credencial inicial conhecida por terceiro ou credencial roubada impede identificar o operador |   3 |   3 |     9 | Contas individuais, hash de senha, login uniforme, bloqueio, troca autenticada, versão de credencial, credencial temporária de uso único e expiração curta, troca obrigatória, revogação transacional, auditoria mínima e testes — #29, #71, #73, #251 e #258 | Parcialmente mitigado; provisionamento e redefinição seguros estão implementados, enquanto canal de entrega, responsáveis institucionais e homologação permanecem pendentes nas #162 e #220 |
 | TM-02 | Spoofing                           | Usuário acessa frontend ou API falsos em rede não confiável                                                    |   2 |   3 |     6 | Domínio controlado, HTTPS, certificados e orientação operacional — #25 e implantação futura                                                                                                                                                                                  | Planejado                                                                                                                                                                                                                              |
 | TM-03 | Tampering                          | Cliente altera IDs, status, horários, quilometragem, evento ou identificação de frota enviados à API           |   3 |   3 |     9 | Políticas por recurso, DTOs, validação, normalização, horário do servidor, FK e unicidade/transação — #29, #31, #47, #53, #55, #61, #65 e #82                                                                                                                                | Associação de evento validada e imutável após a entrada; correção geral limitada a campos descritivos; correções institucionais pendentes                                                                                              |
 | TM-04 | Tampering                          | Acesso direto ao banco altera ou remove histórico                                                              |   2 |   3 |     6 | Rede restrita, menor privilégio, auditoria, backup e separação de usuários — #30 e #67                                                                                                                                                                                       | Ensaio local de recuperação implementado; controles de produção pendentes                                                                                                                                                              |
@@ -202,7 +202,8 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - consulta da trilha restrita a Administrador por política dedicada, com filtros, paginação, janela máxima e distinção entre ator humano e sistema;
 - autorização deny-by-default e políticas preliminares testadas;
 - políticas distintas para consultar e gerenciar a frota institucional;
-- políticas distintas para consultar e gerenciar autorizações de eventos;
+- políticas distintas para consultar e gerenciar autorizações de eventos, com
+  manutenção restrita ao Administrador e leitura preservada aos quatro perfis;
 - políticas distintas para o histórico geral e o histórico institucional;
 - política de correção separada da operação e da consulta, limitada aos operadores Porteiro e Vigilante e ao acesso excepcional do Administrador;
 - contratos operacionais e catálogo inicial protegidos, com validação no servidor e erros previsíveis;

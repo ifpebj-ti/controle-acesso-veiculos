@@ -130,7 +130,8 @@ public sealed class RequestSafetyTests(ApiFactory factory)
             1,
             "request-safety@example.test",
             ProfileNames.Administrator,
-            1);
+            1,
+            requiresPasswordChange: false);
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken.Value);
 

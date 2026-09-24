@@ -12,14 +12,16 @@ import { AppLayout } from "./AppLayout";
 function renderLayout(
   profileName: ProfileName = "Porteiro",
   sessionNotice: "renewal-unavailable" | null = null,
+  requiresPasswordChange = false,
 ) {
+  const logout = vi.fn();
   const view = render(
     <SessionContext.Provider
       value={{
         completePasswordChange: vi.fn(),
         expiresAtUtc: "2026-09-03T23:59:59.000Z",
         login: vi.fn(),
-        logout: vi.fn(),
+        logout,
         sessionEndReason: null,
         sessionNotice,
         status: "authenticated",
@@ -27,23 +29,25 @@ function renderLayout(
           email: "operador@example.test",
           id: 42,
           profileName,
+          requiresPasswordChange,
         },
       }}
     >
-      <MemoryRouter initialEntries={["/visao-geral"]}>
+      <MemoryRouter
+        initialEntries={[
+          requiresPasswordChange ? "/conta/senha" : "/visao-geral",
+        ]}
+      >
         <Routes>
           <Route element={<AppLayout />}>
-            <Route
-              element={<h1>Visão operacional fictícia</h1>}
-              path="/visao-geral"
-            />
+            <Route element={<h1>Visão operacional fictícia</h1>} path="*" />
           </Route>
         </Routes>
       </MemoryRouter>
     </SessionContext.Provider>,
   );
 
-  return view;
+  return { ...view, logout };
 }
 
 function renderNavigableLayout() {
@@ -60,6 +64,7 @@ function renderNavigableLayout() {
           email: "operador@example.test",
           id: 42,
           profileName: "Porteiro",
+          requiresPasswordChange: false,
         },
       }}
     >
@@ -104,6 +109,24 @@ describe("AppLayout", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Não foi possível renovar a sessão agora. Seus dados foram mantidos; verifique a conexão antes de continuar.",
     );
+  });
+
+  it("hides application navigation and keeps logout available during mandatory password change", async () => {
+    const user = userEvent.setup();
+    const { container, logout } = renderLayout("Porteiro", null, true);
+
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Abrir menu" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Alterar senha" }),
+    ).not.toBeInTheDocument();
+    const logoutButton = screen.getByRole("button", { name: "Sair" });
+    expect(logoutButton).toBeVisible();
+    await user.click(logoutButton);
+    expect(logout).toHaveBeenCalledOnce();
+    await expectNoSeriousAccessibilityViolations(container);
   });
 
   it("does not repeat development status inside authenticated pages", () => {

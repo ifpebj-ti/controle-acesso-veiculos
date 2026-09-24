@@ -74,9 +74,9 @@ Os contratos operacionais e administrativos disponíveis são:
 | `GET /institutional-vehicle-usages/history` | pesquisa usos por período, veículo ou motorista para Transporte e Administrador |
 | `POST /institutional-vehicle-usages/{id}/returns` | registra retorno e valida a quilometragem |
 | `GET /event-authorizations` | pesquisa autorizações de eventos por período, nome e estado para os quatro perfis do MVP |
-| `POST /event-authorizations` | cria uma autorização de evento para `SetorTransporte` ou `Administrador` |
-| `PUT /event-authorizations/{id}` | atualiza evento e regras de veículos na mesma transação auditada |
-| `DELETE /event-authorizations/{id}` | cancela logicamente a autorização sem apagar seu histórico |
+| `POST /event-authorizations` | cria uma autorização de evento somente para `Administrador` |
+| `PUT /event-authorizations/{id}` | atualiza evento e regras de veículos na mesma transação auditada, somente para `Administrador` |
+| `DELETE /event-authorizations/{id}` | cancela logicamente a autorização sem apagar seu histórico, somente para `Administrador` |
 | `GET /operations/daily-summary` | resume entradas, saídas, usos institucionais e acessos vinculados a eventos no dia local informado |
 
 A placa e a identificação de frota são normalizadas. O PostgreSQL impede duplicidades no catálogo, autorizações repetidas e dois acessos ou usos institucionais abertos para o mesmo veículo, inclusive em requisições concorrentes. As operações geram trilha de auditoria com operador, horário, registro e transição de estado na mesma transação; se a auditoria falhar, a operação é revertida. Nome do condutor, placa, objetivo e categoria são obrigatórios no fluxo geral. Porteiro, Vigilante e Administrador podem corrigir objetivo, categoria e observação com justificativa, sem alterar placa, condutor, horários, status ou autoria original. No fluxo institucional, o veículo deve estar ativo e a pessoa precisa de autorização explícita e ativa como motorista; revogar a autorização bloqueia novas saídas, mas não impede registrar o retorno de uma viagem aberta.
@@ -328,7 +328,7 @@ representativo sem acessar o banco diretamente:
 
 Para a API exposta pelo Compose, omita `-ApiBaseUrl` ou use a porta local
 configurada. O script aceita somente loopback, solicita as credenciais do
-Administrador e três senhas temporárias distintas por prompt protegido, e não
+Administrador e três senhas locais de demonstração distintas por prompt protegido, e não
 imprime senha ou token. Ele cria contas e cenários fictícios abertos e
 encerrados pelos endpoints normais da API. Consulte o
 [guia dos dados de demonstração](infrastructure/demo/README.md) antes de executar.

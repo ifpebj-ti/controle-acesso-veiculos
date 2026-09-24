@@ -135,7 +135,12 @@ function renderPage(profileName: ProfileName) {
     logout: vi.fn(),
     sessionEndReason: null,
     status: "authenticated",
-    user: { email: "usuario@example.test", id: 1, profileName },
+    user: {
+      email: "usuario@example.test",
+      id: 1,
+      profileName,
+      requiresPasswordChange: false,
+    },
   });
   return render(
     <ConfirmationProvider>

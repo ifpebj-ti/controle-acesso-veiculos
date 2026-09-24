@@ -72,6 +72,28 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
             .HasDefaultValue(1)
             .IsRequired();
 
+        builder.Property(usuario => usuario.TrocaSenhaObrigatoria)
+            .HasColumnName("troca_senha_obrigatoria")
+            .HasColumnType("boolean")
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        builder.Property(usuario => usuario.CredencialTemporariaExpiraEm)
+            .HasColumnName("credencial_temporaria_expira_em")
+            .HasColumnType("timestamp with time zone");
+
+        builder.Property(usuario => usuario.CredencialTemporariaUtilizadaEm)
+            .HasColumnName("credencial_temporaria_utilizada_em")
+            .HasColumnType("timestamp with time zone");
+
+        builder.ToTable(table => table.HasCheckConstraint(
+            "ck_usuarios_credencial_temporaria",
+            "(troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NOT NULL AND " +
+            "(credencial_temporaria_utilizada_em IS NULL OR " +
+            "credencial_temporaria_utilizada_em < credencial_temporaria_expira_em)) OR " +
+            "(NOT troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NULL AND " +
+            "credencial_temporaria_utilizada_em IS NULL)"));
+
         builder.HasIndex(usuario => usuario.Email)
             .IsUnique()
             .HasDatabaseName("ux_usuarios_email");

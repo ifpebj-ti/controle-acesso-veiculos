@@ -13,11 +13,20 @@ from its first published release.
 - Authenticated password changes require the current credential and atomically
   replace its hash, revoke renewable sessions, invalidate previously issued
   access tokens, and write a credential-free audit record.
+- Administrative account provisioning can issue an expiring temporary
+  credential, and administrative resets rotate credential state while revoking
+  existing sessions and requiring the account holder to choose a permanent password.
 
 ### Security
 
 - JWT validation now checks a server-side credential version, and password
   changes have a dedicated per-user rate limit and PostgreSQL concurrency lock.
+- Temporary credentials are generated with operating-system cryptographic
+  randomness, consumed atomically on first login, stored only as password hashes,
+  returned with no-store headers, and restricted from business operations until
+  their mandatory replacement.
+- Event authorization creation, changes, and cancellation are restricted to the
+  Administrator profile while read access remains available to all MVP profiles.
 
 ## [0.2.0] - 2026-09-20
 

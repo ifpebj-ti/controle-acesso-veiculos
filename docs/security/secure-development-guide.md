@@ -92,6 +92,11 @@ Referência:
 - revogar a família no logout, na desativação e na detecção de reutilização;
 - exigir a credencial atual na troca autenticada, revogar todas as sessões e
   invalidar access tokens anteriores por uma versão de credencial verificada no servidor;
+- não permitir que o Administrador escolha a senha permanente de outra pessoa;
+- gerar credenciais iniciais e de redefinição com fonte criptográfica, prazo curto,
+  uso único transacional, troca obrigatória, resposta sem cache e persistência somente do hash;
+- restringir contas com credencial temporária ao fluxo mínimo de troca e logout;
+- tratar redefinição como operação administrativa auditada e revogar todas as sessões;
 - proteger operações administrativas e auditoria separadamente;
 - não implementar algoritmo criptográfico próprio;
 - não registrar senha, token ou header de autorização.
@@ -100,8 +105,10 @@ As decisões atuais de token, hash, bloqueio, ciclo administrativo de contas,
 sessões e políticas estão em [Autenticação e autorização](authentication.md). A
 Issue #190 implementa renovação rotativa, revogação no servidor e logout; a
 Issue #191 integra esse contrato no frontend. A Issue #251 implementa a troca
-autenticada sem criar um canal fictício de recuperação. Recuperação de acesso e
-matriz final de perfis permanecem pendentes de validação institucional.
+autenticada e a Issue #258 implementa a fundação de credencial temporária e
+redefinição administrativa sem inventar e-mail, SMS ou SSO. Canal de entrega,
+responsáveis institucionais e matriz final de perfis permanecem pendentes de
+validação nas Issues #162 e #220.
 
 Referências:
 
@@ -200,13 +207,15 @@ fica restrito à contingência, com reconciliação posterior, evitando dois con
 permanentes e divergentes. O horário de fechamento não é codificado como bloqueio
 fixo, pois existem exceções autorizadas e residentes.
 
-Na Issue #83, autorizações de eventos separam consulta operacional de gestão:
-Porteiro e Vigilante apenas consultam; Setor de Transporte e Administrador criam,
-alteram e cancelam. Período e quantidade possuem limites, placas são normalizadas
-e constraints do PostgreSQL impedem regras duplicadas. Evento, regras e auditoria
-são persistidos atomicamente. A trilha não copia nome, responsável, área,
-observação ou placa. A associação com entradas e o consumo concorrente de cotas
-permanecem fora desse recorte e são rastreados pela Issue #82.
+Na Issue #83, autorizações de eventos separam consulta operacional de gestão.
+A decisão institucional registrada em setembro de 2026 e aplicada pela Issue
+#270 mantém consulta para os quatro perfis, mas reserva criação, alteração e
+cancelamento ao Administrador. Essa restrição é uma política do servidor, sem
+nomes de pessoas codificados. Período e quantidade possuem limites, placas são
+normalizadas e constraints do PostgreSQL impedem regras duplicadas. Evento,
+regras e auditoria são persistidos atomicamente. A trilha não copia nome,
+responsável, área, observação ou placa. A associação com entradas e o consumo
+concorrente de cotas foram implementados posteriormente pela Issue #82.
 
 Na Issue #82, a associação opcional passa a ser feita dentro da mesma transação da
 entrada. O backend bloqueia a linha do evento, valida estado e janela, prioriza a

@@ -16,7 +16,7 @@ export function EventsPage() {
   const { user } = useAuthenticatedSession();
   const canManage = profileHasCapability(
     user.profileName,
-    "manage-institutional-catalogs",
+    "manage-event-authorizations",
   );
   const events = useEventAuthorizations();
 
@@ -42,12 +42,16 @@ export function EventsPage() {
         description={
           canManage
             ? "Planeje autorizações antecipadas e acompanhe o uso das regras de acesso."
-            : "Confira autorizações vigentes e veículos previstos antes de registrar a entrada."
+            : "Consulte autorizações, períodos, regras e quantidades registradas."
         }
         eyebrow={
           canManage ? "Planejamento e conferência" : "Consulta operacional"
         }
-        title={canManage ? "Eventos e autorizações" : "Conferir autorizações"}
+        title={
+          canManage
+            ? "Eventos e autorizações"
+            : "Consultar eventos e autorizações"
+        }
       />
 
       {events.notice && (
@@ -85,7 +89,7 @@ export function EventsPage() {
         />
       )}
 
-      {events.formOpen && (
+      {canManage && events.formOpen && (
         <>
           {events.formError && (
             <div

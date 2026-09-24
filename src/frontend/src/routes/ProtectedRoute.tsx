@@ -27,5 +27,12 @@ export function ProtectedRoute() {
     return <Navigate replace state={{ from: location }} to="/login" />;
   }
 
+  if (
+    user.requiresPasswordChange &&
+    location.pathname.replace(/\/+$/, "") !== "/conta/senha"
+  ) {
+    return <Navigate replace to="/conta/senha" />;
+  }
+
   return <Outlet />;
 }

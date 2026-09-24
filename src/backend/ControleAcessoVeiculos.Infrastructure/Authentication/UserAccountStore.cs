@@ -20,6 +20,7 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
         string normalizedEmail,
         string passwordHash,
         string profileName,
+        DateTime? temporaryCredentialExpiresAtUtc,
         AccountCreationAudit audit,
         CancellationToken cancellationToken)
     {
@@ -64,7 +65,9 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 normalizedEmail,
                 passwordHash,
                 person.Id,
-                profile.Id);
+                profile.Id,
+                trocaSenhaObrigatoria: temporaryCredentialExpiresAtUtc.HasValue,
+                credencialTemporariaExpiraEm: temporaryCredentialExpiresAtUtc);
             dbContext.Usuarios.Add(user);
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -78,6 +81,9 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 {
                     active = true,
                     profileName = profile.Nome,
+                    requiresPasswordChange = user.TrocaSenhaObrigatoria,
+                    temporaryCredentialExpiresAtUtc =
+                        user.CredencialTemporariaExpiraEm,
                     origin = audit.Origin.ToString()
                 }),
                 detalhes: audit.Origin == AccountCreationOrigin.Bootstrap
@@ -137,7 +143,9 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 item.User.Ativo,
                 item.User.DataCriacao,
                 item.User.DataAlteracao,
-                item.User.BloqueadoAte))
+                item.User.BloqueadoAte,
+                item.User.TrocaSenhaObrigatoria,
+                item.User.CredencialTemporariaExpiraEm))
             .ToListAsync(cancellationToken);
 
         var totalPages = totalCount == 0
@@ -245,6 +253,87 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
         await transaction.CommitAsync(cancellationToken);
 
         return UserAccountStoreStateStatus.Success;
+    }
+
+    public async Task<AdministrativeCredentialResetStoreResult> TryResetCredentialAsync(
+        int userId,
+        int actorUserId,
+        string passwordHash,
+        DateTime occurredAtUtc,
+        DateTime expiresAtUtc,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        if (userId == actorUserId)
+        {
+            return new(AdministrativeCredentialResetStoreStatus.SelfReset);
+        }
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            cancellationToken);
+        var user = await LockUserAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return new(AdministrativeCredentialResetStoreStatus.NotFound);
+        }
+
+        if (!user.Ativo)
+        {
+            return new(AdministrativeCredentialResetStoreStatus.Inactive);
+        }
+
+        var previousCredentialVersion = user.VersaoCredencial;
+        var previousRequiresPasswordChange = user.TrocaSenhaObrigatoria;
+        var previousExpiresAtUtc = user.CredencialTemporariaExpiraEm;
+        var previousCredentialWasUsed =
+            user.CredencialTemporariaUtilizadaEm.HasValue;
+        user.DefinirCredencialTemporaria(passwordHash, expiresAtUtc, occurredAtUtc);
+
+        var sessions = await dbContext.SessoesAutenticacao
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM dbo.sessoes_autenticacao
+                WHERE usuario_id = {userId} AND revogada_em IS NULL
+                FOR UPDATE
+                """)
+            .ToListAsync(cancellationToken);
+        foreach (var session in sessions)
+        {
+            session.Revogar(
+                occurredAtUtc,
+                MotivoRevogacaoSessao.RedefinicaoAdministrativa);
+        }
+
+        dbContext.Auditorias.Add(new Auditoria(
+            occurredAtUtc,
+            TipoAcaoAuditoria.Alteracao,
+            nameof(Usuario),
+            user.Id,
+            actorUserId,
+            dadosAnteriores: JsonSerializer.Serialize(new
+            {
+                credentialVersion = previousCredentialVersion,
+                requiresPasswordChange = previousRequiresPasswordChange,
+                temporaryCredentialExpiresAtUtc = previousExpiresAtUtc,
+                temporaryCredentialWasUsed = previousCredentialWasUsed
+            }),
+            dadosNovos: JsonSerializer.Serialize(new
+            {
+                credentialVersion = user.VersaoCredencial,
+                requiresPasswordChange = true,
+                temporaryCredentialExpiresAtUtc = expiresAtUtc,
+                temporaryCredentialWasUsed = false,
+                reason
+            }),
+            detalhes: "Administrator issued a temporary credential."));
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return new(
+            AdministrativeCredentialResetStoreStatus.Success,
+            previousCredentialVersion,
+            user.VersaoCredencial);
     }
 
     private Task<Usuario?> LockUserAsync(

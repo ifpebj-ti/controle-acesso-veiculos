@@ -9,10 +9,13 @@ import {
   createUserAccount,
   deactivateUserAccount,
   reactivateUserAccount,
+  resetTemporaryCredential,
   searchUserAccounts,
 } from "../services/userAccountsService";
 import type {
+  CredentialResetReason,
   CreateUserAccountInput,
+  TemporaryCredential,
   UserAccount,
   UserAccountFilters,
   UserAccountPage,
@@ -28,7 +31,14 @@ const initialFilters: UserAccountFilters = {
   search: "",
 };
 
-const createFields = ["email", "name", "password", "profileName"] as const;
+const createFields = ["email", "name", "profileName"] as const;
+
+interface CredentialDisclosure {
+  accountId?: number;
+  accountName: string;
+  credential: TemporaryCredential;
+  returnFocusTo: HTMLElement | null;
+}
 
 function createFieldErrors(error: unknown) {
   const errors = getApiValidationErrors(error);
@@ -39,26 +49,42 @@ function createFieldErrors(error: unknown) {
   ) as UserAccountServerErrors;
 }
 
-export function useUserAccounts(enabled = true) {
+export function useUserAccounts() {
   const confirmAction = useConfirmation();
   const requestId = useRef(0);
   const [draft, setDraft] = useState<UserAccountFilters>(initialFilters);
   const [applied, setApplied] = useState<UserAccountFilters>(initialFilters);
   const [page, setPage] = useState<UserAccountPage | null>(null);
-  const [status, setStatus] = useState<AccountStatus>(
-    enabled ? "loading" : "idle",
-  );
+  const [status, setStatus] = useState<AccountStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filterError, setFilterError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [formReturnFocusTo, setFormReturnFocusTo] =
+    useState<HTMLElement | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [serverErrors, setServerErrors] = useState<UserAccountServerErrors>({});
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [credentialDisclosure, setCredentialDisclosure] =
+    useState<CredentialDisclosure | null>(null);
+  const [resetTarget, setResetTarget] = useState<UserAccount | null>(null);
+  const [resetReturnFocusTo, setResetReturnFocusTo] =
+    useState<HTMLElement | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+
+  function clearSensitiveTransientState() {
+    setCredentialDisclosure(null);
+    setResetTarget(null);
+    setResetError(null);
+    setResetReturnFocusTo(null);
+    setFormOpen(false);
+    setFormError(null);
+    setServerErrors({});
+    setFormReturnFocusTo(null);
+  }
 
   const load = useCallback(
     async (filters: UserAccountFilters, persistedMessage?: string) => {
-      if (!enabled) return;
       const currentRequest = ++requestId.current;
       setStatus("loading");
       setPage(null);
@@ -89,11 +115,10 @@ export function useUserAccounts(enabled = true) {
         setNotice(null);
       }
     },
-    [enabled],
+    [],
   );
 
   useEffect(() => {
-    if (!enabled) return;
     const currentRequest = ++requestId.current;
     void searchUserAccounts(initialFilters)
       .then((result) => {
@@ -110,7 +135,7 @@ export function useUserAccounts(enabled = true) {
     return () => {
       requestId.current += 1;
     };
-  }, [enabled]);
+  }, []);
 
   function updateDraft(next: UserAccountFilters) {
     setDraft(next);
@@ -142,12 +167,13 @@ export function useUserAccounts(enabled = true) {
     void load(next);
   }
 
-  function openForm() {
+  function openForm(trigger?: HTMLElement | null) {
     if (pendingAction || status !== "ready") return;
     setNotice(null);
     setErrorMessage(null);
     setFormError(null);
     setServerErrors({});
+    setFormReturnFocusTo(trigger ?? null);
     setFormOpen(true);
   }
 
@@ -156,6 +182,7 @@ export function useUserAccounts(enabled = true) {
     setFormOpen(false);
     setFormError(null);
     setServerErrors({});
+    setFormReturnFocusTo(null);
   }
 
   function clearServerError(field: keyof UserAccountServerErrors) {
@@ -174,20 +201,93 @@ export function useUserAccounts(enabled = true) {
     setFormError(null);
     setServerErrors({});
     try {
-      await createUserAccount(input);
+      const created = await createUserAccount(input);
+      const credential = {
+        temporaryCredential: created.temporaryCredential,
+        temporaryCredentialExpiresAtUtc:
+          created.temporaryCredentialExpiresAtUtc,
+      };
+      setCredentialDisclosure({
+        accountId: created.id,
+        accountName: input.name,
+        credential,
+        returnFocusTo: formReturnFocusTo,
+      });
+      setFormReturnFocusTo(null);
       setFormOpen(false);
       await load(applied, "Conta criada com sucesso.");
     } catch (error) {
       const description = describeApiError(error);
       const fieldErrors = createFieldErrors(error);
       if (description.kind === "access-denied") {
+        clearSensitiveTransientState();
         setStatus("denied");
         setErrorMessage(description.message);
       } else {
         setServerErrors(fieldErrors);
         setFormError(
           Object.keys(fieldErrors).length > 0
-            ? "Revise os campos destacados e informe novamente a senha temporária."
+            ? "Revise os campos destacados."
+            : description.message,
+        );
+      }
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  function closeCredentialDisclosure() {
+    setCredentialDisclosure(null);
+  }
+
+  function openCredentialReset(
+    account: UserAccount,
+    trigger?: HTMLElement | null,
+  ) {
+    if (pendingAction || status !== "ready" || !account.active) return;
+    setResetError(null);
+    setResetReturnFocusTo(trigger ?? null);
+    setResetTarget(account);
+  }
+
+  function closeCredentialReset() {
+    if (pendingAction) return;
+    setResetError(null);
+    setResetTarget(null);
+    setResetReturnFocusTo(null);
+  }
+
+  async function confirmCredentialReset(reason: CredentialResetReason) {
+    if (!resetTarget || pendingAction) return;
+    const account = resetTarget;
+    setPendingAction(`reset-${account.id}`);
+    setResetError(null);
+    setNotice(null);
+    setErrorMessage(null);
+    try {
+      const credential = await resetTemporaryCredential(account.id, reason);
+      setResetTarget(null);
+      setCredentialDisclosure({
+        accountId: account.id,
+        accountName: account.name,
+        credential,
+        returnFocusTo: resetReturnFocusTo,
+      });
+      setResetReturnFocusTo(null);
+      await load(
+        applied,
+        `Credencial de ${account.name} redefinida com sucesso.`,
+      );
+    } catch (error) {
+      const description = describeApiError(error);
+      if (description.kind === "access-denied") {
+        clearSensitiveTransientState();
+        setStatus("denied");
+        setErrorMessage(description.message);
+      } else {
+        setResetError(
+          description.status === 404
+            ? "A conta não foi encontrada. Atualize a lista antes de tentar novamente."
             : description.message,
         );
       }
@@ -222,7 +322,10 @@ export function useUserAccounts(enabled = true) {
       );
     } catch (error) {
       const description = describeApiError(error);
-      if (description.kind === "access-denied") setStatus("denied");
+      if (description.kind === "access-denied") {
+        clearSensitiveTransientState();
+        setStatus("denied");
+      }
       setErrorMessage(description.message);
     } finally {
       setPendingAction(null);
@@ -232,6 +335,8 @@ export function useUserAccounts(enabled = true) {
   return {
     applyFilters,
     changeAccountState,
+    closeCredentialDisclosure,
+    closeCredentialReset,
     clearFilters,
     clearServerError,
     closeForm,
@@ -240,13 +345,19 @@ export function useUserAccounts(enabled = true) {
     filterError,
     formError,
     formOpen,
+    credentialDisclosure,
     goToPage,
     notice,
+    openCredentialReset,
     openForm,
     page,
     pendingAction,
     retry: () => void load(applied),
     saveAccount,
+    confirmCredentialReset,
+    resetError,
+    resetReturnFocusTo,
+    resetTarget,
     serverErrors,
     setDraft: updateDraft,
     setNotice,

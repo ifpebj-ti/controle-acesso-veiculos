@@ -7,5 +7,6 @@ public enum MotivoRevogacaoSessao
     Expiracao = 3,
     ContaDesativada = 4,
     ReutilizacaoDetectada = 5,
-    SenhaAlterada = 6
+    SenhaAlterada = 6,
+    RedefinicaoAdministrativa = 7
 }
