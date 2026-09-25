@@ -58,9 +58,10 @@ local usa chaves efêmeras e, após reinício, o cliente obtém um novo par CSRF
    loop e sem revelar o motivo interno.
 7. No logout, tentar a revogação; independentemente da resposta, apagar o estado
    local. Indisponibilidade deve ser apresentada sem afirmar revogação concluída.
-8. Ler os cabeçalhos `X-Session-Inactivity-Expires-At` e
-   `X-Session-Absolute-Expires-At` emitidos no login e na renovação. Eles usam o
-   relógio do servidor e não expõem credenciais.
+8. Ler os cabeçalhos `X-Session-Server-Time`,
+   `X-Session-Inactivity-Expires-At` e `X-Session-Absolute-Expires-At` emitidos no
+   login e na renovação. Eles permitem calcular durações usando uma única
+   referência do servidor e não expõem credenciais.
 9. Renovar somente quando houve atividade humana relevante dentro da janela. Um
    temporizador em segundo plano, mudança de aba ou retomada do dispositivo não
    contam como atividade. Ao atingir qualquer prazo, encerrar o estado local e
