@@ -28,7 +28,7 @@ export async function authenticate(
     request,
     sessionRequestConfig,
   );
-  return parseAuthenticatedSession(response.data);
+  return parseAuthenticatedSession(response.data, response.headers);
 }
 
 export async function refreshAuthentication(): Promise<AuthenticatedSession> {
@@ -37,7 +37,7 @@ export async function refreshAuthentication(): Promise<AuthenticatedSession> {
     ...sessionRequestConfig,
     headers: { "X-CSRF-TOKEN": requestToken },
   });
-  return parseAuthenticatedSession(response.data);
+  return parseAuthenticatedSession(response.data, response.headers);
 }
 
 export async function logoutAuthentication(): Promise<void> {
@@ -65,12 +65,60 @@ async function requestCsrfToken(timeout?: number): Promise<string> {
   return parsedResponse.data.requestToken;
 }
 
-function parseAuthenticatedSession(data: unknown): AuthenticatedSession {
+function parseAuthenticatedSession(
+  data: unknown,
+  headers: unknown,
+): AuthenticatedSession {
   const parsedResponse = loginResponseSchema.safeParse(data);
+  const inactivityExpiresAtUtc = readHeader(
+    headers,
+    "X-Session-Inactivity-Expires-At",
+  );
+  const absoluteExpiresAtUtc = readHeader(
+    headers,
+    "X-Session-Absolute-Expires-At",
+  );
 
-  if (!parsedResponse.success) {
+  if (
+    !parsedResponse.success ||
+    !isUtcTimestamp(inactivityExpiresAtUtc) ||
+    !isUtcTimestamp(absoluteExpiresAtUtc)
+  ) {
     throw new AuthenticationContractError();
   }
 
-  return parsedResponse.data;
+  const inactivityExpiresAt = Date.parse(inactivityExpiresAtUtc);
+  const absoluteExpiresAt = Date.parse(absoluteExpiresAtUtc);
+  const accessTokenExpiresAt = Date.parse(parsedResponse.data.expiresAtUtc);
+
+  if (
+    inactivityExpiresAt > absoluteExpiresAt ||
+    accessTokenExpiresAt > absoluteExpiresAt
+  ) {
+    throw new AuthenticationContractError();
+  }
+
+  return {
+    ...parsedResponse.data,
+    absoluteExpiresAtUtc,
+    inactivityExpiresAtUtc,
+  };
+}
+
+function readHeader(headers: unknown, name: string): string | null {
+  if (typeof headers !== "object" || headers === null) return null;
+
+  if ("get" in headers && typeof headers.get === "function") {
+    const value = headers.get(name);
+    if (typeof value === "string") return value;
+  }
+
+  const record = headers as Record<string, unknown>;
+  const value = record[name] ?? record[name.toLowerCase()];
+  return typeof value === "string" ? value : null;
+}
+
+function isUtcTimestamp(value: string | null): value is string {
+  if (!value || !/(?:Z|[+-]00:00)$/i.test(value)) return false;
+  return Number.isFinite(Date.parse(value));
 }

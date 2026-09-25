@@ -19,6 +19,11 @@ const session = {
   },
 };
 
+const sessionHeaders = {
+  "x-session-absolute-expires-at": "2030-06-10T23:00:00Z",
+  "x-session-inactivity-expires-at": "2030-06-10T12:15:00Z",
+};
+
 afterEach(() => vi.restoreAllMocks());
 
 describe("authentication session service", () => {
@@ -26,9 +31,15 @@ describe("authentication session service", () => {
     const get = vi
       .spyOn(api, "get")
       .mockResolvedValue({ data: { requestToken: "test-only-csrf-token" } });
-    const post = vi.spyOn(api, "post").mockResolvedValue({ data: session });
+    const post = vi
+      .spyOn(api, "post")
+      .mockResolvedValue({ data: session, headers: sessionHeaders });
 
-    await expect(refreshAuthentication()).resolves.toEqual(session);
+    await expect(refreshAuthentication()).resolves.toEqual({
+      ...session,
+      absoluteExpiresAtUtc: sessionHeaders["x-session-absolute-expires-at"],
+      inactivityExpiresAtUtc: sessionHeaders["x-session-inactivity-expires-at"],
+    });
     expect(api.defaults.withCredentials).toBe(true);
     expect(get).toHaveBeenCalledWith("/auth/csrf", {
       skipSessionRefresh: true,
@@ -79,6 +90,7 @@ describe("authentication session service", () => {
     };
     vi.spyOn(api, "post").mockResolvedValue({
       data: { ...session, user: incompleteUser },
+      headers: sessionHeaders,
     });
 
     await expect(
@@ -100,10 +112,41 @@ describe("authentication session service", () => {
     });
     vi.spyOn(api, "post").mockResolvedValue({
       data: { ...session, user: incompleteUser },
+      headers: sessionHeaders,
     });
 
     await expect(refreshAuthentication()).rejects.toBeInstanceOf(
       AuthenticationContractError,
     );
   });
+
+  it.each([
+    {},
+    {
+      "x-session-inactivity-expires-at":
+        sessionHeaders["x-session-inactivity-expires-at"],
+    },
+    {
+      "x-session-absolute-expires-at":
+        sessionHeaders["x-session-absolute-expires-at"],
+      "x-session-inactivity-expires-at": "not-a-timestamp",
+    },
+    {
+      "x-session-absolute-expires-at": "2030-06-10T12:10:00Z",
+      "x-session-inactivity-expires-at":
+        sessionHeaders["x-session-inactivity-expires-at"],
+    },
+  ])(
+    "rejects missing, invalid, or incoherent session deadline headers",
+    async (headers) => {
+      vi.spyOn(api, "post").mockResolvedValue({ data: session, headers });
+
+      await expect(
+        authenticate({
+          email: "operator@example.test",
+          password: "fictional-input-only",
+        }),
+      ).rejects.toBeInstanceOf(AuthenticationContractError);
+    },
+  );
 });
