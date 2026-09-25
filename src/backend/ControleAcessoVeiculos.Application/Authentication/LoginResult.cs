@@ -5,15 +5,17 @@ public sealed record LoginResult(
     string? AccessToken,
     DateTime? ExpiresAtUtc,
     string? RefreshToken,
+    DateTime? SessionInactivityExpiresAtUtc,
     DateTime? SessionExpiresAtUtc,
     LoginUser? User)
 {
     public static LoginResult InvalidCredentials() =>
-        new(false, null, null, null, null, null);
+        new(false, null, null, null, null, null, null);
 
     public static LoginResult Success(
         AccessToken token,
         string refreshToken,
+        DateTime sessionInactivityExpiresAtUtc,
         DateTime sessionExpiresAtUtc,
         LoginUser user) =>
         new(
@@ -21,6 +23,7 @@ public sealed record LoginResult(
             token.Value,
             token.ExpiresAtUtc,
             refreshToken,
+            sessionInactivityExpiresAtUtc,
             sessionExpiresAtUtc,
             user);
 }
