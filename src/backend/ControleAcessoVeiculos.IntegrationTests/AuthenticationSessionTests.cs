@@ -33,10 +33,18 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
         var inactivityDeadline = ReadUtcHeader(
             login,
             "X-Session-Inactivity-Expires-At");
+        var serverTime = ReadUtcHeader(login, "X-Session-Server-Time");
         var absoluteDeadline = ReadUtcHeader(
             login,
             "X-Session-Absolute-Expires-At");
 
+        Assert.InRange(
+            serverTime,
+            requestedAtUtc,
+            completedAtUtc);
+        Assert.Equal(
+            TimeSpan.FromMinutes(15),
+            inactivityDeadline - serverTime);
         Assert.InRange(
             inactivityDeadline,
             requestedAtUtc.AddMinutes(15),
@@ -107,6 +115,10 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
             ReadUtcHeader(firstRefresh, "X-Session-Inactivity-Expires-At"),
             refreshRequestedAtUtc.AddMinutes(15),
             refreshCompletedAtUtc.AddMinutes(15));
+        Assert.InRange(
+            ReadUtcHeader(firstRefresh, "X-Session-Server-Time"),
+            refreshRequestedAtUtc,
+            refreshCompletedAtUtc);
         var secondRefreshToken = GetCookie(firstRefresh, "cav_refresh");
         Assert.NotEqual(firstRefreshToken, secondRefreshToken);
 

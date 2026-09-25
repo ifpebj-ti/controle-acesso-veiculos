@@ -391,6 +391,7 @@ app.MapPost("/auth/login", async (
         result.SessionExpiresAtUtc!.Value);
     SetSessionDeadlineResponseHeaders(
         httpContext.Response,
+        result.SessionObservedAtUtc!.Value,
         result.SessionInactivityExpiresAtUtc!.Value,
         result.SessionExpiresAtUtc.Value);
 
@@ -458,6 +459,7 @@ app.MapPost("/auth/refresh", async (
         result.SessionExpiresAtUtc!.Value);
     SetSessionDeadlineResponseHeaders(
         httpContext.Response,
+        result.SessionObservedAtUtc!.Value,
         result.SessionInactivityExpiresAtUtc!.Value,
         result.SessionExpiresAtUtc.Value);
 
@@ -591,9 +593,12 @@ static void SetAuthenticationResponseHeaders(HttpResponse response)
 
 static void SetSessionDeadlineResponseHeaders(
     HttpResponse response,
+    DateTime observedAtUtc,
     DateTime inactivityExpiresAtUtc,
     DateTime absoluteExpiresAtUtc)
 {
+    response.Headers["X-Session-Server-Time"] =
+        observedAtUtc.ToString("O", CultureInfo.InvariantCulture);
     response.Headers["X-Session-Inactivity-Expires-At"] =
         inactivityExpiresAtUtc.ToString("O", CultureInfo.InvariantCulture);
     response.Headers["X-Session-Absolute-Expires-At"] =
