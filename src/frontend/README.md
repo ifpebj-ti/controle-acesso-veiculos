@@ -205,6 +205,12 @@ e não pode ser lido pelo frontend. O fluxo implementado:
   abas e tenta revogar a família no servidor sem manter a interface desbloqueada;
 - verifica novamente os prazos antes de qualquer renovação automática ou causada
   por HTTP 401, no retorno do background e depois de suspensão do dispositivo;
+- quando uma renovação vence com a aba em segundo plano, mantém somente em
+  memória a indicação pendente; retornar à aba não renova a sessão sozinho, e a
+  primeira atividade humana confiável solicita no máximo uma renovação;
+- ao retomar, reconcilia o prazo humano temporal salvo por outra aba sem ampliar
+  o limite absoluto conhecido, cobrindo mensagens entre abas perdidas durante a
+  suspensão;
 - trata alteração regressiva do relógio de forma conservadora e ignora uma
   resposta de renovação que chegue depois do encerramento da sessão.
 
