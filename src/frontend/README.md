@@ -208,6 +208,9 @@ e não pode ser lido pelo frontend. O fluxo implementado:
 - quando uma renovação vence com a aba em segundo plano, mantém somente em
   memória a indicação pendente; retornar à aba não renova a sessão sozinho, e a
   primeira atividade humana confiável solicita no máximo uma renovação;
+- diferencia o vencimento do access token do encerramento da sessão: um token
+  vencido é removido da memória, mas o monitor e a continuidade permanecem
+  válidos até o limite de inatividade ou o limite absoluto;
 - ao retomar, reconcilia o prazo humano temporal salvo por outra aba sem ampliar
   o limite absoluto conhecido, cobrindo mensagens entre abas perdidas durante a
   suspensão;
