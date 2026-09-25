@@ -70,6 +70,7 @@ const renewalLeadMilliseconds = 60_000;
 const renewalRetryMilliseconds = 15_000;
 
 class BackgroundSessionRefreshError extends Error {}
+class PendingHumanActivityError extends Error {}
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(initialState);
@@ -85,7 +86,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const endSessionRef = useRef<
     (reason: SessionEndReason, broadcast: boolean) => void
   >(() => undefined);
-  const refreshAccessTokenRef = useRef<() => Promise<string>>(async () => {
+  const refreshAccessTokenRef = useRef<
+    (authorizedByHumanActivity?: boolean) => Promise<string>
+  >(async () => {
     throw new Error("Session refresh is not initialized.");
   });
 
@@ -149,6 +152,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         renewalPending.current = true;
         return;
       }
+      if (renewalPending.current) return;
       void refreshAccessTokenRef.current().catch(() => undefined);
     }, delay);
   }, []);
@@ -191,10 +195,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       clearTimers();
       currentExpiration.current = Date.now() + expiresInMilliseconds;
       setApiAccessToken(session.accessToken);
-      expirationTimer.current = window.setTimeout(
-        () => endSessionRef.current("expired", false),
-        expiresInMilliseconds,
-      );
+      expirationTimer.current = window.setTimeout(() => {
+        expirationTimer.current = null;
+        renewalPending.current = true;
+        setApiAccessToken(null);
+      }, expiresInMilliseconds);
       const leadTime = Math.min(
         renewalLeadMilliseconds,
         Math.max(1_000, Math.floor(expiresInMilliseconds / 2)),
@@ -206,6 +211,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             renewalPending.current = true;
             return;
           }
+          if (renewalPending.current) return;
           void refreshAccessTokenRef.current().catch(() => undefined);
         },
         Math.max(0, expiresInMilliseconds - leadTime),
@@ -221,12 +227,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [clearTimers],
   );
 
-  const requestRefresh = useCallback(() => {
+  const requestRefresh = useCallback((authorizedByHumanActivity = false) => {
     if (refreshInFlight.current) return refreshInFlight.current;
+    if (document.visibilityState !== "visible") {
+      return Promise.reject(new BackgroundSessionRefreshError());
+    }
+    if (renewalPending.current && !authorizedByHumanActivity) {
+      return Promise.reject(new PendingHumanActivityError());
+    }
 
     const request = runWithSessionRefreshLock(async () => {
       if (document.visibilityState !== "visible") {
         throw new BackgroundSessionRefreshError();
+      }
+      if (renewalPending.current && !authorizedByHumanActivity) {
+        throw new PendingHumanActivityError();
       }
       if (!inactivityMonitor.current?.checkNow()) {
         throw new SessionInactiveError();
@@ -241,44 +256,51 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return request;
   }, []);
 
-  const refreshAccessToken = useCallback(async () => {
-    const generation = sessionGeneration.current;
+  const refreshAccessToken = useCallback(
+    async (authorizedByHumanActivity = false) => {
+      const generation = sessionGeneration.current;
 
-    try {
-      const session = await requestRefresh();
-      if (generation !== sessionGeneration.current) {
-        throw new Error("Session changed while refresh was in progress.");
+      try {
+        const session = await requestRefresh(authorizedByHumanActivity);
+        if (generation !== sessionGeneration.current) {
+          throw new Error("Session changed while refresh was in progress.");
+        }
+        if (mounted.current) applySession(session, true);
+        else setApiAccessToken(session.accessToken);
+        return session.accessToken;
+      } catch (error) {
+        const rejected =
+          axios.isAxiosError(error) && error.response?.status === 401;
+        const invalidContract = error instanceof AuthenticationContractError;
+        const inactive = error instanceof SessionInactiveError;
+        const backgrounded = error instanceof BackgroundSessionRefreshError;
+        const awaitingHumanActivity =
+          error instanceof PendingHumanActivityError;
+
+        if (inactive) {
+          // The inactivity monitor already cleared and revoked the session.
+        } else if (backgrounded) {
+          // Background tabs cannot keep a shared tablet session alive.
+          renewalPending.current = true;
+        } else if (awaitingHumanActivity) {
+          // Automatic requests cannot bypass a renewal awaiting human activity.
+        } else if (rejected || invalidContract) {
+          if (mounted.current) endSession("unauthorized", true);
+          else setApiAccessToken(null);
+        } else if (mounted.current) {
+          setState((current) =>
+            current.status === "authenticated"
+              ? { ...current, sessionNotice: "renewal-unavailable" }
+              : current,
+          );
+          scheduleRenewalRetry();
+        }
+
+        throw error;
       }
-      if (mounted.current) applySession(session, true);
-      else setApiAccessToken(session.accessToken);
-      return session.accessToken;
-    } catch (error) {
-      const rejected =
-        axios.isAxiosError(error) && error.response?.status === 401;
-      const invalidContract = error instanceof AuthenticationContractError;
-      const inactive = error instanceof SessionInactiveError;
-      const backgrounded = error instanceof BackgroundSessionRefreshError;
-
-      if (inactive) {
-        // The inactivity monitor already cleared and revoked the session.
-      } else if (backgrounded) {
-        // Background tabs cannot keep a shared tablet session alive.
-        renewalPending.current = true;
-      } else if (rejected || invalidContract) {
-        if (mounted.current) endSession("unauthorized", true);
-        else setApiAccessToken(null);
-      } else if (mounted.current) {
-        setState((current) =>
-          current.status === "authenticated"
-            ? { ...current, sessionNotice: "renewal-unavailable" }
-            : current,
-        );
-        scheduleRenewalRetry();
-      }
-
-      throw error;
-    }
-  }, [applySession, endSession, requestRefresh, scheduleRenewalRetry]);
+    },
+    [applySession, endSession, requestRefresh, scheduleRenewalRetry],
+  );
 
   useEffect(() => {
     endSessionRef.current = endSession;
@@ -395,7 +417,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               expiration <= Date.now() + renewalLeadMilliseconds);
           if (shouldRenew && !refreshInFlight.current) {
             renewalPending.current = false;
-            void refreshAccessTokenRef.current().catch(() => undefined);
+            void refreshAccessTokenRef.current(true).catch(() => undefined);
           }
         }
       },
@@ -406,9 +428,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           endSession("inactive", true);
           return;
         }
-        if (expiration === null || expiration <= Date.now()) {
+        if (expiration === null) {
           endSession("expired", true);
           return;
+        }
+        if (expiration <= Date.now()) {
+          setApiAccessToken(null);
+          renewalPending.current = true;
         }
         try {
           const canonical =
