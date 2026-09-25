@@ -190,7 +190,21 @@ e não pode ser lido pelo frontend. O fluxo implementado:
 - redireciona qualquer rota operacional digitada durante o primeiro acesso para
   a troca obrigatória, sem renderizar menus, painéis ou ações de negócio;
 - usa bloqueio exclusivo do navegador para coordenar renovações entre abas e
-  comunica somente o encerramento da sessão, sem transmitir tokens.
+  comunica somente eventos de encerramento e metadados temporais de atividade,
+  sem transmitir tokens, credenciais, e-mail ou identidade;
+- valida os prazos de inatividade e duração absoluta publicados pelo servidor
+  nos cabeçalhos de login e renovação, rejeitando respostas ausentes, inválidas
+  ou incoerentes;
+- considera atividade somente uma interação humana real por teclado, ponteiro ou
+  toque; movimento do mouse, foco, mudança de aba, timers, renderização, HTTP e
+  renovação automática não reiniciam o período local;
+- encerra a sessão após 15 minutos sem atividade ou ao atingir o limite absoluto,
+  limpa imediatamente token e identidade da memória, coordena o bloqueio entre
+  abas e tenta revogar a família no servidor sem manter a interface desbloqueada;
+- verifica novamente os prazos antes de qualquer renovação automática ou causada
+  por HTTP 401, no retorno do background e depois de suspensão do dispositivo;
+- trata alteração regressiva do relógio de forma conservadora e ignora uma
+  resposta de renovação que chegue depois do encerramento da sessão.
 
 Nenhum token é colocado em URL, estado de rota, log, `localStorage` ou
 `sessionStorage`. O backend usa resposta 401 genérica para credencial incorreta,
@@ -202,6 +216,11 @@ A coordenação entre abas depende da Web Locks API. O navegador-alvo Brave/Chro
 possui esse recurso; em um navegador sem suporte, a restauração e a renovação
 falham de modo seguro e a pessoa é orientada a entrar novamente, sem persistir ou
 compartilhar credenciais como alternativa.
+
+A política de 15 minutos e o limite absoluto de 12 horas pertencem à Issue #268.
+A validação no tablet compartilhado da Portaria continua necessária antes de
+considerar o comportamento homologado institucionalmente. O logout explícito
+permanece obrigatório na troca de operador.
 
 ## Tecnologias
 
