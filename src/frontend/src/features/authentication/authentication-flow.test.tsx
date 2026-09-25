@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
@@ -16,6 +17,10 @@ import {
   setApiUnauthorizedHandler,
 } from "../../services/api";
 import { SessionProvider } from "./session/SessionProvider";
+import {
+  sessionContinuityStorageKey,
+  writeSessionContinuity,
+} from "./session/sessionContinuity";
 import { useAuthenticatedSession } from "./session/useSession";
 import type { AuthenticatedSession, ProfileName } from "./types";
 
@@ -29,6 +34,7 @@ function sessionFor(
     accessToken: "test-only-access-token",
     expiresAtUtc: new Date(Date.now() + expiresInMilliseconds).toISOString(),
     inactivityExpiresAtUtc: new Date(Date.now() + 15 * 60_000).toISOString(),
+    serverTimeUtc: new Date(Date.now()).toISOString(),
     user: {
       email: "operator@example.test",
       id: 42,
@@ -48,13 +54,18 @@ function responseFor(
     expiresInMilliseconds,
     requiresPasswordChange,
   );
-  const { absoluteExpiresAtUtc, inactivityExpiresAtUtc, ...responseData } =
-    data;
+  const {
+    absoluteExpiresAtUtc,
+    inactivityExpiresAtUtc,
+    serverTimeUtc,
+    ...responseData
+  } = data;
   return {
     data: responseData,
     headers: {
       "x-session-absolute-expires-at": absoluteExpiresAtUtc,
       "x-session-inactivity-expires-at": inactivityExpiresAtUtc,
+      "x-session-server-time": serverTimeUtc,
     },
   };
 }
@@ -133,8 +144,9 @@ function AppFrame() {
 
 function renderAuthenticationFlow(
   initialEntry: string | { pathname: string; state?: unknown } = "/login",
+  strictMode = false,
 ) {
-  return render(
+  const application = (
     <SessionProvider>
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
@@ -149,7 +161,10 @@ function renderAuthenticationFlow(
           </Route>
         </Routes>
       </MemoryRouter>
-    </SessionProvider>,
+    </SessionProvider>
+  );
+  return render(
+    strictMode ? <StrictMode>{application}</StrictMode> : application,
   );
 }
 
@@ -164,6 +179,8 @@ async function submitCredentials() {
 }
 
 beforeEach(() => {
+  window.localStorage.clear();
+  window.sessionStorage.clear();
   Object.defineProperty(navigator, "locks", {
     configurable: true,
     value: {
@@ -183,10 +200,22 @@ afterEach(() => {
   setApiAccessToken(null);
   setApiSessionRefreshHandler(null);
   setApiUnauthorizedHandler(null);
+  window.localStorage.clear();
+  window.sessionStorage.clear();
 });
+
+function seedRestorableSession() {
+  const now = Date.now();
+  writeSessionContinuity({
+    absoluteDeadlineEpochMilliseconds: now + 12 * 60 * 60_000,
+    humanDeadlineEpochMilliseconds: now + 15 * 60_000,
+    observedAtEpochMilliseconds: now,
+  });
+}
 
 describe("authentication flow", () => {
   it("restores a renewable session before rendering protected content", async () => {
+    seedRestorableSession();
     vi.mocked(api.get).mockResolvedValue({
       data: { requestToken: "test-only-csrf-token" },
     });
@@ -209,6 +238,86 @@ describe("authentication flow", () => {
     });
   });
 
+  it("does not duplicate refresh or continuity writes during a StrictMode remount", async () => {
+    seedRestorableSession();
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    vi.mocked(api.get).mockResolvedValue({
+      data: { requestToken: "test-only-csrf-token" },
+    });
+    const post = vi
+      .spyOn(api, "post")
+      .mockResolvedValue(responseFor("Porteiro"));
+
+    renderAuthenticationFlow("/visao-geral", true);
+
+    expect(
+      await screen.findByText("operator@example.test — Porteiro"),
+    ).toBeInTheDocument();
+    expect(
+      post.mock.calls.filter(([url]) => url === "/auth/refresh"),
+    ).toHaveLength(1);
+    expect(
+      setItem.mock.calls.filter(([key]) => key === sessionContinuityStorageKey),
+    ).toHaveLength(1);
+  });
+
+  it("does not request refresh when temporal continuity metadata is absent", async () => {
+    const post = vi.spyOn(api, "post");
+
+    renderAuthenticationFlow("/visao-geral");
+
+    expect(
+      await screen.findByRole("heading", { name: "Bem-vindo," }),
+    ).toBeInTheDocument();
+    expect(post.mock.calls.some(([url]) => url === "/auth/refresh")).toBe(
+      false,
+    );
+  });
+
+  it("does not request refresh with expired continuity metadata", async () => {
+    const now = Date.now();
+    window.localStorage.setItem(
+      sessionContinuityStorageKey,
+      JSON.stringify({
+        absoluteDeadlineEpochMilliseconds: now + 60_000,
+        humanDeadlineEpochMilliseconds: now - 1,
+        observedAtEpochMilliseconds: now - 15 * 60_000,
+        version: 1,
+      }),
+    );
+    const post = vi.spyOn(api, "post");
+
+    renderAuthenticationFlow("/visao-geral");
+
+    expect(
+      await screen.findByRole("heading", { name: "Bem-vindo," }),
+    ).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+    expect(window.localStorage).toHaveLength(0);
+  });
+
+  it("does not restore a discarded application while it is in the background", async () => {
+    seedRestorableSession();
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "hidden",
+    });
+    const post = vi.spyOn(api, "post");
+
+    try {
+      renderAuthenticationFlow("/visao-geral");
+      expect(
+        await screen.findByRole("heading", { name: "Bem-vindo," }),
+      ).toBeInTheDocument();
+      expect(post).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value: "visible",
+      });
+    }
+  });
+
   it("uses the identity and profile returned by the API", async () => {
     const post = vi
       .spyOn(api, "post")
@@ -228,7 +337,9 @@ describe("authentication flow", () => {
       },
       { skipSessionRefresh: true },
     );
-    expect(window.localStorage).toHaveLength(0);
+    const continuity = window.localStorage.getItem(sessionContinuityStorageKey);
+    expect(continuity).not.toBeNull();
+    expect(continuity).not.toMatch(/token|email|profile|password|user/i);
     expect(window.sessionStorage).toHaveLength(0);
   });
 
@@ -274,6 +385,7 @@ describe("authentication flow", () => {
   });
 
   it("restores a restricted session into password change before rendering a manual operational URL", async () => {
+    seedRestorableSession();
     vi.mocked(api.get).mockResolvedValue({
       data: { requestToken: "test-only-csrf-token" },
     });
@@ -404,6 +516,7 @@ describe("authentication flow", () => {
     expect(
       await screen.findByRole("heading", { name: "Bem-vindo," }),
     ).toBeInTheDocument();
+    expect(window.localStorage).toHaveLength(0);
   });
 
   it("shows an explicit access denied state for an incompatible profile", async () => {
@@ -439,6 +552,7 @@ describe("authentication flow", () => {
     expect(
       await screen.findByRole("heading", { name: "Bem-vindo," }),
     ).toBeInTheDocument();
+    expect(window.localStorage).toHaveLength(0);
   });
 
   it("clears the local session and announces a completed password change", async () => {
@@ -489,12 +603,7 @@ describe("authentication flow", () => {
     vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
     try {
-      vi.mocked(api.get)
-        .mockRejectedValueOnce({
-          isAxiosError: true,
-          response: { status: 401 },
-        })
-        .mockRejectedValue(new Error("network unavailable"));
+      vi.mocked(api.get).mockRejectedValue(new Error("network unavailable"));
       vi.spyOn(api, "post").mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
@@ -530,12 +639,7 @@ describe("authentication flow", () => {
     vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
     try {
-      vi.mocked(api.get)
-        .mockRejectedValueOnce({
-          isAxiosError: true,
-          response: { status: 401 },
-        })
-        .mockRejectedValue(new Error("connection failed"));
+      vi.mocked(api.get).mockRejectedValue(new Error("connection failed"));
       vi.spyOn(api, "post").mockResolvedValue(responseFor("Vigilante", 60_000));
 
       renderAuthenticationFlow();
@@ -574,17 +678,56 @@ describe("authentication flow", () => {
     }
   });
 
+  it("does not renew automatically while an authenticated tab is in the background", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
+
+    try {
+      vi.mocked(api.get).mockResolvedValue({
+        data: { requestToken: "test-only-csrf-token" },
+      });
+      const post = vi
+        .spyOn(api, "post")
+        .mockResolvedValue(responseFor("Porteiro", 120_000));
+      renderAuthenticationFlow();
+      await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.change(screen.getByLabelText("E-mail:"), {
+        target: { value: "operator@example.test" },
+      });
+      fireEvent.change(screen.getByLabelText("Senha:"), {
+        target: { value: "test-only-password" },
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value: "hidden",
+      });
+
+      await act(async () => vi.advanceTimersByTimeAsync(60_000));
+
+      expect(
+        post.mock.calls.filter(([url]) => url === "/auth/refresh"),
+      ).toHaveLength(0);
+    } finally {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value: "visible",
+      });
+      vi.useRealTimers();
+    }
+  });
+
   it("ends and revokes the session after fifteen minutes without human activity", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
     try {
-      vi.mocked(api.get)
-        .mockRejectedValueOnce({
-          isAxiosError: true,
-          response: { status: 401 },
-        })
-        .mockResolvedValue({ data: { requestToken: "test-only-csrf-token" } });
+      vi.mocked(api.get).mockResolvedValue({
+        data: { requestToken: "test-only-csrf-token" },
+      });
       const post = vi
         .spyOn(api, "post")
         .mockImplementation(async (url) =>
@@ -624,6 +767,7 @@ describe("authentication flow", () => {
       expect(
         post.mock.calls.filter(([url]) => url === "/auth/logout"),
       ).toHaveLength(1);
+      expect(window.localStorage).toHaveLength(0);
     } finally {
       vi.useRealTimers();
     }
@@ -635,12 +779,9 @@ describe("authentication flow", () => {
     const refreshResponse = deferred<ReturnType<typeof responseFor>>();
 
     try {
-      vi.mocked(api.get)
-        .mockRejectedValueOnce({
-          isAxiosError: true,
-          response: { status: 401 },
-        })
-        .mockResolvedValue({ data: { requestToken: "test-only-csrf-token" } });
+      vi.mocked(api.get).mockResolvedValue({
+        data: { requestToken: "test-only-csrf-token" },
+      });
       const post = vi.spyOn(api, "post").mockImplementation(async (url) => {
         if (url === "/auth/login") {
           return responseFor("Vigilante", 15 * 60_000 + 30_000);

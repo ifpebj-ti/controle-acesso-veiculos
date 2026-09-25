@@ -10,7 +10,7 @@ import {
 afterEach(() => vi.restoreAllMocks());
 
 describe("human activity detection", () => {
-  it.each(["keydown", "pointerdown", "touchstart"])(
+  it.each(["keydown", "pointerdown", "touchstart", "click"])(
     "accepts trusted %s interaction",
     (type) => {
       expect(isRelevantHumanActivity({ isTrusted: true, type })).toBe(true);
@@ -33,6 +33,35 @@ describe("human activity detection", () => {
     ).toBe(false);
   });
 
+  it("accepts an assistive click but coalesces events from the same gesture", () => {
+    const documentAdd = vi.spyOn(document, "addEventListener");
+    const onActivity = vi.fn();
+    const now = vi.spyOn(Date, "now");
+    const unsubscribe = subscribeToHumanActivity({
+      onActivity,
+      onResume: vi.fn(),
+    });
+    const activityListener = (type: string) =>
+      documentAdd.mock.calls.find(
+        ([registeredType]) => registeredType === type,
+      )?.[1] as EventListener | undefined;
+
+    now.mockReturnValue(1_000);
+    activityListener("pointerdown")?.({
+      isTrusted: true,
+      type: "pointerdown",
+    } as Event);
+    now.mockReturnValue(1_100);
+    activityListener("click")?.({ isTrusted: true, type: "click" } as Event);
+    now.mockReturnValue(1_600);
+    activityListener("click")?.({ isTrusted: true, type: "click" } as Event);
+
+    expect(onActivity).toHaveBeenNthCalledWith(1, 1_000);
+    expect(onActivity).toHaveBeenNthCalledWith(2, 1_600);
+    expect(onActivity).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
+
   it("removes every listener when the subscription ends", () => {
     const documentAdd = vi.spyOn(document, "addEventListener");
     const documentRemove = vi.spyOn(document, "removeEventListener");
@@ -45,8 +74,8 @@ describe("human activity detection", () => {
     });
     unsubscribe();
 
-    expect(documentAdd).toHaveBeenCalledTimes(4);
-    expect(documentRemove).toHaveBeenCalledTimes(4);
+    expect(documentAdd).toHaveBeenCalledTimes(5);
+    expect(documentRemove).toHaveBeenCalledTimes(5);
     expect(windowAdd).toHaveBeenCalledTimes(1);
     expect(windowRemove).toHaveBeenCalledTimes(1);
   });
@@ -112,6 +141,7 @@ describe("human activity detection", () => {
       "keydown",
       "pointerdown",
       "touchstart",
+      "click",
       "visibilitychange",
     ]) {
       expect(activeDocumentListeners.get(type)).toHaveLength(1);
@@ -122,6 +152,7 @@ describe("human activity detection", () => {
       "keydown",
       "pointerdown",
       "touchstart",
+      "click",
       "visibilitychange",
     ]) {
       expect(activeDocumentListeners.get(type)).toHaveLength(0);

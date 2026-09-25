@@ -29,6 +29,11 @@ import type {
 import { SessionContext, type SessionContextValue } from "./SessionContext";
 import { subscribeToHumanActivity } from "./humanActivity";
 import {
+  clearSessionContinuity,
+  readSessionContinuity,
+  writeSessionContinuity,
+} from "./sessionContinuity";
+import {
   broadcastHumanActivity,
   broadcastSessionEnded,
   runWithSessionRefreshLock,
@@ -63,6 +68,8 @@ const initialState: SessionState = {
 
 const renewalLeadMilliseconds = 60_000;
 const renewalRetryMilliseconds = 15_000;
+
+class BackgroundSessionRefreshError extends Error {}
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(initialState);
@@ -112,6 +119,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       sessionGeneration.current += 1;
       clearTimers();
       inactivityMonitor.current?.stop();
+      clearSessionContinuity();
       setApiAccessToken(null);
       setState({ ...unauthenticatedState, sessionEndReason: reason });
       if (broadcast) {
@@ -141,9 +149,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const applySession = useCallback(
     (session: AuthenticatedSession, refreshed = false) => {
       const expiresAt = Date.parse(session.expiresAtUtc);
-      const expiresInMilliseconds = expiresAt - Date.now();
+      const serverTime = Date.parse(session.serverTimeUtc);
+      const expiresInMilliseconds = expiresAt - serverTime;
 
-      if (!Number.isFinite(expiresAt) || expiresInMilliseconds <= 0) {
+      if (
+        !Number.isFinite(expiresAt) ||
+        !Number.isFinite(serverTime) ||
+        expiresInMilliseconds <= 0
+      ) {
         throw new AuthenticationContractError();
       }
 
@@ -151,11 +164,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const deadlines = {
           absoluteExpiresAtUtc: session.absoluteExpiresAtUtc,
           inactivityExpiresAtUtc: session.inactivityExpiresAtUtc,
+          serverTimeUtc: session.serverTimeUtc,
         };
         const monitor = inactivityMonitor.current;
         if (!monitor) throw new InvalidSessionDeadlineError();
         if (refreshed) monitor.reconcile(deadlines);
         else monitor.start(deadlines);
+        const snapshot = monitor.getSnapshot();
+        if (!snapshot || !writeSessionContinuity(snapshot)) {
+          throw new InvalidSessionDeadlineError();
+        }
       } catch (error) {
         if (error instanceof InvalidSessionDeadlineError) {
           throw new AuthenticationContractError();
@@ -164,7 +182,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
 
       clearTimers();
-      currentExpiration.current = expiresAt;
+      currentExpiration.current = Date.now() + expiresInMilliseconds;
       setApiAccessToken(session.accessToken);
       expirationTimer.current = window.setTimeout(
         () => endSessionRef.current("expired", false),
@@ -191,11 +209,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [clearTimers],
   );
 
-  const requestRefresh = useCallback((requireActiveSession = true) => {
+  const requestRefresh = useCallback(() => {
     if (refreshInFlight.current) return refreshInFlight.current;
 
     const request = runWithSessionRefreshLock(async () => {
-      if (requireActiveSession && !inactivityMonitor.current?.checkNow()) {
+      if (document.visibilityState !== "visible") {
+        throw new BackgroundSessionRefreshError();
+      }
+      if (!inactivityMonitor.current?.checkNow()) {
         throw new SessionInactiveError();
       }
       return refreshAuthentication();
@@ -224,9 +245,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         axios.isAxiosError(error) && error.response?.status === 401;
       const invalidContract = error instanceof AuthenticationContractError;
       const inactive = error instanceof SessionInactiveError;
+      const backgrounded = error instanceof BackgroundSessionRefreshError;
 
       if (inactive) {
         // The inactivity monitor already cleared and revoked the session.
+      } else if (backgrounded) {
+        // Background tabs cannot keep a shared tablet session alive.
       } else if (rejected || invalidContract) {
         if (mounted.current) endSession("unauthorized", true);
         else setApiAccessToken(null);
@@ -258,9 +282,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setApiUnauthorizedHandler(() => endSession("unauthorized", true));
     const unsubscribe = subscribeToSessionEvents((event) => {
       if (event.type === "human-activity") {
-        inactivityMonitor.current?.recordHumanActivity(
-          event.occurredAtEpochMilliseconds,
-        );
+        const monitor = inactivityMonitor.current;
+        if (monitor?.recordHumanActivity(event.occurredAtEpochMilliseconds)) {
+          const snapshot = monitor.getSnapshot();
+          if (snapshot) writeSessionContinuity(snapshot);
+        }
         return;
       }
       endSession(
@@ -270,25 +296,53 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
     let active = true;
     const restorationGeneration = sessionGeneration.current;
-
-    void requestRefresh(false)
-      .then((session) => {
-        if (active && restorationGeneration === sessionGeneration.current) {
-          applySession(session);
-        }
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        const noRenewableSession =
-          axios.isAxiosError(error) && error.response?.status === 401;
-        setApiAccessToken(null);
-        setState({
-          ...unauthenticatedState,
-          sessionEndReason: noRenewableSession
-            ? null
-            : "restoration-unavailable",
-        });
+    const continuity = readSessionContinuity();
+    let canRestore =
+      document.visibilityState === "visible" && continuity !== null;
+    const finishWithoutRestoration = () => {
+      queueMicrotask(() => {
+        if (active) setState(unauthenticatedState);
       });
+    };
+
+    if (!canRestore) {
+      setApiAccessToken(null);
+      finishWithoutRestoration();
+    } else {
+      try {
+        if (!inactivityMonitor.current || !continuity) {
+          throw new InvalidSessionDeadlineError();
+        }
+        inactivityMonitor.current.restore(continuity);
+      } catch {
+        canRestore = false;
+        clearSessionContinuity();
+        setApiAccessToken(null);
+        finishWithoutRestoration();
+      }
+    }
+
+    if (canRestore && inactivityMonitor.current?.checkNow()) {
+      void requestRefresh()
+        .then((session) => {
+          if (active && restorationGeneration === sessionGeneration.current) {
+            applySession(session, true);
+          }
+        })
+        .catch((error: unknown) => {
+          if (!active) return;
+          const noRenewableSession =
+            axios.isAxiosError(error) && error.response?.status === 401;
+          setApiAccessToken(null);
+          clearSessionContinuity();
+          setState({
+            ...unauthenticatedState,
+            sessionEndReason: noRenewableSession
+              ? null
+              : "restoration-unavailable",
+          });
+        });
+    }
 
     return () => {
       active = false;
@@ -318,14 +372,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             occurredAtEpochMilliseconds,
           )
         ) {
+          const snapshot = inactivityMonitor.current.getSnapshot();
+          if (snapshot) writeSessionContinuity(snapshot);
           broadcastHumanActivity(occurredAtEpochMilliseconds);
         }
       },
       onResume: () => {
-        inactivityMonitor.current?.checkNow();
+        const continuity = readSessionContinuity();
+        if (!continuity || !inactivityMonitor.current?.checkNow()) {
+          endSession("inactive", true);
+        }
       },
     });
-  }, [state.status]);
+  }, [endSession, state.status]);
 
   const login = useCallback(
     async (credentials: LoginCredentials) => {
