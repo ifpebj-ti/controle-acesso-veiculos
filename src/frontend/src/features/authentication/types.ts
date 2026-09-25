@@ -31,6 +31,7 @@ export interface AuthenticatedSession {
   accessToken: string;
   expiresAtUtc: string;
   inactivityExpiresAtUtc: string;
+  serverTimeUtc: string;
   user: AuthenticatedUser;
 }
 

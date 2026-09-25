@@ -14,7 +14,20 @@ import {
   sessionInactivityWindowMilliseconds,
 } from "./sessionInactivity";
 
-const startTime = Date.parse("2030-06-10T12:00:00Z");
+const serverTime = Date.parse("2030-06-10T12:00:00Z");
+
+function deadlines(
+  inactivityDuration = sessionInactivityWindowMilliseconds,
+  absoluteDuration = sessionAbsoluteLifetimeMilliseconds,
+) {
+  return {
+    absoluteExpiresAtUtc: new Date(serverTime + absoluteDuration).toISOString(),
+    inactivityExpiresAtUtc: new Date(
+      serverTime + inactivityDuration,
+    ).toISOString(),
+    serverTimeUtc: new Date(serverTime).toISOString(),
+  };
+}
 
 describe("session inactivity monitor", () => {
   let monotonic: number;
@@ -25,20 +38,13 @@ describe("session inactivity monitor", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     monotonic = 0;
-    wall = startTime;
+    wall = serverTime;
     expired = vi.fn();
     monitor = new SessionInactivityMonitor({
       clock: () => ({ monotonic, wall }),
       onExpired: expired,
     });
-    monitor.start({
-      absoluteExpiresAtUtc: new Date(
-        startTime + 12 * 60 * 60_000,
-      ).toISOString(),
-      inactivityExpiresAtUtc: new Date(
-        startTime + sessionInactivityWindowMilliseconds,
-      ).toISOString(),
-    });
+    monitor.start(deadlines());
   });
 
   afterEach(() => {
@@ -52,76 +58,101 @@ describe("session inactivity monitor", () => {
     if (runTimers) await vi.advanceTimersByTimeAsync(milliseconds);
   }
 
+  it.each([-10, 10])(
+    "keeps fifteen-minute and twelve-hour durations with a tablet clock offset by %s minutes",
+    (offsetMinutes) => {
+      monitor.start(deadlines());
+      wall = serverTime + offsetMinutes * 60_000;
+      monitor.start(deadlines());
+
+      expect(monitor.getSnapshot()).toEqual({
+        absoluteDeadlineEpochMilliseconds:
+          wall + sessionAbsoluteLifetimeMilliseconds,
+        humanDeadlineEpochMilliseconds:
+          wall + sessionInactivityWindowMilliseconds,
+        observedAtEpochMilliseconds: wall,
+      });
+    },
+  );
+
   it("renews the local period only after accepted human activity", async () => {
     await advance(10 * 60_000);
     expect(monitor.recordHumanActivity(wall)).toBe(true);
-
     await advance(5 * 60_000);
     expect(expired).not.toHaveBeenCalled();
     await advance(10 * 60_000);
-
     expect(expired).toHaveBeenCalledOnce();
   });
 
   it("expires after fifteen minutes without activity", async () => {
     await advance(sessionInactivityWindowMilliseconds);
-
     expect(expired).toHaveBeenCalledOnce();
     expect(monitor.checkNow()).toBe(false);
   });
 
   it("never extends beyond the absolute deadline", async () => {
-    monitor.start({
-      absoluteExpiresAtUtc: new Date(startTime + 20 * 60_000).toISOString(),
-      inactivityExpiresAtUtc: new Date(
-        startTime + sessionInactivityWindowMilliseconds,
-      ).toISOString(),
-    });
+    monitor.start(deadlines(15 * 60_000, 20 * 60_000));
     await advance(10 * 60_000);
     monitor.recordHumanActivity(wall);
     await advance(10 * 60_000);
-
     expect(expired).toHaveBeenCalledOnce();
   });
 
-  it("rejects an absolute deadline beyond twelve hours", () => {
+  it("rejects deadline durations beyond the server limits", () => {
     expect(() =>
-      monitor.start({
-        absoluteExpiresAtUtc: new Date(
-          startTime + sessionAbsoluteLifetimeMilliseconds + 1,
-        ).toISOString(),
-        inactivityExpiresAtUtc: new Date(
-          startTime + sessionInactivityWindowMilliseconds,
-        ).toISOString(),
-      }),
+      monitor.start(
+        deadlines(
+          sessionInactivityWindowMilliseconds,
+          sessionAbsoluteLifetimeMilliseconds + 1,
+        ),
+      ),
     ).toThrow("The session deadlines are invalid.");
   });
 
   it("does not let an automatic refresh extend human inactivity", async () => {
     await advance(14 * 60_000);
-    monitor.reconcile({
-      absoluteExpiresAtUtc: new Date(
-        startTime + 12 * 60 * 60_000,
-      ).toISOString(),
-      inactivityExpiresAtUtc: new Date(wall + 15 * 60_000).toISOString(),
-    });
+    const before = monitor.getSnapshot();
+    monitor.reconcile(deadlines());
+    const after = monitor.getSnapshot();
     await advance(60_000);
 
+    expect(before?.humanDeadlineEpochMilliseconds).toBe(
+      serverTime + sessionInactivityWindowMilliseconds,
+    );
+    expect(after?.humanDeadlineEpochMilliseconds).toBe(
+      before?.humanDeadlineEpochMilliseconds,
+    );
+    expect(expired).toHaveBeenCalledOnce();
+  });
+
+  it("restores only an unexpired continuity snapshot", async () => {
+    await advance(5 * 60_000, false);
+    monitor.restore({
+      absoluteDeadlineEpochMilliseconds:
+        serverTime + sessionAbsoluteLifetimeMilliseconds,
+      humanDeadlineEpochMilliseconds:
+        serverTime + sessionInactivityWindowMilliseconds,
+      observedAtEpochMilliseconds: serverTime,
+    });
+    await advance(10 * 60_000);
     expect(expired).toHaveBeenCalledOnce();
   });
 
   it("expires immediately after a suspended tab resumes past its deadline", async () => {
     await advance(16 * 60_000, false);
-
     expect(monitor.checkNow()).toBe(false);
     expect(expired).toHaveBeenCalledOnce();
   });
 
-  it("fails closed when the wall clock moves backwards", () => {
+  it("fails closed when the wall clock or monotonic clock regresses", () => {
     monotonic += 60_000;
     wall -= 60_000;
-
     expect(monitor.checkNow()).toBe(false);
     expect(expired).toHaveBeenCalledOnce();
+
+    monitor.start(deadlines());
+    monotonic = -1;
+    expect(monitor.checkNow()).toBe(false);
+    expect(expired).toHaveBeenCalledTimes(2);
   });
 });

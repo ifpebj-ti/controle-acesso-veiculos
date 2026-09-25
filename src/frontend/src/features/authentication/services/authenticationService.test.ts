@@ -22,6 +22,7 @@ const session = {
 const sessionHeaders = {
   "x-session-absolute-expires-at": "2030-06-10T23:00:00Z",
   "x-session-inactivity-expires-at": "2030-06-10T12:15:00Z",
+  "x-session-server-time": "2030-06-10T12:00:00Z",
 };
 
 afterEach(() => vi.restoreAllMocks());
@@ -39,6 +40,7 @@ describe("authentication session service", () => {
       ...session,
       absoluteExpiresAtUtc: sessionHeaders["x-session-absolute-expires-at"],
       inactivityExpiresAtUtc: sessionHeaders["x-session-inactivity-expires-at"],
+      serverTimeUtc: sessionHeaders["x-session-server-time"],
     });
     expect(api.defaults.withCredentials).toBe(true);
     expect(get).toHaveBeenCalledWith("/auth/csrf", {
@@ -123,18 +125,39 @@ describe("authentication session service", () => {
   it.each([
     {},
     {
+      "x-session-absolute-expires-at":
+        sessionHeaders["x-session-absolute-expires-at"],
       "x-session-inactivity-expires-at":
         sessionHeaders["x-session-inactivity-expires-at"],
+    },
+    {
+      "x-session-inactivity-expires-at":
+        sessionHeaders["x-session-inactivity-expires-at"],
+      "x-session-server-time": sessionHeaders["x-session-server-time"],
     },
     {
       "x-session-absolute-expires-at":
         sessionHeaders["x-session-absolute-expires-at"],
       "x-session-inactivity-expires-at": "not-a-timestamp",
+      "x-session-server-time": sessionHeaders["x-session-server-time"],
     },
     {
       "x-session-absolute-expires-at": "2030-06-10T12:10:00Z",
       "x-session-inactivity-expires-at":
         sessionHeaders["x-session-inactivity-expires-at"],
+      "x-session-server-time": sessionHeaders["x-session-server-time"],
+    },
+    {
+      ...sessionHeaders,
+      "x-session-server-time": "2030-06-10T12:16:00Z",
+    },
+    {
+      ...sessionHeaders,
+      "x-session-inactivity-expires-at": "2030-06-10T12:15:00.001Z",
+    },
+    {
+      ...sessionHeaders,
+      "x-session-absolute-expires-at": "2030-06-11T00:00:00.001Z",
     },
   ])(
     "rejects missing, invalid, or incoherent session deadline headers",

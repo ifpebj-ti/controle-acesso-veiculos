@@ -11,6 +11,8 @@ const sessionRequestConfig = {
   skipSessionRefresh: true,
 } as const;
 const logoutConfirmationTimeoutMilliseconds = 4_000;
+const inactivityWindowMilliseconds = 15 * 60 * 1_000;
+const absoluteLifetimeMilliseconds = 12 * 60 * 60 * 1_000;
 
 export class AuthenticationContractError extends Error {
   constructor() {
@@ -78,21 +80,31 @@ function parseAuthenticatedSession(
     headers,
     "X-Session-Absolute-Expires-At",
   );
+  const serverTimeUtc = readHeader(headers, "X-Session-Server-Time");
 
   if (
     !parsedResponse.success ||
     !isUtcTimestamp(inactivityExpiresAtUtc) ||
-    !isUtcTimestamp(absoluteExpiresAtUtc)
+    !isUtcTimestamp(absoluteExpiresAtUtc) ||
+    !isUtcTimestamp(serverTimeUtc)
   ) {
     throw new AuthenticationContractError();
   }
 
   const inactivityExpiresAt = Date.parse(inactivityExpiresAtUtc);
   const absoluteExpiresAt = Date.parse(absoluteExpiresAtUtc);
+  const serverTime = Date.parse(serverTimeUtc);
   const accessTokenExpiresAt = Date.parse(parsedResponse.data.expiresAtUtc);
+  const inactivityDuration = inactivityExpiresAt - serverTime;
+  const absoluteDuration = absoluteExpiresAt - serverTime;
 
   if (
+    inactivityDuration <= 0 ||
+    inactivityDuration > inactivityWindowMilliseconds ||
+    absoluteDuration <= 0 ||
+    absoluteDuration > absoluteLifetimeMilliseconds ||
     inactivityExpiresAt > absoluteExpiresAt ||
+    accessTokenExpiresAt <= serverTime ||
     accessTokenExpiresAt > absoluteExpiresAt
   ) {
     throw new AuthenticationContractError();
@@ -102,6 +114,7 @@ function parseAuthenticatedSession(
     ...parsedResponse.data,
     absoluteExpiresAtUtc,
     inactivityExpiresAtUtc,
+    serverTimeUtc,
   };
 }
 

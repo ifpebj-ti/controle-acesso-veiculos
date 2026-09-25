@@ -1,12 +1,19 @@
 export const sessionInactivityWindowMilliseconds = 15 * 60 * 1_000;
 export const sessionAbsoluteLifetimeMilliseconds = 12 * 60 * 60 * 1_000;
 
-const clockRollbackToleranceMilliseconds = 5_000;
+export const clockRollbackToleranceMilliseconds = 5_000;
 const maximumTimerDelayMilliseconds = 2_147_483_647;
 
 export interface SessionDeadlines {
   absoluteExpiresAtUtc: string;
   inactivityExpiresAtUtc: string;
+  serverTimeUtc: string;
+}
+
+export interface SessionContinuitySnapshot {
+  absoluteDeadlineEpochMilliseconds: number;
+  humanDeadlineEpochMilliseconds: number;
+  observedAtEpochMilliseconds: number;
 }
 
 interface ClockReading {
@@ -15,8 +22,8 @@ interface ClockReading {
 }
 
 interface SessionInactivityState {
-  absoluteDeadline: number;
-  inactivityDeadline: number;
+  absoluteDeadline: ClockReading;
+  humanDeadline: ClockReading;
   observation: ClockReading;
 }
 
@@ -54,40 +61,69 @@ export class SessionInactivityMonitor {
   }
 
   start(deadlines: SessionDeadlines) {
-    const parsed = parseDeadlines(deadlines);
-    const observation = this.clock();
+    const durations = parseDeadlineDurations(deadlines);
+    const observation = this.readValidClock();
+
+    this.state = {
+      absoluteDeadline: addDuration(observation, durations.absolute),
+      humanDeadline: addDuration(observation, durations.inactivity),
+      observation,
+    };
+    this.schedule();
+  }
+
+  restore(snapshot: SessionContinuitySnapshot) {
+    const observation = this.readValidClock();
+    const inactivityRemaining =
+      snapshot.humanDeadlineEpochMilliseconds - observation.wall;
+    const absoluteRemaining =
+      snapshot.absoluteDeadlineEpochMilliseconds - observation.wall;
 
     if (
-      parsed.inactivityDeadline <= observation.wall ||
-      parsed.absoluteDeadline <= observation.wall ||
-      parsed.absoluteDeadline >
-        observation.wall + sessionAbsoluteLifetimeMilliseconds
+      !isValidSnapshot(snapshot) ||
+      observation.wall + clockRollbackToleranceMilliseconds <
+        snapshot.observedAtEpochMilliseconds ||
+      inactivityRemaining <= 0 ||
+      absoluteRemaining <= 0 ||
+      inactivityRemaining > sessionInactivityWindowMilliseconds ||
+      absoluteRemaining > sessionAbsoluteLifetimeMilliseconds
     ) {
       throw new InvalidSessionDeadlineError();
     }
 
-    this.state = { ...parsed, observation };
+    this.state = {
+      absoluteDeadline: {
+        monotonic: observation.monotonic + absoluteRemaining,
+        wall: snapshot.absoluteDeadlineEpochMilliseconds,
+      },
+      humanDeadline: {
+        monotonic: observation.monotonic + inactivityRemaining,
+        wall: snapshot.humanDeadlineEpochMilliseconds,
+      },
+      observation,
+    };
     this.schedule();
   }
 
   reconcile(deadlines: SessionDeadlines) {
-    const parsed = parseDeadlines(deadlines);
+    const durations = parseDeadlineDurations(deadlines);
     if (!this.state) {
       this.start(deadlines);
       return;
     }
 
     if (!this.checkNow()) return;
-
-    this.state.absoluteDeadline = Math.min(
+    const observation = this.readValidClock();
+    this.state.absoluteDeadline = earlierReading(
       this.state.absoluteDeadline,
-      parsed.absoluteDeadline,
+      addDuration(observation, durations.absolute),
     );
-    this.state.inactivityDeadline = Math.min(
-      this.state.inactivityDeadline,
-      parsed.inactivityDeadline,
+    this.state.humanDeadline = earlierReading(
+      this.state.humanDeadline,
+      addDuration(observation, durations.inactivity),
       this.state.absoluteDeadline,
     );
+    this.state.observation = observation;
 
     if (!this.checkNow()) return;
     this.schedule();
@@ -96,7 +132,7 @@ export class SessionInactivityMonitor {
   recordHumanActivity(activityAtEpochMilliseconds = this.clock().wall) {
     if (!this.state || !this.checkNow()) return false;
 
-    const observation = this.clock();
+    const observation = this.readValidClock();
     const oldestAcceptedActivity =
       observation.wall - sessionInactivityWindowMilliseconds;
     if (
@@ -108,13 +144,14 @@ export class SessionInactivityMonitor {
       return false;
     }
 
-    const nextDeadline = Math.min(
-      activityAtEpochMilliseconds + sessionInactivityWindowMilliseconds,
-      this.state.absoluteDeadline,
+    const activityOffset = activityAtEpochMilliseconds - observation.wall;
+    const candidate = addDuration(
+      observation,
+      activityOffset + sessionInactivityWindowMilliseconds,
     );
-    this.state.inactivityDeadline = Math.max(
-      this.state.inactivityDeadline,
-      nextDeadline,
+    this.state.humanDeadline = earlierReading(
+      laterReading(candidate, this.state.humanDeadline),
+      this.state.absoluteDeadline,
     );
     this.state.observation = observation;
     this.schedule();
@@ -124,7 +161,14 @@ export class SessionInactivityMonitor {
   checkNow() {
     if (!this.state) return false;
 
-    const observation = this.clock();
+    let observation: ClockReading;
+    try {
+      observation = this.readValidClock();
+    } catch {
+      this.expire();
+      return false;
+    }
+
     const wallElapsed = observation.wall - this.state.observation.wall;
     const monotonicElapsed =
       observation.monotonic - this.state.observation.monotonic;
@@ -133,8 +177,8 @@ export class SessionInactivityMonitor {
       monotonicElapsed < 0 ||
       wallElapsed + clockRollbackToleranceMilliseconds < monotonicElapsed;
     const deadlineReached =
-      observation.wall >= this.state.inactivityDeadline ||
-      observation.wall >= this.state.absoluteDeadline;
+      hasReached(observation, this.state.humanDeadline) ||
+      hasReached(observation, this.state.absoluteDeadline);
 
     if (clockMovedBackwards || deadlineReached) {
       this.expire();
@@ -150,12 +194,25 @@ export class SessionInactivityMonitor {
     this.state = null;
   }
 
-  getDeadlines() {
+  getSnapshot(): SessionContinuitySnapshot | null {
     if (!this.state) return null;
     return {
-      absoluteDeadline: this.state.absoluteDeadline,
-      inactivityDeadline: this.state.inactivityDeadline,
+      absoluteDeadlineEpochMilliseconds: this.state.absoluteDeadline.wall,
+      humanDeadlineEpochMilliseconds: this.state.humanDeadline.wall,
+      observedAtEpochMilliseconds: this.state.observation.wall,
     };
+  }
+
+  private readValidClock() {
+    const observation = this.clock();
+    if (
+      !Number.isFinite(observation.wall) ||
+      !Number.isFinite(observation.monotonic) ||
+      observation.monotonic < 0
+    ) {
+      throw new InvalidSessionDeadlineError();
+    }
+    return observation;
   }
 
   private expire() {
@@ -168,13 +225,16 @@ export class SessionInactivityMonitor {
     this.clearTimer();
     if (!this.state) return;
 
-    const nextDeadline = Math.min(
-      this.state.inactivityDeadline,
-      this.state.absoluteDeadline,
-    );
+    const observation = this.readValidClock();
     const delay = Math.min(
       maximumTimerDelayMilliseconds,
-      Math.max(0, nextDeadline - this.clock().wall),
+      Math.max(
+        0,
+        Math.min(
+          this.state.humanDeadline.monotonic - observation.monotonic,
+          this.state.absoluteDeadline.monotonic - observation.monotonic,
+        ),
+      ),
     );
     this.timer = setTimeout(() => {
       this.timer = null;
@@ -189,22 +249,74 @@ export class SessionInactivityMonitor {
   }
 }
 
-function parseDeadlines({
+function parseDeadlineDurations({
   absoluteExpiresAtUtc,
   inactivityExpiresAtUtc,
+  serverTimeUtc,
 }: SessionDeadlines) {
-  const absoluteDeadline = Date.parse(absoluteExpiresAtUtc);
+  const serverTime = Date.parse(serverTimeUtc);
   const inactivityDeadline = Date.parse(inactivityExpiresAtUtc);
+  const absoluteDeadline = Date.parse(absoluteExpiresAtUtc);
+  const inactivity = inactivityDeadline - serverTime;
+  const absolute = absoluteDeadline - serverTime;
 
   if (
-    !Number.isFinite(absoluteDeadline) ||
-    !Number.isFinite(inactivityDeadline) ||
-    inactivityDeadline > absoluteDeadline
+    !Number.isFinite(serverTime) ||
+    !Number.isFinite(inactivity) ||
+    !Number.isFinite(absolute) ||
+    inactivity <= 0 ||
+    inactivity > sessionInactivityWindowMilliseconds ||
+    absolute <= 0 ||
+    absolute > sessionAbsoluteLifetimeMilliseconds ||
+    inactivity > absolute
   ) {
     throw new InvalidSessionDeadlineError();
   }
 
-  return { absoluteDeadline, inactivityDeadline };
+  return { absolute, inactivity };
+}
+
+function isValidSnapshot(snapshot: SessionContinuitySnapshot) {
+  return (
+    Number.isFinite(snapshot.absoluteDeadlineEpochMilliseconds) &&
+    Number.isFinite(snapshot.humanDeadlineEpochMilliseconds) &&
+    Number.isFinite(snapshot.observedAtEpochMilliseconds) &&
+    snapshot.observedAtEpochMilliseconds <
+      snapshot.humanDeadlineEpochMilliseconds &&
+    snapshot.humanDeadlineEpochMilliseconds <=
+      snapshot.absoluteDeadlineEpochMilliseconds &&
+    snapshot.humanDeadlineEpochMilliseconds -
+      snapshot.observedAtEpochMilliseconds <=
+      sessionInactivityWindowMilliseconds &&
+    snapshot.absoluteDeadlineEpochMilliseconds -
+      snapshot.observedAtEpochMilliseconds <=
+      sessionAbsoluteLifetimeMilliseconds
+  );
+}
+
+function addDuration(reading: ClockReading, duration: number): ClockReading {
+  return {
+    monotonic: reading.monotonic + duration,
+    wall: reading.wall + duration,
+  };
+}
+
+function earlierReading(...readings: ClockReading[]) {
+  return readings.reduce((earlier, candidate) =>
+    candidate.monotonic < earlier.monotonic ? candidate : earlier,
+  );
+}
+
+function laterReading(...readings: ClockReading[]) {
+  return readings.reduce((later, candidate) =>
+    candidate.monotonic > later.monotonic ? candidate : later,
+  );
+}
+
+function hasReached(current: ClockReading, deadline: ClockReading) {
+  return (
+    current.monotonic >= deadline.monotonic || current.wall >= deadline.wall
+  );
 }
 
 function readClock(): ClockReading {
