@@ -192,12 +192,14 @@ e não pode ser lido pelo frontend. O fluxo implementado:
 - usa bloqueio exclusivo do navegador para coordenar renovações entre abas e
   comunica somente eventos de encerramento e metadados temporais de atividade,
   sem transmitir tokens, credenciais, e-mail ou identidade;
-- valida os prazos de inatividade e duração absoluta publicados pelo servidor
-  nos cabeçalhos de login e renovação, rejeitando respostas ausentes, inválidas
-  ou incoerentes;
-- considera atividade somente uma interação humana real por teclado, ponteiro ou
-  toque; movimento do mouse, foco, mudança de aba, timers, renderização, HTTP e
-  renovação automática não reiniciam o período local;
+- usa `X-Session-Server-Time` como referência comum para validar e converter em
+  durações relativas os prazos de inatividade e duração absoluta publicados nos
+  cabeçalhos de login e renovação; respostas ausentes, inválidas ou incoerentes
+  são rejeitadas sem depender de o relógio do tablet estar adiantado ou atrasado;
+- considera atividade somente uma interação humana real por teclado, ponteiro,
+  toque ou clique confiável de tecnologia assistiva; movimento do mouse, foco,
+  mudança de aba, timers, renderização, HTTP e renovação automática não reiniciam
+  o período local;
 - encerra a sessão após 15 minutos sem atividade ou ao atingir o limite absoluto,
   limpa imediatamente token e identidade da memória, coordena o bloqueio entre
   abas e tenta revogar a família no servidor sem manter a interface desbloqueada;
@@ -205,6 +207,14 @@ e não pode ser lido pelo frontend. O fluxo implementado:
   por HTTP 401, no retorno do background e depois de suspensão do dispositivo;
 - trata alteração regressiva do relógio de forma conservadora e ignora uma
   resposta de renovação que chegue depois do encerramento da sessão.
+
+Para impedir que o descarte e a restauração de uma aba recuperem uma sessão após
+o último prazo humano aceito, o frontend mantém no `localStorage` somente um
+registro versionado com prazos e observação temporal. Esse metadado não contém
+token, credencial, e-mail, perfil, identificador ou outro dado pessoal, é removido
+no encerramento da sessão e nunca concede autorização. Sua ausência, expiração,
+corrupção ou indício de regressão do relógio bloqueia a renovação; sessão,
+revogação e limite absoluto continuam sendo impostos pelo servidor.
 
 Nenhum token é colocado em URL, estado de rota, log, `localStorage` ou
 `sessionStorage`. O backend usa resposta 401 genérica para credencial incorreta,
