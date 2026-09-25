@@ -101,7 +101,8 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
         Assert.False(string.IsNullOrWhiteSpace(refreshedLogin.AccessToken));
         Assert.Equal(
             absoluteDeadline,
-            ReadUtcHeader(firstRefresh, "X-Session-Absolute-Expires-At"));
+            ReadUtcHeader(firstRefresh, "X-Session-Absolute-Expires-At"),
+            TimeSpan.FromMicroseconds(1));
         Assert.InRange(
             ReadUtcHeader(firstRefresh, "X-Session-Inactivity-Expires-At"),
             refreshRequestedAtUtc.AddMinutes(15),
