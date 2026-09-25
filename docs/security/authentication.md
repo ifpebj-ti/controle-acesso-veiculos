@@ -16,7 +16,7 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - A resposta de login válido expõe somente JWT, expiração, identificador, e-mail normalizado, perfil ativo e o indicador `requiresPasswordChange`; nome, hash, bloqueio e demais estados internos da conta não fazem parte do contrato.
 - O access token é assinado com HMAC-SHA256 e expira em 15 minutos.
 - O login também cria uma família de sessão com duração absoluta de 12 horas e inatividade máxima de 15 minutos. Os valores são configuráveis, mas esses padrões refletem a decisão institucional registrada na Issue #268.
-- Login e renovação informam os prazos calculados pelo servidor nos cabeçalhos `X-Session-Inactivity-Expires-At` e `X-Session-Absolute-Expires-At`, sem colocar credenciais no corpo ou nos cabeçalhos.
+- Login e renovação informam a referência temporal e os prazos calculados pelo servidor nos cabeçalhos `X-Session-Server-Time`, `X-Session-Inactivity-Expires-At` e `X-Session-Absolute-Expires-At`, sem colocar credenciais no corpo ou nos cabeçalhos. O cliente calcula durações a partir da mesma referência para não depender de o relógio do tablet estar perfeitamente sincronizado.
 - O token de renovação possui 256 bits gerados pelo gerador criptográfico do sistema, é opaco e é entregue somente em cookie `HttpOnly`, `SameSite=Strict` e de caminho restrito.
 - Somente o SHA-256 do token de renovação é persistido. O valor bruto não integra DTO, banco, auditoria nem log.
 - `POST /auth/refresh` rotaciona o token em uma transação, preserva a expiração absoluta e rejeita reutilização. A reutilização revoga toda a família conhecida.
