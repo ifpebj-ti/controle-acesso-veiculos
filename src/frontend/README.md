@@ -221,7 +221,8 @@ Para impedir que o descarte e a restauração de uma aba recuperem uma sessão a
 o último prazo humano aceito, o frontend mantém no `localStorage` somente um
 registro versionado com prazos e observação temporal. Esse metadado não contém
 token, credencial, e-mail, perfil, identificador ou outro dado pessoal, é removido
-no encerramento da sessão e nunca concede autorização. Sua ausência, expiração,
+no encerramento da sessão — não no simples vencimento do access token — e nunca
+concede autorização. Sua ausência, expiração,
 corrupção ou indício de regressão do relógio bloqueia a renovação; sessão,
 revogação e limite absoluto continuam sendo impostos pelo servidor.
 
