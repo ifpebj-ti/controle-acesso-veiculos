@@ -129,6 +129,60 @@ export class SessionInactivityMonitor {
     this.schedule();
   }
 
+  reconcileSnapshot(snapshot: SessionContinuitySnapshot) {
+    if (!this.state) throw new InvalidSessionDeadlineError();
+
+    const observation = this.readValidClock();
+    const wallElapsed = observation.wall - this.state.observation.wall;
+    const monotonicElapsed =
+      observation.monotonic - this.state.observation.monotonic;
+    const snapshotHumanRemaining =
+      snapshot.humanDeadlineEpochMilliseconds - observation.wall;
+    const snapshotAbsoluteRemaining =
+      snapshot.absoluteDeadlineEpochMilliseconds - observation.wall;
+    const absoluteDeadlineEpochMilliseconds = Math.min(
+      this.state.absoluteDeadline.wall,
+      snapshot.absoluteDeadlineEpochMilliseconds,
+    );
+    const absoluteRemaining =
+      absoluteDeadlineEpochMilliseconds - observation.wall;
+
+    if (
+      !isValidSnapshot(snapshot) ||
+      wallElapsed < -clockRollbackToleranceMilliseconds ||
+      monotonicElapsed < 0 ||
+      wallElapsed + clockRollbackToleranceMilliseconds < monotonicElapsed ||
+      observation.wall + clockRollbackToleranceMilliseconds <
+        snapshot.observedAtEpochMilliseconds ||
+      snapshotHumanRemaining <= 0 ||
+      snapshotHumanRemaining > sessionInactivityWindowMilliseconds ||
+      snapshotAbsoluteRemaining <= 0 ||
+      snapshotAbsoluteRemaining > sessionAbsoluteLifetimeMilliseconds ||
+      absoluteRemaining <= 0
+    ) {
+      throw new InvalidSessionDeadlineError();
+    }
+
+    const humanDeadlineEpochMilliseconds = Math.min(
+      Math.max(
+        this.state.humanDeadline.wall,
+        snapshot.humanDeadlineEpochMilliseconds,
+      ),
+      absoluteDeadlineEpochMilliseconds,
+    );
+    const humanRemaining = humanDeadlineEpochMilliseconds - observation.wall;
+
+    if (humanRemaining <= 0) throw new InvalidSessionDeadlineError();
+
+    this.state = {
+      absoluteDeadline: addDuration(observation, absoluteRemaining),
+      humanDeadline: addDuration(observation, humanRemaining),
+      observation,
+    };
+    this.schedule();
+    return this.getSnapshot();
+  }
+
   recordHumanActivity(activityAtEpochMilliseconds = this.clock().wall) {
     if (!this.state || !this.checkNow()) return false;
 

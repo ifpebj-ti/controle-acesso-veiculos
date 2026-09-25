@@ -138,6 +138,60 @@ describe("session inactivity monitor", () => {
     expect(expired).toHaveBeenCalledOnce();
   });
 
+  it("accepts a newer valid human deadline persisted by another tab", async () => {
+    await advance(10 * 60_000, false);
+
+    const canonical = monitor.reconcileSnapshot({
+      absoluteDeadlineEpochMilliseconds:
+        serverTime + sessionAbsoluteLifetimeMilliseconds,
+      humanDeadlineEpochMilliseconds:
+        wall + sessionInactivityWindowMilliseconds,
+      observedAtEpochMilliseconds: wall,
+    });
+
+    expect(canonical?.humanDeadlineEpochMilliseconds).toBe(
+      wall + sessionInactivityWindowMilliseconds,
+    );
+    await advance(sessionInactivityWindowMilliseconds);
+    expect(expired).toHaveBeenCalledOnce();
+  });
+
+  it("never lets another tab's snapshot extend the known absolute deadline", async () => {
+    monitor.start(deadlines(15 * 60_000, 20 * 60_000));
+    await advance(5 * 60_000, false);
+
+    const canonical = monitor.reconcileSnapshot({
+      absoluteDeadlineEpochMilliseconds: wall + 30 * 60_000,
+      humanDeadlineEpochMilliseconds: wall + 15 * 60_000,
+      observedAtEpochMilliseconds: wall,
+    });
+
+    expect(canonical?.absoluteDeadlineEpochMilliseconds).toBe(
+      serverTime + 20 * 60_000,
+    );
+  });
+
+  it("rejects an expired or corrupt snapshot from another tab", async () => {
+    await advance(16 * 60_000, false);
+
+    expect(() =>
+      monitor.reconcileSnapshot({
+        absoluteDeadlineEpochMilliseconds:
+          serverTime + sessionAbsoluteLifetimeMilliseconds,
+        humanDeadlineEpochMilliseconds:
+          serverTime + sessionInactivityWindowMilliseconds,
+        observedAtEpochMilliseconds: serverTime,
+      }),
+    ).toThrow("The session deadlines are invalid.");
+    expect(() =>
+      monitor.reconcileSnapshot({
+        absoluteDeadlineEpochMilliseconds: Number.NaN,
+        humanDeadlineEpochMilliseconds: wall + 60_000,
+        observedAtEpochMilliseconds: wall,
+      }),
+    ).toThrow("The session deadlines are invalid.");
+  });
+
   it("expires immediately after a suspended tab resumes past its deadline", async () => {
     await advance(16 * 60_000, false);
     expect(monitor.checkNow()).toBe(false);

@@ -75,6 +75,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(initialState);
   const expirationTimer = useRef<number | null>(null);
   const refreshInFlight = useRef<Promise<AuthenticatedSession> | null>(null);
+  const renewalPending = useRef(false);
   const renewalTimer = useRef<number | null>(null);
   const sessionGeneration = useRef(0);
   const currentExpiration = useRef<number | null>(null);
@@ -112,6 +113,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       renewalTimer.current = null;
     }
     currentExpiration.current = null;
+    renewalPending.current = false;
   }, []);
 
   const endSession = useCallback(
@@ -142,6 +144,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       currentExpiration.current - Date.now() - 1_000,
     );
     renewalTimer.current = window.setTimeout(() => {
+      renewalTimer.current = null;
+      if (document.visibilityState !== "visible") {
+        renewalPending.current = true;
+        return;
+      }
       void refreshAccessTokenRef.current().catch(() => undefined);
     }, delay);
   }, []);
@@ -194,6 +201,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       );
       renewalTimer.current = window.setTimeout(
         () => {
+          renewalTimer.current = null;
+          if (document.visibilityState !== "visible") {
+            renewalPending.current = true;
+            return;
+          }
           void refreshAccessTokenRef.current().catch(() => undefined);
         },
         Math.max(0, expiresInMilliseconds - leadTime),
@@ -251,6 +263,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // The inactivity monitor already cleared and revoked the session.
       } else if (backgrounded) {
         // Background tabs cannot keep a shared tablet session alive.
+        renewalPending.current = true;
       } else if (rejected || invalidContract) {
         if (mounted.current) endSession("unauthorized", true);
         else setApiAccessToken(null);
@@ -375,11 +388,42 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           const snapshot = inactivityMonitor.current.getSnapshot();
           if (snapshot) writeSessionContinuity(snapshot);
           broadcastHumanActivity(occurredAtEpochMilliseconds);
+          const expiration = currentExpiration.current;
+          const shouldRenew =
+            renewalPending.current ||
+            (expiration !== null &&
+              expiration <= Date.now() + renewalLeadMilliseconds);
+          if (shouldRenew && !refreshInFlight.current) {
+            renewalPending.current = false;
+            void refreshAccessTokenRef.current().catch(() => undefined);
+          }
         }
       },
       onResume: () => {
         const continuity = readSessionContinuity();
-        if (!continuity || !inactivityMonitor.current?.checkNow()) {
+        const expiration = currentExpiration.current;
+        if (!continuity) {
+          endSession("inactive", true);
+          return;
+        }
+        if (expiration === null || expiration <= Date.now()) {
+          endSession("expired", true);
+          return;
+        }
+        try {
+          const canonical =
+            inactivityMonitor.current?.reconcileSnapshot(continuity);
+          if (!canonical || !writeSessionContinuity(canonical)) {
+            throw new InvalidSessionDeadlineError();
+          }
+          if (expiration <= Date.now() + renewalLeadMilliseconds) {
+            if (renewalTimer.current !== null) {
+              window.clearTimeout(renewalTimer.current);
+              renewalTimer.current = null;
+            }
+            renewalPending.current = true;
+          }
+        } catch {
           endSession("inactive", true);
         }
       },
