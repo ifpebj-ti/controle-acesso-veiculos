@@ -25,8 +25,10 @@ function sessionFor(
   requiresPasswordChange = false,
 ): AuthenticatedSession {
   return {
+    absoluteExpiresAtUtc: new Date(Date.now() + 12 * 60 * 60_000).toISOString(),
     accessToken: "test-only-access-token",
     expiresAtUtc: new Date(Date.now() + expiresInMilliseconds).toISOString(),
+    inactivityExpiresAtUtc: new Date(Date.now() + 15 * 60_000).toISOString(),
     user: {
       email: "operator@example.test",
       id: 42,
@@ -34,6 +36,37 @@ function sessionFor(
       requiresPasswordChange,
     },
   };
+}
+
+function responseFor(
+  profileName: ProfileName,
+  expiresInMilliseconds = 60_000,
+  requiresPasswordChange = false,
+) {
+  const data = sessionFor(
+    profileName,
+    expiresInMilliseconds,
+    requiresPasswordChange,
+  );
+  const { absoluteExpiresAtUtc, inactivityExpiresAtUtc, ...responseData } =
+    data;
+  return {
+    data: responseData,
+    headers: {
+      "x-session-absolute-expires-at": absoluteExpiresAtUtc,
+      "x-session-inactivity-expires-at": inactivityExpiresAtUtc,
+    },
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
 }
 
 function renderRestrictedApplication(
@@ -157,9 +190,9 @@ describe("authentication flow", () => {
     vi.mocked(api.get).mockResolvedValue({
       data: { requestToken: "test-only-csrf-token" },
     });
-    const post = vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("Porteiro"),
-    });
+    const post = vi
+      .spyOn(api, "post")
+      .mockResolvedValue(responseFor("Porteiro"));
 
     renderAuthenticationFlow("/visao-geral");
 
@@ -179,7 +212,7 @@ describe("authentication flow", () => {
   it("uses the identity and profile returned by the API", async () => {
     const post = vi
       .spyOn(api, "post")
-      .mockResolvedValue({ data: sessionFor("Porteiro") });
+      .mockResolvedValue(responseFor("Porteiro"));
 
     renderAuthenticationFlow();
     await submitCredentials();
@@ -200,9 +233,9 @@ describe("authentication flow", () => {
   });
 
   it("routes a restricted login directly to mandatory password change", async () => {
-    vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("Porteiro", 60_000, true),
-    });
+    vi.spyOn(api, "post").mockResolvedValue(
+      responseFor("Porteiro", 60_000, true),
+    );
 
     renderRestrictedApplication();
     await submitCredentials();
@@ -225,9 +258,9 @@ describe("authentication flow", () => {
   });
 
   it("routes a normal login to the requested application page", async () => {
-    vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("Porteiro", 60_000, false),
-    });
+    vi.spyOn(api, "post").mockResolvedValue(
+      responseFor("Porteiro", 60_000, false),
+    );
 
     renderRestrictedApplication();
     await submitCredentials();
@@ -244,9 +277,9 @@ describe("authentication flow", () => {
     vi.mocked(api.get).mockResolvedValue({
       data: { requestToken: "test-only-csrf-token" },
     });
-    vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("Vigilante", 60_000, true),
-    });
+    vi.spyOn(api, "post").mockResolvedValue(
+      responseFor("Vigilante", 60_000, true),
+    );
 
     renderRestrictedApplication("/acessos/novo");
 
@@ -265,7 +298,7 @@ describe("authentication flow", () => {
       .spyOn(api, "post")
       .mockImplementation(async (url) =>
         url === "/auth/login"
-          ? { data: sessionFor("SetorTransporte", 60_000, true) }
+          ? responseFor("SetorTransporte", 60_000, true)
           : { data: undefined },
       );
 
@@ -300,7 +333,7 @@ describe("authentication flow", () => {
       .spyOn(api, "post")
       .mockImplementation(async (url) =>
         url === "/auth/login"
-          ? { data: sessionFor("Administrador", 60_000, true) }
+          ? responseFor("Administrador", 60_000, true)
           : { data: undefined },
       );
 
@@ -374,9 +407,7 @@ describe("authentication flow", () => {
   });
 
   it("shows an explicit access denied state for an incompatible profile", async () => {
-    vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("SetorTransporte"),
-    });
+    vi.spyOn(api, "post").mockResolvedValue(responseFor("SetorTransporte"));
 
     renderAuthenticationFlow({
       pathname: "/login",
@@ -393,7 +424,7 @@ describe("authentication flow", () => {
   it("clears the local session on logout", async () => {
     vi.spyOn(api, "post").mockImplementation(async (url) =>
       url === "/auth/login"
-        ? { data: sessionFor("Administrador") }
+        ? responseFor("Administrador")
         : { data: undefined },
     );
 
@@ -411,9 +442,7 @@ describe("authentication flow", () => {
   });
 
   it("clears the local session and announces a completed password change", async () => {
-    vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("Porteiro"),
-    });
+    vi.spyOn(api, "post").mockResolvedValue(responseFor("Porteiro"));
 
     renderAuthenticationFlow();
     await submitCredentials();
@@ -435,9 +464,7 @@ describe("authentication flow", () => {
   });
 
   it("clears the local session even when server logout cannot be confirmed", async () => {
-    vi.spyOn(api, "post").mockResolvedValue({
-      data: sessionFor("Administrador"),
-    });
+    vi.spyOn(api, "post").mockResolvedValue(responseFor("Administrador"));
 
     renderAuthenticationFlow();
     await submitCredentials();
@@ -468,9 +495,7 @@ describe("authentication flow", () => {
           response: { status: 401 },
         })
         .mockRejectedValue(new Error("network unavailable"));
-      vi.spyOn(api, "post").mockResolvedValue({
-        data: sessionFor("Porteiro", 120_000),
-      });
+      vi.spyOn(api, "post").mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.change(screen.getByLabelText("E-mail:"), {
@@ -511,9 +536,7 @@ describe("authentication flow", () => {
           response: { status: 401 },
         })
         .mockRejectedValue(new Error("connection failed"));
-      vi.spyOn(api, "post").mockResolvedValue({
-        data: sessionFor("Vigilante", 60_000),
-      });
+      vi.spyOn(api, "post").mockResolvedValue(responseFor("Vigilante", 60_000));
 
       renderAuthenticationFlow();
       await act(async () => {
@@ -547,6 +570,119 @@ describe("authentication flow", () => {
         "login-status-message",
       );
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ends and revokes the session after fifteen minutes without human activity", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
+
+    try {
+      vi.mocked(api.get)
+        .mockRejectedValueOnce({
+          isAxiosError: true,
+          response: { status: 401 },
+        })
+        .mockResolvedValue({ data: { requestToken: "test-only-csrf-token" } });
+      const post = vi
+        .spyOn(api, "post")
+        .mockImplementation(async (url) =>
+          url === "/auth/login"
+            ? responseFor("Porteiro", 20 * 60_000)
+            : { data: undefined },
+        );
+
+      renderAuthenticationFlow();
+      await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.change(screen.getByLabelText("E-mail:"), {
+        target: { value: "operator@example.test" },
+      });
+      fireEvent.change(screen.getByLabelText("Senha:"), {
+        target: { value: "test-only-password" },
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      expect(
+        screen.getByText("operator@example.test — Porteiro"),
+      ).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15 * 60_000);
+      });
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+      );
+      expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
+        "aria-describedby",
+        "login-status-message",
+      );
+      expect(
+        post.mock.calls.filter(([url]) => url === "/auth/logout"),
+      ).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not restore a session when refresh finishes after inactivity", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
+    const refreshResponse = deferred<ReturnType<typeof responseFor>>();
+
+    try {
+      vi.mocked(api.get)
+        .mockRejectedValueOnce({
+          isAxiosError: true,
+          response: { status: 401 },
+        })
+        .mockResolvedValue({ data: { requestToken: "test-only-csrf-token" } });
+      const post = vi.spyOn(api, "post").mockImplementation(async (url) => {
+        if (url === "/auth/login") {
+          return responseFor("Vigilante", 15 * 60_000 + 30_000);
+        }
+        if (url === "/auth/refresh") return refreshResponse.promise;
+        return { data: undefined };
+      });
+
+      renderAuthenticationFlow();
+      await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.change(screen.getByLabelText("E-mail:"), {
+        target: { value: "operator@example.test" },
+      });
+      fireEvent.change(screen.getByLabelText("Senha:"), {
+        target: { value: "test-only-password" },
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(14 * 60_000 + 30_000);
+      });
+      expect(
+        post.mock.calls.filter(([url]) => url === "/auth/refresh"),
+      ).toHaveLength(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000);
+      });
+      refreshResponse.resolve(responseFor("Vigilante", 15 * 60_000));
+      await act(async () => vi.advanceTimersByTimeAsync(0));
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+      );
+      expect(
+        screen.queryByText("operator@example.test — Vigilante"),
+      ).not.toBeInTheDocument();
+    } finally {
+      refreshResponse.reject(new Error("test cleanup"));
       vi.useRealTimers();
     }
   });
