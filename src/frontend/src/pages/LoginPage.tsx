@@ -120,13 +120,13 @@ export function LoginPage() {
     .join(" ");
 
   return (
-    <main className="relative min-h-svh overflow-hidden bg-cream px-4 py-6 text-ink sm:px-8 sm:py-8">
+    <main className="login-page relative min-h-svh overflow-x-hidden bg-cream px-4 py-5 text-ink sm:px-8 sm:py-6">
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-ink" />
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-6xl flex-col items-center justify-center">
-        <Brand className="mx-auto mb-7 w-fit max-w-[17rem] sm:mb-10 sm:max-w-sm" />
+      <div className="login-shell relative z-10 mx-auto flex min-h-[calc(100svh-2.5rem)] w-full max-w-6xl flex-col items-center justify-center sm:min-h-[calc(100svh-3rem)]">
+        <Brand className="login-brand mx-auto mb-5 w-fit max-w-[17rem] sm:mb-6 sm:max-w-sm" />
 
-        <div className="login-scene relative mx-auto w-full max-w-[54rem] pb-20 sm:pb-28">
+        <div className="login-scene relative mx-auto w-full max-w-[54rem] pb-16 sm:pb-20">
           <div aria-hidden="true" className="login-route-marks">
             <svg
               className="login-route-loop"
@@ -148,19 +148,19 @@ export function LoginPage() {
             </svg>
           </div>
 
-          <section className="relative z-10 mx-auto flex min-h-[34rem] flex-col rounded-[2rem] border border-ink/75 bg-brand-soft px-6 py-10 shadow-[0_22px_65px_rgba(1,36,40,0.11)] sm:min-h-[40rem] sm:rounded-[2.5rem] sm:px-14 sm:py-14 lg:min-h-[42rem] lg:px-20 lg:pb-16 lg:pt-20">
+          <section className="login-card relative z-10 mx-auto flex min-h-[34rem] flex-col rounded-[2rem] border border-ink/75 bg-brand-soft px-6 py-10 shadow-[0_22px_65px_rgba(1,36,40,0.11)] sm:min-h-[36rem] sm:rounded-[2.5rem] sm:px-14 sm:py-10 lg:min-h-[38rem] lg:px-20 lg:py-12">
             <header className="text-center">
-              <h1 className="font-display text-4xl font-bold uppercase leading-none text-brand sm:text-6xl lg:text-[4.4rem]">
+              <h1 className="login-title font-display text-4xl font-bold uppercase leading-none text-brand sm:text-6xl lg:text-[4rem]">
                 Bem-vindo,
               </h1>
-              <p className="mx-auto mt-5 max-w-2xl text-xs font-medium uppercase leading-5 tracking-[0.08em] text-ink sm:text-sm">
+              <p className="login-subtitle mx-auto mt-4 max-w-2xl text-xs font-medium uppercase leading-5 tracking-[0.08em] text-ink sm:text-sm">
                 Ao sistema de acesso e cadastro de veículos no campus!
               </p>
             </header>
 
             {loginStatusMessage && (
               <div
-                className="mx-auto mt-7 w-full max-w-2xl rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-950"
+                className="login-status mx-auto mt-5 w-full max-w-2xl rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-950"
                 id="login-status-message"
                 role="alert"
               >
@@ -169,7 +169,7 @@ export function LoginPage() {
             )}
 
             <form
-              className="mx-auto mt-8 w-full max-w-2xl space-y-6 sm:mt-10 sm:space-y-8"
+              className="login-form mx-auto mt-6 flex w-full max-w-2xl flex-col gap-5 sm:mt-7 sm:gap-6"
               noValidate
               onSubmit={submitLogin}
             >
@@ -231,7 +231,7 @@ export function LoginPage() {
                 )}
               </div>
 
-              <div className="pt-2 text-center sm:pt-4">
+              <div className="login-submit pt-1 text-center sm:pt-2">
                 <button
                   className="min-h-13 w-full rounded-2xl bg-brand-dark px-8 font-display text-xl font-bold uppercase text-white shadow-sm transition hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100 sm:min-h-16 sm:w-auto sm:min-w-[17rem] sm:text-[1.75rem]"
                   disabled={isSubmitting}
@@ -252,7 +252,7 @@ export function LoginPage() {
           </div>
         </div>
 
-        <div className="mx-auto mt-3 max-w-3xl text-center text-xs leading-5 text-ink-soft">
+        <div className="login-support mx-auto mt-2 max-w-3xl text-center text-xs leading-5 text-ink-soft">
           <p>Use sua conta individual cadastrada pelo Administrador.</p>
           <p className="mt-1">
             Sua sessão é protegida e pode ser restaurada com segurança enquanto
