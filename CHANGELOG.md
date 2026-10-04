@@ -38,12 +38,6 @@ from its first published release.
   provenance attestations remain in GitHub Artifact Attestations instead of
   appearing as digest-like GHCR package versions.
 
-### Fixed
-
-- The login adapts its vertical density on low-height notebook viewports and
-  keeps authentication controls and messages reachable during reflow instead
-  of clipping the page.
-
 ### Security
 
 - ASP.NET Core Data Protection keys persist across API container replacement,
