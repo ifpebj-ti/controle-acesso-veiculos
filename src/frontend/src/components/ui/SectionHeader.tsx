@@ -19,21 +19,19 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div className={className}>
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-        {eyebrow}
-      </p>
+      <p className="text-sm font-semibold text-text-muted">{eyebrow}</p>
       <h2
-        className="mt-3 font-display text-2xl leading-tight text-ink"
+        className="mt-3 break-words text-xl font-semibold leading-tight text-text"
         id={titleId}
       >
         {title}
       </h2>
       {description && (
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-text-muted">
           {description}
         </p>
       )}
-      {meta && <div className="mt-2 text-sm text-ink-soft">{meta}</div>}
+      {meta && <div className="mt-2 text-sm text-text-muted">{meta}</div>}
     </div>
   );
 }

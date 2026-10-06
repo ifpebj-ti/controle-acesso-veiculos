@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Icon, type IconName } from "./Icon";
+import { Card } from "./Card";
 
 type ContentStateVariant = "empty" | "error" | "loading";
 
@@ -12,12 +13,6 @@ interface ContentStateProps {
   title: string;
   variant: ContentStateVariant;
 }
-
-const surfaces: Record<ContentStateVariant, string> = {
-  empty: "border-dashed border-ink/20 bg-cream/40",
-  error: "border-red-200 bg-red-50 text-red-900",
-  loading: "border-ink/8 bg-cream/50",
-};
 
 export function ContentState({
   action,
@@ -35,23 +30,30 @@ export function ContentState({
         : undefined;
 
   return (
-    <div
-      className={`rounded-2xl border p-7 text-center sm:p-9 ${surfaces[variant]} ${className}`}
+    <Card
+      className={`text-center ${variant === "empty" ? "border-dashed" : ""} ${className}`}
       role={role}
+      tone={
+        variant === "error"
+          ? "danger"
+          : variant === "loading"
+            ? "subtle"
+            : "default"
+      }
     >
       {variant === "loading" ? (
         <span
           aria-hidden="true"
-          className="mx-auto block size-9 animate-spin rounded-full border-3 border-brand-soft border-t-brand-dark"
+          className="mx-auto block size-8 animate-spin rounded-full border-3 border-border border-t-text motion-reduce:animate-none"
         />
       ) : icon ? (
-        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-soft/45 text-ink">
+        <span className="mx-auto grid size-11 place-items-center rounded-xl text-current">
           <Icon name={icon} />
         </span>
       ) : null}
       <h3
         className={`${variant === "loading" || icon ? "mt-4" : ""} font-bold ${
-          variant === "error" ? "text-red-900" : "text-ink"
+          variant === "error" ? "text-danger-text" : "text-text"
         }`}
       >
         {title}
@@ -59,13 +61,15 @@ export function ContentState({
       {description && (
         <p
           className={`mx-auto mt-1 max-w-2xl text-sm leading-6 ${
-            variant === "error" ? "text-red-800" : "text-ink-soft"
+            variant === "error" ? "text-danger-text" : "text-text-muted"
           }`}
         >
           {description}
         </p>
       )}
-      {action && <div className="mt-4 flex justify-center">{action}</div>}
-    </div>
+      {action && (
+        <div className="mt-4 flex flex-wrap justify-center gap-3">{action}</div>
+      )}
+    </Card>
   );
 }

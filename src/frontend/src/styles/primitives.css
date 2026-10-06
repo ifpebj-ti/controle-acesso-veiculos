@@ -1,0 +1,129 @@
+/* Scoped, unlayered visual contract. During migration this intentionally wins
+   over legacy field utilities supplied by page consumers. Layout classes remain
+   available; colors, focus and minimum target sizes belong to the primitive. */
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  max-width: 100%;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.ui-button--primary {
+  color: var(--ui-primary-text);
+  background: var(--ui-primary);
+}
+
+.ui-button--primary:hover:not(:disabled) {
+  background: var(--ui-primary-hover);
+}
+
+.ui-button--secondary,
+.ui-button--neutral {
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+}
+
+.ui-button--neutral {
+  background: var(--ui-surface-subtle);
+}
+
+.ui-button--secondary:hover:not(:disabled),
+.ui-button--neutral:hover:not(:disabled) {
+  background: var(--ui-surface-subtle);
+  border-color: var(--ui-border-strong);
+}
+
+.ui-button--danger {
+  color: var(--ui-danger-surface);
+  background: var(--ui-danger-text);
+}
+
+.ui-button--danger:hover:not(:disabled),
+.ui-button:active:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.ui-field {
+  min-width: 0;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 0.75rem;
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  box-shadow: none;
+}
+
+.ui-field::placeholder {
+  color: var(--ui-text-muted);
+  opacity: 1;
+}
+
+.ui-field:hover:not(:disabled) {
+  border-color: var(--ui-border-strong);
+}
+
+.ui-field[aria-invalid="true"] {
+  border: 2px solid var(--ui-danger-border);
+}
+
+.ui-textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.ui-button:focus-visible,
+.ui-field:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+.ui-button:disabled,
+.ui-field:disabled {
+  color: var(--ui-disabled-text);
+  background: var(--ui-disabled-surface);
+  border-color: var(--ui-disabled-border);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.ui-select-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.ui-select-option[data-highlighted] {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: -2px;
+}
+
+@media (forced-colors: active) {
+  .ui-button,
+  .ui-field {
+    border-color: ButtonText;
+  }
+
+  .ui-button:disabled,
+  .ui-field:disabled {
+    color: GrayText;
+    border-color: GrayText;
+  }
+}

@@ -11,6 +11,7 @@ import {
   type ConfirmationOptions,
   type RequestConfirmation,
 } from "./confirmationContext";
+import { Button } from "./Button";
 
 interface ConfirmationRequest {
   options: ConfirmationOptions;
@@ -68,51 +69,47 @@ function ConfirmationDialog({
   }, [onCancel]);
 
   return (
-    <div className="fixed inset-0 z-[70] grid items-end bg-ink/55 p-0 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[70] grid items-end bg-overlay p-4 sm:items-center sm:p-6">
       <div
         aria-describedby="confirmation-dialog-description"
         aria-labelledby="confirmation-dialog-title"
         aria-modal="true"
-        className="w-full rounded-t-[2rem] bg-white p-5 shadow-2xl sm:mx-auto sm:max-w-lg sm:rounded-[2rem] sm:p-7"
+        className="mx-auto max-h-[calc(100dvh-3rem)] w-full min-w-0 max-w-lg overflow-y-auto break-words rounded-2xl border border-border bg-surface-raised p-5 text-text shadow-lg shadow-shadow sm:p-6"
         ref={dialogRef}
         role="alertdialog"
       >
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
+        <p className="text-sm font-semibold text-text-muted">
           {options.eyebrow ?? "Confirme a ação"}
         </p>
         <h2
-          className="mt-3 font-display text-3xl text-ink"
+          className="mt-2 text-2xl font-semibold leading-tight text-text"
           id="confirmation-dialog-title"
         >
           {options.title}
         </h2>
         <p
-          className="mt-4 text-sm leading-6 text-ink-soft"
+          className="mt-3 text-base leading-6 text-text-muted"
           id="confirmation-dialog-description"
         >
           {options.description}
         </p>
 
-        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:flex-row sm:justify-end">
-          <button
-            className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink transition-colors hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
+        <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+          <Button
+            variant="secondary"
             onClick={onCancel}
             ref={cancelButtonRef}
             type="button"
           >
             Manter como está
-          </button>
-          <button
-            className={`min-h-12 rounded-xl px-6 font-bold text-white transition-colors focus:outline-none focus-visible:ring-3 ${
-              tone === "danger"
-                ? "bg-red-800 hover:bg-red-900 focus-visible:ring-red-700/35"
-                : "bg-brand-dark hover:bg-ink focus-visible:ring-brand/45"
-            }`}
+          </Button>
+          <Button
+            variant={tone === "danger" ? "danger" : "primary"}
             onClick={onConfirm}
             type="button"
           >
             {options.confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
