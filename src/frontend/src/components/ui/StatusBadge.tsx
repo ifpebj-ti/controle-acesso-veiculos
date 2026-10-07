@@ -4,19 +4,22 @@ interface StatusBadgeProps {
 }
 
 const tones = {
-  danger: "bg-red-50 text-red-800 border-red-200",
-  neutral: "bg-slate-100 text-slate-700 border-slate-200",
-  success: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  warning: "bg-amber-50 text-amber-900 border-amber-200",
+  danger: "bg-danger-surface text-danger-text border-danger-border",
+  neutral: "bg-surface-subtle text-text border-border",
+  success: "bg-success-surface text-success-text border-success-border",
+  warning: "bg-warning-surface text-warning-text border-warning-border",
 };
 
 export function StatusBadge({ label, tone = "neutral" }: StatusBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${tones[tone]}`}
+      className={`inline-flex max-w-full items-center gap-1.5 break-words rounded-full border px-2.5 py-1 text-sm font-semibold ${tones[tone]}`}
     >
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-      {label}
+      <span
+        aria-hidden="true"
+        className="size-1.5 shrink-0 rounded-full bg-current"
+      />
+      <span className="min-w-0">{label}</span>
     </span>
   );
 }

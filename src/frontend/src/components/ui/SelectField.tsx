@@ -60,32 +60,34 @@ export function SelectField({
       <SelectPrimitive.Trigger
         aria-describedby={describedBy}
         aria-invalid={invalid}
-        className={`inline-flex items-center justify-between gap-3 text-left ${className}`}
+        className={`ui-field inline-flex items-center justify-between gap-3 text-left ${className}`}
         data-value={value}
         id={id}
         onBlur={onBlur}
       >
-        <SelectPrimitive.Value placeholder={placeholder} />
-        <SelectPrimitive.Icon className="shrink-0 text-ink" asChild>
+        <span className="ui-select-value">
+          <SelectPrimitive.Value placeholder={placeholder} />
+        </span>
+        <SelectPrimitive.Icon className="shrink-0" asChild>
           <Icon name="chevron-down" size={19} />
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>
 
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
-          className="z-50 max-h-[min(22rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-2xl border border-ink/15 bg-white p-1.5 text-ink shadow-[0_18px_45px_rgba(0,73,83,0.18)]"
+          className="z-50 max-h-[min(22rem,var(--radix-select-content-available-height))] w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-border bg-surface-raised p-1.5 text-text shadow-lg shadow-shadow"
           collisionPadding={12}
           onCloseAutoFocus={onCloseAutoFocus}
           position="popper"
           sideOffset={6}
         >
-          <SelectPrimitive.ScrollUpButton className="flex h-8 items-center justify-center text-ink-soft">
+          <SelectPrimitive.ScrollUpButton className="flex h-11 items-center justify-center text-text-muted">
             <Icon className="rotate-180" name="chevron-down" size={18} />
           </SelectPrimitive.ScrollUpButton>
           <SelectPrimitive.Viewport>
             {options.map((option) => (
               <SelectPrimitive.Item
-                className="relative flex min-h-11 cursor-default select-none items-center rounded-xl border-b border-ink/10 py-2.5 pl-4 pr-10 text-sm outline-none last:border-b-0 data-[disabled]:pointer-events-none data-[disabled]:opacity-45 data-[highlighted]:bg-brand-soft/30 data-[highlighted]:text-ink data-[state=checked]:border-transparent data-[state=checked]:bg-brand-soft/55 data-[state=checked]:font-bold data-[state=checked]:text-ink"
+                className="ui-select-option relative flex min-h-12 cursor-default select-none items-center break-words rounded-lg border-b border-border py-2.5 pl-3 pr-10 text-base last:border-b-0 data-[disabled]:pointer-events-none data-[disabled]:bg-disabled-surface data-[disabled]:text-disabled-text data-[highlighted]:bg-surface-subtle data-[state=checked]:bg-surface-subtle data-[state=checked]:font-bold"
                 data-value={option.value}
                 disabled={option.disabled}
                 key={`${option.value}-${option.label}`}
@@ -103,7 +105,7 @@ export function SelectField({
               </SelectPrimitive.Item>
             ))}
           </SelectPrimitive.Viewport>
-          <SelectPrimitive.ScrollDownButton className="flex h-8 items-center justify-center text-ink-soft">
+          <SelectPrimitive.ScrollDownButton className="flex h-11 items-center justify-center text-text-muted">
             <Icon name="chevron-down" size={18} />
           </SelectPrimitive.ScrollDownButton>
         </SelectPrimitive.Content>

@@ -14,6 +14,12 @@ Os aliases visuais anteriores permanecem temporariamente para evitar uma troca
 global insegura. Componentes serão migrados de forma incremental nas Issues
 #403–#406, e o controle Claro/Escuro/Sistema pertence à Issue #407.
 
+O primeiro incremento migra seletores, cabeçalhos, estados, badges e confirmação
+para tokens semânticos, com bases reutilizáveis de botão, campo e cartão.
+A auditoria, as decisões, o mapa de navegação, as comparações visuais e as
+limitações de validação estão em [`docs/modernization.md`](docs/modernization.md).
+Login, autenticação, contratos e permissões não são alterados por esse incremento.
+
 ## Estado atual
 
 A versão atual integra autenticação e sessão em memória ao endpoint
