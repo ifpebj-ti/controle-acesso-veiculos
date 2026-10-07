@@ -110,6 +110,20 @@ para loopback; altere as senhas antes de compartilhar o ambiente. O gerador
 grava o PFX e sua senha como dois arquivos em `secrets/`, diretório ignorado
 pelo Git. Não envie nenhum deles por chat, issue ou commit.
 
+Execute o gerador antes da primeira subida do Compose. Se o Docker Desktop tiver
+sido iniciado sem os secrets e criado diretórios vazios nos caminhos esperados,
+pare a stack sem remover volumes e execute a recuperação explícita:
+
+```powershell
+docker compose down
+./New-DataProtectionCertificate.ps1 -Force
+```
+
+Nesse caso, `-Force` substitui somente os dois marcadores vazios. O comando
+recusa diretórios com conteúdo. Quando os arquivos já existem, `-Force` representa
+uma rotação local intencional; não o utilize apenas para reiniciar a aplicação.
+Produção segue a rotação controlada da ADR 0003 e um secret manager aprovado.
+
 ### 3. Construir e iniciar
 
 ```bash
