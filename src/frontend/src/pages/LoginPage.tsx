@@ -3,6 +3,9 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
 import { Brand } from "../components/ui/Brand";
+import { Button } from "../components/ui/Button";
+import { TextField } from "../components/ui/TextField";
+import { SessionLoadingState } from "../components/ui/SessionLoadingState";
 import {
   AuthenticationContractError,
   type SessionEndReason,
@@ -70,23 +73,7 @@ export function LoginPage() {
   const redirectTo = locationState?.from?.pathname ?? "/visao-geral";
 
   if (status === "restoring") {
-    return (
-      <main
-        aria-busy="true"
-        className="grid min-h-svh place-items-center bg-cream px-4 text-center text-ink"
-      >
-        <div className="min-w-0 max-w-full">
-          <span
-            aria-hidden="true"
-            className="mx-auto block size-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand-dark"
-          />
-          <h1 className="mt-4 font-display text-2xl">Verificando sua sessão</h1>
-          <p className="mx-auto mt-2 max-w-xs text-sm text-ink-soft">
-            Aguarde enquanto confirmamos seu acesso com segurança.
-          </p>
-        </div>
-      </main>
-    );
+    return <SessionLoadingState title="Verificando sua sessão" />;
   }
 
   if (user && status === "authenticated") {
@@ -120,8 +107,11 @@ export function LoginPage() {
     .join(" ");
 
   return (
-    <main className="login-page relative min-h-svh overflow-x-hidden bg-cream px-4 py-6 text-ink sm:px-8 sm:py-8">
-      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-ink" />
+    <main className="login-page relative min-h-svh overflow-x-hidden bg-background px-4 py-6 text-text sm:px-8 sm:py-8">
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-1 bg-primary"
+      />
 
       <div className="login-shell relative z-10 mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-6xl flex-col items-center justify-center sm:min-h-[calc(100svh-4rem)]">
         <Brand className="login-brand mx-auto mb-7 w-fit max-w-[17rem] sm:mb-10 sm:max-w-sm" />
@@ -148,9 +138,9 @@ export function LoginPage() {
             </svg>
           </div>
 
-          <section className="login-card relative z-10 mx-auto flex min-h-[34rem] flex-col rounded-[2rem] border border-ink/75 bg-brand-soft px-6 py-10 shadow-[0_22px_65px_rgba(1,36,40,0.11)] sm:min-h-[40rem] sm:rounded-[2.5rem] sm:px-14 sm:py-14 lg:min-h-[42rem] lg:px-20 lg:pb-16 lg:pt-20">
+          <section className="login-card relative z-10 mx-auto flex min-h-[34rem] flex-col rounded-2xl border border-border bg-surface px-6 py-10 sm:min-h-[40rem] sm:px-14 sm:py-14 lg:min-h-[42rem] lg:px-20 lg:pb-16 lg:pt-20">
             <header className="text-center">
-              <h1 className="font-display text-4xl font-bold uppercase leading-none text-brand sm:text-6xl lg:text-[4.4rem]">
+              <h1 className="text-4xl font-bold leading-tight text-text sm:text-5xl">
                 Bem-vindo,
               </h1>
               <p className="mx-auto mt-5 max-w-2xl text-xs font-medium uppercase leading-5 tracking-[0.08em] text-ink sm:text-sm">
@@ -160,7 +150,7 @@ export function LoginPage() {
 
             {loginStatusMessage && (
               <div
-                className="mx-auto mt-7 w-full max-w-2xl rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-medium text-red-950"
+                className="mx-auto mt-7 w-full max-w-2xl rounded-xl border border-danger-border bg-danger-surface px-4 py-3 text-sm font-medium text-danger-text"
                 id="login-status-message"
                 role="alert"
               >
@@ -180,13 +170,13 @@ export function LoginPage() {
                 >
                   E-mail:
                 </label>
-                <input
+                <TextField
                   aria-describedby={emailDescriptionIds || undefined}
                   aria-invalid={Boolean(errors.email)}
                   autoCapitalize="none"
                   autoComplete="username"
                   autoFocus
-                  className="mt-2 min-h-13 w-full rounded-full border border-transparent bg-[#d8e6c6] px-6 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-cream focus:ring-3 focus:ring-brand/25 aria-invalid:border-red-700 aria-invalid:bg-red-50 sm:min-h-14"
+                  className="mt-2"
                   id="email"
                   inputMode="email"
                   placeholder="nome@instituicao.edu.br"
@@ -195,7 +185,7 @@ export function LoginPage() {
                 />
                 {errors.email && (
                   <p
-                    className="ml-2 mt-2 text-sm font-semibold text-red-800"
+                    className="ml-2 mt-2 text-sm font-semibold text-danger-text"
                     id="email-error"
                   >
                     {errors.email.message}
@@ -210,20 +200,20 @@ export function LoginPage() {
                 >
                   Senha:
                 </label>
-                <input
+                <TextField
                   aria-describedby={
                     errors.password ? "password-error" : undefined
                   }
                   aria-invalid={Boolean(errors.password)}
                   autoComplete="current-password"
-                  className="mt-2 min-h-13 w-full rounded-full border border-transparent bg-[#d8e6c6] px-6 text-ink outline-none transition focus:border-brand-dark focus:bg-cream focus:ring-3 focus:ring-brand/25 aria-invalid:border-red-700 aria-invalid:bg-red-50 sm:min-h-14"
+                  className="mt-2"
                   id="password"
                   type="password"
                   {...register("password")}
                 />
                 {errors.password && (
                   <p
-                    className="ml-2 mt-2 text-sm font-semibold text-red-800"
+                    className="ml-2 mt-2 text-sm font-semibold text-danger-text"
                     id="password-error"
                   >
                     {errors.password.message}
@@ -232,13 +222,13 @@ export function LoginPage() {
               </div>
 
               <div className="pt-2 text-center sm:pt-4">
-                <button
-                  className="min-h-13 w-full rounded-2xl bg-brand-dark px-8 font-display text-xl font-bold uppercase text-white shadow-sm transition hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100 sm:min-h-16 sm:w-auto sm:min-w-[17rem] sm:text-[1.75rem]"
+                <Button
+                  className="w-full sm:w-auto sm:min-w-[17rem]"
                   disabled={isSubmitting}
                   type="submit"
                 >
                   {isSubmitting ? "Entrando…" : "Entrar"}
-                </button>
+                </Button>
               </div>
             </form>
           </section>
@@ -246,7 +236,7 @@ export function LoginPage() {
           <div aria-hidden="true" className="login-bus-static">
             <img
               alt=""
-              className="block h-auto w-full drop-shadow-[0_12px_10px_rgba(1,36,40,0.16)]"
+              className="block h-auto w-full"
               src="/brand/bus-illustration.png"
             />
           </div>
