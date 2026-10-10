@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { Button } from "../../../components/ui/Button";
 import { ContentState } from "../../../components/ui/ContentState";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { AccessHistoryRequestStatus } from "../hooks/useAccessHistory";
@@ -72,7 +73,7 @@ function ExceptionalClosureDetails({ record }: { record: AccessRecord }) {
   const reason = exceptionalReasonLabel(record);
 
   return (
-    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-ink">
+    <div className="mt-3 rounded-xl border border-warning-border bg-warning-surface p-3 text-xs leading-5 text-warning-text">
       <p className="font-bold">Regularização excepcional</p>
       <p className="mt-1">
         {record.exitAtUtc
@@ -117,16 +118,12 @@ export function AccessHistoryResults({
 
   if (requestStatus === "error") {
     return (
-      <div className="border-t border-ink/8 p-5 sm:p-6">
+      <div className="border-t border-border p-5 sm:p-6">
         <ContentState
           action={
-            <button
-              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
-              onClick={onRetry}
-              type="button"
-            >
+            <Button onClick={onRetry} type="button" variant="secondary">
               Tentar novamente
-            </button>
+            </Button>
           }
           title={errorMessage ?? "Não foi possível consultar o histórico."}
           variant="error"
@@ -137,14 +134,14 @@ export function AccessHistoryResults({
 
   if (requestStatus === "loading") {
     return (
-      <div className="border-t border-ink/8 p-5 sm:p-6" aria-busy="true">
+      <div className="border-t border-border p-5 sm:p-6" aria-busy="true">
         <ContentState title="Carregando histórico…" variant="loading" />
       </div>
     );
   }
 
   return (
-    <div className="border-t border-ink/8 p-5 sm:p-6">
+    <div className="border-t border-border p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-bold text-ink">
@@ -169,7 +166,7 @@ export function AccessHistoryResults({
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:hidden">
             {records.map((record) => (
               <article
-                className="rounded-2xl border border-ink/10 bg-cream/25 p-4"
+                className="rounded-xl border border-border bg-surface-subtle p-4"
                 key={record.id}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -191,7 +188,7 @@ export function AccessHistoryResults({
                     {linkedEventName(record)}
                   </p>
                 )}
-                <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-ink/8 pt-3 text-xs">
+                <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3 text-xs">
                   <div>
                     <dt className="font-bold uppercase tracking-wider text-ink-soft">
                       Entrada
@@ -211,14 +208,15 @@ export function AccessHistoryResults({
                 </dl>
                 <ExceptionalClosureDetails record={record} />
                 {onCorrect && (
-                  <button
+                  <Button
                     aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
-                    className="mt-4 min-h-11 w-full rounded-xl border border-brand-dark px-4 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
+                    className="mt-4 w-full"
                     onClick={(event) => onCorrect(record, event.currentTarget)}
                     type="button"
+                    variant="secondary"
                   >
                     Corrigir registro
-                  </button>
+                  </Button>
                 )}
               </article>
             ))}
@@ -230,7 +228,7 @@ export function AccessHistoryResults({
                 Histórico de acessos retornado pela API
               </caption>
               <thead>
-                <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
+                <tr className="border-b border-border bg-surface-subtle text-[0.68rem] uppercase tracking-[0.12em] text-text-muted">
                   <th className="px-3 py-3" scope="col">
                     Data e veículo
                   </th>
@@ -256,7 +254,7 @@ export function AccessHistoryResults({
               <tbody>
                 {records.map((record) => (
                   <tr
-                    className="border-b border-ink/6 align-top last:border-0 hover:bg-cream/25"
+                    className="border-b border-border align-top last:border-0 hover:bg-surface-subtle"
                     key={record.id}
                   >
                     <td className="px-3 py-4">
@@ -295,16 +293,17 @@ export function AccessHistoryResults({
                     </td>
                     {onCorrect && (
                       <td className="px-3 py-4">
-                        <button
+                        <Button
                           aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
-                          className="min-h-10 whitespace-nowrap rounded-xl border border-brand-dark px-3 text-xs font-bold text-brand-dark hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
+                          className="whitespace-nowrap text-xs"
                           onClick={(event) =>
                             onCorrect(record, event.currentTarget)
                           }
                           type="button"
+                          variant="secondary"
                         >
                           Corrigir registro
-                        </button>
+                        </Button>
                       </td>
                     )}
                   </tr>
@@ -320,33 +319,34 @@ export function AccessHistoryResults({
           aria-label="Paginação do histórico"
           className="mt-6 flex flex-wrap justify-center gap-2"
         >
-          <button
-            className="min-h-10 rounded-xl border border-ink/15 px-3 text-sm font-bold disabled:opacity-40"
+          <Button
             disabled={result.page <= 1}
             onClick={() => onPageChange(result.page - 1)}
             type="button"
+            variant="secondary"
           >
             Anterior
-          </button>
+          </Button>
           {pageNumbers.map((page) => (
-            <button
+            <Button
               aria-current={result.page === page ? "page" : undefined}
-              className={`min-h-10 min-w-10 rounded-xl border px-3 text-sm font-bold ${result.page === page ? "border-ink bg-ink text-white" : "border-ink/15"}`}
+              className="min-w-12"
               key={page}
               onClick={() => onPageChange(page)}
               type="button"
+              variant={result.page === page ? "primary" : "secondary"}
             >
               {page}
-            </button>
+            </Button>
           ))}
-          <button
-            className="min-h-10 rounded-xl border border-ink/15 px-3 text-sm font-bold disabled:opacity-40"
+          <Button
             disabled={result.page >= result.totalPages}
             onClick={() => onPageChange(result.page + 1)}
             type="button"
+            variant="secondary"
           >
             Próxima
-          </button>
+          </Button>
         </nav>
       )}
     </div>

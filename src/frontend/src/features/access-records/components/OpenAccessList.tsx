@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { Button } from "../../../components/ui/Button";
+import { StatusBadge } from "../../../components/ui/StatusBadge";
 import { formatElapsedTime } from "../model/openAccessTime";
 import type { AccessRecord } from "../types";
 
@@ -49,7 +51,7 @@ export function OpenAccessList({
       >
         {records.map((record) => (
           <article
-            className="rounded-2xl border border-ink/10 bg-cream/25 p-4"
+            className="rounded-xl border border-border bg-surface-subtle p-4"
             key={record.id}
           >
             <div className="flex min-w-0 items-start justify-between gap-3">
@@ -61,11 +63,9 @@ export function OpenAccessList({
                   {record.driverName}
                 </p>
               </div>
-              <span className="shrink-0 rounded-full bg-[#FFE67C]/55 px-2.5 py-1 text-xs font-bold text-ink">
-                Em aberto
-              </span>
+              <StatusBadge label="Em aberto" tone="warning" />
             </div>
-            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-ink/8 pt-3 text-xs">
+            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3 text-xs">
               <div className="col-span-2">
                 <dt className="font-bold uppercase tracking-wider text-ink-soft">
                   Categoria
@@ -92,9 +92,9 @@ export function OpenAccessList({
               </div>
             </dl>
             <div className="mt-4 grid gap-2">
-              <button
+              <Button
                 aria-label={exitLabel(record)}
-                className="min-h-11 w-full rounded-xl bg-brand-dark px-4 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/45 disabled:cursor-wait disabled:opacity-65"
+                className="w-full"
                 disabled={closingId !== null}
                 onClick={(event) => onExit(record, event.currentTarget)}
                 type="button"
@@ -102,21 +102,22 @@ export function OpenAccessList({
                 {closingId === record.id && closingOperation === "normal"
                   ? "Registrando saída…"
                   : "Registrar saída"}
-              </button>
+              </Button>
               {canExceptionallyClose && (
-                <button
+                <Button
                   aria-label={`Regularizar saída não registrada de ${record.plate}, condutor ${record.driverName}`}
-                  className="min-h-11 w-full rounded-xl border border-brand-dark px-4 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-60"
+                  className="w-full"
                   disabled={closingId !== null}
                   onClick={(event) =>
                     onExceptionalClosure(record, event.currentTarget)
                   }
                   type="button"
+                  variant="secondary"
                 >
                   {closingId === record.id && closingOperation === "exceptional"
                     ? "Regularizando…"
                     : "Regularizar saída não registrada"}
-                </button>
+                </Button>
               )}
             </div>
           </article>
@@ -124,7 +125,7 @@ export function OpenAccessList({
       </div>
 
       <div
-        className="mt-4 hidden overflow-hidden rounded-2xl border border-ink/10 xl:block"
+        className="mt-4 hidden overflow-hidden rounded-xl border border-border xl:block"
         data-testid="open-access-table"
       >
         <table className="w-full table-fixed border-collapse text-left text-sm">
@@ -132,7 +133,7 @@ export function OpenAccessList({
             Acessos em aberto retornados pela API
           </caption>
           <thead>
-            <tr className="border-b border-ink/15 bg-brand-soft/20 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
+            <tr className="border-b border-border bg-surface-subtle text-[0.68rem] uppercase tracking-[0.12em] text-text-muted">
               <th className="w-[15%] px-4 py-3" scope="col">
                 Placa
               </th>
@@ -156,7 +157,7 @@ export function OpenAccessList({
           <tbody>
             {records.map((record) => (
               <tr
-                className="border-b border-ink/10 align-middle even:bg-cream/20 last:border-0 hover:bg-brand-soft/15"
+                className="border-b border-border align-middle even:bg-surface-subtle last:border-0 hover:bg-surface-subtle"
                 key={record.id}
               >
                 <td className="px-4 py-4">
@@ -168,7 +169,7 @@ export function OpenAccessList({
                   {record.driverName}
                 </td>
                 <td className="break-words px-4 py-4 text-ink-soft">
-                  <span className="inline-flex rounded-full border border-ink/10 bg-cream/60 px-2.5 py-1 text-xs font-semibold text-ink">
+                  <span className="inline-flex rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-xs font-semibold text-text">
                     {record.categoryName}
                   </span>
                 </td>
@@ -180,9 +181,9 @@ export function OpenAccessList({
                 </td>
                 <td className="px-4 py-4 text-right">
                   <div className="flex flex-col items-end gap-2">
-                    <button
+                    <Button
                       aria-label={exitLabel(record)}
-                      className="min-h-10 whitespace-nowrap rounded-xl bg-brand-dark px-3 text-xs font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/45 disabled:cursor-wait disabled:opacity-65"
+                      className="whitespace-nowrap text-xs"
                       disabled={closingId !== null}
                       onClick={(event) => onExit(record, event.currentTarget)}
                       type="button"
@@ -190,22 +191,23 @@ export function OpenAccessList({
                       {closingId === record.id && closingOperation === "normal"
                         ? "Registrando…"
                         : "Registrar saída"}
-                    </button>
+                    </Button>
                     {canExceptionallyClose && (
-                      <button
+                      <Button
                         aria-label={`Regularizar saída não registrada de ${record.plate}, condutor ${record.driverName}`}
-                        className="min-h-10 whitespace-nowrap rounded-xl border border-brand-dark px-3 text-xs font-bold text-brand-dark hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-60"
+                        className="whitespace-nowrap text-xs"
                         disabled={closingId !== null}
                         onClick={(event) =>
                           onExceptionalClosure(record, event.currentTarget)
                         }
                         type="button"
+                        variant="secondary"
                       >
                         {closingId === record.id &&
                         closingOperation === "exceptional"
                           ? "Regularizando…"
                           : "Regularizar saída não registrada"}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </td>
