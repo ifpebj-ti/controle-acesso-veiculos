@@ -160,6 +160,26 @@ button:disabled {
 
 .sidebar-primary-item {
   position: relative;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-primary-item > svg {
+  flex-shrink: 0;
+}
+
+.sidebar-primary-item:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+
+.ui-button.sidebar-section {
+  padding-inline: 0.75rem;
+  border-color: transparent;
+}
+
+.ui-button.shell-icon-button {
+  width: 3rem;
+  padding: 0.625rem;
 }
 
 .sidebar-scroll {
@@ -190,15 +210,11 @@ button:disabled {
 }
 
 .sidebar-primary-item--active {
-  border-color: color-mix(in srgb, var(--color-ink) 12%, transparent);
-  background: color-mix(
-    in srgb,
-    var(--color-cream) 78%,
-    var(--color-brand-soft)
-  );
-  filter: drop-shadow(
-    0 0.25rem 0.375rem color-mix(in srgb, var(--color-ink) 10%, transparent)
-  );
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 @media (max-width: 640px) {

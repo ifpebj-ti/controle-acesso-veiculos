@@ -7,6 +7,7 @@ import {
 } from "../../features/authentication";
 import { getProfileNavigation } from "../../routes/routeMetadata";
 import { Brand } from "../ui/Brand";
+import { Button } from "../ui/Button";
 import { Icon } from "../ui/Icon";
 
 function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
@@ -39,27 +40,27 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
   }
 
   return (
-    <div className="flex min-h-full flex-col px-5 pb-5 pt-6">
-      <Brand compact className="mx-auto min-h-24" />
+    <div className="flex min-h-full flex-col px-4 pb-5 pt-16 xl:pt-6">
+      <Brand className="mx-auto w-full" />
 
-      <div className="mt-14 flex items-center gap-3 px-3">
+      <div className="my-6 flex items-center gap-3 rounded-xl border border-border bg-surface-subtle p-3">
         <span
           aria-hidden="true"
-          className="grid size-13 shrink-0 place-items-center rounded-full bg-[#d9d9d9] text-ink"
+          className="grid size-10 shrink-0 place-items-center rounded-lg text-text"
         >
           <Icon name="user" size={25} />
         </span>
         <div className="min-w-0">
-          <p className="truncate font-semibold text-ink" title={user.email}>
+          <p className="break-all text-sm font-semibold text-text">
             {user.email}
           </p>
-          <p className="mt-0.5 truncate text-xs font-bold text-brand-dark">
+          <p className="mt-1 text-sm text-text-muted">
             {profileLabels[user.profileName]}
           </p>
         </div>
       </div>
 
-      <nav aria-label="Navegação principal" className="mt-20 flex-1">
+      <nav aria-label="Navegação principal" className="flex-1">
         <ul className="space-y-2">
           {navigation.map((section) => {
             const isExpanded = !collapsedSections.has(section.label);
@@ -70,10 +71,10 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                 {section.to ? (
                   <NavLink
                     className={({ isActive }) =>
-                      `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-xl border border-transparent px-4 py-3 font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+                      `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-xl border border-transparent px-3 py-3 font-medium ${
                         isActive
-                          ? "sidebar-primary-item--active font-semibold text-ink"
-                          : "text-ink hover:bg-white/45 hover:text-ink"
+                          ? "sidebar-primary-item--active font-semibold"
+                          : "text-text hover:bg-surface-subtle"
                       }`
                     }
                     onClick={closeMenu}
@@ -84,35 +85,36 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                   </NavLink>
                 ) : (
                   <>
-                    <button
+                    <Button
                       aria-controls={sectionItemsId}
                       aria-expanded={isExpanded}
-                      className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-ink transition-colors hover:text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink"
+                      className="sidebar-section w-full"
+                      variant="secondary"
                       onClick={() => toggleSection(section.label)}
                       type="button"
                     >
                       <Icon name={section.icon} size={20} />
-                      <span className="flex-1">{section.label}</span>
+                      <span className="flex-1 text-left">{section.label}</span>
                       <Icon
-                        className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        className={isExpanded ? "rotate-180" : ""}
                         name="chevron-down"
                         size={17}
                       />
-                    </button>
+                    </Button>
 
                     {isExpanded && section.items && (
                       <ul
-                        className="ml-6 mt-1 space-y-1 border-l border-ink/15 pl-3"
+                        className="ml-3 mt-1 space-y-1 border-l border-border pl-3"
                         id={sectionItemsId}
                       >
                         {section.items.map((item) => (
                           <li key={item.to}>
                             <NavLink
                               className={({ isActive }) =>
-                                `sidebar-primary-item flex min-h-10 items-center gap-2.5 rounded-xl border border-transparent px-3 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+                                `sidebar-primary-item flex min-h-12 items-center gap-2.5 rounded-xl border border-transparent px-3 py-2 text-sm ${
                                   isActive
-                                    ? "sidebar-primary-item--active font-semibold text-ink"
-                                    : "text-ink hover:bg-white/45 hover:text-ink"
+                                    ? "sidebar-primary-item--active font-semibold"
+                                    : "text-text hover:bg-surface-subtle"
                                 }`
                               }
                               onClick={closeMenu}
@@ -135,10 +137,10 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
 
       <NavLink
         className={({ isActive }) =>
-          `sidebar-primary-item mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left text-base font-semibold transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-ink ${
+          `sidebar-primary-item mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left font-semibold ${
             isActive
-              ? "sidebar-primary-item--active text-ink"
-              : "text-ink hover:bg-white/45"
+              ? "sidebar-primary-item--active"
+              : "text-text hover:bg-surface-subtle"
           }`
         }
         onClick={closeMenu}
@@ -148,14 +150,15 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
         Alterar senha
       </NavLink>
 
-      <button
-        className="mt-2 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-base font-semibold text-ink transition-colors hover:bg-white/45 focus:outline-none focus-visible:ring-3 focus-visible:ring-ink"
+      <Button
+        className="mt-2 w-full"
+        variant="secondary"
         onClick={handleLogout}
         type="button"
       >
         <Icon name="log-out" size={21} />
         Sair
-      </button>
+      </Button>
     </div>
   );
 }
@@ -228,32 +231,33 @@ function StandardAppLayout() {
   }, [menuOpen]);
 
   return (
-    <div className="min-h-svh bg-cream text-ink">
+    <div className="min-h-svh bg-background text-text">
       <a
-        className="fixed left-4 top-3 z-50 -translate-y-24 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform focus:translate-y-0"
+        className="ui-button ui-button--primary fixed left-4 top-3 z-50 -translate-y-24 focus:translate-y-0"
         href="#conteudo-principal"
         onClick={skipToPageContent}
       >
         Ir para o conteúdo
       </a>
 
-      <aside className="sidebar-scroll fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft xl:block">
+      <aside className="sidebar-scroll fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden border-r border-border bg-surface xl:block">
         <SidebarContent />
       </aside>
 
-      <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-ink/10 bg-cream/95 px-4 backdrop-blur xl:hidden">
-        <button
+      <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b border-border bg-surface px-4 xl:hidden">
+        <Button
           aria-expanded={menuOpen}
           aria-label="Abrir menu"
-          className="grid size-11 place-items-center rounded-xl border border-ink/15 bg-white text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30"
+          className="shell-icon-button shrink-0"
+          variant="secondary"
           onClick={() => setMenuOpen(true)}
           ref={menuTriggerRef}
           type="button"
         >
           <Icon name="menu" />
-        </button>
+        </Button>
         <span className="text-sm font-bold text-ink">Controle de Acesso</span>
-        <span aria-hidden="true" className="size-11" />
+        <span aria-hidden="true" className="size-12 shrink-0" />
       </header>
 
       {menuOpen && (
@@ -261,7 +265,7 @@ function StandardAppLayout() {
           <button
             aria-hidden="true"
             aria-label="Fechar menu"
-            className="absolute inset-0 bg-ink/45"
+            className="absolute inset-0 bg-overlay"
             onClick={() => setMenuOpen(false)}
             tabIndex={-1}
             type="button"
@@ -269,26 +273,27 @@ function StandardAppLayout() {
           <aside
             aria-label="Menu principal"
             aria-modal="true"
-            className="sidebar-scroll absolute inset-y-0 left-0 w-[min(86vw,20rem)] overflow-y-auto overflow-x-hidden rounded-r-[2rem] bg-brand-soft shadow-2xl"
+            className="sidebar-scroll absolute inset-y-0 left-0 w-[min(90vw,20rem)] overflow-y-auto overflow-x-hidden border-r border-border bg-surface"
             ref={menuDialogRef}
             role="dialog"
           >
-            <button
+            <Button
               aria-label="Fechar menu"
-              className="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-full bg-white/65 text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink"
+              className="shell-icon-button absolute right-3 top-2 z-10"
+              variant="secondary"
               onClick={() => setMenuOpen(false)}
               ref={menuCloseRef}
               type="button"
             >
               <Icon name="x" />
-            </button>
+            </Button>
             <SidebarContent closeMenu={() => setMenuOpen(false)} />
           </aside>
         </div>
       )}
 
       <main
-        className="min-h-svh min-w-0 max-w-full bg-cream xl:pl-72"
+        className="min-h-svh min-w-0 max-w-full bg-background xl:pl-72"
         id="conteudo-principal"
         tabIndex={-1}
       >
@@ -296,7 +301,7 @@ function StandardAppLayout() {
           {sessionNotice === "renewal-unavailable" && (
             <div
               aria-atomic="true"
-              className="mb-5 rounded-2xl border border-amber-500 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"
+              className="mb-5 rounded-xl border border-warning-border bg-warning-surface px-4 py-3 text-sm font-semibold text-warning-text"
               role="alert"
             >
               Não foi possível renovar a sessão agora. Seus dados foram
@@ -320,18 +325,19 @@ function MandatoryPasswordChangeLayout() {
   }
 
   return (
-    <div className="min-h-svh bg-cream text-ink">
-      <header className="border-b border-ink/10 bg-white/80 px-4 py-4 backdrop-blur sm:px-6">
+    <div className="min-h-svh bg-background text-text">
+      <header className="border-b border-border bg-surface px-4 py-4 sm:px-6">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4">
-          <Brand compact className="max-w-[10rem]" />
-          <button
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-ink/20 bg-white px-4 font-semibold text-ink transition-colors hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/35"
+          <Brand className="min-w-0 max-w-[17rem]" />
+          <Button
+            className="shrink-0"
+            variant="secondary"
             onClick={handleLogout}
             type="button"
           >
             <Icon name="log-out" size={19} />
             Sair
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -343,7 +349,7 @@ function MandatoryPasswordChangeLayout() {
         {sessionNotice === "renewal-unavailable" && (
           <div
             aria-atomic="true"
-            className="mb-5 rounded-2xl border border-amber-500 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"
+            className="mb-5 rounded-xl border border-warning-border bg-warning-surface px-4 py-3 text-sm font-semibold text-warning-text"
             role="alert"
           >
             Não foi possível renovar a sessão agora. Verifique a conexão antes

@@ -94,6 +94,37 @@ describe("AppLayout", () => {
     "Vigilante",
     "SetorTransporte",
     "Administrador",
+  ])(
+    "preserves both ends of the mobile focus trap and logout for %s",
+    async (profile) => {
+      const user = userEvent.setup();
+      const { logout } = renderLayout(profile);
+      const trigger = screen.getByRole("button", { name: "Abrir menu" });
+      trigger.focus();
+      await user.keyboard("{Enter}");
+      const dialog = screen.getByRole("dialog", { name: "Menu principal" });
+      const close = within(dialog).getByRole("button", { name: "Fechar menu" });
+      expect(close).toHaveFocus();
+      await user.tab({ shift: true });
+      const exit = within(dialog).getByRole("button", { name: "Sair" });
+      expect(exit).toHaveFocus();
+      await user.tab();
+      expect(close).toHaveFocus();
+      await user.keyboard("{Escape}");
+      expect(trigger).toHaveFocus();
+      await user.keyboard("{Enter}");
+      await user.tab({ shift: true });
+      await user.keyboard("{Enter}");
+      expect(logout).toHaveBeenCalledOnce();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    },
+  );
+
+  it.each<ProfileName>([
+    "Porteiro",
+    "Vigilante",
+    "SetorTransporte",
+    "Administrador",
   ])("uses the tablet-collapsed navigation shell for %s", (profileName) => {
     renderLayout(profileName);
 
