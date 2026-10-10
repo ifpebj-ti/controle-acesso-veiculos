@@ -20,6 +20,14 @@ A auditoria, as decisões, o mapa de navegação, as comparações visuais e as
 limitações de validação estão em [`docs/modernization.md`](docs/modernization.md).
 Login, autenticação, contratos e permissões não são alterados por esse incremento.
 
+O segundo incremento migra as superfícies de autenticação, troca de senha,
+restauração de sessão, acesso negado, página não encontrada e layout autenticado
+para os mesmos tokens e primitivas. A sidebar e o cabeçalho móvel usam superfícies
+neutras e mantêm a navegação definida por perfil em `routeMetadata.ts`; o verde
+institucional fica reservado principalmente às ações. Lógica de sessão, cookies,
+API, capacidades e armazenamento permanecem inalterados. A ativação de temas e a
+migração das páginas operacionais e administrativas continuam nas etapas seguintes.
+
 ## Estado atual
 
 A versão atual integra autenticação e sessão em memória ao endpoint
