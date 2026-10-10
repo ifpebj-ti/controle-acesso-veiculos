@@ -9,32 +9,31 @@ interface Metric {
   value: number;
 }
 
-const surfaces = ["bg-[#BDD8F1]/45", "bg-[#C8CE72]/35", "bg-[#EFD780]/40"];
-
 function SummaryGroup({
   description,
-  index,
   metrics,
   title,
 }: {
   description: string;
-  index: number;
   metrics: Metric[];
   title: string;
 }) {
   return (
-    <article className={`${surfaces[index]} rounded-3xl p-5 sm:p-6`}>
-      <h3 className="font-display text-2xl text-ink">{title}</h3>
+    <article className="rounded-xl border border-border bg-surface-subtle p-5 sm:p-6">
+      <h3 className="text-xl font-bold text-text">{title}</h3>
       <p className="mt-1 min-h-10 text-xs leading-5 text-ink-soft">
         {description}
       </p>
       <dl className="mt-5 grid grid-cols-2 gap-3">
         {metrics.map((metric) => (
-          <div className="rounded-2xl bg-white/70 p-3" key={metric.label}>
+          <div
+            className="rounded-xl border border-border bg-surface p-3"
+            key={metric.label}
+          >
             <dt className="text-xs font-semibold leading-4 text-ink-soft">
               {metric.label}
             </dt>
-            <dd className="mt-2 font-display text-3xl text-ink">
+            <dd className="mt-2 text-3xl font-bold tabular-nums text-text">
               {metric.value}
             </dd>
           </div>
@@ -101,7 +100,7 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
     <>
       {totalMovements === 0 && (
         <p
-          className="mt-5 rounded-2xl border border-ink/10 bg-cream/55 p-4 text-sm text-ink-soft"
+          className="mt-5 rounded-xl border border-border bg-surface-subtle p-4 text-sm text-text-muted"
           role="status"
         >
           Nenhuma movimentação foi contabilizada nesta data. Os registros
@@ -109,8 +108,8 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
         </p>
       )}
       <div className="mt-5 grid gap-4 xl:grid-cols-3">
-        {groups.map((group, index) => (
-          <SummaryGroup {...group} index={index} key={group.title} />
+        {groups.map((group) => (
+          <SummaryGroup {...group} key={group.title} />
         ))}
       </div>
     </>

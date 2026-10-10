@@ -502,15 +502,18 @@ describe("NewAccessPage", () => {
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("REC1A23");
   });
 
-  it("uses primary ink throughout the solid quick-check surface", () => {
+  it("uses semantic surfaces in the quick-check guidance", () => {
     renderPage();
 
     const quickCheck = screen
       .getByText("Conferência rápida")
       .closest("section");
 
-    expect(quickCheck).toHaveClass("bg-[#B8C9A4]", "text-ink");
-    expect(quickCheck?.querySelector(".text-ink-soft")).toBeNull();
+    expect(quickCheck).toHaveClass(
+      "border-border",
+      "bg-surface-subtle",
+      "text-text",
+    );
     expect(
       screen.getByRole("link", { name: "Utilizações da frota" }),
     ).toHaveAttribute("href", "/utilizacoes-institucionais");

@@ -6,14 +6,12 @@ import type {
   UseFormRegister,
 } from "react-hook-form";
 
+import { TextField } from "../../../components/ui/TextField";
 import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
 import {
   customEntryOption,
   quickAccessObjectives,
 } from "../model/entryOptions";
-
-const textFieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 interface EntryObjectiveFieldsetProps {
   clearErrors: UseFormClearErrors<AccessEntryFormValues>;
@@ -90,7 +88,7 @@ export function EntryObjectiveFieldset({
       className="md:col-span-2"
     >
       <legend className="text-sm font-semibold text-ink" id="objective-label">
-        Objetivo do acesso <span className="text-red-700">*</span>
+        Objetivo do acesso <span className="text-danger-text">*</span>
       </legend>
       <p className="mt-1 text-sm text-ink-soft" id="objective-help">
         Escolha a opção que melhor resume a finalidade da entrada.
@@ -112,10 +110,10 @@ export function EntryObjectiveFieldset({
                   : "objective-help"
               }
               aria-invalid={Boolean(objectiveError)}
-              className={`flex min-h-11 items-center rounded-xl border px-4 text-sm font-semibold transition hover:border-brand-dark hover:bg-brand/5 focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+              className={`flex min-h-11 items-center rounded-xl border px-4 text-sm font-semibold transition focus:outline-3 focus:outline-offset-2 focus:outline-focus ${
                 selected
-                  ? "border-brand-dark bg-brand-dark text-white"
-                  : "border-ink/20 bg-white text-ink"
+                  ? "border-primary bg-primary text-primary-text"
+                  : "border-border bg-surface text-text hover:border-border-strong hover:bg-surface-subtle"
               }`}
               key={option}
               onBlur={onBlur}
@@ -141,7 +139,7 @@ export function EntryObjectiveFieldset({
       </div>
 
       {objectiveError && (
-        <p className="mt-2 text-sm text-red-800" id="objective-error">
+        <p className="mt-2 text-sm text-danger-text" id="objective-error">
           {objectiveError}
         </p>
       )}
@@ -152,14 +150,14 @@ export function EntryObjectiveFieldset({
             className="text-sm font-semibold text-ink"
             htmlFor="objectiveOther"
           >
-            Outro objetivo <span className="text-red-700">*</span>
+            Outro objetivo <span className="text-danger-text">*</span>
           </label>
-          <input
+          <TextField
             aria-describedby={
               errors.objectiveOther ? "objectiveOther-error" : undefined
             }
             aria-invalid={Boolean(errors.objectiveOther)}
-            className={textFieldClass}
+            className="mt-2"
             id="objectiveOther"
             maxLength={500}
             placeholder="Informe a finalidade da entrada"
@@ -167,7 +165,7 @@ export function EntryObjectiveFieldset({
           />
           {errors.objectiveOther?.message && (
             <p
-              className="mt-1.5 text-sm text-red-800"
+              className="mt-1.5 text-sm text-danger-text"
               id="objectiveOther-error"
             >
               {errors.objectiveOther.message}

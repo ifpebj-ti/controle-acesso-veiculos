@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
+import { Button } from "../../../components/ui/Button";
+import { TextField } from "../../../components/ui/TextField";
 import { searchAccessEntryCandidates } from "../services/accessRecordsService";
 import type { AccessEntryCandidate } from "../types";
 
@@ -152,9 +154,9 @@ export function EntryCandidateSearch({
   return (
     <section
       aria-labelledby={`${inputId}-title`}
-      className="rounded-2xl border border-ink/10 bg-cream/35 p-4 sm:p-5"
+      className="rounded-xl border border-border bg-surface-subtle p-4 sm:p-5"
     >
-      <h3 className="font-display text-xl text-ink" id={`${inputId}-title`}>
+      <h3 className="text-xl font-bold text-text" id={`${inputId}-title`}>
         Buscar cadastro anterior
       </h3>
       <p className="mt-1 text-sm leading-6 text-ink-soft" id={guidanceId}>
@@ -165,7 +167,7 @@ export function EntryCandidateSearch({
         Buscar por placa ou nome do condutor
       </label>
       <div className="relative mt-3">
-        <input
+        <TextField
           aria-activedescendant={activeOptionId}
           aria-autocomplete="list"
           aria-controls={listId}
@@ -173,7 +175,6 @@ export function EntryCandidateSearch({
           aria-expanded={open && status === "ready"}
           autoFocus
           autoComplete="off"
-          className="min-h-12 w-full rounded-xl border border-ink/20 bg-white px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
           id={inputId}
           maxLength={80}
           onBlur={() => setOpen(false)}
@@ -188,7 +189,7 @@ export function EntryCandidateSearch({
 
         {open && status === "ready" && (
           <ul
-            className="absolute z-20 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-ink/15 bg-white p-2 shadow-xl"
+            className="absolute z-20 mt-2 max-h-80 w-full overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-lg"
             id={listId}
             role="listbox"
           >
@@ -198,7 +199,9 @@ export function EntryCandidateSearch({
                 <li
                   aria-selected={activeIndex === index}
                   className={`cursor-pointer rounded-xl px-3 py-3 text-left outline-none transition ${
-                    activeIndex === index ? "bg-brand/10" : "hover:bg-cream"
+                    activeIndex === index
+                      ? "bg-surface-subtle"
+                      : "hover:bg-surface-subtle"
                   }`}
                   id={optionId}
                   key={`${candidate.vehicleId}-${candidate.personId}`}
@@ -240,7 +243,7 @@ export function EntryCandidateSearch({
       )}
       {status === "error" && (
         <div
-          className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"
+          className="mt-3 rounded-xl border border-warning-border bg-warning-surface p-3 text-sm text-warning-text"
           role="alert"
         >
           Não foi possível realizar a busca. Continue preenchendo manualmente ou
@@ -249,7 +252,7 @@ export function EntryCandidateSearch({
       )}
 
       {selectedCandidate && (
-        <div className="mt-4 rounded-xl border border-brand-dark/25 bg-white p-4">
+        <div className="mt-4 rounded-xl border border-border-strong bg-surface p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-bold text-ink">
@@ -260,13 +263,9 @@ export function EntryCandidateSearch({
                 entrada automaticamente.
               </p>
             </div>
-            <button
-              className="min-h-10 rounded-xl border border-ink/20 px-4 text-sm font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
-              onClick={onClear}
-              type="button"
-            >
+            <Button onClick={onClear} type="button" variant="secondary">
               Usar preenchimento manual
-            </button>
+            </Button>
           </div>
         </div>
       )}

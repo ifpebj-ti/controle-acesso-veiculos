@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { ContentState } from "../components/ui/ContentState";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
 import { Icon } from "../components/ui/Icon";
 import {
   profileLabels,
@@ -100,12 +102,12 @@ export function DashboardPage() {
 
   return (
     <div className="min-w-0">
-      <header className="sticky top-16 z-10 -mx-4 flex flex-col gap-6 border-b border-ink/10 bg-cream/95 px-4 pb-7 pt-1 shadow-[0_10px_24px_rgba(1,36,40,0.04)] backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-9 lg:flex-row lg:items-end lg:justify-between lg:px-9 lg:pt-0">
+      <header className="sticky top-16 z-10 -mx-4 flex flex-col gap-5 border-b border-border bg-background px-4 pb-5 pt-1 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-9 lg:flex-row lg:items-end lg:justify-between lg:px-9 lg:pt-0">
         <div className="max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-dark">
             Controle de acesso • Campus Belo Jardim
           </p>
-          <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">
+          <h1 className="mt-2 text-3xl font-bold leading-tight text-text sm:text-4xl">
             {greetingForHour(currentInstitutionalTime.hour)},{" "}
             {profileLabels[user.profileName]}.
           </h1>
@@ -114,7 +116,7 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <div className="shrink-0 border-l-4 border-[#BDD8F1] pl-4 text-left lg:min-w-72 lg:text-right">
+        <div className="shrink-0 border-l-4 border-primary pl-4 text-left lg:min-w-72 lg:text-right">
           <p className="text-sm font-semibold text-ink-soft">
             {capitalize(currentInstitutionalTime.fullDate)}
           </p>
@@ -127,9 +129,10 @@ export function DashboardPage() {
         </div>
       </header>
 
-      <section
+      <Card
         aria-labelledby="daily-summary-title"
-        className="mt-7 rounded-[2rem] border border-ink/10 bg-white p-5 shadow-[0_12px_35px_rgba(1,36,40,0.05)] sm:p-7"
+        className="mt-6 sm:p-7"
+        role="region"
       >
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
@@ -137,7 +140,7 @@ export function DashboardPage() {
               Movimentações do dia
             </p>
             <h2
-              className="mt-3 font-display text-3xl text-ink"
+              className="mt-2 text-2xl font-bold text-text"
               id="daily-summary-title"
             >
               Resumo do dia
@@ -170,13 +173,13 @@ export function DashboardPage() {
         {operationalSummary.status === "error" && (
           <ContentState
             action={
-              <button
-                className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
+              <Button
+                variant="secondary"
                 onClick={operationalSummary.retry}
                 type="button"
               >
                 Tentar novamente
-              </button>
+              </Button>
             }
             className="mt-6"
             description={operationalSummary.errorMessage ?? undefined}
@@ -189,13 +192,13 @@ export function DashboardPage() {
           operationalSummary.summary && (
             <DailySummaryPanel summary={operationalSummary.summary} />
           )}
-      </section>
+      </Card>
 
-      <details className="group mt-6 overflow-hidden rounded-3xl border border-[#1A615D]/20 bg-white text-sm leading-6 shadow-[0_10px_30px_rgba(0,73,83,0.06)]">
-        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 font-bold text-ink transition-colors hover:bg-brand-soft/15 focus:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-brand/30 [&::-webkit-details-marker]:hidden">
+      <details className="group mt-5 overflow-hidden rounded-xl border border-border bg-surface text-sm leading-6">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-5 py-3 font-bold text-text hover:bg-surface-subtle focus:outline-3 focus:outline-offset-[-3px] focus:outline-focus [&::-webkit-details-marker]:hidden">
           <span
             aria-hidden="true"
-            className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft/35 font-display text-lg text-ink-soft"
+            className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-subtle text-lg font-bold text-text-muted"
           >
             i
           </span>
@@ -206,16 +209,16 @@ export function DashboardPage() {
             size={18}
           />
         </summary>
-        <div className="border-t border-[#1A615D]/15 bg-cream/45 p-5">
+        <div className="border-t border-border bg-surface-subtle p-5">
           <dl className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-[#BDD8F1] bg-white/80 p-4 text-ink-soft">
+            <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
               <dt className="font-bold text-ink">Já estavam no campus</dt>
               <dd className="mt-1">
                 Veículos que entraram antes da data e ainda estavam no campus
                 quando o dia começou.
               </dd>
             </div>
-            <div className="rounded-2xl border border-[#BDD8F1] bg-white/80 p-4 text-ink-soft">
+            <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
               <dt className="font-bold text-ink">Ainda estavam no campus</dt>
               <dd className="mt-1">
                 {isCurrentDate
@@ -223,14 +226,14 @@ export function DashboardPage() {
                   : "Acessos que continuavam sem saída registrada ao encerrar aquele dia."}
               </dd>
             </div>
-            <div className="rounded-2xl border border-[#C8CE72] bg-white/80 p-4 text-ink-soft">
+            <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
               <dt className="font-bold text-ink">Já estavam em uso</dt>
               <dd className="mt-1">
                 Veículos institucionais que saíram antes da data e ainda não
                 tinham retornado quando o dia começou.
               </dd>
             </div>
-            <div className="rounded-2xl border border-[#C8CE72] bg-white/80 p-4 text-ink-soft">
+            <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
               <dt className="font-bold text-ink">Ainda estavam em uso</dt>
               <dd className="mt-1">
                 {isCurrentDate
@@ -239,7 +242,7 @@ export function DashboardPage() {
               </dd>
             </div>
           </dl>
-          <p className="mt-4 rounded-xl bg-[#EFD780]/30 px-4 py-3 text-xs font-medium text-ink-soft">
+          <p className="mt-4 rounded-xl border border-warning-border bg-warning-surface px-4 py-3 text-xs font-medium text-warning-text">
             Esses indicadores não classificam atraso ou irregularidade.
           </p>
         </div>
