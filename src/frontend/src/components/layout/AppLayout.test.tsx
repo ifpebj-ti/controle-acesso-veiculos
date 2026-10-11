@@ -94,12 +94,108 @@ describe("AppLayout", () => {
     "Vigilante",
     "SetorTransporte",
     "Administrador",
+  ])(
+    "preserves both ends of the mobile focus trap and logout for %s",
+    async (profile) => {
+      const user = userEvent.setup();
+      const { logout } = renderLayout(profile);
+      const trigger = screen.getByRole("button", { name: "Abrir menu" });
+      trigger.focus();
+      await user.keyboard("{Enter}");
+      const dialog = screen.getByRole("dialog", { name: "Menu principal" });
+      const close = within(dialog).getByRole("button", {
+        name: "Recolher menu",
+      });
+      expect(close).toHaveFocus();
+      await user.tab({ shift: true });
+      const exit = within(dialog).getByRole("button", { name: "Sair" });
+      expect(exit).toHaveFocus();
+      await user.tab();
+      expect(close).toHaveFocus();
+      await user.keyboard("{Escape}");
+      expect(trigger).toHaveFocus();
+      await user.keyboard("{Enter}");
+      await user.tab({ shift: true });
+      await user.keyboard("{Enter}");
+      expect(logout).toHaveBeenCalledOnce();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    },
+  );
+
+  it.each<ProfileName>([
+    "Porteiro",
+    "Vigilante",
+    "SetorTransporte",
+    "Administrador",
   ])("uses the tablet-collapsed navigation shell for %s", (profileName) => {
     renderLayout(profileName);
 
     expect(screen.getByRole("complementary")).toHaveClass("hidden", "xl:block");
     expect(screen.getByRole("banner")).toHaveClass("xl:hidden");
     expect(screen.getByRole("main")).toHaveClass("xl:pl-72");
+  });
+
+  it("keeps the compact system identity above the account without moving the remaining content", () => {
+    renderLayout("Porteiro");
+
+    const sidebar = screen.getByRole("complementary");
+    const account = within(sidebar).getByText("operador@example.test");
+    const navigation = within(sidebar).getByRole("navigation");
+    const logout = within(sidebar).getByRole("button", { name: "Sair" });
+    const systemIdentity = sidebar.querySelector(".sidebar-system-identity");
+    const institutionalBrand = sidebar.querySelector(
+      ".sidebar-institutional-brand",
+    );
+
+    expect(systemIdentity).toHaveClass("mb-9", "h-12");
+    expect(
+      within(sidebar).queryByRole("img", {
+        name: "Instituto Federal de Pernambuco, Campus Belo Jardim",
+      }),
+    ).not.toBeInTheDocument();
+    expect(systemIdentity).toBeInTheDocument();
+
+    expect(
+      (systemIdentity as Element).compareDocumentPosition(account) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      account.compareDocumentPosition(navigation) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      logout.compareDocumentPosition(institutionalBrand as Element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(systemIdentity).not.toHaveTextContent(
+      "Sistema de acesso e cadastro veicular",
+    );
+    expect(systemIdentity?.querySelector("img")).toHaveAttribute(
+      "src",
+      "/favicon.png",
+    );
+    expect(systemIdentity?.querySelector("img")).toHaveClass("size-12");
+    expect(institutionalBrand?.querySelector("img")).toHaveAttribute(
+      "src",
+      "/brand/ifpe-horizontal.png",
+    );
+    expect(institutionalBrand?.querySelector("img")).toHaveClass("h-8");
+    expect(within(sidebar).getByText("operador@example.test")).toBeVisible();
+    expect(within(sidebar).getByText("Porteiro")).toBeVisible();
+  });
+
+  it("keeps long account identifiers compact without breaking the sidebar", () => {
+    renderLayout("Porteiro");
+
+    const sidebar = screen.getByRole("complementary");
+    const accountIdentifier = within(sidebar).getByText(
+      "operador@example.test",
+    );
+    const profile = within(sidebar).getByText("Porteiro");
+
+    expect(accountIdentifier).toHaveClass("truncate");
+    expect(accountIdentifier).not.toHaveClass("break-all");
+    expect(profile).toHaveClass("text-text");
   });
 
   it("announces an unavailable session renewal assertively", () => {
@@ -147,7 +243,7 @@ describe("AppLayout", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Menu principal" });
     const closeButton = within(dialog).getByRole("button", {
-      name: "Fechar menu",
+      name: "Recolher menu",
     });
     await waitFor(() => expect(closeButton).toHaveFocus());
 

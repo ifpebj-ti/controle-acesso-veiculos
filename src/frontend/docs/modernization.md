@@ -184,3 +184,33 @@ O PR deve permanecer draft até concluir os critérios técnicos aplicáveis.
 - Maior chunk JS: 288,07 kB. Sem aviso de chunk acima de 500 kB e sem dependência
   adicionada. Valores totais não equivalem ao download inicial, pois as rotas
   continuam carregadas sob demanda.
+
+## Segundo incremento — autenticação, layout e navegação
+
+A Issue #404 migra somente a moldura da aplicação: login, estados de restauração,
+troca de senha, restrição de primeiro acesso, acesso negado, página não encontrada,
+sidebar, cabeçalho móvel e skip link. O desenho preserva logotipos e a ilustração
+institucional do login, mas troca grandes superfícies verdes por superfícies
+neutras e usa o verde na ação principal. Não há glassmorphism, gradiente ou
+animação decorativa.
+
+`routeMetadata.ts` e os serviços de autenticação não mudam. Os quatro perfis
+continuam recebendo os mesmos grupos, rotas e capacidades. O menu móvel preserva
+foco inicial no fechamento, contenção nos dois sentidos, Escape e retorno ao
+acionador. A troca obrigatória continua ocultando toda navegação operacional e
+mantém somente o fluxo de senha e a saída.
+
+As superfícies do escopo consomem `background`, `surface`, `surface-subtle`,
+`text`, `text-muted`, `border`, `primary`, `focus`, `warning` e `danger`. Login e
+troca de senha usam `TextField` e `Button`; troca de senha, acesso negado e página
+não encontrada reutilizam `Card`; restauração e validação de sessão compartilham
+um `ContentState`. Nenhuma preferência de tema é exposta nesta etapa.
+
+Validação isolada no Edge, com sessão fictícia em memória e sem API, cobre login,
+restauração, troca normal, primeiro acesso, acesso negado e página não encontrada
+em 390×844, 768×1024, 1366×768, 1440×1000, 320×568 e 720×500. Os 40 cenários não
+apresentaram overflow horizontal, controle abaixo de 48 px, perda de `h1` ou botão
+inalcançável; os quatro perfis mantiveram contenção e retorno de foco no menu.
+720×500 é somente uma aproximação de reflow e não substitui zoom real. Tablet
+físico e Narrador permanecem como validações humanas pendentes; nenhuma aprovação
+institucional é declarada.

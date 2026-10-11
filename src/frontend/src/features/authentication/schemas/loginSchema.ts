@@ -6,7 +6,7 @@ export const loginSchema = z.object({
   email: z
     .string()
     .trim()
-    .min(1, "Informe o e-mail institucional.")
+    .min(1, "Informe seu e-mail.")
     .max(254, "O e-mail deve possuir no máximo 254 caracteres.")
     .email("Informe um e-mail válido."),
   password: z

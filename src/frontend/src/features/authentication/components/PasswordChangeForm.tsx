@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { Button } from "../../../components/ui/Button";
+import { TextField } from "../../../components/ui/TextField";
 
 import {
   describeApiError,
@@ -22,12 +24,9 @@ const initialValues: PasswordChangeFormValues = {
   newPassword: "",
 };
 
-const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-white px-4 text-ink outline-none transition focus:border-brand-dark focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:bg-cream/60";
-
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
-    <p className="mt-1.5 text-sm font-semibold text-red-800" id={id}>
+    <p className="mt-1.5 text-sm font-semibold text-danger-text" id={id}>
       {message}
     </p>
   ) : null;
@@ -107,7 +106,7 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
         <label className="font-bold text-ink" htmlFor="current-password">
           Senha atual
         </label>
-        <input
+        <TextField
           aria-describedby={
             errors.currentPassword
               ? "current-password-help current-password-error"
@@ -115,7 +114,7 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
           }
           aria-invalid={Boolean(errors.currentPassword)}
           autoComplete="current-password"
-          className={fieldClass}
+          className="mt-2"
           disabled={isSubmitting}
           id="current-password"
           type="password"
@@ -134,7 +133,7 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
         <label className="font-bold text-ink" htmlFor="new-password">
           Nova senha
         </label>
-        <input
+        <TextField
           aria-describedby={
             errors.newPassword
               ? "new-password-help new-password-error"
@@ -142,7 +141,7 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
           }
           aria-invalid={Boolean(errors.newPassword)}
           autoComplete="new-password"
-          className={fieldClass}
+          className="mt-2"
           disabled={isSubmitting}
           id="new-password"
           type="password"
@@ -161,13 +160,13 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
         <label className="font-bold text-ink" htmlFor="confirm-new-password">
           Confirmar nova senha
         </label>
-        <input
+        <TextField
           aria-describedby={
             errors.confirmNewPassword ? "confirm-new-password-error" : undefined
           }
           aria-invalid={Boolean(errors.confirmNewPassword)}
           autoComplete="new-password"
-          className={fieldClass}
+          className="mt-2"
           disabled={isSubmitting}
           id="confirm-new-password"
           type="password"
@@ -182,7 +181,7 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
       {errors.root?.server?.message && (
         <div
           aria-atomic="true"
-          className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-900 outline-none focus:ring-3 focus:ring-red-700/30"
+          className="rounded-xl border border-danger-border bg-danger-surface p-4 text-sm font-semibold text-danger-text focus:outline-3 focus:outline-offset-3 focus:outline-focus"
           ref={statusRef}
           role="alert"
           tabIndex={-1}
@@ -191,13 +190,13 @@ export function PasswordChangeForm({ onSuccess }: PasswordChangeFormProps) {
         </div>
       )}
 
-      <button
-        className="min-h-12 w-full rounded-xl bg-ink px-5 py-3 font-bold text-white transition hover:bg-ink-soft focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/35 disabled:cursor-wait disabled:opacity-65 sm:w-auto"
+      <Button
+        className="w-full sm:w-auto"
         disabled={isSubmitting}
         type="submit"
       >
         {isSubmitting ? "Alterando senha…" : "Alterar senha"}
-      </button>
+      </Button>
     </form>
   );
 }

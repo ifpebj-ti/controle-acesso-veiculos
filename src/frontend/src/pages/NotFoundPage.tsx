@@ -1,27 +1,22 @@
 import { Link } from "react-router-dom";
 
 import { Brand } from "../components/ui/Brand";
+import { Card } from "../components/ui/Card";
 
 export function NotFoundPage() {
   return (
-    <main className="grid min-h-svh place-items-center bg-cream px-4 py-10 text-center text-ink">
-      <div className="max-w-lg">
+    <main className="grid min-h-svh place-items-center bg-background px-4 py-10 text-center text-text">
+      <Card className="w-full max-w-lg">
         <Brand className="mx-auto w-fit max-w-xs" />
-        <p className="mt-10 text-xs font-bold uppercase tracking-[0.16em] text-brand-dark">
-          Erro 404
-        </p>
-        <h1 className="mt-3 font-display text-4xl">Página não encontrada</h1>
+        <p className="mt-8 text-sm font-semibold text-text-muted">Erro 404</p>
+        <h1 className="mt-3 text-3xl font-bold">Página não encontrada</h1>
         <p className="mt-3 leading-7 text-ink-soft">
-          O endereço informado não faz parte dos fluxos disponíveis neste
-          protótipo.
+          O endereço informado não faz parte das páginas disponíveis no sistema.
         </p>
-        <Link
-          className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-ink px-6 font-bold text-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/35"
-          to="/visao-geral"
-        >
+        <Link className="ui-button ui-button--primary mt-6" to="/visao-geral">
           Voltar à visão geral
         </Link>
-      </div>
+      </Card>
     </main>
   );
 }
