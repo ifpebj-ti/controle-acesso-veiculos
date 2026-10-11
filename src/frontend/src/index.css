@@ -327,10 +327,24 @@ button:disabled {
 }
 
 .sidebar-primary-item--active {
-  border-color: var(--ui-primary);
+  border-color: transparent;
+  background: color-mix(
+    in srgb,
+    var(--ui-primary) 14%,
+    var(--ui-navigation-surface)
+  );
+  color: var(--ui-text);
+  box-shadow: none;
+}
+
+.sidebar-primary-item--active::before {
+  position: absolute;
+  inset-block: 0.4rem;
+  left: -0.05rem;
+  width: 0.25rem;
+  border-radius: 999px;
   background: var(--ui-primary);
-  color: var(--ui-primary-text);
-  box-shadow: 0 0.25rem 0.75rem var(--ui-shadow);
+  content: "";
 }
 
 @media (max-width: 640px) {

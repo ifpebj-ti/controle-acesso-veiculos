@@ -133,7 +133,7 @@ describe("AppLayout", () => {
     expect(screen.getByRole("main")).toHaveClass("xl:pl-72");
   });
 
-  it("keeps the operator context above navigation and the institutional brand at the end", () => {
+  it("keeps the institutional brand first and the system identity at the end", () => {
     renderLayout("Porteiro");
 
     const sidebar = screen.getByRole("complementary");
@@ -143,15 +143,25 @@ describe("AppLayout", () => {
     const brand = within(sidebar).getByRole("img", {
       name: "Instituto Federal de Pernambuco, Campus Belo Jardim",
     });
+    const systemIdentity = within(sidebar).getByLabelText(
+      "Identidade do sistema",
+    );
 
+    expect(
+      brand.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(
       account.compareDocumentPosition(navigation) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      logout.compareDocumentPosition(brand) & Node.DOCUMENT_POSITION_FOLLOWING,
+      logout.compareDocumentPosition(systemIdentity) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(brand).toHaveAttribute("src", "/brand/ifpe-vertical.png");
+    expect(brand).toHaveAttribute("src", "/brand/ifpe-horizontal.png");
+    expect(systemIdentity).toHaveTextContent(
+      "Sistema de acesso e cadastro veicular",
+    );
     expect(within(sidebar).getByText("operador@example.test")).toBeVisible();
     expect(within(sidebar).getByText("Porteiro")).toBeVisible();
   });
@@ -167,7 +177,7 @@ describe("AppLayout", () => {
 
     expect(accountIdentifier).toHaveClass("truncate");
     expect(accountIdentifier).not.toHaveClass("break-all");
-    expect(profile).toHaveClass("text-text-muted");
+    expect(profile).toHaveClass("text-text");
   });
 
   it("announces an unavailable session renewal assertively", () => {

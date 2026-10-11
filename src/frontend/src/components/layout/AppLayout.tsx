@@ -41,7 +41,9 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
 
   return (
     <div className="flex min-h-full flex-col px-4 pb-5 pt-16 xl:pt-6">
-      <div className="mb-12 mt-6 px-2 xl:mt-12">
+      <Brand className="mb-9 max-w-[14rem] px-2" />
+
+      <div className="mb-9 px-2">
         <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
@@ -50,14 +52,14 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
             <Icon name="user" size={30} />
           </span>
           <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-text">
+              {profileLabels[user.profileName]}
+            </p>
             <p
-              className="truncate text-sm font-semibold text-text"
+              className="mt-0.5 truncate text-xs text-text-muted"
               title={user.email}
             >
               {user.email}
-            </p>
-            <p className="mt-0.5 text-xs font-medium text-text-muted">
-              {profileLabels[user.profileName]}
             </p>
           </div>
         </div>
@@ -138,33 +140,47 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
         </ul>
       </nav>
 
-      <NavLink
-        className={({ isActive }) =>
-          `sidebar-primary-item mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left font-semibold ${
-            isActive
-              ? "sidebar-primary-item--active"
-              : "text-text hover:bg-surface"
-          }`
-        }
-        onClick={closeMenu}
-        to="/conta/senha"
-      >
-        <Icon name="shield" size={21} />
-        Alterar senha
-      </NavLink>
+      <div className="mt-8 border-t border-border pt-4">
+        <NavLink
+          className={({ isActive }) =>
+            `sidebar-primary-item flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left font-semibold ${
+              isActive
+                ? "sidebar-primary-item--active"
+                : "text-text hover:bg-surface"
+            }`
+          }
+          onClick={closeMenu}
+          to="/conta/senha"
+        >
+          <Icon name="shield" size={21} />
+          Alterar senha
+        </NavLink>
 
-      <Button
-        className="sidebar-logout mt-2 w-full justify-start"
-        variant="secondary"
-        onClick={handleLogout}
-        type="button"
-      >
-        <Icon name="log-out" size={21} />
-        Sair
-      </Button>
+        <Button
+          className="sidebar-logout mt-1 w-full justify-start"
+          variant="secondary"
+          onClick={handleLogout}
+          type="button"
+        >
+          <Icon name="log-out" size={21} />
+          Sair
+        </Button>
+      </div>
 
-      <div className="mt-6 border-t border-border pt-6">
-        <Brand compact className="mx-auto min-h-24 justify-center" />
+      <div
+        aria-label="Identidade do sistema"
+        className="mt-5 border-t border-border px-2 pt-5"
+      >
+        <div className="flex items-center gap-3">
+          <img
+            alt=""
+            className="size-11 shrink-0 object-contain"
+            src="/favicon.png"
+          />
+          <p className="text-xs font-semibold leading-snug text-text-muted">
+            Sistema de acesso e cadastro veicular
+          </p>
+        </div>
       </div>
     </div>
   );
