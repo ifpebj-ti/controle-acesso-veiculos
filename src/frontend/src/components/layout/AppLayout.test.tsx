@@ -103,7 +103,9 @@ describe("AppLayout", () => {
       trigger.focus();
       await user.keyboard("{Enter}");
       const dialog = screen.getByRole("dialog", { name: "Menu principal" });
-      const close = within(dialog).getByRole("button", { name: "Fechar menu" });
+      const close = within(dialog).getByRole("button", {
+        name: "Recolher menu",
+      });
       expect(close).toHaveFocus();
       await user.tab({ shift: true });
       const exit = within(dialog).getByRole("button", { name: "Sair" });
@@ -133,35 +135,51 @@ describe("AppLayout", () => {
     expect(screen.getByRole("main")).toHaveClass("xl:pl-72");
   });
 
-  it("keeps the institutional brand first and the system identity at the end", () => {
+  it("keeps the compact system identity above the account without moving the remaining content", () => {
     renderLayout("Porteiro");
 
     const sidebar = screen.getByRole("complementary");
     const account = within(sidebar).getByText("operador@example.test");
     const navigation = within(sidebar).getByRole("navigation");
     const logout = within(sidebar).getByRole("button", { name: "Sair" });
-    const brand = within(sidebar).getByRole("img", {
-      name: "Instituto Federal de Pernambuco, Campus Belo Jardim",
-    });
-    const systemIdentity = within(sidebar).getByLabelText(
-      "Identidade do sistema",
+    const systemIdentity = sidebar.querySelector(".sidebar-system-identity");
+    const institutionalBrand = sidebar.querySelector(
+      ".sidebar-institutional-brand",
     );
 
+    expect(systemIdentity).toHaveClass("mb-9", "h-12");
     expect(
-      brand.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING,
+      within(sidebar).queryByRole("img", {
+        name: "Instituto Federal de Pernambuco, Campus Belo Jardim",
+      }),
+    ).not.toBeInTheDocument();
+    expect(systemIdentity).toBeInTheDocument();
+
+    expect(
+      (systemIdentity as Element).compareDocumentPosition(account) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       account.compareDocumentPosition(navigation) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      logout.compareDocumentPosition(systemIdentity) &
+      logout.compareDocumentPosition(institutionalBrand as Element) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(brand).toHaveAttribute("src", "/brand/ifpe-horizontal.png");
-    expect(systemIdentity).toHaveTextContent(
+    expect(systemIdentity).not.toHaveTextContent(
       "Sistema de acesso e cadastro veicular",
     );
+    expect(systemIdentity?.querySelector("img")).toHaveAttribute(
+      "src",
+      "/favicon.png",
+    );
+    expect(systemIdentity?.querySelector("img")).toHaveClass("size-12");
+    expect(institutionalBrand?.querySelector("img")).toHaveAttribute(
+      "src",
+      "/brand/ifpe-horizontal.png",
+    );
+    expect(institutionalBrand?.querySelector("img")).toHaveClass("h-8");
     expect(within(sidebar).getByText("operador@example.test")).toBeVisible();
     expect(within(sidebar).getByText("Porteiro")).toBeVisible();
   });
@@ -225,7 +243,7 @@ describe("AppLayout", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Menu principal" });
     const closeButton = within(dialog).getByRole("button", {
-      name: "Fechar menu",
+      name: "Recolher menu",
     });
     await waitFor(() => expect(closeButton).toHaveFocus());
 
