@@ -283,6 +283,7 @@ export function NewAccessPage() {
         description="Registre o veículo, o condutor e a finalidade do acesso geral. O horário oficial é definido pelo servidor."
         eyebrow="Operação da portaria"
         title="Registrar entrada"
+        variant="prominent"
       />
 
       {successNotice && (

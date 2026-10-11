@@ -8,6 +8,7 @@ import {
   type PagedAccessRecords,
 } from "../features/access-records";
 import {
+  countAccessHistoryByCategory,
   correctAccessRecord,
   searchAccessHistory,
 } from "../features/access-records/services/accessRecordsService";
@@ -21,6 +22,7 @@ import { selectFieldOption } from "../test/selectField";
 import { HistoryPage } from "./HistoryPage";
 
 vi.mock("../features/access-records/services/accessRecordsService", () => ({
+  countAccessHistoryByCategory: vi.fn(),
   correctAccessRecord: vi.fn(),
   searchAccessHistory: vi.fn(),
 }));
@@ -89,6 +91,14 @@ function renderPage(profileName: ProfileName = "Porteiro") {
 
 describe("HistoryPage", () => {
   beforeEach(() => {
+    vi.mocked(countAccessHistoryByCategory).mockReset();
+    vi.mocked(countAccessHistoryByCategory).mockResolvedValue({
+      Entrega: 1,
+      Evento: 0,
+      "Prestador de serviço": 2,
+      "Treino ou jogo": 0,
+      Visitante: 3,
+    });
     vi.mocked(correctAccessRecord).mockReset();
     vi.mocked(searchAccessHistory).mockReset();
     vi.mocked(describeApiError).mockReset();
@@ -282,6 +292,47 @@ describe("HistoryPage", () => {
     );
   });
 
+  it("applies featured categories as immediate server-side filters", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Nenhum registro encontrado");
+
+    expect(screen.getByText("Operação da portaria")).toHaveClass(
+      "uppercase",
+      "text-primary",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Histórico de acessos", level: 1 }),
+    ).toHaveClass("sm:text-4xl");
+    expect(
+      screen.getByRole("heading", { name: "Histórico de acessos", level: 1 }),
+    ).not.toHaveClass("font-display");
+
+    const visitorShortcut = screen.getByRole("button", { name: "Visitante" });
+    expect(visitorShortcut).toHaveAttribute("aria-pressed", "false");
+    expect(within(visitorShortcut).getByText("3")).toBeInTheDocument();
+
+    await user.click(visitorShortcut);
+
+    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
+    expect(searchAccessHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ categoryName: "Visitante", page: 1 }),
+    );
+    expect(visitorShortcut).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("moves focus to the complete category selector from more categories", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Nenhum registro encontrado");
+
+    await user.click(screen.getByRole("button", { name: "Mais categorias" }));
+
+    expect(screen.getByLabelText("Categoria")).toHaveFocus();
+  });
+
   it("keeps filter submission focus while the request is pending", async () => {
     let resolveRequest: ((value: PagedAccessRecords) => void) | undefined;
     const pendingRequest = new Promise<PagedAccessRecords>((resolve) => {
@@ -368,6 +419,81 @@ describe("HistoryPage", () => {
     await screen.findAllByText("DEM1A23");
     expect(screen.queryByText("Evento:")).not.toBeInTheDocument();
     expect(screen.queryByText("8")).not.toBeInTheDocument();
+  });
+
+  it.each<ProfileName>([
+    "Porteiro",
+    "Vigilante",
+    "SetorTransporte",
+    "Administrador",
+  ])(
+    "allows %s to inspect the complete record details",
+    async (profileName) => {
+      vi.mocked(searchAccessHistory).mockResolvedValue(
+        pageResult([
+          {
+            ...record,
+            eventAuthorizationName: "Evento Fictício",
+            observation: "Observação fictícia do acesso.",
+            vehicleType: "Motocicleta",
+          },
+        ]),
+      );
+      const user = userEvent.setup();
+      const { container } = renderPage(profileName);
+
+      const detailsButton = (
+        await screen.findAllByRole("button", {
+          name: /Ver detalhes do registro DEM1A23/,
+        })
+      )[0];
+      await user.click(detailsButton);
+
+      const dialog = screen.getByRole("dialog", {
+        name: "Detalhes do registro",
+      });
+      expect(dialog).toHaveTextContent("DEM1A23");
+      expect(dialog).toHaveTextContent("Motocicleta");
+      expect(dialog).toHaveTextContent("Pessoa histórica fictícia");
+      expect(dialog).toHaveTextContent("Atendimento fictício");
+      expect(dialog).toHaveTextContent("Evento Fictício");
+      expect(dialog).toHaveTextContent("Observação fictícia do acesso.");
+      expect(
+        within(dialog).getByRole("button", {
+          name: "Fechar detalhes do registro",
+        }),
+      ).toHaveFocus();
+      await expectNoSeriousAccessibilityViolations(container);
+
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      await waitFor(() => expect(detailsButton).toHaveFocus());
+    },
+  );
+
+  it("opens the existing audited correction flow from record details", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([record]));
+    const user = userEvent.setup();
+    renderPage();
+
+    const detailsButton = (
+      await screen.findAllByRole("button", {
+        name: /Ver detalhes do registro DEM1A23/,
+      })
+    )[0];
+    await user.click(detailsButton);
+    await user.click(
+      within(
+        screen.getByRole("dialog", { name: "Detalhes do registro" }),
+      ).getByRole("button", { name: "Corrigir registro" }),
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: "Corrigir registro" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Objetivo")).toHaveValue(
+      "Atendimento fictício",
+    );
   });
 
   it.each<ProfileName>([

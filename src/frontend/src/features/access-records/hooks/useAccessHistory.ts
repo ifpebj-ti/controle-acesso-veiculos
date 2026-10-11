@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { describeApiError } from "../../../services/api-errors";
-import { searchAccessHistory } from "../services/accessRecordsService";
+import { featuredAccessCategories } from "../model/accessCategories";
+import {
+  countAccessHistoryByCategory,
+  searchAccessHistory,
+} from "../services/accessRecordsService";
 import type {
   AccessHistoryFilters,
   AccessRecord,
@@ -72,7 +76,15 @@ export function useAccessHistory() {
   const [requestStatus, setRequestStatus] =
     useState<AccessHistoryRequestStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [categoryCounts, setCategoryCounts] = useState<Record<
+    string,
+    number
+  > | null>(null);
+  const [categoryCountsStatus, setCategoryCountsStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
   const requestSequence = useRef(0);
+  const categoryCountSequence = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -100,8 +112,30 @@ export function useAccessHistory() {
     };
   }, [filters]);
 
+  useEffect(() => {
+    let active = true;
+    const requestId = ++categoryCountSequence.current;
+
+    void countAccessHistoryByCategory(filters, featuredAccessCategories)
+      .then((counts) => {
+        if (!active || requestId !== categoryCountSequence.current) return;
+        setCategoryCounts(counts);
+        setCategoryCountsStatus("ready");
+      })
+      .catch(() => {
+        if (!active || requestId !== categoryCountSequence.current) return;
+        setCategoryCounts(null);
+        setCategoryCountsStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [filters]);
+
   function startRequest(nextFilters: AccessHistoryFilters) {
     setRequestStatus("loading");
+    setCategoryCountsStatus("loading");
     setResult(null);
     setErrorMessage(null);
     setFilters(nextFilters);
@@ -126,6 +160,12 @@ export function useAccessHistory() {
 
   function clearFilters() {
     const next = createInitialDraft();
+    setDraft(next);
+    startRequest(toApiFilters(next, 1));
+  }
+
+  function selectCategory(categoryName: string) {
+    const next = { ...draft, categoryName };
     setDraft(next);
     startRequest(toApiFilters(next, 1));
   }
@@ -188,6 +228,8 @@ export function useAccessHistory() {
 
   return {
     applyFilters,
+    categoryCounts,
+    categoryCountsStatus,
     clearFilters,
     draft,
     errorMessage,
@@ -196,6 +238,7 @@ export function useAccessHistory() {
     revalidateAfterCorrection,
     result,
     retry,
+    selectCategory,
     selectPeriod,
     setDraft,
   };

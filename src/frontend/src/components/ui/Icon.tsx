@@ -1,6 +1,7 @@
 import type { ReactNode, SVGProps } from "react";
 
 export type IconName =
+  | "ambulance"
   | "arrow-right"
   | "bus"
   | "calendar"
@@ -9,16 +10,26 @@ export type IconName =
   | "clipboard"
   | "clock"
   | "dashboard"
+  | "ellipsis"
   | "history"
   | "lock"
   | "log-out"
   | "mail"
   | "menu"
+  | "motorcycle"
+  | "package"
+  | "pickup"
   | "plus"
+  | "refresh"
   | "search"
   | "shield"
+  | "truck"
+  | "trophy"
   | "user"
   | "users"
+  | "van"
+  | "vehicle"
+  | "wrench"
   | "x";
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -27,6 +38,14 @@ interface IconProps extends SVGProps<SVGSVGElement> {
 }
 
 const paths: Record<IconName, ReactNode> = {
+  ambulance: (
+    <>
+      <path d="M3 7h11v10H3zM14 10h4l3 4v3h-7z" />
+      <path d="M7 9v6M4 12h6" />
+      <circle cx="7" cy="19" r="2" />
+      <circle cx="18" cy="19" r="2" />
+    </>
+  ),
   "arrow-right": <path d="m9 18 6-6-6-6M3 12h12" />,
   bus: (
     <>
@@ -67,6 +86,13 @@ const paths: Record<IconName, ReactNode> = {
       <rect width="7" height="7" x="14" y="14" rx="1" />
     </>
   ),
+  ellipsis: (
+    <>
+      <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" />
+    </>
+  ),
   history: (
     <>
       <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
@@ -92,7 +118,33 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  motorcycle: (
+    <>
+      <circle cx="6" cy="17" r="3" />
+      <circle cx="18" cy="17" r="3" />
+      <path d="M6 17h5l2-5h3l2 5M9 8h4l3 4M7 12h4" />
+    </>
+  ),
+  package: (
+    <>
+      <path d="m12 2 8 4.5v11L12 22l-8-4.5v-11L12 2Z" />
+      <path d="m4.5 6.7 7.5 4.2 7.5-4.2M12 11v11" />
+    </>
+  ),
+  pickup: (
+    <>
+      <path d="M3 7h8v8H3zM11 10h5l3 3v2h-8zM3 15h18v3H3z" />
+      <circle cx="7" cy="19" r="2" />
+      <circle cx="17" cy="19" r="2" />
+    </>
+  ),
   plus: <path d="M12 5v14M5 12h14" />,
+  refresh: (
+    <>
+      <path d="M20 7v5h-5" />
+      <path d="M19 12a7 7 0 1 0 1 5" />
+    </>
+  ),
   search: (
     <>
       <circle cx="11" cy="11" r="7" />
@@ -103,6 +155,19 @@ const paths: Record<IconName, ReactNode> = {
     <>
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
       <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  truck: (
+    <>
+      <path d="M3 6h11v11H3zM14 10h4l3 4v3h-7z" />
+      <circle cx="7" cy="19" r="2" />
+      <circle cx="18" cy="19" r="2" />
+    </>
+  ),
+  trophy: (
+    <>
+      <path d="M8 4h8v4a4 4 0 0 1-8 0V4ZM12 12v5M8 21h8M9 17h6" />
+      <path d="M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4" />
     </>
   ),
   user: (
@@ -117,6 +182,24 @@ const paths: Record<IconName, ReactNode> = {
       <circle cx="9" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
     </>
+  ),
+  van: (
+    <>
+      <path d="M4 5h12a3 3 0 0 1 3 3v9H4V5Z" />
+      <path d="M13 8h6M7 9h3M4 14h15" />
+      <circle cx="8" cy="19" r="2" />
+      <circle cx="17" cy="19" r="2" />
+    </>
+  ),
+  vehicle: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="2" />
+      <path d="M12 4v6M5 14l5-1M19 14l-5-1" />
+    </>
+  ),
+  wrench: (
+    <path d="M14.7 6.3a4 4 0 0 0-5-5L12 3.6 9.6 6 7.3 3.7a4 4 0 0 0 5 5L4 17a2.1 2.1 0 0 0 3 3l8.3-8.3a4 4 0 0 0 5-5L18 9l-2.4-2.4L18 4.3a4 4 0 0 0-3.3 2Z" />
   ),
   x: <path d="M18 6 6 18M6 6l12 12" />,
 };

@@ -88,3 +88,25 @@ export async function searchAccessHistory(
   });
   return parseContract(pagedAccessRecordsSchema.safeParse(response.data));
 }
+
+export async function countAccessHistoryByCategory(
+  filters: AccessHistoryFilters,
+  categories: readonly string[],
+): Promise<Record<string, number>> {
+  const baseFilters = { ...filters };
+  delete baseFilters.categoryName;
+
+  const totals = await Promise.all(
+    categories.map(async (categoryName) => {
+      const result = await searchAccessHistory({
+        ...baseFilters,
+        categoryName,
+        page: 1,
+        pageSize: 1,
+      });
+      return [categoryName, result.totalCount] as const;
+    }),
+  );
+
+  return Object.fromEntries(totals);
+}

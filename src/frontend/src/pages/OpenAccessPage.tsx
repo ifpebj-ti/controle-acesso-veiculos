@@ -152,6 +152,7 @@ export function OpenAccessPage() {
         description="Localize veículos que ainda não registraram saída e encerre o acesso após a conferência manual."
         eyebrow="Operação da portaria"
         title="Acessos em aberto"
+        variant="prominent"
       />
 
       {notice && (
@@ -194,24 +195,22 @@ export function OpenAccessPage() {
         aria-busy={
           accessRecords.isRefreshing || accessRecords.status === "loading"
         }
-        className="mt-6 overflow-hidden rounded-xl border border-border bg-surface"
+        className="mt-6 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
       >
-        <div className="p-5 sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="w-full max-w-xl">
-              <label
-                className="text-sm font-semibold text-ink"
-                htmlFor="open-search"
-              >
+        <div className="p-4 sm:p-6">
+          <div className="grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_auto_auto] lg:items-end">
+            <div className="w-full">
+              <label className="sr-only" htmlFor="open-search">
                 Buscar acesso aberto
               </label>
-              <div className="relative mt-2">
+              <div className="relative">
                 <Icon
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft"
+                  className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-ink-soft"
                   name="search"
+                  size={22}
                 />
                 <TextField
-                  className="pl-12"
+                  className="open-access-search-field min-h-13 rounded-xl"
                   id="open-search"
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Placa, condutor, categoria ou objetivo"
@@ -223,21 +222,27 @@ export function OpenAccessPage() {
             </div>
 
             {accessRecords.status === "ready" && (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="text-sm text-ink-soft">
-                  <p aria-live="polite" className="font-bold text-ink">
-                    {accessRecords.records.length} em aberto
-                    {hasActiveFilters &&
-                      ` · ${filteredRecords.length} exibido(s)`}
-                  </p>
-                  {accessRecords.lastUpdatedAt && (
-                    <p className="mt-0.5 text-xs">
-                      Última atualização:{" "}
-                      {updateTimeFormatter.format(accessRecords.lastUpdatedAt)}
+              <>
+                <div className="flex min-h-13 items-center gap-3 rounded-xl border border-success-border bg-success-surface px-4 py-2.5 text-sm text-success-text">
+                  <Icon className="shrink-0" name="clock" size={26} />
+                  <div>
+                    <p aria-live="polite" className="font-bold text-ink">
+                      {accessRecords.records.length} em aberto
+                      {hasActiveFilters &&
+                        ` · ${filteredRecords.length} exibido(s)`}
                     </p>
-                  )}
+                    {accessRecords.lastUpdatedAt && (
+                      <p className="mt-0.5 whitespace-nowrap text-xs text-ink-soft">
+                        Última atualização:{" "}
+                        {updateTimeFormatter.format(
+                          accessRecords.lastUpdatedAt,
+                        )}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <Button
+                  className="min-h-13 whitespace-nowrap rounded-xl px-5"
                   disabled={
                     accessRecords.isRefreshing ||
                     accessRecords.closingId !== null
@@ -246,11 +251,16 @@ export function OpenAccessPage() {
                   type="button"
                   variant="secondary"
                 >
+                  <Icon
+                    className={accessRecords.isRefreshing ? "animate-spin" : ""}
+                    name="refresh"
+                    size={19}
+                  />
                   {accessRecords.isRefreshing
                     ? "Atualizando…"
                     : "Atualizar lista"}
                 </Button>
-              </div>
+              </>
             )}
           </div>
 

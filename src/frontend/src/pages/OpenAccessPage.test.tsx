@@ -59,6 +59,7 @@ const record: AccessRecord = {
   status: "Aberto",
   updatedById: null,
   vehicleId: 3,
+  vehicleType: "Motocicleta",
 };
 
 const secondRecord: AccessRecord = {
@@ -70,6 +71,7 @@ const secondRecord: AccessRecord = {
   objective: "Entrega fictícia de materiais para atividade acadêmica",
   plate: "DMO2B34",
   vehicleId: 4,
+  vehicleType: "Van",
 };
 
 function deferred<T>() {
@@ -152,9 +154,21 @@ describe("OpenAccessPage", () => {
       within(table).getByRole("columnheader", { name: "Placa" }),
     ).toBeInTheDocument();
     expect(
+      within(table).getByRole("columnheader", { name: "Tipo" }),
+    ).toBeInTheDocument();
+    expect(
       within(table).getByRole("columnheader", { name: "Tempo transcorrido" }),
     ).toBeInTheDocument();
     expect(within(table).getByText("Pessoa Fictícia")).toBeInTheDocument();
+    expect(within(table).getByText("Motocicleta")).toBeInTheDocument();
+    expect(
+      table.querySelector(
+        '.open-access-vehicle-icon[data-vehicle-kind="motorcycle"]',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      table.querySelector('.open-access-vehicle-icon[data-vehicle-kind="van"]'),
+    ).toBeInTheDocument();
     expect(
       within(cards).getByText(secondRecord.driverName),
     ).toBeInTheDocument();
@@ -163,6 +177,40 @@ describe("OpenAccessPage", () => {
     expect(
       screen.queryByText(/atrasad|irregular|vencid|fora do prazo/i),
     ).not.toBeInTheDocument();
+  });
+
+  it("uses a distinct icon for each supported vehicle type returned by the API", async () => {
+    const vehicleTypes = [
+      ["Automóvel", "car"],
+      ["Motocicleta", "motorcycle"],
+      ["Caminhonete", "pickup"],
+      ["Van", "van"],
+      ["Ônibus", "bus"],
+      ["Caminhão", "truck"],
+      ["Veículo de emergência", "emergency"],
+      ["Outro", "unknown"],
+    ] as const;
+
+    vi.mocked(listOpenAccessRecords).mockResolvedValue(
+      vehicleTypes.map(([vehicleType], index) => ({
+        ...record,
+        id: index + 20,
+        plate: `TST${index}A00`,
+        vehicleId: index + 20,
+        vehicleType,
+      })),
+    );
+
+    renderPage();
+
+    const table = await screen.findByTestId("open-access-table");
+    for (const [, kind] of vehicleTypes) {
+      expect(
+        table.querySelector(
+          `.open-access-vehicle-icon[data-vehicle-kind="${kind}"]`,
+        ),
+      ).toBeInTheDocument();
+    }
   });
 
   it("filters the successful result locally without another request", async () => {

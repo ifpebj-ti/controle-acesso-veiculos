@@ -16,6 +16,7 @@ interface AccessHistoryResultsProps {
   result: PagedAccessRecords | null;
   onPageChange: (page: number) => void;
   onRetry: () => void;
+  onDetails: (record: AccessRecord, trigger: HTMLButtonElement) => void;
   onCorrect?: (record: AccessRecord, trigger: HTMLButtonElement) => void;
 }
 
@@ -106,6 +107,7 @@ export function AccessHistoryResults({
   result,
   onPageChange,
   onRetry,
+  onDetails,
   onCorrect,
 }: AccessHistoryResultsProps) {
   const records = result?.items ?? [];
@@ -207,17 +209,30 @@ export function AccessHistoryResults({
                   </div>
                 </dl>
                 <ExceptionalClosureDetails record={record} />
-                {onCorrect && (
+                <div className="mt-4 grid gap-2">
                   <Button
-                    aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
-                    className="mt-4 w-full"
-                    onClick={(event) => onCorrect(record, event.currentTarget)}
+                    aria-label={`Ver detalhes do registro ${record.plate} de ${record.driverName}`}
+                    className="w-full"
+                    onClick={(event) => onDetails(record, event.currentTarget)}
                     type="button"
                     variant="secondary"
                   >
-                    Corrigir registro
+                    Ver detalhes
                   </Button>
-                )}
+                  {onCorrect && (
+                    <Button
+                      aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                      className="w-full"
+                      onClick={(event) =>
+                        onCorrect(record, event.currentTarget)
+                      }
+                      type="button"
+                      variant="secondary"
+                    >
+                      Corrigir registro
+                    </Button>
+                  )}
+                </div>
               </article>
             ))}
           </div>
@@ -244,11 +259,9 @@ export function AccessHistoryResults({
                   <th className="px-3 py-3" scope="col">
                     Situação
                   </th>
-                  {onCorrect && (
-                    <th className="px-3 py-3" scope="col">
-                      Ações
-                    </th>
-                  )}
+                  <th className="px-3 py-3 text-center" scope="col">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -291,21 +304,34 @@ export function AccessHistoryResults({
                     <td className="px-3 py-4">
                       <StatusBadge {...closureStatus(record)} />
                     </td>
-                    {onCorrect && (
-                      <td className="px-3 py-4">
+                    <td className="px-3 py-4">
+                      <div className="grid gap-2">
                         <Button
-                          aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                          aria-label={`Ver detalhes do registro ${record.plate} de ${record.driverName}`}
                           className="whitespace-nowrap text-xs"
                           onClick={(event) =>
-                            onCorrect(record, event.currentTarget)
+                            onDetails(record, event.currentTarget)
                           }
                           type="button"
                           variant="secondary"
                         >
-                          Corrigir registro
+                          Ver detalhes
                         </Button>
-                      </td>
-                    )}
+                        {onCorrect && (
+                          <Button
+                            aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                            className="whitespace-nowrap text-xs"
+                            onClick={(event) =>
+                              onCorrect(record, event.currentTarget)
+                            }
+                            type="button"
+                            variant="secondary"
+                          >
+                            Corrigir registro
+                          </Button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

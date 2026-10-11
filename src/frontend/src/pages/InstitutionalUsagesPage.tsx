@@ -68,8 +68,9 @@ export function InstitutionalUsagesPage() {
               ? "Registre saídas e retornos usando veículos e motoristas previamente autorizados."
               : "Consulte o histórico da frota sem executar movimentações operacionais."
         }
-        eyebrow={canOperate ? "Operação institucional" : "Supervisão"}
+        eyebrow={canOperate ? "Operação da portaria" : "Supervisão"}
         title="Utilizações da frota"
+        variant={canOperate ? "prominent" : "default"}
       />
 
       {catalogs.status === "error" && catalogs.errorMessage && (
