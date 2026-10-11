@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "../../../components/ui/Button";
+import { Icon } from "../../../components/ui/Icon";
 import { TextField } from "../../../components/ui/TextField";
 import { searchAccessEntryCandidates } from "../services/accessRecordsService";
 import type { AccessEntryCandidate } from "../types";
@@ -154,19 +155,29 @@ export function EntryCandidateSearch({
   return (
     <section
       aria-labelledby={`${inputId}-title`}
-      className="rounded-xl border border-border bg-surface-subtle p-4 sm:p-5"
+      className="rounded-xl border border-success-border bg-success-surface p-4 sm:p-5"
     >
-      <h3 className="text-xl font-bold text-text" id={`${inputId}-title`}>
-        Buscar cadastro anterior
-      </h3>
-      <p className="mt-1 text-sm leading-6 text-ink-soft" id={guidanceId}>
-        Digite ao menos 3 caracteres da placa ou do nome. Se não encontrar,
-        preencha os campos normalmente.
-      </p>
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface text-primary"
+        >
+          <Icon name="search" size={23} />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-lg font-bold text-text" id={`${inputId}-title`}>
+            Buscar cadastro anterior
+          </h3>
+          <p className="mt-1 text-sm leading-6 text-ink-soft" id={guidanceId}>
+            Digite ao menos 3 caracteres da placa ou do nome. Se não encontrar,
+            preencha os campos normalmente.
+          </p>
+        </div>
+      </div>
       <label className="sr-only" htmlFor={inputId}>
         Buscar por placa ou nome do condutor
       </label>
-      <div className="relative mt-3">
+      <div className="relative mt-4 sm:ml-14">
         <TextField
           aria-activedescendant={activeOptionId}
           aria-autocomplete="list"

@@ -510,8 +510,8 @@ describe("NewAccessPage", () => {
       .closest("section");
 
     expect(quickCheck).toHaveClass(
-      "border-border",
-      "bg-surface-subtle",
+      "border-success-border",
+      "bg-success-surface",
       "text-text",
     );
     expect(

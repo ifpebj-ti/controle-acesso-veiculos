@@ -7,6 +7,7 @@ import type {
 } from "react-hook-form";
 
 import { TextField } from "../../../components/ui/TextField";
+import { Icon } from "../../../components/ui/Icon";
 import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
 import {
   customEntryOption,
@@ -88,7 +89,12 @@ export function EntryObjectiveFieldset({
       className="md:col-span-2"
     >
       <legend className="text-sm font-semibold text-ink" id="objective-label">
-        Objetivo do acesso <span className="text-danger-text">*</span>
+        <span className="inline-flex items-center gap-2">
+          <Icon name="dashboard" size={18} />
+          <span>
+            Objetivo do acesso <span className="text-danger-text">*</span>
+          </span>
+        </span>
       </legend>
       <p className="mt-1 text-sm text-ink-soft" id="objective-help">
         Escolha a opção que melhor resume a finalidade da entrada.

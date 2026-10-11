@@ -308,16 +308,7 @@ export function NewAccessPage() {
         noValidate
         onSubmit={submitAndContinue}
       >
-        <section className="overflow-hidden rounded-xl border border-border bg-surface">
-          <div className="border-b border-border bg-surface-subtle px-5 py-5 sm:px-7">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-              Fluxo geral de veículos
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-text">
-              Dados da entrada
-            </h2>
-          </div>
-
+        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
           <div className="space-y-7 p-5 sm:p-7">
             <EntryCandidateSearch
               onClear={useManualEntry}
@@ -328,10 +319,13 @@ export function NewAccessPage() {
             <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <label
-                  className="text-sm font-semibold text-ink"
+                  className="flex items-center gap-2 text-sm font-semibold text-ink"
                   htmlFor="plate"
                 >
-                  Placa do veículo <span className="text-danger-text">*</span>
+                  <Icon name="car" size={18} />
+                  <span>
+                    Placa do veículo <span className="text-danger-text">*</span>
+                  </span>
                 </label>
                 <TextField
                   aria-describedby={errors.plate ? "plate-error" : undefined}
@@ -350,10 +344,13 @@ export function NewAccessPage() {
 
               <div>
                 <label
-                  className="text-sm font-semibold text-ink"
+                  className="flex items-center gap-2 text-sm font-semibold text-ink"
                   htmlFor="driverName"
                 >
-                  Nome do condutor <span className="text-danger-text">*</span>
+                  <Icon name="user" size={18} />
+                  <span>
+                    Nome do condutor <span className="text-danger-text">*</span>
+                  </span>
                 </label>
                 <TextField
                   aria-describedby={
@@ -378,11 +375,14 @@ export function NewAccessPage() {
 
               <div>
                 <label
-                  className="text-sm font-semibold text-ink"
+                  className="flex items-center gap-2 text-sm font-semibold text-ink"
                   htmlFor="categoryName"
                 >
-                  Categoria do acesso{" "}
-                  <span className="text-danger-text">*</span>
+                  <Icon name="users" size={18} />
+                  <span>
+                    Categoria do acesso{" "}
+                    <span className="text-danger-text">*</span>
+                  </span>
                 </label>
                 <Controller
                   control={control}
@@ -447,31 +447,39 @@ export function NewAccessPage() {
             </div>
 
             <section
-              className="rounded-xl border border-border bg-surface-subtle p-4 sm:p-5"
+              className="rounded-xl border border-success-border bg-success-surface p-4 sm:p-5"
               aria-labelledby="event-link-title"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3
-                      className="text-xl font-bold text-text"
-                      id="event-link-title"
-                    >
-                      Autorização de evento
-                    </h3>
-                    <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-bold text-text-muted">
-                      Opcional
-                    </span>
-                  </div>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-soft">
-                    Escolha uma autorização vigente ou mantenha a entrada sem
-                    vínculo.
-                  </p>
-                  {selectedEvent && !eventSectionOpen && (
-                    <p className="mt-2 text-sm font-bold text-brand-dark">
-                      Evento vinculado: {selectedEvent.name}
+                <div className="flex min-w-0 items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface text-primary"
+                  >
+                    <Icon name="calendar" size={22} />
+                  </span>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3
+                        className="text-xl font-bold text-text"
+                        id="event-link-title"
+                      >
+                        Autorização de evento
+                      </h3>
+                      <span className="rounded-full border border-success-border bg-surface px-2.5 py-1 text-xs font-bold text-success-text">
+                        Opcional
+                      </span>
+                    </div>
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-soft">
+                      Escolha uma autorização vigente ou mantenha a entrada sem
+                      vínculo.
                     </p>
-                  )}
+                    {selectedEvent && !eventSectionOpen && (
+                      <p className="mt-2 text-sm font-bold text-brand-dark">
+                        Evento vinculado: {selectedEvent.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <Button
                   aria-label={
@@ -543,29 +551,46 @@ export function NewAccessPage() {
         </section>
 
         <aside className="h-fit space-y-4 xl:sticky xl:top-8">
-          <section className="rounded-xl border border-border bg-surface-subtle p-6 text-text">
-            <p className="text-xs font-bold uppercase tracking-[0.14em]">
-              Conferência rápida
-            </p>
+          <section className="rounded-2xl border border-success-border bg-success-surface p-6 text-text shadow-sm">
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-text"
+              >
+                <Icon name="clipboard" size={22} />
+              </span>
+              <div>
+                <h2 className="text-lg font-bold">Conferência rápida</h2>
+                <p className="mt-0.5 text-sm text-text-muted">
+                  Antes de registrar a entrada, verifique:
+                </p>
+              </div>
+            </div>
             <ol className="mt-5 space-y-4 text-sm leading-6">
               <li className="flex gap-3">
-                <strong>1.</strong>
+                <strong className="grid size-7 shrink-0 place-items-center rounded-full bg-surface text-success-text">
+                  1
+                </strong>
                 <span>Confirme a placa com o veículo.</span>
               </li>
               <li className="flex gap-3">
-                <strong>2.</strong>
+                <strong className="grid size-7 shrink-0 place-items-center rounded-full bg-surface text-success-text">
+                  2
+                </strong>
                 <span>Confirme o nome do condutor.</span>
               </li>
               <li className="flex gap-3">
-                <strong>3.</strong>
+                <strong className="grid size-7 shrink-0 place-items-center rounded-full bg-surface text-success-text">
+                  3
+                </strong>
                 <span>Registre apenas os dados necessários.</span>
               </li>
             </ol>
           </section>
 
-          <section className="rounded-xl border border-border bg-surface p-5">
+          <section className="rounded-2xl border border-border bg-surface-subtle p-5 shadow-sm">
             <div className="flex items-start gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface-subtle text-text">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface text-primary">
                 <Icon name="bus" size={20} />
               </span>
               <div>

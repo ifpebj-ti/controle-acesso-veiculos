@@ -10,6 +10,7 @@ import { Controller } from "react-hook-form";
 
 import { SelectField } from "../../../components/ui/SelectField";
 import { TextField } from "../../../components/ui/TextField";
+import { Icon } from "../../../components/ui/Icon";
 import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
 import { customEntryOption, vehicleTypeOptions } from "../model/entryOptions";
 
@@ -34,9 +35,15 @@ export function EntryVehicleTypeField({
 
   return (
     <div>
-      <label className="text-sm font-semibold text-ink" htmlFor="vehicleType">
-        Tipo do veículo{" "}
-        <span className="font-normal text-ink-soft">(opcional)</span>
+      <label
+        className="flex items-center gap-2 text-sm font-semibold text-ink"
+        htmlFor="vehicleType"
+      >
+        <Icon name="car" size={18} />
+        <span>
+          Tipo do veículo{" "}
+          <span className="font-normal text-ink-soft">(opcional)</span>
+        </span>
       </label>
       <Controller
         control={control}

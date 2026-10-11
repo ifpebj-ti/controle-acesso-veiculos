@@ -1,6 +1,7 @@
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
 import { TextArea } from "../../../components/ui/TextField";
+import { Icon } from "../../../components/ui/Icon";
 import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
 
 interface EntryAdditionalDetailsProps {
@@ -21,12 +22,13 @@ export function EntryAdditionalDetails({
       <button
         aria-controls="additional-entry-details"
         aria-expanded={open}
-        className="min-h-11 w-full rounded-lg text-left font-semibold text-text outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="flex min-h-11 w-full items-center gap-2 rounded-lg text-left font-semibold text-text outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus"
         onClick={() => onOpenChange(!open)}
         type="button"
       >
+        <Icon name="clipboard" size={19} />
         Detalhes adicionais
-        <span className="ml-2 font-normal text-ink-soft">(opcional)</span>
+        <span className="font-normal text-ink-soft">(opcional)</span>
       </button>
       <div className="mt-3" hidden={!open} id="additional-entry-details">
         <label className="text-sm font-semibold text-ink" htmlFor="observation">
