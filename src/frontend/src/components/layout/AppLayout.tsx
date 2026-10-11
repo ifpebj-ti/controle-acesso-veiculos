@@ -41,7 +41,16 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
 
   return (
     <div className="flex min-h-full flex-col px-4 pb-5 pt-16 xl:pt-6">
-      <Brand className="mb-9 max-w-[14rem] px-2" />
+      <div
+        aria-hidden="true"
+        className="sidebar-system-identity mb-9 flex h-12 items-center justify-center px-2"
+      >
+        <img
+          alt=""
+          className="size-12 shrink-0 object-contain"
+          src="/favicon.png"
+        />
+      </div>
 
       <div className="mb-9 px-2">
         <div className="flex items-center gap-3">
@@ -168,19 +177,10 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
       </div>
 
       <div
-        aria-label="Identidade do sistema"
-        className="mt-5 border-t border-border px-2 pt-5"
+        aria-hidden="true"
+        className="sidebar-institutional-brand mt-5 border-t border-border px-2 pt-5"
       >
-        <div className="flex items-center gap-3">
-          <img
-            alt=""
-            className="size-11 shrink-0 object-contain"
-            src="/favicon.png"
-          />
-          <p className="text-xs font-semibold leading-snug text-text-muted">
-            Sistema de acesso e cadastro veicular
-          </p>
-        </div>
+        <Brand decorative className="h-12 justify-center" size="small" />
       </div>
     </div>
   );
@@ -301,14 +301,15 @@ function StandardAppLayout() {
             role="dialog"
           >
             <Button
-              aria-label="Fechar menu"
-              className="shell-icon-button absolute right-3 top-2 z-10"
+              aria-label="Recolher menu"
+              className="absolute right-3 top-2 z-10 min-h-11 px-3 text-sm"
               variant="secondary"
               onClick={() => setMenuOpen(false)}
               ref={menuCloseRef}
               type="button"
             >
-              <Icon name="x" />
+              <Icon name="x" size={18} />
+              Recolher
             </Button>
             <SidebarContent closeMenu={() => setMenuOpen(false)} />
           </aside>

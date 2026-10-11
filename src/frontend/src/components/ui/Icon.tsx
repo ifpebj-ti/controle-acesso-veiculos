@@ -1,23 +1,25 @@
-import type { ReactNode, SVGProps } from 'react';
+import type { ReactNode, SVGProps } from "react";
 
 export type IconName =
-  | 'arrow-right'
-  | 'bus'
-  | 'calendar'
-  | 'car'
-  | 'chevron-down'
-  | 'clipboard'
-  | 'clock'
-  | 'dashboard'
-  | 'history'
-  | 'log-out'
-  | 'menu'
-  | 'plus'
-  | 'search'
-  | 'shield'
-  | 'user'
-  | 'users'
-  | 'x';
+  | "arrow-right"
+  | "bus"
+  | "calendar"
+  | "car"
+  | "chevron-down"
+  | "clipboard"
+  | "clock"
+  | "dashboard"
+  | "history"
+  | "lock"
+  | "log-out"
+  | "mail"
+  | "menu"
+  | "plus"
+  | "search"
+  | "shield"
+  | "user"
+  | "users"
+  | "x";
 
 interface IconProps extends SVGProps<SVGSVGElement> {
   name: IconName;
@@ -25,7 +27,7 @@ interface IconProps extends SVGProps<SVGSVGElement> {
 }
 
 const paths: Record<IconName, ReactNode> = {
-  'arrow-right': <path d="m9 18 6-6-6-6M3 12h12" />,
+  "arrow-right": <path d="m9 18 6-6-6-6M3 12h12" />,
   bus: (
     <>
       <path d="M6 17h12M6 8h12M7 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM17 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
@@ -44,7 +46,7 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M3 13a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5H3v-5ZM5 18v2M19 18v2M7 14h.01M17 14h.01" />
     </>
   ),
-  'chevron-down': <path d="m6 9 6 6 6-6" />,
+  "chevron-down": <path d="m6 9 6 6 6-6" />,
   clipboard: (
     <>
       <rect width="16" height="18" x="4" y="4" rx="2" />
@@ -71,10 +73,22 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M3 3v5h5M12 7v5l3 2" />
     </>
   ),
-  'log-out': (
+  lock: (
+    <>
+      <rect width="16" height="12" x="4" y="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v3" />
+    </>
+  ),
+  "log-out": (
     <>
       <path d="M10 17l5-5-5-5M15 12H3" />
       <path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5" />
+    </>
+  ),
+  mail: (
+    <>
+      <rect width="20" height="16" x="2" y="4" rx="2" />
+      <path d="m3 6 9 7 9-7" />
     </>
   ),
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,

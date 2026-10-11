@@ -56,6 +56,35 @@ describe("LoginPage accessibility", () => {
     ).toHaveAttribute("alt", "");
   });
 
+  it("places the photo before the form visually on mobile and restores the side-by-side order on desktop", async () => {
+    const { container } = render(
+      <SessionProvider>
+        <MemoryRouter>
+          <LoginPage />
+        </MemoryRouter>
+      </SessionProvider>,
+    );
+
+    await screen.findByRole("heading", { name: /bem-vindo\(a\)!/i });
+
+    expect(container.querySelector(".login-visual")).toHaveClass(
+      "order-1",
+      "flex",
+      "lg:order-2",
+    );
+    expect(container.querySelector(".login-form-panel")).toHaveClass(
+      "order-2",
+      "lg:order-1",
+    );
+    expect(container.querySelector(".login-visual-divider")).toHaveAttribute(
+      "preserveAspectRatio",
+      "none",
+    );
+    expect(
+      container.querySelector(".login-visual-road-line"),
+    ).toBeInTheDocument();
+  });
+
   it("preserves the semantic structure and keyboard focus order", async () => {
     const user = userEvent.setup();
 

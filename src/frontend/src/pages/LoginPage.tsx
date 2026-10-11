@@ -5,6 +5,7 @@ import { useForm, useWatch } from "react-hook-form";
 
 import { Brand } from "../components/ui/Brand";
 import { Button } from "../components/ui/Button";
+import { Icon } from "../components/ui/Icon";
 import { TextField } from "../components/ui/TextField";
 import { SessionLoadingState } from "../components/ui/SessionLoadingState";
 import {
@@ -120,8 +121,8 @@ export function LoginPage() {
 
       <div className="login-shell relative z-10 mx-auto flex min-h-[calc(100svh-2.5rem)] w-full max-w-7xl items-center justify-center sm:min-h-[calc(100svh-4rem)]">
         <section className="login-composition grid w-full overflow-hidden rounded-[1.75rem] border border-border-strong bg-surface-raised shadow-2xl lg:grid-cols-[minmax(0,1fr)_minmax(25rem,0.9fr)]">
-          <div className="login-form-panel flex flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:px-16 lg:py-12 xl:px-20">
-            <Brand className="login-brand w-fit max-w-[16rem] sm:max-w-[19rem]" />
+          <div className="login-form-panel order-2 flex flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:order-1 lg:px-16 lg:py-12 xl:px-20">
+            <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
 
             <div className="my-auto py-8 sm:py-9 lg:py-8">
               <header>
@@ -159,20 +160,25 @@ export function LoginPage() {
                   >
                     E-mail:
                   </label>
-                  <TextField
-                    aria-describedby={emailDescriptionIds || undefined}
-                    aria-invalid={Boolean(errors.email)}
-                    autoCapitalize="none"
-                    autoComplete="username"
-                    autoFocus
-                    className="mt-2"
-                    data-filled={Boolean(emailValue)}
-                    id="email"
-                    inputMode="email"
-                    placeholder="nome@instituicao.edu.br"
-                    type="email"
-                    {...register("email")}
-                  />
+                  <div className="relative mt-2">
+                    <span aria-hidden="true" className="login-field-icon">
+                      <Icon name="mail" size={21} />
+                    </span>
+                    <TextField
+                      aria-describedby={emailDescriptionIds || undefined}
+                      aria-invalid={Boolean(errors.email)}
+                      autoCapitalize="none"
+                      autoComplete="username"
+                      autoFocus
+                      className="login-field-input"
+                      data-filled={Boolean(emailValue)}
+                      id="email"
+                      inputMode="email"
+                      placeholder="nome@instituicao.edu.br"
+                      type="email"
+                      {...register("email")}
+                    />
+                  </div>
                   {errors.email && (
                     <p
                       className="mt-2 text-sm font-semibold text-danger-text"
@@ -192,15 +198,19 @@ export function LoginPage() {
                     Senha:
                   </label>
                   <div className="relative mt-2">
+                    <span aria-hidden="true" className="login-field-icon">
+                      <Icon name="lock" size={21} />
+                    </span>
                     <TextField
                       aria-describedby={
                         errors.password ? "password-error" : undefined
                       }
                       aria-invalid={Boolean(errors.password)}
                       autoComplete="current-password"
-                      className="pr-14"
+                      className="login-field-input login-password-field"
                       data-filled={Boolean(passwordValue)}
                       id="password"
+                      placeholder="Digite sua senha"
                       type={isPasswordVisible ? "text" : "password"}
                       {...register("password")}
                     />
@@ -274,24 +284,59 @@ export function LoginPage() {
                     <span aria-hidden="true" className="login-submit-spinner" />
                   )}
                   {isSubmitting ? "Entrando..." : "Entrar"}
+                  {!isSubmitting && <Icon name="arrow-right" size={20} />}
                 </Button>
               </form>
             </div>
 
-            <div className="login-support border-t border-border pt-5 text-xs leading-5 text-text-muted">
+            <div className="login-support flex items-center gap-3 border-t border-border pt-5 text-xs leading-5 text-text-muted">
+              <span
+                aria-hidden="true"
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-success-surface text-success-text"
+              >
+                <Icon name="lock" size={18} />
+              </span>
               <p>Utilize a conta individual cadastrada pelo administrador.</p>
             </div>
           </div>
 
-          <div className="login-visual relative isolate hidden min-h-64 flex-col justify-between overflow-hidden border-t border-border px-8 py-8 text-primary-text sm:flex lg:min-h-[40rem] lg:border-l lg:border-t-0 lg:px-12 lg:py-12">
+          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-primary-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-[40rem] lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
             <img
               alt=""
               className="login-visual-photo"
               src="/brand/campus-gatehouse.jpg"
             />
             <div aria-hidden="true" className="login-visual-photo-overlay" />
+            <svg
+              aria-hidden="true"
+              className="login-visual-divider"
+              focusable="false"
+              preserveAspectRatio="none"
+              viewBox="0 0 190 1000"
+            >
+              <path
+                className="login-visual-divider-dark-band"
+                d="M145 0C80 70 65 150 88 250C103 315 128 380 119 440C110 510 73 585 60 680C45 790 70 900 132 1000L0 1000L0 0Z"
+              />
+              <path
+                className="login-visual-divider-light-band"
+                d="M112 0C45 75 33 155 62 250C80 320 125 378 116 440C104 520 42 600 30 680C17 790 45 910 97 1000L0 1000L0 0Z"
+              />
+              <path
+                className="login-visual-divider-surface"
+                d="M82 0C15 80 10 160 42 250C65 330 120 380 110 440C98 520 24 605 16 680C7 790 30 910 70 1000L0 1000L0 0Z"
+              />
+              <path
+                className="login-visual-road-line"
+                d="M58 24C6 94 6 166 26 250C49 330 102 380 92 440C80 520 14 605 10 680C8 790 20 900 50 976"
+              />
+            </svg>
 
-            <div className="relative z-10">
+            <div className="login-mobile-brand relative z-10 w-fit max-w-[17rem] lg:hidden">
+              <Brand decorative />
+            </div>
+
+            <div className="relative z-10 mt-auto pb-8 lg:mt-0 lg:pb-0">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary-text/85">
                 Controle de Acesso de Veículos
               </p>
@@ -300,7 +345,7 @@ export function LoginPage() {
               </p>
             </div>
 
-            <div className="relative z-10 border-t border-primary-text/30 pt-5">
+            <div className="relative z-10 hidden border-t border-primary-text/30 pt-5 sm:block">
               <p className="max-w-md text-sm font-medium leading-6 text-primary-text/90">
                 Registre e acompanhe as movimentações de veículos do campus em
                 um único lugar.
