@@ -3,9 +3,11 @@ import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 
+import { Button } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SelectField } from "../components/ui/SelectField";
+import { TextField } from "../components/ui/TextField";
 import {
   accessEntryFormSchema,
   customEntryOption,
@@ -29,9 +31,6 @@ import {
   describeApiError,
   getApiValidationErrors,
 } from "../services/api-errors";
-
-const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 const fieldNames: Record<string, keyof AccessEntryFormValues> = {
   eventAuthorizationId: "eventAuthorizationId",
@@ -58,7 +57,7 @@ type SubmitIntent = "continue" | "review";
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p className="mt-1.5 text-sm text-red-800" id={id}>
+    <p className="mt-1.5 text-sm text-danger-text" id={id}>
       {message}
     </p>
   );
@@ -288,7 +287,7 @@ export function NewAccessPage() {
 
       {successNotice && (
         <div
-          className="mt-6 rounded-2xl border border-brand/30 bg-brand/10 p-4 text-sm font-semibold text-brand-dark"
+          className="mt-6 rounded-xl border border-success-border bg-success-surface p-4 text-sm font-semibold text-success-text"
           role="status"
         >
           {successNotice}
@@ -297,7 +296,7 @@ export function NewAccessPage() {
 
       {requestError && (
         <div
-          className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+          className="mt-6 rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
           role="alert"
         >
           {requestError}
@@ -309,12 +308,12 @@ export function NewAccessPage() {
         noValidate
         onSubmit={submitAndContinue}
       >
-        <section className="overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_14px_40px_rgba(1,36,40,0.06)]">
-          <div className="border-b border-ink/8 bg-[#B8C9A4]/25 px-5 py-5 sm:px-7">
+        <section className="overflow-hidden rounded-xl border border-border bg-surface">
+          <div className="border-b border-border bg-surface-subtle px-5 py-5 sm:px-7">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
               Fluxo geral de veículos
             </p>
-            <h2 className="mt-3 font-display text-2xl text-ink">
+            <h2 className="mt-2 text-2xl font-bold text-text">
               Dados da entrada
             </h2>
           </div>
@@ -332,13 +331,13 @@ export function NewAccessPage() {
                   className="text-sm font-semibold text-ink"
                   htmlFor="plate"
                 >
-                  Placa do veículo <span className="text-red-700">*</span>
+                  Placa do veículo <span className="text-danger-text">*</span>
                 </label>
-                <input
+                <TextField
                   aria-describedby={errors.plate ? "plate-error" : undefined}
                   aria-invalid={Boolean(errors.plate)}
                   autoCapitalize="characters"
-                  className={fieldClass}
+                  className="mt-2"
                   id="plate"
                   maxLength={10}
                   placeholder="Ex.: DEM-1A23"
@@ -354,15 +353,15 @@ export function NewAccessPage() {
                   className="text-sm font-semibold text-ink"
                   htmlFor="driverName"
                 >
-                  Nome do condutor <span className="text-red-700">*</span>
+                  Nome do condutor <span className="text-danger-text">*</span>
                 </label>
-                <input
+                <TextField
                   aria-describedby={
                     errors.driverName ? "driverName-error" : undefined
                   }
                   aria-invalid={Boolean(errors.driverName)}
                   autoComplete="off"
-                  className={fieldClass}
+                  className="mt-2"
                   id="driverName"
                   maxLength={200}
                   placeholder="Ex.: Pessoa de demonstração"
@@ -382,7 +381,8 @@ export function NewAccessPage() {
                   className="text-sm font-semibold text-ink"
                   htmlFor="categoryName"
                 >
-                  Categoria do acesso <span className="text-red-700">*</span>
+                  Categoria do acesso{" "}
+                  <span className="text-danger-text">*</span>
                 </label>
                 <Controller
                   control={control}
@@ -393,7 +393,7 @@ export function NewAccessPage() {
                         errors.categoryName ? "categoryName-error" : undefined
                       }
                       aria-invalid={Boolean(errors.categoryName)}
-                      className={fieldClass}
+                      className="mt-2"
                       id="categoryName"
                       name={field.name}
                       onBlur={field.onBlur}
@@ -447,19 +447,19 @@ export function NewAccessPage() {
             </div>
 
             <section
-              className="rounded-3xl border border-[#AFCBE3] bg-[#BDD8F1]/20 p-4 sm:p-5"
+              className="rounded-xl border border-border bg-surface-subtle p-4 sm:p-5"
               aria-labelledby="event-link-title"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h3
-                      className="font-display text-xl text-ink"
+                      className="text-xl font-bold text-text"
                       id="event-link-title"
                     >
                       Autorização de evento
                     </h3>
-                    <span className="rounded-full border border-ink/15 bg-white/75 px-2.5 py-1 text-xs font-bold text-ink-soft">
+                    <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-bold text-text-muted">
                       Opcional
                     </span>
                   </div>
@@ -473,7 +473,7 @@ export function NewAccessPage() {
                     </p>
                   )}
                 </div>
-                <button
+                <Button
                   aria-label={
                     eventSectionOpen
                       ? "Ocultar autorizações de evento"
@@ -483,16 +483,16 @@ export function NewAccessPage() {
                   }
                   aria-controls="event-authorization-options"
                   aria-expanded={eventSectionOpen}
-                  className="min-h-11 rounded-xl border border-brand-dark bg-white/60 px-4 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
                   onClick={() => setEventSectionOpen((current) => !current)}
                   type="button"
+                  variant="secondary"
                 >
                   {eventSectionOpen
                     ? "Ocultar"
                     : selectedEvent
                       ? "Alterar"
                       : "Vincular a evento"}
-                </button>
+                </Button>
               </div>
 
               {eventSectionOpen && (
@@ -514,40 +514,36 @@ export function NewAccessPage() {
               )}
             </section>
 
-            <div className="flex flex-col gap-3 border-t border-ink/10 pt-6 sm:flex-row sm:flex-wrap sm:justify-end">
-              <button
-                className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
+            <div className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:flex-wrap sm:justify-end">
+              <Button
                 disabled={isSubmitting}
                 onClick={() => navigate("/visao-geral")}
                 type="button"
+                variant="secondary"
               >
                 Cancelar
-              </button>
-              <button
-                className="min-h-12 rounded-xl bg-brand-dark px-7 font-bold text-white shadow-sm hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
-                disabled={isSubmitting}
-                type="submit"
-              >
+              </Button>
+              <Button disabled={isSubmitting} type="submit">
                 {isSubmitting && pendingIntent === "continue"
                   ? "Registrando…"
                   : "Registrar e continuar"}
-              </button>
-              <button
-                className="min-h-12 rounded-xl border border-brand-dark px-5 font-bold text-brand-dark hover:bg-brand/10 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25 disabled:cursor-wait disabled:opacity-65"
+              </Button>
+              <Button
                 disabled={isSubmitting}
                 onClick={() => void submitAndReview()}
                 type="button"
+                variant="secondary"
               >
                 {isSubmitting && pendingIntent === "review"
                   ? "Registrando…"
                   : "Registrar e ver acessos"}
-              </button>
+              </Button>
             </div>
           </div>
         </section>
 
         <aside className="h-fit space-y-4 xl:sticky xl:top-8">
-          <section className="rounded-[2rem] bg-[#B8C9A4] p-6 text-ink">
+          <section className="rounded-xl border border-border bg-surface-subtle p-6 text-text">
             <p className="text-xs font-bold uppercase tracking-[0.14em]">
               Conferência rápida
             </p>
@@ -567,9 +563,9 @@ export function NewAccessPage() {
             </ol>
           </section>
 
-          <section className="rounded-[2rem] border border-[#BDD8F1] bg-[#BDD8F1]/30 p-5">
+          <section className="rounded-xl border border-border bg-surface p-5">
             <div className="flex items-start gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-ink">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface-subtle text-text">
                 <Icon name="bus" size={20} />
               </span>
               <div>

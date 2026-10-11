@@ -9,11 +9,9 @@ import type {
 import { Controller } from "react-hook-form";
 
 import { SelectField } from "../../../components/ui/SelectField";
+import { TextField } from "../../../components/ui/TextField";
 import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
 import { customEntryOption, vehicleTypeOptions } from "../model/entryOptions";
-
-const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 interface EntryVehicleTypeFieldProps {
   clearErrors: UseFormClearErrors<AccessEntryFormValues>;
@@ -49,7 +47,7 @@ export function EntryVehicleTypeField({
               errors.vehicleType ? "vehicleType-error" : undefined
             }
             aria-invalid={Boolean(errors.vehicleType)}
-            className={fieldClass}
+            className="mt-2"
             id="vehicleType"
             name={field.name}
             onBlur={field.onBlur}
@@ -78,7 +76,7 @@ export function EntryVehicleTypeField({
         )}
       />
       {errors.vehicleType?.message && (
-        <p className="mt-1.5 text-sm text-red-800" id="vehicleType-error">
+        <p className="mt-1.5 text-sm text-danger-text" id="vehicleType-error">
           {errors.vehicleType.message}
         </p>
       )}
@@ -89,14 +87,14 @@ export function EntryVehicleTypeField({
             className="text-sm font-semibold text-ink"
             htmlFor="vehicleTypeOther"
           >
-            Outro tipo de veículo <span className="text-red-700">*</span>
+            Outro tipo de veículo <span className="text-danger-text">*</span>
           </label>
-          <input
+          <TextField
             aria-describedby={
               errors.vehicleTypeOther ? "vehicleTypeOther-error" : undefined
             }
             aria-invalid={Boolean(errors.vehicleTypeOther)}
-            className={fieldClass}
+            className="mt-2"
             id="vehicleTypeOther"
             maxLength={50}
             placeholder="Informe o tipo do veículo"
@@ -104,7 +102,7 @@ export function EntryVehicleTypeField({
           />
           {errors.vehicleTypeOther?.message && (
             <p
-              className="mt-1.5 text-sm text-red-800"
+              className="mt-1.5 text-sm text-danger-text"
               id="vehicleTypeOther-error"
             >
               {errors.vehicleTypeOther.message}

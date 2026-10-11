@@ -66,7 +66,7 @@ export function HistoryPage() {
 
       {successNotice && (
         <div
-          className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-950"
+          className="mt-5 rounded-xl border border-success-border bg-success-surface p-4 text-sm font-semibold text-success-text"
           ref={successNoticeRef}
           role="status"
           tabIndex={-1}
@@ -75,7 +75,7 @@ export function HistoryPage() {
         </div>
       )}
 
-      <section className="mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]">
+      <section className="mt-6 overflow-hidden rounded-xl border border-border bg-surface">
         <AccessHistoryFilters
           draft={history.draft}
           onApply={history.applyFilters}

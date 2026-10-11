@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
 
+import { Button } from "../../../components/ui/Button";
 import type { AccessRecord } from "../types";
 
 interface AccessExitDialogProps {
@@ -80,12 +81,12 @@ export function AccessExitDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid items-end bg-ink/55 p-0 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 grid items-end bg-overlay p-0 sm:items-center sm:p-6">
       <div
         aria-describedby="access-exit-description"
         aria-labelledby="access-exit-title"
         aria-modal="true"
-        className="w-full rounded-t-[2rem] bg-white p-5 shadow-2xl sm:mx-auto sm:max-w-lg sm:rounded-[2rem] sm:p-7"
+        className="w-full rounded-t-xl border border-border bg-surface p-5 shadow-xl sm:mx-auto sm:max-w-lg sm:rounded-xl sm:p-7"
         ref={dialogRef}
         role="dialog"
       >
@@ -93,7 +94,7 @@ export function AccessExitDialog({
           Conferência manual
         </p>
         <h2
-          className="mt-3 font-display text-3xl text-ink"
+          className="mt-2 text-3xl font-bold text-text"
           id="access-exit-title"
         >
           Registrar saída?
@@ -108,31 +109,26 @@ export function AccessExitDialog({
 
         {errorMessage && (
           <div
-            className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+            className="mt-4 rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
             role="alert"
           >
             {errorMessage}
           </div>
         )}
 
-        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:flex-row sm:justify-end">
-          <button
-            className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-50"
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+          <Button
             disabled={pending}
             onClick={onCancel}
             ref={cancelButtonRef}
             type="button"
+            variant="secondary"
           >
             Cancelar
-          </button>
-          <button
-            className="min-h-12 rounded-xl bg-brand-dark px-6 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/45 disabled:cursor-wait disabled:opacity-65"
-            disabled={pending}
-            onClick={confirm}
-            type="button"
-          >
+          </Button>
+          <Button disabled={pending} onClick={confirm} type="button">
             {pending ? "Registrando saída…" : "Confirmar saída"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
