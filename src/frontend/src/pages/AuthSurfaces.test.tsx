@@ -66,16 +66,71 @@ describe("Modernized authentication surfaces", () => {
     await user.tab();
     expect(screen.getByLabelText("Senha:")).toHaveFocus();
     await user.tab();
+    expect(screen.getByRole("button", { name: "Mostrar senha" })).toHaveFocus();
+    await user.tab();
     await user.keyboard("{Enter}");
-    expect(
-      await screen.findByText("Informe o e-mail institucional."),
-    ).toBeVisible();
+    expect(await screen.findByText("Informe seu e-mail.")).toBeVisible();
     expect(screen.getByLabelText("E-mail:")).toHaveFocus();
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-invalid",
       "true",
     );
     expect(login).not.toHaveBeenCalled();
+  });
+
+  it("shows and hides the password without changing its value", async () => {
+    const user = userEvent.setup();
+    renderLogin();
+    const password = screen.getByLabelText("Senha:");
+
+    await user.type(password, "test-only-password");
+    expect(password).toHaveAttribute("type", "password");
+
+    await user.click(screen.getByRole("button", { name: "Mostrar senha" }));
+    expect(password).toHaveAttribute("type", "text");
+    expect(password).toHaveValue("test-only-password");
+
+    await user.click(screen.getByRole("button", { name: "Ocultar senha" }));
+    expect(password).toHaveAttribute("type", "password");
+  });
+
+  it("submits with Enter and exposes the loading and filled states", async () => {
+    const user = userEvent.setup();
+    const { login } = renderLogin();
+    login.mockReturnValue(new Promise(() => undefined));
+    const email = screen.getByLabelText("E-mail:");
+    const password = screen.getByLabelText("Senha:");
+
+    await user.type(email, "porteiro@example.test");
+    await user.type(password, "test-only-password{Enter}");
+
+    expect(email).toHaveAttribute("data-filled", "true");
+    expect(password).toHaveAttribute("data-filled", "true");
+    expect(login).toHaveBeenCalledWith({
+      email: "porteiro@example.test",
+      password: "test-only-password",
+    });
+    expect(screen.getByRole("button", { name: "Entrando..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Entrando..." })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+  });
+
+  it("announces a malformed email next to its field", async () => {
+    const user = userEvent.setup();
+    renderLogin();
+
+    await user.type(screen.getByLabelText("E-mail:"), "email-invalido");
+    await user.type(screen.getByLabelText("Senha:"), "test-only-password");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    const error = await screen.findByText("Informe um e-mail válido.");
+    expect(error).toHaveAttribute("role", "alert");
+    expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
+      "aria-describedby",
+      "email-error",
+    );
   });
 
   it("provides a heading and an announced, reduced-motion loading state", async () => {

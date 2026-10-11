@@ -133,6 +133,43 @@ describe("AppLayout", () => {
     expect(screen.getByRole("main")).toHaveClass("xl:pl-72");
   });
 
+  it("keeps the operator context above navigation and the institutional brand at the end", () => {
+    renderLayout("Porteiro");
+
+    const sidebar = screen.getByRole("complementary");
+    const account = within(sidebar).getByText("operador@example.test");
+    const navigation = within(sidebar).getByRole("navigation");
+    const logout = within(sidebar).getByRole("button", { name: "Sair" });
+    const brand = within(sidebar).getByRole("img", {
+      name: "Instituto Federal de Pernambuco, Campus Belo Jardim",
+    });
+
+    expect(
+      account.compareDocumentPosition(navigation) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      logout.compareDocumentPosition(brand) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(brand).toHaveAttribute("src", "/brand/ifpe-vertical.png");
+    expect(within(sidebar).getByText("operador@example.test")).toBeVisible();
+    expect(within(sidebar).getByText("Porteiro")).toBeVisible();
+  });
+
+  it("keeps long account identifiers compact without breaking the sidebar", () => {
+    renderLayout("Porteiro");
+
+    const sidebar = screen.getByRole("complementary");
+    const accountIdentifier = within(sidebar).getByText(
+      "operador@example.test",
+    );
+    const profile = within(sidebar).getByText("Porteiro");
+
+    expect(accountIdentifier).toHaveClass("truncate");
+    expect(accountIdentifier).not.toHaveClass("break-all");
+    expect(profile).toHaveClass("text-text-muted");
+  });
+
   it("announces an unavailable session renewal assertively", () => {
     renderLayout("Porteiro", "renewal-unavailable");
 
