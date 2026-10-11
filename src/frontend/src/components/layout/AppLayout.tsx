@@ -41,22 +41,27 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
 
   return (
     <div className="flex min-h-full flex-col px-4 pb-5 pt-16 xl:pt-6">
-      <Brand className="mx-auto w-full" />
+      <Brand className="mb-9 max-w-[14rem] px-2" />
 
-      <div className="my-6 flex items-center gap-3 rounded-xl border border-border bg-surface-subtle p-3">
-        <span
-          aria-hidden="true"
-          className="grid size-10 shrink-0 place-items-center rounded-lg text-text"
-        >
-          <Icon name="user" size={25} />
-        </span>
-        <div className="min-w-0">
-          <p className="break-all text-sm font-semibold text-text">
-            {user.email}
-          </p>
-          <p className="mt-1 text-sm text-text-muted">
-            {profileLabels[user.profileName]}
-          </p>
+      <div className="mb-9 px-2">
+        <div className="flex items-center gap-3">
+          <span
+            aria-hidden="true"
+            className="grid size-16 shrink-0 place-items-center rounded-full border border-success-border bg-success-surface text-primary"
+          >
+            <Icon name="user" size={30} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-text">
+              {profileLabels[user.profileName]}
+            </p>
+            <p
+              className="mt-0.5 truncate text-xs text-text-muted"
+              title={user.email}
+            >
+              {user.email}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -74,7 +79,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                       `sidebar-primary-item flex min-h-12 items-center gap-3 rounded-xl border border-transparent px-3 py-3 font-medium ${
                         isActive
                           ? "sidebar-primary-item--active font-semibold"
-                          : "text-text hover:bg-surface-subtle"
+                          : "text-text hover:bg-surface"
                       }`
                     }
                     onClick={closeMenu}
@@ -114,7 +119,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                                 `sidebar-primary-item flex min-h-12 items-center gap-2.5 rounded-xl border border-transparent px-3 py-2 text-sm ${
                                   isActive
                                     ? "sidebar-primary-item--active font-semibold"
-                                    : "text-text hover:bg-surface-subtle"
+                                    : "text-text hover:bg-surface"
                                 }`
                               }
                               onClick={closeMenu}
@@ -135,30 +140,48 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
         </ul>
       </nav>
 
-      <NavLink
-        className={({ isActive }) =>
-          `sidebar-primary-item mt-4 flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left font-semibold ${
-            isActive
-              ? "sidebar-primary-item--active"
-              : "text-text hover:bg-surface-subtle"
-          }`
-        }
-        onClick={closeMenu}
-        to="/conta/senha"
-      >
-        <Icon name="shield" size={21} />
-        Alterar senha
-      </NavLink>
+      <div className="mt-8 border-t border-border pt-4">
+        <NavLink
+          className={({ isActive }) =>
+            `sidebar-primary-item flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left font-semibold ${
+              isActive
+                ? "sidebar-primary-item--active"
+                : "text-text hover:bg-surface"
+            }`
+          }
+          onClick={closeMenu}
+          to="/conta/senha"
+        >
+          <Icon name="shield" size={21} />
+          Alterar senha
+        </NavLink>
 
-      <Button
-        className="mt-2 w-full"
-        variant="secondary"
-        onClick={handleLogout}
-        type="button"
+        <Button
+          className="sidebar-logout mt-1 w-full justify-start"
+          variant="secondary"
+          onClick={handleLogout}
+          type="button"
+        >
+          <Icon name="log-out" size={21} />
+          Sair
+        </Button>
+      </div>
+
+      <div
+        aria-label="Identidade do sistema"
+        className="mt-5 border-t border-border px-2 pt-5"
       >
-        <Icon name="log-out" size={21} />
-        Sair
-      </Button>
+        <div className="flex items-center gap-3">
+          <img
+            alt=""
+            className="size-11 shrink-0 object-contain"
+            src="/favicon.png"
+          />
+          <p className="text-xs font-semibold leading-snug text-text-muted">
+            Sistema de acesso e cadastro veicular
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -240,7 +263,7 @@ function StandardAppLayout() {
         Ir para o conteúdo
       </a>
 
-      <aside className="sidebar-scroll fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden border-r border-border bg-surface xl:block">
+      <aside className="sidebar-scroll fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden border-r border-border bg-navigation-surface xl:block">
         <SidebarContent />
       </aside>
 
@@ -273,7 +296,7 @@ function StandardAppLayout() {
           <aside
             aria-label="Menu principal"
             aria-modal="true"
-            className="sidebar-scroll absolute inset-y-0 left-0 w-[min(90vw,20rem)] overflow-y-auto overflow-x-hidden border-r border-border bg-surface"
+            className="sidebar-scroll absolute inset-y-0 left-0 w-[min(90vw,20rem)] overflow-y-auto overflow-x-hidden border-r border-border bg-navigation-surface"
             ref={menuDialogRef}
             role="dialog"
           >

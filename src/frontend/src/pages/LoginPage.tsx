@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Brand } from "../components/ui/Brand";
 import { Button } from "../components/ui/Button";
@@ -31,7 +32,7 @@ function loginErrorMessage(error: unknown) {
   const apiError = describeApiError(error);
 
   if (apiError.status === 401) {
-    return "E-mail ou senha inválidos, ou a conta está temporariamente indisponível.";
+    return "E-mail ou senha incorretos.";
   }
 
   return apiError.message;
@@ -57,10 +58,12 @@ function sessionEndMessage(reason: SessionEndReason) {
 }
 
 export function LoginPage() {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { login, sessionEndReason, status, user } = useSession();
   const {
+    control,
     formState: { errors, isSubmitting },
     handleSubmit,
     register,
@@ -71,6 +74,8 @@ export function LoginPage() {
   });
   const locationState = location.state as LoginLocationState | null;
   const redirectTo = locationState?.from?.pathname ?? "/visao-geral";
+  const emailValue = useWatch({ control, name: "email" });
+  const passwordValue = useWatch({ control, name: "password" });
 
   if (status === "restoring") {
     return <SessionLoadingState title="Verificando sua sessão" />;
@@ -107,148 +112,202 @@ export function LoginPage() {
     .join(" ");
 
   return (
-    <main className="login-page relative min-h-svh overflow-x-hidden bg-background px-4 py-6 text-text sm:px-8 sm:py-8">
+    <main className="login-page relative min-h-svh overflow-x-hidden bg-background px-4 py-5 text-text sm:px-8 sm:py-8">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-1 bg-primary"
       />
 
-      <div className="login-shell relative z-10 mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-6xl flex-col items-center justify-center sm:min-h-[calc(100svh-4rem)]">
-        <Brand className="login-brand mx-auto mb-7 w-fit max-w-[17rem] sm:mb-10 sm:max-w-sm" />
+      <div className="login-shell relative z-10 mx-auto flex min-h-[calc(100svh-2.5rem)] w-full max-w-7xl items-center justify-center sm:min-h-[calc(100svh-4rem)]">
+        <section className="login-composition grid w-full overflow-hidden rounded-[1.75rem] border border-border-strong bg-surface-raised shadow-2xl lg:grid-cols-[minmax(0,1fr)_minmax(25rem,0.9fr)]">
+          <div className="login-form-panel flex flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:px-16 lg:py-12 xl:px-20">
+            <Brand className="login-brand w-fit max-w-[16rem] sm:max-w-[19rem]" />
 
-        <div className="login-scene relative mx-auto w-full max-w-[54rem] pb-20 sm:pb-28">
-          <div aria-hidden="true" className="login-route-marks">
-            <svg
-              className="login-route-loop"
-              preserveAspectRatio="none"
-              viewBox="0 0 100 100"
-            >
-              <rect
-                className="login-route-loop__stroke"
-                fill="none"
-                height="98"
-                pathLength="100"
-                rx="7"
-                ry="8"
-                vectorEffect="non-scaling-stroke"
-                width="98"
-                x="1"
-                y="1"
-              />
-            </svg>
-          </div>
+            <div className="my-auto py-8 sm:py-9 lg:py-8">
+              <header>
+                <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-primary">
+                  Controle de acesso
+                </p>
+                <h1 className="font-display text-4xl font-bold leading-tight text-text sm:text-5xl">
+                  Bem-vindo(a)!
+                </h1>
+                <p className="mt-4 max-w-xl text-base leading-7 text-text-muted">
+                  Acesse sua conta para registrar e acompanhar a movimentação de
+                  veículos no campus.
+                </p>
+              </header>
 
-          <section className="login-card relative z-10 mx-auto flex min-h-[34rem] flex-col rounded-2xl border border-border bg-surface px-6 py-10 sm:min-h-[40rem] sm:px-14 sm:py-14 lg:min-h-[42rem] lg:px-20 lg:pb-16 lg:pt-20">
-            <header className="text-center">
-              <h1 className="text-4xl font-bold leading-tight text-text sm:text-5xl">
-                Bem-vindo,
-              </h1>
-              <p className="mx-auto mt-5 max-w-2xl text-xs font-medium uppercase leading-5 tracking-[0.08em] text-ink sm:text-sm">
-                Ao sistema de acesso e cadastro de veículos no campus!
-              </p>
-            </header>
+              {loginStatusMessage && (
+                <div
+                  className="mt-7 w-full max-w-xl rounded-xl border border-danger-border bg-danger-surface px-4 py-3 text-sm font-medium text-danger-text"
+                  id="login-status-message"
+                  role="alert"
+                >
+                  {loginStatusMessage}
+                </div>
+              )}
 
-            {loginStatusMessage && (
-              <div
-                className="mx-auto mt-7 w-full max-w-2xl rounded-xl border border-danger-border bg-danger-surface px-4 py-3 text-sm font-medium text-danger-text"
-                id="login-status-message"
-                role="alert"
+              <form
+                className="mt-7 w-full max-w-xl space-y-5"
+                noValidate
+                onSubmit={submitLogin}
               >
-                {loginStatusMessage}
-              </div>
-            )}
-
-            <form
-              className="mx-auto mt-8 w-full max-w-2xl space-y-6 sm:mt-10 sm:space-y-8"
-              noValidate
-              onSubmit={submitLogin}
-            >
-              <div>
-                <label
-                  className="ml-2 text-sm font-semibold uppercase text-ink"
-                  htmlFor="email"
-                >
-                  E-mail:
-                </label>
-                <TextField
-                  aria-describedby={emailDescriptionIds || undefined}
-                  aria-invalid={Boolean(errors.email)}
-                  autoCapitalize="none"
-                  autoComplete="username"
-                  autoFocus
-                  className="mt-2"
-                  id="email"
-                  inputMode="email"
-                  placeholder="nome@instituicao.edu.br"
-                  type="email"
-                  {...register("email")}
-                />
-                {errors.email && (
-                  <p
-                    className="ml-2 mt-2 text-sm font-semibold text-danger-text"
-                    id="email-error"
+                <div>
+                  <label
+                    className="text-sm font-semibold text-text"
+                    htmlFor="email"
                   >
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
+                    E-mail:
+                  </label>
+                  <TextField
+                    aria-describedby={emailDescriptionIds || undefined}
+                    aria-invalid={Boolean(errors.email)}
+                    autoCapitalize="none"
+                    autoComplete="username"
+                    autoFocus
+                    className="mt-2"
+                    data-filled={Boolean(emailValue)}
+                    id="email"
+                    inputMode="email"
+                    placeholder="nome@instituicao.edu.br"
+                    type="email"
+                    {...register("email")}
+                  />
+                  {errors.email && (
+                    <p
+                      className="mt-2 text-sm font-semibold text-danger-text"
+                      id="email-error"
+                      role="alert"
+                    >
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
 
-              <div>
-                <label
-                  className="ml-2 text-sm font-semibold uppercase text-ink"
-                  htmlFor="password"
-                >
-                  Senha:
-                </label>
-                <TextField
-                  aria-describedby={
-                    errors.password ? "password-error" : undefined
-                  }
-                  aria-invalid={Boolean(errors.password)}
-                  autoComplete="current-password"
-                  className="mt-2"
-                  id="password"
-                  type="password"
-                  {...register("password")}
-                />
-                {errors.password && (
-                  <p
-                    className="ml-2 mt-2 text-sm font-semibold text-danger-text"
-                    id="password-error"
+                <div>
+                  <label
+                    className="text-sm font-semibold text-text"
+                    htmlFor="password"
                   >
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
+                    Senha:
+                  </label>
+                  <div className="relative mt-2">
+                    <TextField
+                      aria-describedby={
+                        errors.password ? "password-error" : undefined
+                      }
+                      aria-invalid={Boolean(errors.password)}
+                      autoComplete="current-password"
+                      className="pr-14"
+                      data-filled={Boolean(passwordValue)}
+                      id="password"
+                      type={isPasswordVisible ? "text" : "password"}
+                      {...register("password")}
+                    />
+                    <button
+                      aria-label={
+                        isPasswordVisible ? "Ocultar senha" : "Mostrar senha"
+                      }
+                      aria-pressed={isPasswordVisible}
+                      className="login-password-toggle"
+                      onClick={() =>
+                        setIsPasswordVisible((visible) => !visible)
+                      }
+                      type="button"
+                    >
+                      {isPasswordVisible ? (
+                        <svg
+                          aria-hidden="true"
+                          fill="none"
+                          focusable="false"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="m3 3 18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A11.3 11.3 0 0 1 12 4c5.2 0 8.5 4.6 9 6.3a1.8 1.8 0 0 1 0 1.4 10 10 0 0 1-2 3.3M6.2 6.2A11.6 11.6 0 0 0 3 10.3a1.8 1.8 0 0 0 0 1.4C3.5 13.4 6.8 18 12 18c1 0 2-.2 2.8-.5"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          aria-hidden="true"
+                          fill="none"
+                          focusable="false"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M3 10.3C3.5 8.6 6.8 4 12 4s8.5 4.6 9 6.3a1.8 1.8 0 0 1 0 1.4C20.5 13.4 17.2 18 12 18s-8.5-4.6-9-6.3a1.8 1.8 0 0 1 0-1.4Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <circle
+                            cx="12"
+                            cy="11"
+                            r="2.5"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p
+                      className="mt-2 text-sm font-semibold text-danger-text"
+                      id="password-error"
+                      role="alert"
+                    >
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
 
-              <div className="pt-2 text-center sm:pt-4">
                 <Button
-                  className="w-full sm:w-auto sm:min-w-[17rem]"
+                  aria-busy={isSubmitting}
+                  className="w-full"
                   disabled={isSubmitting}
                   type="submit"
                 >
-                  {isSubmitting ? "Entrando…" : "Entrar"}
+                  {isSubmitting && (
+                    <span aria-hidden="true" className="login-submit-spinner" />
+                  )}
+                  {isSubmitting ? "Entrando..." : "Entrar"}
                 </Button>
-              </div>
-            </form>
-          </section>
+              </form>
+            </div>
 
-          <div aria-hidden="true" className="login-bus-static">
+            <div className="login-support border-t border-border pt-5 text-xs leading-5 text-text-muted">
+              <p>Utilize a conta individual cadastrada pelo administrador.</p>
+            </div>
+          </div>
+
+          <div className="login-visual relative isolate hidden min-h-64 flex-col justify-between overflow-hidden border-t border-border px-8 py-8 text-primary-text sm:flex lg:min-h-[40rem] lg:border-l lg:border-t-0 lg:px-12 lg:py-12">
             <img
               alt=""
-              className="block h-auto w-full"
-              src="/brand/bus-illustration.png"
+              className="login-visual-photo"
+              src="/brand/campus-gatehouse.jpg"
             />
-          </div>
-        </div>
+            <div aria-hidden="true" className="login-visual-photo-overlay" />
 
-        <div className="login-support mx-auto mt-3 max-w-3xl text-center text-xs leading-5 text-ink-soft">
-          <p>Use sua conta individual cadastrada pelo Administrador.</p>
-          <p className="mt-1">
-            Sua sessão é protegida e pode ser restaurada com segurança enquanto
-            estiver válida.
-          </p>
-        </div>
+            <div className="relative z-10">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary-text/85">
+                Controle de Acesso de Veículos
+              </p>
+              <p className="mt-3 max-w-md text-2xl font-bold leading-8 lg:text-3xl lg:leading-10">
+                Uma rotina mais clara para quem cuida da portaria.
+              </p>
+            </div>
+
+            <div className="relative z-10 border-t border-primary-text/30 pt-5">
+              <p className="max-w-md text-sm font-medium leading-6 text-primary-text/90">
+                Registre e acompanhe as movimentações de veículos do campus em
+                um único lugar.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );
