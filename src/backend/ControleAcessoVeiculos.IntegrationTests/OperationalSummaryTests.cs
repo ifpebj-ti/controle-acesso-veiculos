@@ -79,6 +79,29 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
         Assert.Equal(new DailyTotals(3, 2, 1, 3, 3), summary.GeneralAccess);
         Assert.Equal(new InstitutionalTotals(2, 2, 2, 2), summary.InstitutionalUsages);
         Assert.Equal(new EventTotals(3, 2), summary.EventAccess);
+        Assert.Equal(24, summary.HourlyAccess.Count);
+        Assert.Equal(new HourlyTotals(1, 1, 0), summary.HourlyAccess[1]);
+        Assert.Equal(new HourlyTotals(2, 1, 0), summary.HourlyAccess[2]);
+        Assert.Equal(new HourlyTotals(3, 1, 0), summary.HourlyAccess[3]);
+        Assert.Equal(new HourlyTotals(7, 0, 1), summary.HourlyAccess[7]);
+        Assert.Equal(new HourlyTotals(9, 0, 1), summary.HourlyAccess[9]);
+        Assert.Contains(
+            summary.AccessCategories,
+            item => item.Label.StartsWith("Resumo ", StringComparison.Ordinal) &&
+                item.Count == 3);
+        Assert.Contains(
+            summary.VehicleTypes,
+            item => item.Label == "Automóvel" && item.Count == 3);
+        Assert.Equal(14, summary.RecentDailyAccess.Count);
+        Assert.Equal(
+            new DailyTotalsByDate(new DateOnly(2010, 1, 13), 1, 0),
+            summary.RecentDailyAccess[^3]);
+        Assert.Equal(
+            new DailyTotalsByDate(new DateOnly(2010, 1, 14), 2, 0),
+            summary.RecentDailyAccess[^2]);
+        Assert.Equal(
+            new DailyTotalsByDate(new DateOnly(2010, 1, 15), 3, 2),
+            summary.RecentDailyAccess[^1]);
         Assert.DoesNotContain(sensitiveName, body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("plate", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("driver", body, StringComparison.OrdinalIgnoreCase);
@@ -314,7 +337,11 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
         DateTime PeriodEndUtcExclusive,
         DailyTotals GeneralAccess,
         InstitutionalTotals InstitutionalUsages,
-        EventTotals EventAccess);
+        EventTotals EventAccess,
+        IReadOnlyList<HourlyTotals> HourlyAccess,
+        IReadOnlyList<NamedCount> AccessCategories,
+        IReadOnlyList<NamedCount> VehicleTypes,
+        IReadOnlyList<DailyTotalsByDate> RecentDailyAccess);
 
     private sealed record DailyTotals(
         int Entries,
@@ -330,4 +357,13 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
         int OpenAtEnd);
 
     private sealed record EventTotals(int Entries, int EventsWithEntries);
+
+    private sealed record HourlyTotals(int Hour, int Entries, int Exits);
+
+    private sealed record NamedCount(string Label, int Count);
+
+    private sealed record DailyTotalsByDate(
+        DateOnly LocalDate,
+        int Entries,
+        int Exits);
 }
