@@ -514,12 +514,17 @@ automaticamente nem cria um bloqueio fixo às 23h.
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Perfil   | os quatro perfis                                                                                                                   |
 | Ação     | consultar a data local da demonstração                                                                                             |
-| Esperado | totais gerais, institucionais e de evento; `openAtStart` e `openAtEnd`; nenhuma pessoa, documento, placa, itinerário ou observação |
+| Esperado | totais gerais, institucionais e de evento; `openAtStart` e `openAtEnd`; fluxo por hora, categorias e tipos de veículo da data consultada; série de entradas e saídas dos 14 dias encerrados nessa data; nenhuma pessoa, documento, placa, itinerário ou observação |
 | Pergunta | os totais ajudam a troca de turno e a conferência? Os nomes dos campos são compreensíveis?                                         |
 
 O resumo não classifica atraso ou irregularidade e não representa assinatura de
 fechamento. Essas possibilidades só entram no backlog se forem solicitadas e
 justificadas.
+
+As agregações horárias, por categoria e por tipo de veículo usam apenas entradas
+e saídas gerais persistidas na data selecionada. A série recente tem janela fixa
+de 14 dias, incluindo a data consultada. Valores zero representam ausência de
+registros no intervalo; o sistema não preenche lacunas com dados demonstrativos.
 
 ### Cenário 7 — contas e auditoria
 
