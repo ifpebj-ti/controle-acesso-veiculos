@@ -1,6 +1,7 @@
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
+import { MetricCard, type MetricCardTone } from "../components/ui/MetricCard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import { useAuthenticatedSession } from "../features/authentication";
@@ -8,6 +9,7 @@ import {
   EventAuthorizationCatalog,
   EventAuthorizationFilterForm,
   EventAuthorizationForm,
+  type EventAuthorizationPage,
   useEventAuthorizations,
 } from "../features/event-authorizations";
 import { profileHasCapability } from "../routes/routeMetadata";
@@ -52,6 +54,7 @@ export function EventsPage() {
             ? "Eventos e autorizações"
             : "Consultar eventos e autorizações"
         }
+        variant="prominent"
       />
 
       {events.notice && (
@@ -109,21 +112,22 @@ export function EventsPage() {
         </>
       )}
 
-      <section className="mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]">
+      <EventAuthorizationSummary page={events.page} status={events.status} />
+
+      <EventAuthorizationFilterForm
+        disabled={events.pendingAction !== null || events.status === "loading"}
+        draft={events.draft}
+        onApply={events.applyFilters}
+        onChange={events.setDraft}
+        onClear={events.clearFilters}
+        periodError={events.filterError}
+      />
+
+      <section className="institutional-catalog mt-4 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_24px_rgba(1,36,40,0.035)]">
         <SectionHeader
           className="px-5 pt-5 sm:px-6"
-          eyebrow="Consulta integrada"
-          title="Autorizações cadastradas"
-        />
-        <EventAuthorizationFilterForm
-          disabled={
-            events.pendingAction !== null || events.status === "loading"
-          }
-          draft={events.draft}
-          onApply={events.applyFilters}
-          onChange={events.setDraft}
-          onClear={events.clearFilters}
-          periodError={events.filterError}
+          eyebrow="Planejamento e acompanhamento"
+          title="Eventos e autorizações cadastrados"
         />
         <EventAuthorizationCatalog
           canManage={canManage}
@@ -136,5 +140,76 @@ export function EventsPage() {
         />
       </section>
     </div>
+  );
+}
+
+function EventAuthorizationSummary({
+  page,
+  status,
+}: {
+  page: EventAuthorizationPage | null;
+  status: "loading" | "ready" | "error" | "denied";
+}) {
+  if (status !== "ready" || !page) return null;
+
+  const visibleTotals = page.items.reduce(
+    (totals, event) => {
+      for (const rule of event.vehicleRules) {
+        totals.expected += rule.quantity;
+        totals.consumed += rule.consumedQuantity;
+        totals.remaining += rule.remainingQuantity;
+      }
+      return totals;
+    },
+    { consumed: 0, expected: 0, remaining: 0 },
+  );
+
+  const metrics = [
+    {
+      description: "no período e filtros aplicados",
+      icon: "calendar" as const,
+      label: "Eventos encontrados",
+      tone: "forest" as MetricCardTone,
+      value: page.totalCount,
+    },
+    {
+      description: "na página atual",
+      icon: "clipboard" as const,
+      label: "Capacidade prevista",
+      tone: "leaf" as MetricCardTone,
+      value: visibleTotals.expected,
+    },
+    {
+      description: "na página atual",
+      icon: "log-out" as const,
+      label: "Entradas utilizadas",
+      tone: "teal" as MetricCardTone,
+      value: visibleTotals.consumed,
+    },
+    {
+      description: "na página atual",
+      icon: "clock" as const,
+      label: "Autorizações restantes",
+      tone: "amber" as MetricCardTone,
+      value: visibleTotals.remaining,
+    },
+  ];
+
+  return (
+    <section
+      aria-label="Resumo dos eventos e autorizações"
+      className="institutional-metric-grid mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+    >
+      {metrics.map((metric) => (
+        <MetricCard
+          description={metric.description}
+          icon={metric.icon}
+          key={metric.label}
+          label={metric.label}
+          tone={metric.tone}
+          value={metric.value}
+        />
+      ))}
+    </section>
   );
 }

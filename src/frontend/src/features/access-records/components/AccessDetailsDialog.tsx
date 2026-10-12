@@ -136,7 +136,7 @@ export function AccessDetailsDialog({
         aria-describedby="access-details-description"
         aria-labelledby="access-details-title"
         aria-modal="true"
-        className="max-h-[100svh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 shadow-xl sm:mx-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-xl sm:rounded-2xl sm:p-6"
+        className="institutional-catalog max-h-[100svh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 shadow-xl sm:mx-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-xl sm:rounded-2xl sm:p-6"
         ref={dialogRef}
         role="dialog"
       >
@@ -167,7 +167,7 @@ export function AccessDetailsDialog({
           </Button>
         </div>
 
-        <section className="mt-5 rounded-xl border border-border bg-surface-subtle p-4">
+        <section className="history-details-summary mt-5 rounded-xl border border-border bg-surface-subtle p-4">
           <div className="flex flex-wrap items-center gap-3">
             <VehicleTypeIndicator
               iconSize={26}
@@ -189,7 +189,7 @@ export function AccessDetailsDialog({
           </div>
         </section>
 
-        <section className="mt-4 rounded-xl border border-border p-4">
+        <section className="history-details-section mt-4 rounded-xl border border-border p-4">
           <h3 className="font-bold text-ink">Informações gerais</h3>
           <dl className="mt-2">
             <DetailRow icon="car" label="Placa" value={record.plate} />
@@ -215,7 +215,7 @@ export function AccessDetailsDialog({
           </dl>
         </section>
 
-        <section className="mt-4 rounded-xl border border-border p-4">
+        <section className="history-details-section mt-4 rounded-xl border border-border p-4">
           <h3 className="font-bold text-ink">Registro de acesso</h3>
           <div className="relative mt-4 space-y-5 pl-9 before:absolute before:bottom-3 before:left-[0.7rem] before:top-3 before:w-px before:bg-border">
             <div className="relative">
@@ -273,7 +273,7 @@ export function AccessDetailsDialog({
           </section>
         )}
 
-        <section className="mt-4 rounded-xl border border-border p-4">
+        <section className="history-details-section mt-4 rounded-xl border border-border p-4">
           <h3 className="font-bold text-ink">Permanência</h3>
           <div className="mt-3 flex items-center justify-between gap-4 text-sm">
             <span className="flex items-center gap-2 text-ink-soft">
@@ -285,7 +285,7 @@ export function AccessDetailsDialog({
           </div>
         </section>
 
-        <section className="mt-4 rounded-xl border border-border p-4">
+        <section className="history-details-section mt-4 rounded-xl border border-border p-4">
           <h3 className="font-bold text-ink">Observações</h3>
           <p className="mt-3 break-words rounded-lg bg-surface-subtle p-3 text-sm text-ink-soft">
             {record.observation?.trim() ||

@@ -1,9 +1,10 @@
 import { SelectField } from "../../../components/ui/SelectField";
+import { Button } from "../../../components/ui/Button";
 import { auditActions, type AuditTrailFilters } from "../types";
 import type { AuditTrailFilterErrors } from "../types";
 
 const fieldClass =
-  "mt-2 min-h-11 w-full rounded-xl border border-ink/20 bg-white px-3 text-sm text-ink outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
+  "mt-2 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm text-ink outline-none focus:border-primary focus:ring-3 focus:ring-primary/15 disabled:opacity-60";
 
 const actionLabels = {
   Alteracao: "Alteração",
@@ -47,7 +48,7 @@ export function AuditTrailFilters({
 
   return (
     <form
-      className="mt-5 grid gap-4 border-y border-ink/10 bg-brand-soft/20 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4"
+      className="audit-filter-panel mt-4 grid gap-4 border-t border-border bg-surface-subtle/45 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4"
       onSubmit={(event) => {
         event.preventDefault();
         onApply();
@@ -221,21 +222,12 @@ export function AuditTrailFilters({
         )}
       </div>
       <div className="flex items-end gap-2">
-        <button
-          className="min-h-11 flex-1 rounded-xl bg-ink px-4 text-sm font-bold text-white disabled:opacity-60"
-          disabled={disabled}
-          type="submit"
-        >
+        <Button className="flex-1" disabled={disabled} type="submit">
           Aplicar filtros
-        </button>
-        <button
-          className="min-h-11 rounded-xl border border-ink/20 px-4 text-sm font-bold disabled:opacity-60"
-          disabled={disabled}
-          onClick={onClear}
-          type="button"
-        >
+        </Button>
+        <Button disabled={disabled} onClick={onClear} variant="secondary">
           Limpar
-        </button>
+        </Button>
       </div>
       <p
         className="text-xs text-ink-soft sm:col-span-2 xl:col-span-4"

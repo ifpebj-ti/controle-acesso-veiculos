@@ -283,6 +283,11 @@ describe("AppLayout", () => {
       within(dialog).queryByRole("link", { name: "Usuários e permissões" }),
     ).not.toBeInTheDocument();
     expect(
+      within(dialog).queryByRole("button", {
+        name: "Relatórios, funcionalidade futura",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
       within(dialog).getByRole("link", { name: "Alterar senha" }),
     ).toHaveAttribute("href", "/conta/senha");
   });
@@ -335,6 +340,11 @@ describe("AppLayout", () => {
     expect(
       within(dialog).getByRole("link", { name: "Usuários e permissões" }),
     ).toBeVisible();
+    expect(
+      within(dialog).getByRole("button", {
+        name: "Relatórios, funcionalidade futura",
+      }),
+    ).toBeDisabled();
     expect(
       within(dialog).queryByRole("link", { name: "Registrar entrada" }),
     ).not.toBeInTheDocument();

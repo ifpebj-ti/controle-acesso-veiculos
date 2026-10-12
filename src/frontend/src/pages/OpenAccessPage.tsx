@@ -195,10 +195,31 @@ export function OpenAccessPage() {
         aria-busy={
           accessRecords.isRefreshing || accessRecords.status === "loading"
         }
-        className="mt-6 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
+        aria-labelledby="open-access-list-title"
+        className="institutional-catalog mt-6 overflow-hidden rounded-[2rem] border border-border bg-surface shadow-sm"
       >
         <div className="p-4 sm:p-6">
-          <div className="grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_auto_auto] lg:items-end">
+          <div className="open-access-section-heading flex flex-wrap items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="grid size-11 shrink-0 place-items-center rounded-xl rounded-bl-md bg-success-surface text-primary"
+            >
+              <Icon name="car" size={23} />
+            </span>
+            <div className="min-w-0">
+              <h2
+                className="text-lg font-bold text-text"
+                id="open-access-list-title"
+              >
+                Veículos aguardando saída
+              </h2>
+              <p className="mt-0.5 text-sm text-text-muted">
+                Pesquise, confira os dados e escolha a ação adequada.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_auto_auto] lg:items-end">
             <div className="w-full">
               <label className="sr-only" htmlFor="open-search">
                 Buscar acesso aberto
@@ -223,7 +244,7 @@ export function OpenAccessPage() {
 
             {accessRecords.status === "ready" && (
               <>
-                <div className="flex min-h-13 items-center gap-3 rounded-xl border border-success-border bg-success-surface px-4 py-2.5 text-sm text-success-text">
+                <div className="open-access-counter flex min-h-13 items-center gap-3 rounded-xl border border-success-border bg-success-surface px-4 py-2.5 text-sm text-success-text">
                   <Icon className="shrink-0" name="clock" size={26} />
                   <div>
                     <p aria-live="polite" className="font-bold text-ink">
@@ -266,7 +287,7 @@ export function OpenAccessPage() {
 
           {accessRecords.status === "ready" &&
             availableCategories.length > 0 && (
-              <div className="mt-5">
+              <div className="open-access-filter-strip mt-5 rounded-xl border border-border px-4 py-3">
                 <div className="sm:hidden">
                   <label
                     className="text-sm font-semibold text-ink"

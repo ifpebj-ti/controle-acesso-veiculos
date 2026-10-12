@@ -136,6 +136,25 @@ describe("FleetPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("summarizes the active catalog with real vehicle data", async () => {
+    renderPage("Administrador");
+
+    await screen.findByText("DEM1A23");
+    expect(
+      screen.getByText("Veículos ativos").nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(
+      screen.getByText("Tipos cadastrados").nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(
+      screen.getByText("Veículos com placa").nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(
+      screen.getByText("Identificados pelo campus").nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(screen.getByText("Mostrando 1 de 1 veículo(s)")).toBeInTheDocument();
+  });
+
   it("blocks form switches and duplicate actions while a request is pending", async () => {
     let resolveCreation: ((value: InstitutionalVehicle) => void) | undefined;
     vi.mocked(createInstitutionalVehicle).mockReturnValue(

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { InstitutionalAccent } from "./InstitutionalAccent";
+
 interface PageHeaderProps {
   eyebrow?: string;
   title: string;
@@ -18,8 +20,15 @@ export function PageHeader({
   const isProminent = variant === "prominent";
 
   return (
-    <header className="flex min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-      <div className="min-w-0 flex-1 break-words">
+    <header
+      className={`flex min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between ${
+        isProminent ? "institutional-page-hero" : ""
+      }`}
+    >
+      {isProminent && (
+        <InstitutionalAccent className="institutional-page-hero__accent" />
+      )}
+      <div className="relative z-1 min-w-0 flex-1 break-words">
         {eyebrow && (
           <p
             className={
@@ -47,7 +56,9 @@ export function PageHeader({
         </p>
       </div>
       {action && (
-        <div className="flex max-w-full flex-wrap gap-3">{action}</div>
+        <div className="relative z-1 flex max-w-full flex-wrap gap-3">
+          {action}
+        </div>
       )}
     </header>
   );

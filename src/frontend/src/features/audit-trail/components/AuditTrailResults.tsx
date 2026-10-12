@@ -1,4 +1,6 @@
 import { ContentState } from "../../../components/ui/ContentState";
+import { Button } from "../../../components/ui/Button";
+import { Icon } from "../../../components/ui/Icon";
 import type { AuditEntry, AuditTrailPage, JsonValue } from "../types";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -39,9 +41,6 @@ export function AuditTrailResults({
 
   return (
     <>
-      <p aria-live="polite" className="px-5 pt-5 text-sm text-ink-soft sm:px-6">
-        {page.totalCount} evento(s) encontrado(s)
-      </p>
       {page.items.length === 0 ? (
         <ContentState
           className="m-5 sm:m-6"
@@ -51,7 +50,7 @@ export function AuditTrailResults({
           variant="empty"
         />
       ) : (
-        <ol className="grid gap-4 p-5 sm:p-6 xl:grid-cols-2">
+        <ol className="audit-results-list grid gap-3 p-4 sm:p-5">
           {page.items.map((entry) => (
             <li key={entry.id}>
               <AuditEntryCard entry={entry} />
@@ -59,30 +58,37 @@ export function AuditTrailResults({
           ))}
         </ol>
       )}
+      <div className="institutional-catalog__footer flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4 sm:px-6">
+        <p
+          aria-live="polite"
+          className="flex items-center gap-2 font-bold text-ink"
+        >
+          <Icon className="text-primary" name="clipboard" size={19} />
+          {page.totalCount} evento(s) encontrado(s)
+        </p>
+        <p className="text-xs font-semibold text-ink-soft">
+          Página {page.page} de {Math.max(page.totalPages, 1)}
+        </p>
+      </div>
       {page.totalPages > 1 && (
         <nav
           aria-label="Paginação da auditoria"
-          className="flex items-center justify-between gap-4 border-t border-ink/10 px-5 py-4 sm:px-6"
+          className="flex items-center justify-between gap-4 border-t border-border px-5 py-4 sm:px-6"
         >
-          <button
-            className="min-h-10 rounded-xl border border-ink/20 px-4 text-sm font-bold disabled:opacity-40"
+          <Button
             disabled={page.page <= 1}
             onClick={() => onPageChange(page.page - 1)}
-            type="button"
+            variant="secondary"
           >
             Anterior
-          </button>
-          <span className="text-sm font-semibold">
-            Página {page.page} de {page.totalPages}
-          </span>
-          <button
-            className="min-h-10 rounded-xl border border-ink/20 px-4 text-sm font-bold disabled:opacity-40"
+          </Button>
+          <Button
             disabled={page.page >= page.totalPages}
             onClick={() => onPageChange(page.page + 1)}
-            type="button"
+            variant="secondary"
           >
             Próxima
-          </button>
+          </Button>
         </nav>
       )}
     </>
@@ -97,9 +103,18 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
         ? "Pessoa usuária — ID não informado"
         : `Usuário #${entry.actorUserId}`;
   return (
-    <article className="h-full rounded-2xl border border-ink/10 bg-cream/25 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+    <article
+      className="audit-entry-card grid min-w-0 gap-4 rounded-2xl border border-border bg-surface p-4 xl:grid-cols-[minmax(12rem,1.1fr)_minmax(11rem,.8fr)_minmax(14rem,1.1fr)_minmax(18rem,1.5fr)] xl:items-center"
+      data-audit-action={entry.action.toLocaleLowerCase("pt-BR")}
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="audit-entry-card__icon grid size-11 shrink-0 place-items-center rounded-xl bg-success-surface text-primary">
+          <Icon
+            name={entry.action === "Logout" ? "log-out" : "user"}
+            size={22}
+          />
+        </span>
+        <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-dark">
             {entry.entity} · registro #{entry.recordId}
           </p>
@@ -107,28 +122,31 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
             {actionLabels[entry.action]}
           </h3>
         </div>
+      </div>
+      <div className="border-border xl:border-l xl:pl-4">
         <time
-          className="text-xs font-semibold text-ink-soft"
+          className="flex items-center gap-2 text-sm font-semibold text-ink-soft"
           dateTime={entry.occurredAtUtc}
         >
+          <Icon name="calendar" size={16} />
           {dateTimeFormatter.format(new Date(entry.occurredAtUtc))}
         </time>
+        <p className="mt-2 flex items-center gap-2 text-sm text-ink-soft">
+          <Icon name="user" size={16} />
+          <span>{actor}</span>
+        </p>
       </div>
-      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-ink-soft">Origem</dt>
-          <dd className="font-semibold">{actor}</dd>
-        </div>
+      <dl className="grid gap-2 border-border text-sm xl:border-l xl:pl-4">
         <div>
           <dt className="text-ink-soft">Evento</dt>
-          <dd>#{entry.id}</dd>
+          <dd className="font-semibold">#{entry.id}</dd>
         </div>
-        <div className="sm:col-span-2">
+        <div>
           <dt className="text-ink-soft">Detalhes</dt>
           <dd className="break-words">{entry.details ?? "Não informado"}</dd>
         </div>
       </dl>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2 border-border sm:grid-cols-2 xl:border-l xl:pl-4">
         <StateDetails label="Estado anterior" value={entry.previousState} />
         <StateDetails label="Novo estado" value={entry.newState} />
       </div>
@@ -144,8 +162,10 @@ function StateDetails({
   value: JsonValue | null;
 }) {
   return (
-    <details className="rounded-xl border border-ink/10 bg-white p-3">
-      <summary className="cursor-pointer text-sm font-bold">{label}</summary>
+    <details className="rounded-xl border border-border bg-surface p-3">
+      <summary className="cursor-pointer text-sm font-bold text-primary">
+        {label}
+      </summary>
       {value === null ? (
         <p className="mt-3 text-sm text-ink-soft">Não informado</p>
       ) : (

@@ -190,6 +190,41 @@ describe("AdminPage", () => {
     expect(
       screen.queryByRole("button", { name: "Nova conta" }),
     ).not.toBeInTheDocument();
+
+    const auditSummary = screen.getByRole("region", {
+      name: "Resumo da trilha de auditoria",
+    });
+    expect(
+      within(auditSummary).getByText("Total de registros").nextSibling,
+    ).toHaveTextContent("1");
+    expect(
+      within(auditSummary).getByText("Alterações").nextSibling,
+    ).toHaveTextContent("1");
+    expect(
+      within(auditSummary).getByText("Logins").nextSibling,
+    ).toHaveTextContent("0");
+  });
+
+  it("summarizes account results without treating the page as a global breakdown", async () => {
+    renderPage();
+    await screen.findAllByText(activeAccount.name);
+
+    const summary = screen.getByRole("region", {
+      name: "Resumo das contas de acesso",
+    });
+    expect(
+      within(summary).getByText("Total de contas").nextSibling,
+    ).toHaveTextContent("2");
+    expect(
+      within(summary).getByText("Contas ativas").nextSibling,
+    ).toHaveTextContent("1");
+    expect(
+      within(summary).getByText("Contas inativas").nextSibling,
+    ).toHaveTextContent("1");
+    expect(within(summary).getAllByText("na página atual")).toHaveLength(2);
+    expect(
+      within(summary).getByText("Perfis de acesso").nextSibling,
+    ).toHaveTextContent("4");
   });
 
   it("keeps valid audit results when a local period is invalid", async () => {

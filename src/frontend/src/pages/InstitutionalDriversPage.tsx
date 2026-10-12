@@ -200,6 +200,7 @@ export function InstitutionalDriversPage() {
         }
         eyebrow={canManage ? "Setor de Transporte" : "Consulta operacional"}
         title={canManage ? "Motoristas autorizados" : "Conferir motoristas"}
+        variant="prominent"
       />
 
       {notice && (

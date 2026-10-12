@@ -1,4 +1,6 @@
 import { SelectField } from "../../../components/ui/SelectField";
+import { Icon } from "../../../components/ui/Icon";
+import { Button } from "../../../components/ui/Button";
 import type { EventAuthorizationFilters as Filters } from "../types";
 
 interface EventAuthorizationFilterFormProps {
@@ -11,7 +13,7 @@ interface EventAuthorizationFilterFormProps {
 }
 
 const fieldClass =
-  "mt-2 min-h-11 w-full rounded-xl border border-ink/20 bg-white px-3 text-sm text-ink outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
+  "mt-2 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm text-ink outline-none focus:border-primary focus:ring-3 focus:ring-primary/15 disabled:opacity-60";
 
 export function EventAuthorizationFilterForm({
   disabled,
@@ -27,12 +29,26 @@ export function EventAuthorizationFilterForm({
 
   return (
     <form
-      className="grid gap-4 border-b border-ink/10 bg-brand-soft/20 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-[1.2fr_1fr_1fr_.7fr_auto] xl:items-end"
+      className="event-filter-panel mt-4 grid gap-4 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-[1.2fr_1fr_1fr_.7fr_auto] xl:items-end"
       onSubmit={(event) => {
         event.preventDefault();
         onApply();
       }}
     >
+      <div className="event-filter-panel__heading flex items-start gap-3 sm:col-span-2 xl:col-span-5">
+        <span
+          aria-hidden="true"
+          className="grid size-10 shrink-0 place-items-center rounded-xl bg-success-surface text-primary"
+        >
+          <Icon name="search" size={20} />
+        </span>
+        <div>
+          <h2 className="font-bold text-ink">Encontrar uma autorização</h2>
+          <p className="mt-0.5 text-sm text-ink-soft">
+            Consulte por nome, período e situação do evento.
+          </p>
+        </div>
+      </div>
       <div>
         <label
           className="text-sm font-semibold text-ink"
@@ -40,16 +56,25 @@ export function EventAuthorizationFilterForm({
         >
           Buscar pelo nome do evento
         </label>
-        <input
-          className={fieldClass}
-          disabled={disabled}
-          id="event-filter-name"
-          maxLength={200}
-          onChange={(event) => onChange({ ...draft, name: event.target.value })}
-          placeholder="Buscar por nome"
-          type="search"
-          value={draft.name}
-        />
+        <div className="relative">
+          <Icon
+            className="pointer-events-none absolute left-3 top-1/2 mt-1 -translate-y-1/2 text-primary"
+            name="search"
+            size={18}
+          />
+          <input
+            className={`${fieldClass} pl-10`}
+            disabled={disabled}
+            id="event-filter-name"
+            maxLength={200}
+            onChange={(event) =>
+              onChange({ ...draft, name: event.target.value })
+            }
+            placeholder="Nome do evento"
+            type="search"
+            value={draft.name}
+          />
+        </div>
       </div>
       <div>
         <label
@@ -117,21 +142,12 @@ export function EventAuthorizationFilterForm({
         />
       </div>
       <div className="flex gap-2 sm:col-span-2 xl:col-span-1">
-        <button
-          className="min-h-11 flex-1 rounded-xl bg-ink px-4 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60"
-          disabled={disabled}
-          type="submit"
-        >
-          Aplicar
-        </button>
-        <button
-          className="min-h-11 rounded-xl border border-ink/20 px-4 text-sm font-bold text-ink disabled:opacity-60"
-          disabled={disabled}
-          onClick={onClear}
-          type="button"
-        >
+        <Button className="flex-1" disabled={disabled} type="submit">
+          Aplicar filtros
+        </Button>
+        <Button disabled={disabled} onClick={onClear} variant="secondary">
           Limpar
-        </button>
+        </Button>
       </div>
       <p
         className="text-xs text-ink-soft sm:col-span-2 xl:col-span-5"

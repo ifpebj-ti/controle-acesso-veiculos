@@ -3,6 +3,8 @@ import { useEffect, useRef, type ChangeEvent } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { SelectField } from "../../../components/ui/SelectField";
+import { Button } from "../../../components/ui/Button";
+import { Icon } from "../../../components/ui/Icon";
 import { profileLabels } from "../../authentication";
 import {
   createUserAccountFormSchema,
@@ -19,7 +21,7 @@ interface UserAccountFormProps {
 }
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:opacity-60";
+  "mt-2 min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-primary focus:ring-3 focus:ring-primary/15 disabled:cursor-wait disabled:opacity-60";
 
 type CreateAccountField = "email" | "name" | "profileName";
 
@@ -81,9 +83,9 @@ export function UserAccountForm({
   return (
     <section
       aria-labelledby="account-form-title"
-      className="mt-6 overflow-hidden rounded-[2rem] border border-brand-dark/15 bg-white shadow-[0_14px_40px_rgba(1,36,40,0.07)]"
+      className="account-form-shell mt-6 overflow-hidden rounded-2xl border border-border bg-surface"
     >
-      <div className="border-b border-ink/8 bg-brand-soft/30 px-5 py-5 sm:px-7">
+      <div className="account-form-heading border-b border-border bg-success-surface/60 px-5 py-5 sm:px-7">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
           Acesso individual
         </p>
@@ -102,15 +104,16 @@ export function UserAccountForm({
       </div>
 
       <form
-        className="grid gap-5 p-5 sm:grid-cols-2 sm:p-7"
+        className="account-form-body grid gap-5 p-5 sm:grid-cols-2 sm:p-7"
         noValidate
         onSubmit={handleSubmit(onSubmit)}
       >
         <div>
           <label
-            className="text-sm font-semibold text-ink"
+            className="flex items-center gap-2 text-sm font-semibold text-ink"
             htmlFor="account-name"
           >
+            <Icon className="text-primary" name="user" size={17} />
             Nome da pessoa
           </label>
           <input
@@ -128,9 +131,10 @@ export function UserAccountForm({
 
         <div>
           <label
-            className="text-sm font-semibold text-ink"
+            className="flex items-center gap-2 text-sm font-semibold text-ink"
             htmlFor="account-email"
           >
+            <Icon className="text-primary" name="mail" size={17} />
             E-mail de acesso
           </label>
           <input
@@ -150,9 +154,10 @@ export function UserAccountForm({
 
         <div>
           <label
-            className="text-sm font-semibold text-ink"
+            className="flex items-center gap-2 text-sm font-semibold text-ink"
             htmlFor="account-profile"
           >
+            <Icon className="text-primary" name="shield" size={17} />
             Perfil de acesso
           </label>
           <Controller
@@ -186,22 +191,13 @@ export function UserAccountForm({
           />
         </div>
 
-        <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:col-span-2 sm:flex-row sm:justify-end">
-          <button
-            className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25 disabled:cursor-wait disabled:opacity-60"
-            disabled={disabled}
-            onClick={onCancel}
-            type="button"
-          >
+        <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:col-span-2 sm:flex-row sm:justify-end">
+          <Button disabled={disabled} onClick={onCancel} variant="secondary">
             Cancelar
-          </button>
-          <button
-            className="min-h-12 rounded-xl bg-brand-dark px-7 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
-            disabled={disabled}
-            type="submit"
-          >
+          </Button>
+          <Button className="px-7" disabled={disabled} type="submit">
             {disabled ? "Criando…" : "Criar conta"}
-          </button>
+          </Button>
         </div>
       </form>
     </section>

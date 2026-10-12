@@ -57,7 +57,7 @@ export function OpenAccessList({
 
           return (
             <article
-              className="rounded-xl border border-border bg-surface p-4 shadow-sm"
+              className="open-access-record-card rounded-xl border border-border bg-surface p-4 shadow-sm"
               key={record.id}
             >
               <div className="flex min-w-0 items-start justify-between gap-3">
@@ -145,7 +145,7 @@ export function OpenAccessList({
       </div>
 
       <div
-        className="mt-4 hidden overflow-hidden rounded-xl border border-border xl:block"
+        className="open-access-table-shell mt-4 hidden overflow-hidden rounded-xl border border-border xl:block"
         data-testid="open-access-table"
       >
         <table className="w-full table-fixed border-collapse text-left text-sm">
@@ -153,7 +153,7 @@ export function OpenAccessList({
             Acessos em aberto retornados pela API
           </caption>
           <thead>
-            <tr className="border-b border-border bg-surface-subtle text-[0.68rem] uppercase tracking-[0.12em] text-text-muted">
+            <tr className="open-access-table-heading border-b border-border bg-surface-subtle text-[0.68rem] uppercase tracking-[0.12em] text-text-muted">
               <th className="w-[12%] px-3 py-3" scope="col">
                 Tipo
               </th>
@@ -181,7 +181,7 @@ export function OpenAccessList({
             {records.map((record) => {
               return (
                 <tr
-                  className="border-b border-border align-middle last:border-0 hover:bg-surface-subtle"
+                  className="open-access-table-row border-b border-border align-middle last:border-0 hover:bg-surface-subtle"
                   key={record.id}
                 >
                   <td className="px-3 py-4">

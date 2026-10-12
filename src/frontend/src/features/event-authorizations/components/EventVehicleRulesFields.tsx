@@ -7,11 +7,13 @@ import {
   type UseFormSetValue,
 } from "react-hook-form";
 
+import { Button } from "../../../components/ui/Button";
+import { Icon } from "../../../components/ui/Icon";
 import type { EventAuthorizationFormValues } from "../schemas/eventAuthorizationSchemas";
 import type { EventAuthorizationServerErrors } from "../types";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
+  "mt-2 min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-ink outline-none transition placeholder:text-ink-soft/75 focus:border-primary focus:ring-3 focus:ring-primary/15 disabled:opacity-60";
 
 interface EventVehicleRulesFieldsProps {
   control: Control<EventAuthorizationFormValues>;
@@ -72,10 +74,13 @@ export function EventVehicleRulesFields({
         rulesMessage && "event-rules-error",
       )}
       aria-invalid={Boolean(rulesMessage)}
-      className="rounded-2xl border border-ink/10 bg-cream/25 p-4 sm:p-5"
+      className="event-rules-section rounded-2xl border border-border bg-surface-subtle/35 p-4 sm:p-5"
     >
       <legend className="px-2 text-lg font-bold text-ink">
-        Regras de veículos
+        <span className="inline-flex items-center gap-2">
+          <Icon className="text-primary" name="car" size={21} />
+          Regras de veículos
+        </span>
       </legend>
       <p className="mb-4 text-sm text-ink-soft" id="event-rules-hint">
         Use placa para um veículo específico ou cota para uma quantidade por
@@ -107,16 +112,23 @@ export function EventVehicleRulesFields({
             <fieldset
               aria-describedby={broadServerError ? broadErrorId : undefined}
               aria-invalid={Boolean(broadServerError)}
-              className="rounded-2xl border border-ink/10 bg-white p-4"
+              className="event-rule-card rounded-2xl border border-border bg-surface p-4"
               key={field.id}
             >
-              <legend className="px-2 text-sm font-bold">
-                Regra {index + 1}
+              <legend className="px-2 text-sm font-bold text-ink">
+                <span className="inline-flex items-center gap-2">
+                  <Icon className="text-primary" name="menu" size={16} />
+                  Regra {index + 1}
+                </span>
               </legend>
-              <div className="flex flex-wrap gap-5">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {(["quota", "plate"] as const).map((value) => (
                   <label
-                    className="flex min-h-10 items-center gap-2 text-sm font-semibold"
+                    className={`flex min-h-14 cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm transition ${
+                      mode === value
+                        ? "border-primary bg-success-surface text-ink"
+                        : "border-border bg-surface text-ink-soft hover:bg-primary/5"
+                    }`}
                     key={value}
                   >
                     <input
@@ -125,6 +137,7 @@ export function EventVehicleRulesFields({
                       }
                       aria-invalid={Boolean(broadServerError)}
                       disabled={disabled}
+                      className="mt-1 size-4 accent-primary"
                       type="radio"
                       value={value}
                       {...register(`vehicleRules.${index}.mode`, {
@@ -135,7 +148,18 @@ export function EventVehicleRulesFields({
                         },
                       })}
                     />
-                    {value === "quota" ? "Cota por tipo" : "Placa específica"}
+                    <span>
+                      <strong className="block text-ink">
+                        {value === "quota"
+                          ? "Cota por tipo"
+                          : "Placa específica"}
+                      </strong>
+                      <span className="mt-1 block text-xs leading-5">
+                        {value === "quota"
+                          ? "Defina uma quantidade por tipo de veículo."
+                          : "Autorize um veículo específico pela placa."}
+                      </span>
+                    </span>
                   </label>
                 ))}
               </div>
@@ -221,30 +245,31 @@ export function EventVehicleRulesFields({
                     message={plateMessage}
                   />
                 </div>
-                <button
-                  className="min-h-11 rounded-xl border border-red-200 px-4 text-sm font-bold text-red-800 disabled:opacity-45"
+                <Button
                   disabled={disabled || fields.length === 1}
                   onClick={() => remove(index)}
-                  type="button"
+                  variant="danger"
                 >
+                  <Icon name="x" size={16} />
                   Remover
-                </button>
+                </Button>
               </div>
               <ErrorMessage id={broadErrorId} message={broadServerError} />
             </fieldset>
           );
         })}
       </div>
-      <button
-        className="mt-4 min-h-11 rounded-xl border border-brand-dark/25 px-4 text-sm font-bold text-brand-dark disabled:opacity-60"
+      <Button
+        className="mt-4"
         disabled={disabled || fields.length >= 100}
         onClick={() =>
           append({ mode: "quota", plate: "", quantity: 1, vehicleType: "" })
         }
-        type="button"
+        variant="secondary"
       >
+        <Icon name="plus" size={17} />
         Adicionar regra
-      </button>
+      </Button>
       <ErrorMessage id="event-rules-error" message={rulesMessage} />
     </fieldset>
   );

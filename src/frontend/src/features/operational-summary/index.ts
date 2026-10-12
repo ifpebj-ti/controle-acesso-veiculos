@@ -1,3 +1,4 @@
+export { AdministrativeSummaryPanel } from "./components/AdministrativeSummaryPanel";
 export { DailySummaryPanel } from "./components/DailySummaryPanel";
 export { SummaryDateFilter } from "./components/SummaryDateFilter";
 export { useOperationalSummary } from "./hooks/useOperationalSummary";

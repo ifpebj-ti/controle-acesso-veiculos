@@ -139,6 +139,23 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
                             </NavLink>
                           </li>
                         ))}
+                        {user.profileName === "Administrador" &&
+                          section.id === "technical" && (
+                            <li>
+                              <button
+                                aria-label="Relatórios, funcionalidade futura"
+                                className="flex min-h-12 w-full cursor-not-allowed items-center gap-2.5 rounded-xl border border-transparent px-3 py-2 text-left text-sm text-text-muted opacity-75"
+                                disabled
+                                type="button"
+                              >
+                                <Icon name="clipboard" size={17} />
+                                <span>Relatórios</span>
+                                <span className="ml-auto rounded-full border border-border bg-surface-subtle px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide">
+                                  Em breve
+                                </span>
+                              </button>
+                            </li>
+                          )}
                       </ul>
                     )}
                   </>

@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { ContentState } from "../components/ui/ContentState";
 import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
 import { Icon } from "../components/ui/Icon";
+import { InstitutionalAccent } from "../components/ui/InstitutionalAccent";
 import {
   profileLabels,
   useAuthenticatedSession,
 } from "../features/authentication";
 import {
+  AdministrativeSummaryPanel,
   DailySummaryPanel,
   SummaryDateFilter,
   useOperationalSummary,
@@ -76,6 +77,7 @@ function institutionalDateTime(date: Date, timeZoneId?: string) {
 
 export function DashboardPage() {
   const { user } = useAuthenticatedSession();
+  const isAdministrator = user.profileName === "Administrador";
   const operationalSummary = useOperationalSummary();
   const [now, setNow] = useState(() => new Date());
   const currentInstitutionalTime = useMemo(
@@ -102,21 +104,25 @@ export function DashboardPage() {
 
   return (
     <div className="min-w-0">
-      <header className="sticky top-16 z-10 -mx-4 flex flex-col gap-5 border-b border-border bg-background px-4 pb-5 pt-1 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-9 lg:flex-row lg:items-end lg:justify-between lg:px-9 lg:pt-0">
-        <div className="max-w-3xl">
+      <header className="dashboard-hero sticky top-16 z-10 flex flex-col gap-5 px-5 py-5 sm:px-7 sm:py-6 lg:top-0 lg:flex-row lg:items-end lg:justify-between">
+        <InstitutionalAccent className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden h-full w-[min(42%,34rem)] opacity-80 sm:block" />
+        <div className="relative z-10 max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-dark">
             Controle de acesso • Campus Belo Jardim
           </p>
           <h1 className="mt-2 text-3xl font-bold leading-tight text-text sm:text-4xl">
-            {greetingForHour(currentInstitutionalTime.hour)},{" "}
-            {profileLabels[user.profileName]}.
+            {isAdministrator
+              ? "Visão geral administrativa"
+              : `${greetingForHour(currentInstitutionalTime.hour)}, ${profileLabels[user.profileName]}.`}
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-ink-soft sm:text-base">
-            Acompanhe as movimentações e a situação dos acessos do dia.
+            {isAdministrator
+              ? "Acompanhe os principais indicadores e acesse rapidamente as áreas de gestão."
+              : "Acompanhe as movimentações e a situação dos acessos do dia."}
           </p>
         </div>
 
-        <div className="shrink-0 border-l-4 border-primary pl-4 text-left lg:min-w-72 lg:text-right">
+        <div className="relative z-10 shrink-0 rounded-xl border border-border bg-surface/85 px-4 py-3 text-left shadow-sm backdrop-blur-sm lg:min-w-72 lg:text-right">
           <p className="text-sm font-semibold text-ink-soft">
             {capitalize(currentInstitutionalTime.fullDate)}
           </p>
@@ -129,21 +135,19 @@ export function DashboardPage() {
         </div>
       </header>
 
-      <Card
-        aria-labelledby="daily-summary-title"
-        className="mt-6 sm:p-7"
-        role="region"
-      >
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+      <section aria-labelledby="daily-summary-title" className="mt-6">
+        <div className="flex flex-col justify-between gap-5 rounded-2xl border border-border bg-surface px-5 py-5 shadow-[0_8px_24px_rgba(1,36,40,0.035)] sm:px-6 lg:flex-row lg:items-end">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-brand-dark">
-              Movimentações do dia
+              {isAdministrator
+                ? "Indicadores consolidados"
+                : "Movimentações do dia"}
             </p>
             <h2
               className="mt-2 text-2xl font-bold text-text"
               id="daily-summary-title"
             >
-              Resumo do dia
+              {isAdministrator ? "Painel administrativo" : "Resumo do dia"}
             </h2>
             {operationalSummary.summary && (
               <p className="mt-2 text-sm text-ink-soft">
@@ -189,64 +193,69 @@ export function DashboardPage() {
         )}
 
         {operationalSummary.status === "ready" &&
-          operationalSummary.summary && (
+          operationalSummary.summary &&
+          (isAdministrator ? (
+            <AdministrativeSummaryPanel summary={operationalSummary.summary} />
+          ) : (
             <DailySummaryPanel summary={operationalSummary.summary} />
-          )}
-      </Card>
+          ))}
+      </section>
 
-      <details className="group mt-5 overflow-hidden rounded-xl border border-border bg-surface text-sm leading-6">
-        <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-5 py-3 font-bold text-text hover:bg-surface-subtle focus:outline-3 focus:outline-offset-[-3px] focus:outline-focus [&::-webkit-details-marker]:hidden">
-          <span
-            aria-hidden="true"
-            className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-subtle text-lg font-bold text-text-muted"
-          >
-            i
-          </span>
-          <span>Como ler o resumo</span>
-          <Icon
-            className="ml-auto shrink-0 transition-transform group-open:rotate-180"
-            name="chevron-down"
-            size={18}
-          />
-        </summary>
-        <div className="border-t border-border bg-surface-subtle p-5">
-          <dl className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
-              <dt className="font-bold text-ink">Já estavam no campus</dt>
-              <dd className="mt-1">
-                Veículos que entraram antes da data e ainda estavam no campus
-                quando o dia começou.
-              </dd>
-            </div>
-            <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
-              <dt className="font-bold text-ink">Ainda estavam no campus</dt>
-              <dd className="mt-1">
-                {isCurrentDate
-                  ? "Acessos que continuam sem saída registrada agora."
-                  : "Acessos que continuavam sem saída registrada ao encerrar aquele dia."}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
-              <dt className="font-bold text-ink">Já estavam em uso</dt>
-              <dd className="mt-1">
-                Veículos institucionais que saíram antes da data e ainda não
-                tinham retornado quando o dia começou.
-              </dd>
-            </div>
-            <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
-              <dt className="font-bold text-ink">Ainda estavam em uso</dt>
-              <dd className="mt-1">
-                {isCurrentDate
-                  ? "Veículos institucionais que continuam sem retorno registrado agora."
-                  : "Veículos institucionais que continuavam sem retorno registrado ao encerrar aquele dia."}
-              </dd>
-            </div>
-          </dl>
-          <p className="mt-4 rounded-xl border border-warning-border bg-warning-surface px-4 py-3 text-xs font-medium text-warning-text">
-            Esses indicadores não classificam atraso ou irregularidade.
-          </p>
-        </div>
-      </details>
+      {!isAdministrator && (
+        <details className="group mt-5 overflow-hidden rounded-xl border border-border bg-surface text-sm leading-6">
+          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-5 py-3 font-bold text-text hover:bg-surface-subtle focus:outline-3 focus:outline-offset-[-3px] focus:outline-focus [&::-webkit-details-marker]:hidden">
+            <span
+              aria-hidden="true"
+              className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-subtle text-lg font-bold text-text-muted"
+            >
+              i
+            </span>
+            <span>Como ler o resumo</span>
+            <Icon
+              className="ml-auto shrink-0 transition-transform group-open:rotate-180"
+              name="chevron-down"
+              size={18}
+            />
+          </summary>
+          <div className="border-t border-border bg-surface-subtle p-5">
+            <dl className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
+                <dt className="font-bold text-ink">Já estavam no campus</dt>
+                <dd className="mt-1">
+                  Veículos que entraram antes da data e ainda estavam no campus
+                  quando o dia começou.
+                </dd>
+              </div>
+              <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
+                <dt className="font-bold text-ink">Ainda estavam no campus</dt>
+                <dd className="mt-1">
+                  {isCurrentDate
+                    ? "Acessos que continuam sem saída registrada agora."
+                    : "Acessos que continuavam sem saída registrada ao encerrar aquele dia."}
+                </dd>
+              </div>
+              <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
+                <dt className="font-bold text-ink">Já estavam em uso</dt>
+                <dd className="mt-1">
+                  Veículos institucionais que saíram antes da data e ainda não
+                  tinham retornado quando o dia começou.
+                </dd>
+              </div>
+              <div className="rounded-xl border border-border bg-surface p-4 text-text-muted">
+                <dt className="font-bold text-ink">Ainda estavam em uso</dt>
+                <dd className="mt-1">
+                  {isCurrentDate
+                    ? "Veículos institucionais que continuam sem retorno registrado agora."
+                    : "Veículos institucionais que continuavam sem retorno registrado ao encerrar aquele dia."}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-4 rounded-xl border border-warning-border bg-warning-surface px-4 py-3 text-xs font-medium text-warning-text">
+              Esses indicadores não classificam atraso ou irregularidade.
+            </p>
+          </div>
+        </details>
+      )}
     </div>
   );
 }

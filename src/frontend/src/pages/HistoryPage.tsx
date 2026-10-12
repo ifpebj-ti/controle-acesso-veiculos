@@ -111,7 +111,7 @@ export function HistoryPage() {
         </div>
       )}
 
-      <section className="mt-5 overflow-hidden rounded-xl border border-border bg-surface">
+      <section className="institutional-catalog mt-5 overflow-hidden rounded-[2rem] border border-border bg-surface">
         <AccessHistoryFilters
           draft={history.draft}
           onApply={history.applyFilters}

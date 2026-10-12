@@ -1,6 +1,7 @@
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
+import { MetricCard, type MetricCardTone } from "../components/ui/MetricCard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAuthenticatedSession } from "../features/authentication";
 import {
@@ -70,7 +71,7 @@ export function InstitutionalUsagesPage() {
         }
         eyebrow={canOperate ? "Operação da portaria" : "Supervisão"}
         title="Utilizações da frota"
-        variant={canOperate ? "prominent" : "default"}
+        variant="prominent"
       />
 
       {catalogs.status === "error" && catalogs.errorMessage && (
@@ -147,6 +148,25 @@ export function InstitutionalUsagesPage() {
         </>
       )}
 
+      <InstitutionalUsageSummary
+        activeVehicles={
+          catalogs.status === "ready" ? catalogs.vehicles.length : undefined
+        }
+        authorizedDrivers={
+          catalogs.status === "ready" ? catalogs.drivers.length : undefined
+        }
+        openUsages={
+          canOperate && operations.status === "ready"
+            ? operations.usages.length
+            : undefined
+        }
+        periodUsages={
+          canReview && history.status === "ready"
+            ? history.page?.totalCount
+            : undefined
+        }
+      />
+
       {canOperate && (
         <OpenInstitutionalUsages
           formError={operations.formError}
@@ -158,6 +178,7 @@ export function InstitutionalUsagesPage() {
           serverErrors={operations.serverErrors}
           status={operations.status}
           usages={operations.usages}
+          vehicles={catalogs.vehicles}
         />
       )}
 
@@ -180,5 +201,76 @@ export function InstitutionalUsagesPage() {
         />
       )}
     </div>
+  );
+}
+
+function InstitutionalUsageSummary({
+  activeVehicles,
+  authorizedDrivers,
+  openUsages,
+  periodUsages,
+}: {
+  activeVehicles?: number;
+  authorizedDrivers?: number;
+  openUsages?: number;
+  periodUsages?: number;
+}) {
+  const metrics = [
+    openUsages === undefined
+      ? null
+      : {
+          description: "aguardando retorno",
+          icon: "car" as const,
+          label: "Veículos em uso",
+          tone: "forest" as MetricCardTone,
+          value: openUsages,
+        },
+    periodUsages === undefined
+      ? null
+      : {
+          description: "no período filtrado",
+          icon: "history" as const,
+          label: "Utilizações registradas",
+          tone: "teal" as MetricCardTone,
+          value: periodUsages,
+        },
+    activeVehicles === undefined
+      ? null
+      : {
+          description: "disponíveis no catálogo",
+          icon: "bus" as const,
+          label: "Veículos ativos",
+          tone: "leaf" as MetricCardTone,
+          value: activeVehicles,
+        },
+    authorizedDrivers === undefined
+      ? null
+      : {
+          description: "aptos para a frota",
+          icon: "users" as const,
+          label: "Motoristas autorizados",
+          tone: "sage" as MetricCardTone,
+          value: authorizedDrivers,
+        },
+  ].filter((metric) => metric !== null);
+
+  if (metrics.length === 0) return null;
+
+  return (
+    <section
+      aria-label="Resumo das utilizações da frota"
+      className="institutional-metric-grid mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+    >
+      {metrics.map((metric) => (
+        <MetricCard
+          description={metric.description}
+          icon={metric.icon}
+          key={metric.label}
+          label={metric.label}
+          tone={metric.tone}
+          value={metric.value}
+        />
+      ))}
+    </section>
   );
 }

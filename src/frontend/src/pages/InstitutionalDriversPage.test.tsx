@@ -136,6 +136,22 @@ describe("InstitutionalDriversPage", () => {
     expect(screen.queryByText("DOC-FICTICIO")).not.toBeInTheDocument();
   });
 
+  it("summarizes authorizations using only catalog data", async () => {
+    renderPage("Administrador");
+
+    await screen.findByText(driver.name);
+    expect(
+      screen.getByText("Total autorizado").nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(
+      screen.getByText("Último cadastro").nextElementSibling,
+    ).toHaveTextContent("04/09/2026");
+    expect(
+      screen.getByText("Mostrando 1 de 1 motorista(s)"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/CPF|CNH/)).not.toBeInTheDocument();
+  });
+
   it("associates a local document-pair error with the invalid field", async () => {
     const user = userEvent.setup();
     renderPage();

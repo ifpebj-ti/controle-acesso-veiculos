@@ -1,7 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
+import type { InstitutionalVehicle } from "../../institutional-vehicles";
+import { getVehiclePresentation } from "../../access-records/model/vehicleTypePresentation";
 import {
   institutionalReturnFormSchema,
   type InstitutionalReturnFormValues,
@@ -101,21 +104,17 @@ function ReturnForm({
         </p>
       )}
       <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <button
-          className="min-h-11 rounded-xl border border-ink/20 px-4 text-sm font-bold disabled:opacity-60"
+        <Button
           disabled={disabled}
           onClick={onCancel}
           type="button"
+          variant="secondary"
         >
           Cancelar
-        </button>
-        <button
-          className="min-h-11 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
-          disabled={disabled}
-          type="submit"
-        >
+        </Button>
+        <Button disabled={disabled} type="submit">
           {disabled ? "Registrando…" : "Confirmar retorno"}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -131,6 +130,7 @@ interface OpenInstitutionalUsagesProps {
   serverErrors: InstitutionalUsageServerErrors;
   status: "idle" | "loading" | "ready" | "error" | "denied";
   usages: InstitutionalVehicleUsage[];
+  vehicles: InstitutionalVehicle[];
 }
 
 export function OpenInstitutionalUsages({
@@ -143,25 +143,31 @@ export function OpenInstitutionalUsages({
   serverErrors,
   status,
   usages,
+  vehicles,
 }: OpenInstitutionalUsagesProps) {
   return (
     <section
       aria-busy={status === "loading"}
       aria-labelledby="open-institutional-title"
-      className="mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
+      className="institutional-catalog mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
     >
-      <div className="border-b border-ink/10 px-5 py-5 sm:px-6">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-          Operação atual
-        </p>
-        <h2
-          className="mt-3 font-display text-2xl"
-          id="open-institutional-title"
-        >
-          Veículos em uso
-        </h2>
+      <div className="usage-active-heading flex flex-wrap items-start gap-3 border-b border-ink/10 px-5 py-5 sm:px-6">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl rounded-bl-md bg-success-surface text-primary">
+          <Icon name="car" size={23} />
+        </span>
+        <div>
+          <h2 className="text-xl font-bold" id="open-institutional-title">
+            Veículos em uso
+          </h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            Veículos que estão com saída registrada e ainda não retornaram.
+          </p>
+        </div>
         {status === "ready" && (
-          <p aria-live="polite" className="mt-1 text-sm text-ink-soft">
+          <p
+            aria-live="polite"
+            className="ml-auto rounded-full bg-success-surface px-3 py-1 text-xs font-bold text-success-text"
+          >
             {usages.length} veículo(s) aguardando retorno
           </p>
         )}
@@ -182,62 +188,99 @@ export function OpenInstitutionalUsages({
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 p-5 sm:p-6 xl:grid-cols-2">
-          {usages.map((usage) => (
-            <article
-              className="rounded-2xl border border-ink/10 bg-cream/25 p-5"
-              key={usage.id}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-brand-dark">
-                    {vehicleLabel(usage)}
-                  </p>
-                  <h3 className="mt-1 text-lg font-bold">{usage.driverName}</h3>
+        <div className="usage-active-grid grid gap-4 p-5 sm:p-6 xl:grid-cols-2">
+          {usages.map((usage) => {
+            const vehicle = vehicles.find(
+              (item) => item.id === usage.vehicleId,
+            );
+            const presentation = getVehiclePresentation(vehicle?.vehicleType);
+
+            return (
+              <article
+                className="usage-active-card rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_22px_rgba(1,36,40,0.04)]"
+                data-vehicle-kind={presentation.kind}
+                key={usage.id}
+              >
+                <div className="grid gap-4 sm:grid-cols-[5.5rem_1fr]">
+                  <span
+                    aria-hidden="true"
+                    className="usage-active-card__visual grid min-h-24 place-items-center rounded-2xl text-primary"
+                  >
+                    <Icon
+                      name={presentation.icon}
+                      size={46}
+                      strokeWidth={1.5}
+                    />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="break-words font-mono text-lg font-bold text-ink">
+                        {vehicleLabel(usage)}
+                      </h3>
+                      <span className="rounded-full border border-success-border bg-success-surface px-3 py-1 text-xs font-bold text-success-text">
+                        Em uso
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-ink-soft">
+                      {presentation.label}
+                    </p>
+                    <dl className="usage-active-card__details mt-3 grid gap-2 text-sm text-ink-soft">
+                      <div className="flex items-start gap-2">
+                        <Icon
+                          className="mt-0.5 shrink-0 text-primary"
+                          name="user"
+                          size={16}
+                        />
+                        <dt className="sr-only">Motorista</dt>
+                        <dd className="break-words">{usage.driverName}</dd>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Icon
+                          className="mt-0.5 shrink-0 text-primary"
+                          name="calendar"
+                          size={16}
+                        />
+                        <dt className="sr-only">Saída</dt>
+                        <dd>
+                          {dateTimeFormatter.format(
+                            new Date(usage.departureAtUtc),
+                          )}
+                        </dd>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Icon
+                          className="mt-0.5 shrink-0 text-primary"
+                          name="history"
+                          size={16}
+                        />
+                        <dt className="sr-only">Itinerário</dt>
+                        <dd className="break-words">{usage.itinerary}</dd>
+                      </div>
+                    </dl>
+                  </div>
                 </div>
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">
-                  Em uso
-                </span>
-              </div>
-              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                <div>
-                  <dt className="text-ink-soft">Saída</dt>
-                  <dd className="font-semibold">
-                    {dateTimeFormatter.format(new Date(usage.departureAtUtc))}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-ink-soft">Quilometragem</dt>
-                  <dd className="font-semibold">{usage.departureMileage} km</dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-ink-soft">Itinerário</dt>
-                  <dd className="break-words font-semibold">
-                    {usage.itinerary}
-                  </dd>
-                </div>
-              </dl>
-              {returningUsage?.id === usage.id ? (
-                <ReturnForm
-                  busy={pendingAction !== null}
-                  formError={formError}
-                  onCancel={onCloseReturn}
-                  onSubmit={onReturn}
-                  serverErrors={serverErrors}
-                  usage={usage}
-                />
-              ) : (
-                <button
-                  className="mt-5 min-h-11 w-full rounded-xl bg-ink px-5 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60"
-                  disabled={pendingAction !== null}
-                  onClick={() => onOpenReturn(usage)}
-                  type="button"
-                >
-                  Registrar retorno
-                </button>
-              )}
-            </article>
-          ))}
+                {returningUsage?.id === usage.id ? (
+                  <ReturnForm
+                    busy={pendingAction !== null}
+                    formError={formError}
+                    onCancel={onCloseReturn}
+                    onSubmit={onReturn}
+                    serverErrors={serverErrors}
+                    usage={usage}
+                  />
+                ) : (
+                  <Button
+                    className="mt-5 w-full"
+                    disabled={pendingAction !== null}
+                    onClick={() => onOpenReturn(usage)}
+                    type="button"
+                  >
+                    <Icon name="log-out" size={17} /> Registrar retorno
+                  </Button>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
     </section>

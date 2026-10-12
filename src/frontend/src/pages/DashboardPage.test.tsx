@@ -94,12 +94,7 @@ describe("DashboardPage", () => {
     expect(pageHeader).toHaveClass("sticky", "top-16", "lg:top-0");
   });
 
-  it.each<ProfileName>([
-    "Porteiro",
-    "Vigilante",
-    "SetorTransporte",
-    "Administrador",
-  ])(
+  it.each<ProfileName>(["Porteiro", "Vigilante", "SetorTransporte"])(
     "loads the same authorized summary for the %s profile",
     async (profile) => {
       renderPage(profile);
@@ -111,6 +106,42 @@ describe("DashboardPage", () => {
       expect(screen.getByText(/10 de junho de 2030/)).toBeInTheDocument();
     },
   );
+
+  it("renders a dedicated management dashboard for the administrator", async () => {
+    renderPage("Administrador");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Visão geral administrativa",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Movimentações de acesso" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Fluxo de acessos" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Tipos de acesso" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Acessos por dia" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Alertas e pendências" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Total de acessos").nextElementSibling,
+    ).toHaveTextContent("8");
+    expect(
+      screen.getByText("Saídas registradas").nextElementSibling,
+    ).toHaveTextContent("5");
+    expect(screen.queryByText("Pessoas únicas")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Gerar relatório" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Como ler o resumo")).not.toBeInTheDocument();
+  });
 
   it("renders the general, institutional and event totals", async () => {
     renderPage();
@@ -309,6 +340,12 @@ describe("DashboardPage", () => {
     const { container } = renderPage("Vigilante");
     await waitFor(() => expect(getDailyOperationalSummary).toHaveBeenCalled());
     await screen.findByRole("heading", { name: "Acessos gerais" });
+    await expectNoSeriousAccessibilityViolations(container);
+  });
+
+  it("renders the administrative dashboard without serious accessibility violations", async () => {
+    const { container } = renderPage("Administrador");
+    await screen.findByRole("heading", { name: "Fluxo de acessos" });
     await expectNoSeriousAccessibilityViolations(container);
   });
 });
