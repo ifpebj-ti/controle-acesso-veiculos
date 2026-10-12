@@ -241,3 +241,31 @@ de whitespace. O JavaScript de produção passou de 873.940 para 866.076 bytes e
 o CSS de 61.259 para 53.285 bytes; o maior chunk passou de 289.801 para 290.191
 bytes. Nenhuma dependência foi adicionada. Os números são soma dos artefatos
 minificados por tipo e não equivalem ao download inicial das rotas sob demanda.
+
+## Quarto incremento — supervisão, catálogos e administração
+
+A Issue #406 preserva os contratos e fluxos existentes de frota, motoristas,
+utilizações institucionais, eventos, contas e auditoria enquanto consolida a
+hierarquia visual aprovada para as áreas de supervisão e gestão. O retorno
+recebido de clientes e professores aprovou layout, identidade, componentes e
+melhorias de usabilidade; isso não substitui a homologação operacional completa
+da Issue #162 nem autoriza uso em produção.
+
+O painel administrativo consome somente os agregados reais validados de
+`GET /operations/daily-summary`: entradas e saídas por hora, distribuição por
+categoria, distribuição por tipo de veículo e série diária dos 14 dias
+terminados na data selecionada. Percentuais são derivados das contagens da
+resposta, períodos ficam explícitos e conjuntos sem registros apresentam estado
+vazio. As visualizações não expõem nomes, placas ou identificadores e possuem
+alternativa textual para tecnologias assistivas.
+
+Setores mais acessados, situação de credenciais, alertas e pendências foram
+removidos porque o contrato atual não fornece dados ou regras para essas
+perguntas. Eles não devem reaparecer por inferência visual. A configuração de
+proxy local também não pertence a esta modernização e permanece fora do escopo.
+
+Foram aprovados 495 testes frontend em 48 arquivos, lint e build. A suíte
+continua emitindo dois avisos preexistentes de `act(...)` em cenários assíncronos
+de autenticação, sem falhas. Tablet físico, zoom real a 200% e validação com
+leitor de tela permanecem como evidências manuais pendentes; por isso o PR deve
+continuar como draft.

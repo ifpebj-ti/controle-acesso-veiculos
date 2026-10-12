@@ -6,7 +6,12 @@ import {
   type MetricCardTone,
 } from "../../../components/ui/MetricCard";
 import { SectionPanel } from "../../../components/ui/SectionPanel";
-import type { DailyOperationalSummary } from "../types";
+import type {
+  DailyAccessTotals,
+  DailyOperationalSummary,
+  HourlyAccessTotals,
+  NamedOperationalCount,
+} from "../types";
 
 interface AdministrativeSummaryPanelProps {
   summary: DailyOperationalSummary;
@@ -20,57 +25,46 @@ interface MetricData {
   value: number | string;
 }
 
-interface PreviewItem {
+interface DistributionItem extends NamedOperationalCount {
   color: string;
-  label: string;
-  value: string;
+  percentage: number;
 }
 
-const accessTypePreview: PreviewItem[] = [
-  { color: "var(--ui-data-1)", label: "Visitante", value: "28,5%" },
-  { color: "var(--ui-data-2)", label: "Prestador de serviço", value: "18,2%" },
-  { color: "var(--ui-data-3)", label: "Entrega", value: "12,6%" },
-  { color: "var(--ui-data-4)", label: "Evento", value: "10,4%" },
-  { color: "var(--ui-data-5)", label: "Treino ou jogo", value: "8,1%" },
-  { color: "var(--ui-data-6)", label: "Outros", value: "22,2%" },
+const chartColors = [
+  "var(--ui-data-1)",
+  "var(--ui-data-2)",
+  "var(--ui-data-3)",
+  "var(--ui-data-4)",
+  "var(--ui-data-5)",
+  "var(--ui-data-6)",
 ];
 
-const credentialPreview: PreviewItem[] = [
-  { color: "var(--ui-data-1)", label: "Válidas", value: "72,4%" },
-  {
-    color:
-      "color-mix(in srgb, var(--ui-warning-border) 60%, var(--ui-surface))",
-    label: "Em breve",
-    value: "14,1%",
-  },
-  {
-    color: "color-mix(in srgb, var(--ui-danger-border) 62%, var(--ui-surface))",
-    label: "Vencidas",
-    value: "8,7%",
-  },
-  {
-    color: "color-mix(in srgb, var(--ui-border) 54%, var(--ui-surface))",
-    label: "Não emitidas",
-    value: "4,8%",
-  },
-];
+const percentageFormatter = new Intl.NumberFormat("pt-BR", {
+  maximumFractionDigits: 1,
+  minimumFractionDigits: 0,
+});
 
-const vehicleTypePreview: PreviewItem[] = [
-  { color: "var(--ui-data-1)", label: "Automóvel", value: "58,3%" },
-  { color: "var(--ui-data-2)", label: "Motocicleta", value: "22,1%" },
-  { color: "var(--ui-data-3)", label: "Caminhonete", value: "10,7%" },
-  { color: "var(--ui-data-5)", label: "Van/Ônibus", value: "5,6%" },
-  { color: "var(--ui-data-6)", label: "Outros", value: "3,3%" },
-];
+const shortDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
-const dailyPreview = [42, 55, 69, 78, 61, 80, 86, 73, 76, 67, 64, 82, 70, 58];
+const compactDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+});
 
-function PreviewBadge() {
-  return (
-    <span className="rounded-full border border-warning-border/60 bg-warning-surface/70 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.06em] text-warning-text">
-      Prévia visual
-    </span>
-  );
+function parseLocalDate(value: string) {
+  return new Date(`${value}T12:00:00`);
+}
+
+function formatShortDate(value: string) {
+  return shortDateFormatter.format(parseLocalDate(value));
+}
+
+function formatCompactDate(value: string) {
+  return compactDateFormatter.format(parseLocalDate(value));
 }
 
 function PanelLink({ to }: { to: string }) {
@@ -84,248 +78,323 @@ function PanelLink({ to }: { to: string }) {
   );
 }
 
-function PreviewLegend({ items }: { items: PreviewItem[] }) {
+function EmptyChart({ children }: { children: string }) {
   return (
-    <dl className="grid min-w-0 gap-2 text-xs sm:text-sm">
-      {items.map((item) => (
-        <div
-          className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border/35 pb-2 last:border-0 last:pb-0"
-          key={item.label}
-        >
-          <span
-            aria-hidden="true"
-            className="size-2 rounded-full"
-            style={{ backgroundColor: item.color }}
-          />
-          <dt className="truncate text-ink-soft">{item.label}</dt>
-          <dd className="font-medium tabular-nums text-ink-soft">
-            {item.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function PreviewDonut({
-  centerLabel,
-  items,
-}: {
-  centerLabel: string;
-  items: PreviewItem[];
-}) {
-  const stops = items.reduce<{ cursor: number; stops: string[] }>(
-    (result, item) => {
-      const amount = Number(item.value.replace("%", "").replace(",", "."));
-      const start = result.cursor;
-      result.cursor += amount;
-      result.stops.push(`${item.color} ${start}% ${result.cursor}%`);
-      return result;
-    },
-    { cursor: 0, stops: [] },
-  );
-
-  return (
-    <div className="grid items-center gap-5 p-5 sm:grid-cols-[8.5rem_1fr]">
-      <div
-        aria-label={`Gráfico demonstrativo: ${items.map((item) => `${item.label} ${item.value}`).join(", ")}`}
-        className="relative mx-auto size-32 rounded-full"
-        role="img"
-        style={{ background: `conic-gradient(${stops.stops.join(", ")})` }}
+    <div
+      className="m-5 flex min-h-44 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-surface-subtle/45 px-5 text-center text-sm text-text-muted"
+      role="status"
+    >
+      <span
+        aria-hidden="true"
+        className="grid size-10 place-items-center rounded-full bg-surface text-primary"
       >
-        <span className="absolute inset-[16%] grid place-content-center rounded-full bg-surface text-center shadow-[inset_0_1px_2px_rgba(1,36,40,0.06)]">
-          <strong className="whitespace-nowrap text-sm font-semibold leading-tight text-ink">
-            {centerLabel}
-          </strong>
-          <small className="mt-0.5 text-[0.6rem] leading-none text-ink-soft">
-            prévia
-          </small>
-        </span>
-      </div>
-      <PreviewLegend items={items} />
+        <Icon name="dashboard" size={20} />
+      </span>
+      <p className="max-w-sm leading-6">{children}</p>
     </div>
   );
 }
 
-function AccessFlowPreview() {
-  const points = [
-    [0, 177],
-    [108, 140],
-    [214, 96],
-    [307, 130],
-    [407, 136],
-    [510, 143],
-    [600, 160],
-  ];
+function ChartLegend() {
+  return (
+    <ul
+      aria-label="Legenda do gráfico"
+      className="mb-4 flex flex-wrap justify-end gap-3 text-xs text-text-muted"
+    >
+      <li className="flex items-center gap-1.5">
+        <span
+          aria-hidden="true"
+          className="size-2.5 rounded-full bg-[var(--ui-data-1)]"
+        />
+        Entradas
+      </li>
+      <li className="flex items-center gap-1.5">
+        <span
+          aria-hidden="true"
+          className="size-2.5 rounded-full bg-[var(--ui-data-3)]"
+        />
+        Saídas
+      </li>
+    </ul>
+  );
+}
+
+function HourlyAccessChart({
+  localDate,
+  values,
+}: {
+  localDate: string;
+  values: HourlyAccessTotals[];
+}) {
+  const total = values.reduce(
+    (result, item) => result + item.entries + item.exits,
+    0,
+  );
+
+  if (total === 0) {
+    return (
+      <EmptyChart>
+        {`Nenhuma entrada ou saída foi registrada em ${formatShortDate(localDate)}.`}
+      </EmptyChart>
+    );
+  }
+
+  const maximum = Math.max(
+    1,
+    ...values.flatMap((item) => [item.entries, item.exits]),
+  );
+  const toPoints = (selector: (item: HourlyAccessTotals) => number) =>
+    values
+      .map((item, index) => {
+        const x =
+          values.length === 1 ? 300 : (index / (values.length - 1)) * 600;
+        const y = 188 - (selector(item) / maximum) * 148;
+        return `${x},${y}`;
+      })
+      .join(" ");
 
   return (
-    <div className="p-4 sm:p-5">
-      <div className="mb-3 flex justify-end gap-1" aria-hidden="true">
-        <span className="rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-white">
-          Entradas
-        </span>
-        <span className="rounded-full bg-surface-subtle px-4 py-1.5 text-xs font-bold text-ink-soft">
-          Saídas
-        </span>
-      </div>
-      <div
-        aria-label="Prévia de gráfico de fluxo de acessos por horário"
-        className="analytics-flow-chart relative h-56 overflow-hidden rounded-lg border"
-        role="img"
-      >
+    <figure className="p-4 sm:p-5">
+      <ChartLegend />
+      <div className="analytics-flow-chart relative h-56 overflow-hidden rounded-lg border">
         <svg
           aria-hidden="true"
           className="absolute inset-0 size-full"
           preserveAspectRatio="none"
           viewBox="0 0 600 220"
         >
-          <defs>
-            <linearGradient id="access-flow-fill" x1="0" x2="0" y1="0" y2="1">
-              <stop
-                offset="0"
-                stopColor="var(--ui-data-2)"
-                stopOpacity="0.26"
-              />
-              <stop
-                offset="1"
-                stopColor="var(--ui-data-2)"
-                stopOpacity="0.02"
-              />
-            </linearGradient>
-          </defs>
-          <path
-            d="M0 177 C42 150 70 137 108 140 S174 85 214 96 S265 135 307 130 S370 156 407 136 S469 155 510 143 S560 169 600 160 L600 220 L0 220 Z"
-            fill="url(#access-flow-fill)"
-          />
-          <path
-            d="M0 177 C42 150 70 137 108 140 S174 85 214 96 S265 135 307 130 S370 156 407 136 S469 155 510 143 S560 169 600 160"
+          <polyline
             fill="none"
+            points={toPoints((item) => item.entries)}
             stroke="var(--ui-data-1)"
-            strokeLinecap="round"
-            strokeWidth="2.5"
+            strokeLinejoin="round"
+            strokeWidth="3"
           />
-          {points.map(([x, y]) => (
-            <circle
-              cx={x}
-              cy={y}
-              fill="var(--ui-data-1)"
-              key={x}
-              r="4"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-          ))}
+          <polyline
+            fill="none"
+            points={toPoints((item) => item.exits)}
+            stroke="var(--ui-data-3)"
+            strokeLinejoin="round"
+            strokeWidth="3"
+          />
+          {values.flatMap((item, index) => {
+            const x = (index / (values.length - 1)) * 600;
+            return (
+              [
+                [item.entries, "var(--ui-data-1)"],
+                [item.exits, "var(--ui-data-3)"],
+              ] as const
+            )
+              .filter(([count]) => count > 0)
+              .map(([count, color]) => (
+                <circle
+                  cx={x}
+                  cy={188 - (count / maximum) * 148}
+                  fill={color}
+                  key={`${item.hour}-${color}`}
+                  r="4"
+                  stroke="var(--ui-surface)"
+                  strokeWidth="2"
+                />
+              ));
+          })}
         </svg>
-        <div className="absolute inset-x-3 bottom-2 flex justify-between text-[0.65rem] text-ink-soft">
+        <div className="absolute inset-x-3 bottom-2 flex justify-between text-[0.65rem] text-text-muted">
+          <span>0h</span>
           <span>6h</span>
-          <span>9h</span>
           <span>12h</span>
-          <span>15h</span>
           <span>18h</span>
-          <span>21h</span>
+          <span>23h</span>
         </div>
       </div>
-    </div>
+      <table className="sr-only">
+        <caption>
+          Entradas e saídas por hora em {formatShortDate(localDate)}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Hora</th>
+            <th scope="col">Entradas</th>
+            <th scope="col">Saídas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {values.map((item) => (
+            <tr key={item.hour}>
+              <th scope="row">{item.hour}h</th>
+              <td>{item.entries}</td>
+              <td>{item.exits}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </figure>
   );
 }
 
-function DailyAccessPreview() {
-  return (
-    <div
-      aria-label="Prévia de gráfico de acessos por dia"
-      className="flex h-52 items-end gap-2 p-5 pt-8"
-      role="img"
-    >
-      {dailyPreview.map((height, index) => (
-        <div
-          className="flex h-full min-w-0 flex-1 flex-col justify-end"
-          key={index}
-        >
-          <span
-            aria-hidden="true"
-            className={`mx-auto w-[72%] rounded-t-sm ${index === 6 ? "bg-primary" : "bg-brand-soft/55"}`}
-            style={{ height: `${height}%` }}
-          />
-          <span className="mt-2 truncate text-center text-[0.58rem] text-ink-soft">
-            {String(index + 1).padStart(2, "0")}/10
-          </span>
-        </div>
-      ))}
-    </div>
+function DistributionChart({
+  centerLabel,
+  emptyMessage,
+  values,
+}: {
+  centerLabel: string;
+  emptyMessage: string;
+  values: NamedOperationalCount[];
+}) {
+  const total = values.reduce((result, item) => result + item.count, 0);
+
+  if (total === 0) return <EmptyChart>{emptyMessage}</EmptyChart>;
+
+  const items: DistributionItem[] = values
+    .filter((item) => item.count > 0)
+    .map((item, index) => ({
+      ...item,
+      color: chartColors[index % chartColors.length],
+      percentage: (item.count / total) * 100,
+    }));
+  const gradient = items.reduce<{ cursor: number; stops: string[] }>(
+    (result, item) => {
+      const start = result.cursor;
+      const end = start + item.percentage;
+      return {
+        cursor: end,
+        stops: [...result.stops, `${item.color} ${start}% ${end}%`],
+      };
+    },
+    { cursor: 0, stops: [] },
   );
-}
-
-function SectorPreview() {
-  const sectors = [
-    ["Entrada principal", 100],
-    ["Ginásio poliesportivo", 68],
-    ["Bloco acadêmico", 47],
-    ["Estacionamento", 38],
-    ["Outros setores", 25],
-  ] as const;
 
   return (
-    <dl className="grid gap-3 p-5">
-      {sectors.map(([label, width], index) => (
-        <div
-          className="grid grid-cols-[8rem_1fr_auto] items-center gap-3"
-          key={label}
-        >
-          <dt className="truncate text-xs text-ink-soft">{label}</dt>
-          <dd
-            aria-hidden="true"
-            className="h-1.5 overflow-hidden rounded-full bg-surface-subtle"
+    <figure className="grid items-center gap-5 p-5 sm:grid-cols-[8.5rem_1fr]">
+      <div
+        aria-hidden="true"
+        className="relative mx-auto size-32 rounded-full"
+        style={{ background: `conic-gradient(${gradient.stops.join(", ")})` }}
+      >
+        <span className="absolute inset-[24%] grid place-content-center rounded-full bg-surface text-center shadow-[inset_0_1px_2px_rgba(1,36,40,0.06)]">
+          <strong className="whitespace-nowrap text-sm font-semibold leading-tight text-text">
+            {centerLabel}
+          </strong>
+          <small className="mt-1 text-xs tabular-nums text-text-muted">
+            {total}
+          </small>
+        </span>
+      </div>
+      <dl className="grid min-w-0 gap-2 text-xs sm:text-sm">
+        {items.map((item) => (
+          <div
+            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border/35 pb-2 last:border-0 last:pb-0"
+            key={item.label}
           >
             <span
-              className="block h-full rounded-full bg-primary"
-              style={{ opacity: 1 - index * 0.13, width: `${width}%` }}
+              aria-hidden="true"
+              className="size-2 rounded-full"
+              style={{ backgroundColor: item.color }}
             />
-          </dd>
-          <dd className="text-xs font-medium tabular-nums text-ink-soft">—</dd>
-        </div>
-      ))}
-    </dl>
+            <dt className="break-words text-text-muted">{item.label}</dt>
+            <dd className="text-right font-medium tabular-nums text-text-muted">
+              {item.count} ({percentageFormatter.format(item.percentage)}%)
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="sr-only">
+        {items
+          .map(
+            (item) =>
+              `${item.label}: ${item.count}, ${percentageFormatter.format(item.percentage)} por cento`,
+          )
+          .join("; ")}
+      </p>
+    </figure>
   );
 }
 
-function AlertsPreview() {
-  const alerts = [
-    {
-      icon: "clock" as const,
-      label: "Permanências acima do horário",
-      tone: "border-danger-border/40 bg-danger-surface/50 text-danger-text",
-    },
-    {
-      icon: "log-out" as const,
-      label: "Saídas não registradas",
-      tone: "border-warning-border/40 bg-warning-surface/50 text-warning-text",
-    },
-    {
-      icon: "lock" as const,
-      label: "Credenciais expiradas",
-      tone: "border-border/35 bg-surface-subtle/55 text-text-muted",
-    },
-    {
-      icon: "ellipsis" as const,
-      label: "Informações incompletas",
-      tone: "border-border/35 bg-surface-subtle/55 text-ink",
-    },
-  ];
+function DailyAccessChart({ values }: { values: DailyAccessTotals[] }) {
+  const total = values.reduce(
+    (result, item) => result + item.entries + item.exits,
+    0,
+  );
+
+  if (total === 0) {
+    const firstDate = values[0]?.localDate;
+    const lastDate = values.at(-1)?.localDate;
+    return (
+      <EmptyChart>
+        {firstDate && lastDate
+          ? `Nenhuma entrada ou saída foi registrada entre ${formatShortDate(firstDate)} e ${formatShortDate(lastDate)}.`
+          : "Nenhuma entrada ou saída foi registrada no período informado."}
+      </EmptyChart>
+    );
+  }
+
+  const maximum = Math.max(
+    1,
+    ...values.flatMap((item) => [item.entries, item.exits]),
+  );
 
   return (
-    <div className="grid gap-2 p-4">
-      {alerts.map((alert) => (
+    <figure className="p-4 sm:p-5">
+      <ChartLegend />
+      <div className="overflow-x-auto pb-1">
         <div
-          className={`flex min-h-11 items-center gap-2.5 rounded-lg border px-3 ${alert.tone}`}
-          key={alert.label}
+          aria-hidden="true"
+          className="flex h-52 min-w-[40rem] items-end gap-2"
         >
-          <Icon name={alert.icon} size={16} />
-          <span className="text-xs font-semibold">{alert.label}</span>
-          <Icon className="ml-auto" name="arrow-right" size={14} />
+          {values.map((item) => (
+            <div
+              className="flex h-full min-w-0 flex-1 flex-col justify-end"
+              key={item.localDate}
+            >
+              <div className="flex h-[10rem] items-end justify-center gap-1">
+                <span
+                  className="w-[34%] rounded-t-sm bg-[var(--ui-data-1)]"
+                  style={{ height: `${(item.entries / maximum) * 100}%` }}
+                />
+                <span
+                  className="w-[34%] rounded-t-sm bg-[var(--ui-data-3)]"
+                  style={{ height: `${(item.exits / maximum) * 100}%` }}
+                />
+              </div>
+              <span className="mt-2 text-center text-[0.62rem] text-text-muted">
+                {formatCompactDate(item.localDate)}
+              </span>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      </div>
+      <table className="sr-only">
+        <caption>Entradas e saídas nos 14 dias do período apresentado</caption>
+        <thead>
+          <tr>
+            <th scope="col">Data</th>
+            <th scope="col">Entradas</th>
+            <th scope="col">Saídas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {values.map((item) => (
+            <tr key={item.localDate}>
+              <th scope="row">{formatShortDate(item.localDate)}</th>
+              <td>{item.entries}</td>
+              <td>{item.exits}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </figure>
   );
+}
+
+function selectedDateDescription(localDate: string) {
+  return `Dados de ${formatShortDate(localDate)}`;
+}
+
+function recentPeriodDescription(values: DailyAccessTotals[]) {
+  const firstDate = values[0]?.localDate;
+  const lastDate = values.at(-1)?.localDate;
+  if (!firstDate || !lastDate) return "Período informado pela API";
+  return `14 dias: ${formatShortDate(firstDate)} a ${formatShortDate(lastDate)}`;
 }
 
 export function AdministrativeSummaryPanel({
@@ -361,17 +430,10 @@ export function AdministrativeSummaryPanel({
       value: summary.institutionalUsages.openAtEnd,
     },
   ];
+  const selectedPeriod = selectedDateDescription(summary.localDate);
 
   return (
     <div className="administrative-summary mt-5">
-      <div className="mb-4 flex flex-col gap-3 rounded-xl border border-warning-border bg-warning-surface px-4 py-3 text-sm text-warning-text sm:flex-row sm:items-center">
-        <strong>Prévia da área analítica</strong>
-        <span className="leading-5">
-          Os indicadores disponíveis usam a API. Gráficos marcados como prévia
-          serão integrados em uma etapa posterior.
-        </span>
-      </div>
-
       <div className="institutional-metric-grid grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         {metricCards.map((metric) => (
           <MetricCard key={metric.label} {...metric} />
@@ -381,63 +443,49 @@ export function AdministrativeSummaryPanel({
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <SectionPanel
           action={<PanelLink to="/acessos/historico" />}
-          badge={<PreviewBadge />}
+          description={selectedPeriod}
           icon="dashboard"
           title="Fluxo de acessos"
         >
-          <AccessFlowPreview />
+          <HourlyAccessChart
+            localDate={summary.localDate}
+            values={summary.hourlyAccess}
+          />
         </SectionPanel>
         <SectionPanel
           action={<PanelLink to="/acessos/historico" />}
-          badge={<PreviewBadge />}
+          description={selectedPeriod}
           icon="dashboard"
           title="Tipos de acesso"
         >
-          <PreviewDonut centerLabel="Acessos" items={accessTypePreview} />
+          <DistributionChart
+            centerLabel="Acessos"
+            emptyMessage={`Nenhuma categoria de acesso foi contabilizada em ${formatShortDate(summary.localDate)}.`}
+            values={summary.accessCategories}
+          />
         </SectionPanel>
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <SectionPanel
           action={<PanelLink to="/acessos/historico" />}
-          badge={<PreviewBadge />}
+          description={recentPeriodDescription(summary.recentDailyAccess)}
           icon="calendar"
           title="Acessos por dia"
         >
-          <DailyAccessPreview />
-        </SectionPanel>
-        <SectionPanel
-          badge={<PreviewBadge />}
-          icon="dashboard"
-          title="Setores mais acessados"
-        >
-          <SectorPreview />
-        </SectionPanel>
-      </div>
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-3">
-        <SectionPanel
-          badge={<PreviewBadge />}
-          icon="lock"
-          title="Alertas e pendências"
-        >
-          <AlertsPreview />
-        </SectionPanel>
-        <SectionPanel
-          action={<PanelLink to="/administracao" />}
-          badge={<PreviewBadge />}
-          icon="shield"
-          title="Status das credenciais"
-        >
-          <PreviewDonut centerLabel="Pessoas" items={credentialPreview} />
+          <DailyAccessChart values={summary.recentDailyAccess} />
         </SectionPanel>
         <SectionPanel
           action={<PanelLink to="/frota" />}
-          badge={<PreviewBadge />}
+          description={selectedPeriod}
           icon="car"
           title="Veículos por tipo"
         >
-          <PreviewDonut centerLabel="Veículos" items={vehicleTypePreview} />
+          <DistributionChart
+            centerLabel="Veículos"
+            emptyMessage={`Nenhum tipo de veículo foi contabilizado nos acessos de ${formatShortDate(summary.localDate)}.`}
+            values={summary.vehicleTypes}
+          />
         </SectionPanel>
       </div>
     </div>

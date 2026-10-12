@@ -17,6 +17,23 @@ export interface EventAccessDailyTotals {
   eventsWithEntries: number;
 }
 
+export interface HourlyAccessTotals {
+  hour: number;
+  entries: number;
+  exits: number;
+}
+
+export interface NamedOperationalCount {
+  label: string;
+  count: number;
+}
+
+export interface DailyAccessTotals {
+  localDate: string;
+  entries: number;
+  exits: number;
+}
+
 export interface DailyOperationalSummary {
   localDate: string;
   timeZoneId: string;
@@ -25,4 +42,8 @@ export interface DailyOperationalSummary {
   generalAccess: GeneralAccessDailyTotals;
   institutionalUsages: InstitutionalUsageDailyTotals;
   eventAccess: EventAccessDailyTotals;
+  hourlyAccess: HourlyAccessTotals[];
+  accessCategories: NamedOperationalCount[];
+  vehicleTypes: NamedOperationalCount[];
+  recentDailyAccess: DailyAccessTotals[];
 }

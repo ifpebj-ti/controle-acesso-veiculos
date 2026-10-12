@@ -37,8 +37,17 @@ vi.mock(
 vi.mock("../services/api-errors", () => ({ describeApiError: vi.fn() }));
 
 const summary: DailyOperationalSummary = {
+  accessCategories: [
+    { count: 6, label: "Visitante" },
+    { count: 2, label: "Entrega" },
+  ],
   eventAccess: { entries: 2, eventsWithEntries: 1 },
   generalAccess: { entries: 8, exits: 5, openAtEnd: 4, openAtStart: 1 },
+  hourlyAccess: Array.from({ length: 24 }, (_, hour) => ({
+    entries: hour === 8 ? 3 : hour === 14 ? 2 : 0,
+    exits: hour === 17 ? 2 : 0,
+    hour,
+  })),
   institutionalUsages: {
     departures: 3,
     openAtEnd: 2,
@@ -48,7 +57,20 @@ const summary: DailyOperationalSummary = {
   localDate: "2030-06-10",
   periodEndUtcExclusive: "2030-06-11T03:00:00Z",
   periodStartUtc: "2030-06-10T03:00:00Z",
+  recentDailyAccess: Array.from({ length: 14 }, (_, index) => {
+    const day = index < 4 ? index + 28 : index - 3;
+    const month = index < 4 ? "05" : "06";
+    return {
+      entries: index + 1,
+      exits: index,
+      localDate: `2030-${month}-${String(day).padStart(2, "0")}`,
+    };
+  }),
   timeZoneId: "America/Recife",
+  vehicleTypes: [
+    { count: 5, label: "Automóvel" },
+    { count: 3, label: "Motocicleta" },
+  ],
 };
 
 function renderPage(profileName: ProfileName = "Porteiro") {
@@ -128,7 +150,25 @@ describe("DashboardPage", () => {
       screen.getByRole("heading", { name: "Acessos por dia" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Alertas e pendências" }),
+      screen.getByRole("heading", { name: "Veículos por tipo" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Alertas e pendências" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Status das credenciais" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Setores mais acessados" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Prévia visual/i)).not.toBeInTheDocument();
+    expect(screen.getByText("6 (75%)")).toBeInTheDocument();
+    expect(screen.getByText("5 (62,5%)")).toBeInTheDocument();
+    expect(
+      screen.getByText("14 dias: 28/05/2030 a 10/06/2030"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Entradas e saídas por hora em 10/06/2030"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Total de acessos").nextElementSibling,
@@ -264,14 +304,57 @@ describe("DashboardPage", () => {
     );
   });
 
+  it("updates every administrative graph when the selected date changes", async () => {
+    const nextSummary: DailyOperationalSummary = {
+      ...summary,
+      accessCategories: [{ count: 4, label: "Evento" }],
+      hourlyAccess: summary.hourlyAccess.map((item) => ({
+        ...item,
+        entries: item.hour === 9 ? 4 : 0,
+        exits: item.hour === 16 ? 3 : 0,
+      })),
+      localDate: "2030-06-11",
+      recentDailyAccess: summary.recentDailyAccess.map((item, index) => ({
+        ...item,
+        entries: index === 13 ? 4 : 0,
+        exits: index === 13 ? 3 : 0,
+        localDate:
+          index === 13
+            ? "2030-06-11"
+            : (summary.recentDailyAccess[index + 1]?.localDate ??
+              item.localDate),
+      })),
+      vehicleTypes: [{ count: 4, label: "Van" }],
+    };
+    vi.mocked(getDailyOperationalSummary)
+      .mockResolvedValueOnce(summary)
+      .mockResolvedValueOnce(nextSummary);
+    const user = userEvent.setup();
+    renderPage("Administrador");
+    await screen.findByText("6 (75%)");
+
+    fireEvent.change(screen.getByLabelText("Data do resumo"), {
+      target: { value: "2030-06-11" },
+    });
+    await user.click(screen.getByRole("button", { name: "Atualizar resumo" }));
+
+    expect(await screen.findByText("Evento")).toBeInTheDocument();
+    expect(screen.getByText("Van")).toBeInTheDocument();
+    expect(screen.queryByText("Visitante")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Entradas e saídas por hora em 11/06/2030"),
+    ).toBeInTheDocument();
+    expect(getDailyOperationalSummary).toHaveBeenLastCalledWith("2030-06-11");
+  });
+
   it("removes previous totals after a request failure and retries the query", async () => {
     vi.mocked(getDailyOperationalSummary)
       .mockResolvedValueOnce(summary)
       .mockRejectedValueOnce(new Error("network"))
       .mockResolvedValueOnce({ ...summary, localDate: "2030-06-11" });
     const user = userEvent.setup();
-    renderPage();
-    await screen.findByRole("heading", { name: "Acessos gerais" });
+    renderPage("Administrador");
+    await screen.findByRole("heading", { name: "Fluxo de acessos" });
 
     fireEvent.change(screen.getByLabelText("Data do resumo"), {
       target: { value: "2030-06-11" },
@@ -282,11 +365,11 @@ describe("DashboardPage", () => {
       "Não foi possível consultar o resumo operacional.",
     );
     expect(
-      screen.queryByRole("heading", { name: "Acessos gerais" }),
+      screen.queryByRole("heading", { name: "Fluxo de acessos" }),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(
-      await screen.findByRole("heading", { name: "Acessos gerais" }),
+      await screen.findByRole("heading", { name: "Fluxo de acessos" }),
     ).toBeInTheDocument();
     expect(getDailyOperationalSummary).toHaveBeenLastCalledWith("2030-06-11");
   });
@@ -333,6 +416,47 @@ describe("DashboardPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Acessos gerais" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows accessible empty states instead of administrative charts with invented data", async () => {
+    vi.mocked(getDailyOperationalSummary).mockResolvedValue({
+      ...summary,
+      accessCategories: [],
+      generalAccess: { entries: 0, exits: 0, openAtEnd: 0, openAtStart: 0 },
+      hourlyAccess: summary.hourlyAccess.map((item) => ({
+        ...item,
+        entries: 0,
+        exits: 0,
+      })),
+      recentDailyAccess: summary.recentDailyAccess.map((item) => ({
+        ...item,
+        entries: 0,
+        exits: 0,
+      })),
+      vehicleTypes: [],
+    });
+    renderPage("Administrador");
+
+    expect(
+      await screen.findByText(
+        "Nenhuma entrada ou saída foi registrada em 10/06/2030.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Nenhuma categoria de acesso foi contabilizada em 10/06/2030.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Nenhuma entrada ou saída foi registrada entre 28/05/2030 e 10/06/2030.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Nenhum tipo de veículo foi contabilizado nos acessos de 10/06/2030.",
+      ),
     ).toBeInTheDocument();
   });
 
