@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { PageHeader } from "../components/ui/PageHeader";
+import { Card } from "../components/ui/Card";
 import {
   PasswordChangeForm,
   useAuthenticatedSession,
@@ -28,13 +29,10 @@ export function PasswordChangePage() {
         title={isMandatory ? "Crie sua senha permanente" : "Alterar senha"}
       />
 
-      <div className="mt-7 grid min-w-0 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]">
-        <section
-          aria-labelledby="password-change-form-title"
-          className="min-w-0 rounded-[2rem] border border-ink/10 bg-white p-5 shadow-sm sm:p-7"
-        >
+      <div className="mt-6 grid min-w-0 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(17rem,1fr)]">
+        <Card aria-labelledby="password-change-form-title" role="region">
           <h2
-            className="font-display text-2xl text-ink"
+            className="text-xl font-bold text-text"
             id="password-change-form-title"
           >
             Defina sua nova senha
@@ -47,15 +45,13 @@ export function PasswordChangePage() {
           <div className="mt-6 max-w-2xl">
             <PasswordChangeForm onSuccess={handleSuccess} />
           </div>
-        </section>
+        </Card>
 
-        <aside className="min-w-0 rounded-[2rem] border border-brand/20 bg-brand-soft/35 p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
+        <aside className="min-w-0 self-start rounded-xl border border-border bg-surface-subtle p-5 sm:p-6">
+          <p className="text-sm font-semibold text-text-muted">
             Depois da alteração
           </p>
-          <h2 className="mt-3 font-display text-2xl text-ink">
-            Entre novamente
-          </h2>
+          <h2 className="mt-2 text-xl font-bold text-text">Entre novamente</h2>
           <p className="mt-2 text-sm leading-6 text-ink-soft">
             Por segurança, todas as sessões anteriores serão encerradas. Você
             voltará à tela de entrada para acessar o sistema com a nova senha.

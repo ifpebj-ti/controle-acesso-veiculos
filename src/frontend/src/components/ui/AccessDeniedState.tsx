@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { Icon } from "./Icon";
+import { Card } from "./Card";
 
 interface AccessDeniedStateProps {
   message?: string;
@@ -10,16 +11,16 @@ export function AccessDeniedState({
   message = "Seu perfil não possui permissão para acessar esta área.",
 }: AccessDeniedStateProps) {
   return (
-    <section
+    <Card
       aria-labelledby="access-denied-title"
-      className="mx-auto mt-16 max-w-2xl rounded-3xl border border-amber-300/70 bg-white p-8 text-center shadow-[0_12px_36px_rgba(1,36,40,0.06)]"
+      className="mx-auto my-6 max-w-2xl text-center"
       role="alert"
     >
-      <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-amber-100 text-amber-950">
+      <span className="mx-auto grid size-14 place-items-center rounded-xl bg-warning-surface text-warning-text">
         <Icon name="shield" size={27} />
       </span>
       <h1
-        className="mt-5 font-display text-3xl text-ink"
+        className="mt-5 text-3xl font-bold text-text"
         id="access-denied-title"
       >
         Acesso negado
@@ -29,12 +30,9 @@ export function AccessDeniedState({
         O menu organiza a experiência, mas cada operação continua sendo validada
         pela API.
       </p>
-      <Link
-        className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-5 font-bold text-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/40"
-        to="/visao-geral"
-      >
+      <Link className="ui-button ui-button--primary mt-6" to="/visao-geral">
         Voltar à visão geral
       </Link>
-    </section>
+    </Card>
   );
 }

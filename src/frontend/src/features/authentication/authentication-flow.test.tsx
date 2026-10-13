@@ -293,7 +293,7 @@ describe("authentication flow", () => {
     renderAuthenticationFlow("/visao-geral");
 
     expect(
-      await screen.findByRole("heading", { name: "Bem-vindo," }),
+      await screen.findByRole("heading", { name: "Bem-vindo(a)!" }),
     ).toBeInTheDocument();
     expect(post.mock.calls.some(([url]) => url === "/auth/refresh")).toBe(
       false,
@@ -316,7 +316,7 @@ describe("authentication flow", () => {
     renderAuthenticationFlow("/visao-geral");
 
     expect(
-      await screen.findByRole("heading", { name: "Bem-vindo," }),
+      await screen.findByRole("heading", { name: "Bem-vindo(a)!" }),
     ).toBeInTheDocument();
     expect(post).not.toHaveBeenCalled();
     expect(window.localStorage).toHaveLength(0);
@@ -333,7 +333,7 @@ describe("authentication flow", () => {
     try {
       renderAuthenticationFlow("/visao-geral");
       expect(
-        await screen.findByRole("heading", { name: "Bem-vindo," }),
+        await screen.findByRole("heading", { name: "Bem-vindo(a)!" }),
       ).toBeInTheDocument();
       expect(post).not.toHaveBeenCalled();
     } finally {
@@ -449,7 +449,7 @@ describe("authentication flow", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sair" }));
 
     expect(
-      await screen.findByRole("heading", { name: "Bem-vindo," }),
+      await screen.findByRole("heading", { name: "Bem-vindo(a)!" }),
     ).toBeInTheDocument();
     expect(post).toHaveBeenCalledWith(
       "/auth/logout",
@@ -518,7 +518,7 @@ describe("authentication flow", () => {
     await submitCredentials();
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "E-mail ou senha inválidos, ou a conta está temporariamente indisponível.",
+      "E-mail ou senha incorretos.",
     );
   });
 
@@ -540,7 +540,7 @@ describe("authentication flow", () => {
     renderAuthenticationFlow("/visao-geral");
 
     expect(
-      await screen.findByRole("heading", { name: "Bem-vindo," }),
+      await screen.findByRole("heading", { name: "Bem-vindo(a)!" }),
     ).toBeInTheDocument();
     expect(window.localStorage).toHaveLength(0);
   });
@@ -576,7 +576,7 @@ describe("authentication flow", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sair" }));
 
     expect(
-      await screen.findByRole("heading", { name: "Bem-vindo," }),
+      await screen.findByRole("heading", { name: "Bem-vindo(a)!" }),
     ).toBeInTheDocument();
     expect(window.localStorage).toHaveLength(0);
   });
