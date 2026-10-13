@@ -81,7 +81,7 @@ function ReturnForm({
         }
         aria-invalid={Boolean(message)}
         autoFocus
-        className="mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-white px-4 outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20 disabled:opacity-60"
+        className="mt-2 min-h-12 w-full rounded-xl border border-border bg-surface px-4 outline-none focus:border-primary focus:ring-3 focus:ring-focus disabled:opacity-60"
         disabled={disabled}
         id={`usage-return-${usage.id}`}
         min={usage.departureMileage}
@@ -149,7 +149,7 @@ export function OpenInstitutionalUsages({
     <section
       aria-busy={status === "loading"}
       aria-labelledby="open-institutional-title"
-      className="institutional-catalog mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
+      className="institutional-catalog mt-7 overflow-hidden rounded-[2rem] border border-border bg-surface shadow-[0_12px_35px_var(--ui-shadow)]"
     >
       <div className="usage-active-heading flex flex-wrap items-start gap-3 border-b border-ink/10 px-5 py-5 sm:px-6">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl rounded-bl-md bg-success-surface text-primary">

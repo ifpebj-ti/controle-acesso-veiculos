@@ -4,15 +4,24 @@ Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jard
 
 ## Fundação visual
 
-O frontend possui um contrato inicial de tokens semânticos para estrutura,
-texto, ações, foco e estados. O tema claro continua visualmente equivalente ao
-atual; valores escuros estão apenas preparados e não são ativados nesta etapa.
+O frontend possui um contrato de tokens semânticos para estrutura, texto,
+ações, foco e estados. Os temas Claro, Escuro e Sistema usam o mesmo contrato e
+preservam a hierarquia visual aprovada nas telas.
 A matriz de contraste, as combinações permitidas e o inventário de migração
 estão em [`docs/development/frontend-design-tokens.md`](../../docs/development/frontend-design-tokens.md).
 
-Os aliases visuais anteriores permanecem temporariamente para evitar uma troca
-global insegura. Componentes serão migrados de forma incremental nas Issues
-#403–#406, e o controle Claro/Escuro/Sistema pertence à Issue #407.
+Os aliases visuais anteriores permanecem temporariamente para compatibilidade,
+mas superfícies e ações migradas consomem tokens que respondem aos três modos.
+A preferência não sensível é limitada a `light`, `dark` ou `system` e usa a
+chave versionada `ifpe.vehicle-access.appearance.v1` no `localStorage`. Nenhum
+token, e-mail, perfil, credencial ou outro dado da sessão é incluído nesse
+registro.
+
+Um script externo de mesma origem é carregado no `<head>` antes do módulo React
+para aplicar a preferência antes da primeira pintura, sem exigir `unsafe-inline`
+na CSP. Preferência ausente, corrompida ou armazenamento indisponível usa
+`Sistema` com fallback claro seguro; quando `Sistema` está ativo, mudanças em
+`prefers-color-scheme` são acompanhadas sem substituir a escolha persistida.
 
 O primeiro incremento migra seletores, cabeçalhos, estados, badges e confirmação
 para tokens semânticos, com bases reutilizáveis de botão, campo e cartão.

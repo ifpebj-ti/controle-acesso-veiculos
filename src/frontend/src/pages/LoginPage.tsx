@@ -8,6 +8,7 @@ import { Button } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
 import { TextField } from "../components/ui/TextField";
 import { SessionLoadingState } from "../components/ui/SessionLoadingState";
+import { AppearanceSelector } from "../features/appearance";
 import {
   AuthenticationContractError,
   type SessionEndReason,
@@ -122,7 +123,10 @@ export function LoginPage() {
       <div className="login-shell relative z-10 flex min-h-svh w-full items-stretch">
         <section className="login-composition grid min-h-svh w-full overflow-hidden bg-surface-raised lg:grid-cols-[minmax(34rem,54%)_minmax(28rem,46%)]">
           <div className="login-form-panel order-2 flex min-h-full flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:order-1 lg:px-[clamp(4rem,7vw,9rem)] lg:py-12">
-            <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
+              <AppearanceSelector className="ml-auto w-full max-w-xs" />
+            </div>
 
             <div className="my-auto py-8 sm:py-9 lg:py-8">
               <header>
@@ -300,7 +304,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-primary-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-svh lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
+          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-visual-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-svh lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
             <img
               alt=""
               className="login-visual-photo"
@@ -347,8 +351,8 @@ export function LoginPage() {
               </p>
             </div>
 
-            <div className="relative z-10 hidden border-t border-primary-text/30 pt-5 sm:block">
-              <p className="max-w-md text-sm font-medium leading-6 text-primary-text/90">
+            <div className="relative z-10 hidden border-t border-visual-text/30 pt-5 sm:block">
+              <p className="max-w-md text-sm font-medium leading-6 text-visual-text/90">
                 Registre e acompanhe as movimentações de veículos do campus em
                 um único lugar.
               </p>

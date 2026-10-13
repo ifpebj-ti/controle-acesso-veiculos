@@ -169,7 +169,7 @@ function StateDetails({
       {value === null ? (
         <p className="mt-3 text-sm text-ink-soft">Não informado</p>
       ) : (
-        <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-ink p-3 text-xs text-white">
+        <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-text p-3 text-xs text-background">
           {JSON.stringify(value, null, 2)}
         </pre>
       )}

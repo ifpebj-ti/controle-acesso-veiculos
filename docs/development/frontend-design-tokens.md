@@ -6,10 +6,9 @@ Esta fundação separa a identidade visual do IFPE da finalidade de cada cor na
 interface. Componentes devem consumir tokens semânticos; valores da paleta-base
 ficam restritos à definição do tema e a usos institucionais explícitos.
 
-A introdução destes tokens não ativa tema escuro nem redesenha páginas. O tema
-claro continua sendo o padrão e os aliases antigos preservam o visual atual até
-a migração incremental das Issues #403–#406. A ativação de Claro, Escuro e
-Sistema pertence à Issue #407.
+Os tokens são ativados pelos modos Claro, Escuro e Sistema da Issue #407 sem
+redesenhar páginas. O tema claro preserva o visual aprovado e os aliases antigos
+continuam somente como ponte de compatibilidade para componentes remanescentes.
 
 ## Camadas
 
@@ -30,7 +29,8 @@ forem migrados, sem uma substituição mecânica que crie combinações inválid
 | Grupo          | Tokens                                                      |
 | -------------- | ----------------------------------------------------------- |
 | Estrutura      | `background`, `surface`, `surface-raised`, `surface-subtle` |
-| Texto          | `text`, `text-muted`, `text-inverse`                        |
+| Texto          | `text`, `text-muted`, `text-inverse`, `visual-text`         |
+| Marca          | `brand-surface`                                             |
 | Limites        | `border`, `border-strong`, `focus`                          |
 | Ação principal | `primary`, `primary-hover`, `primary-text`                  |
 | Profundidade   | `overlay`, `shadow`                                         |
@@ -71,7 +71,7 @@ e [contraste não textual](https://www.w3.org/WAI/WCAG22/Understanding/non-text-
 | `disabled-text` / `disabled-surface`   |  5,28:1 |
 | `disabled-border` / `disabled-surface` |  3,22:1 |
 
-### Escuro preparado, ainda não ativado
+### Escuro
 
 | Combinação prevista                    |   Razão |
 | -------------------------------------- | ------: |
@@ -117,8 +117,11 @@ estados, foco, responsividade e regras de negócio.
 
 - tokens e preferência visual não carregam identidade ou autorização;
 - JWT, senha, credencial, e-mail, perfil e dados pessoais não pertencem ao tema;
-- nenhuma preferência é persistida nesta etapa;
-- o atributo `data-theme="dark"` está reservado ao controlador futuro e não é
-  aplicado pelo código de produção atual;
+- somente `light`, `dark` ou `system` pode ser persistido na chave não sensível e
+  versionada `ifpe.vehicle-access.appearance.v1`;
+- o bootstrap externo de mesma origem aplica `data-theme` e `color-scheme` antes
+  do módulo da aplicação, sem liberar script inline na CSP;
+- preferência corrompida ou storage indisponível volta para `system` com fallback
+  claro seguro e sem bloquear a interface;
 - a autorização da API e as capacidades de rota não podem depender de aparência;
 - nova combinação deve ser medida antes de entrar no contrato recomendado.

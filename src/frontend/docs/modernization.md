@@ -269,3 +269,42 @@ continua emitindo dois avisos preexistentes de `act(...)` em cenários assíncro
 de autenticação, sem falhas. Tablet físico, zoom real a 200% e validação com
 leitor de tela permanecem como evidências manuais pendentes; por isso o PR deve
 continuar como draft.
+
+## Quinto incremento — aparência Claro, Escuro e Sistema
+
+A Issue #407 ativa o contrato semântico existente sem alterar layout, fluxos,
+sessão, capacidades ou contratos da API. A preferência aceita somente `light`,
+`dark` ou `system`; é armazenada na chave versionada
+`ifpe.vehicle-access.appearance.v1` e não contém identidade, perfil, e-mail,
+credencial ou token.
+
+O arquivo público `appearance-bootstrap.js` é carregado como script externo de
+mesma origem no `<head>`, antes do módulo React. Ele resolve a preferência e
+aplica `data-theme` e `color-scheme` antes da primeira pintura, mantendo a CSP
+sem `unsafe-inline`. O provider React mantém a seleção em memória quando o
+storage não está disponível, remove valores corrompidos e acompanha mudanças do
+sistema operacional apenas enquanto `Sistema` estiver selecionado.
+
+O seletor possui grupo e estado acessíveis, alvos mínimos de 44 px, foco visível
+e anúncio textual do tema efetivamente aplicado. Ele aparece no login, no menu
+autenticado e no cabeçalho restrito da troca obrigatória de senha. A troca não
+remonta a sessão, os formulários ou o roteador.
+
+Superfícies claras explícitas, ações e cores auxiliares das telas integradas
+foram migradas para tokens semânticos. A fotografia institucional mantém texto
+de alto contraste independente do tema e a assinatura visual do IFPE recebe uma
+superfície clara somente no modo escuro para preservar a legibilidade do arquivo
+oficial.
+
+As verificações automatizadas cobrem preferência explícita, modo Sistema,
+alteração de `prefers-color-scheme`, valor corrompido, storage indisponível,
+preservação de formulário, bootstrap anterior ao React e acessibilidade do
+controle. Tablet físico, Narrador e zoom real a 200% permanecem como evidências
+manuais da Issue #407 e não devem ser declarados concluídos por testes em JSDOM.
+
+Com a mesma instalação bloqueada da `main` no commit `1cc6c8c`, a soma dos
+arquivos JavaScript minificados passou de 926.350 para 930.480 bytes, incluindo
+os 897 bytes do bootstrap externo: aumento de 4.130 bytes, ou 0,45%. O CSS
+minificado passou de 131.999 para 129.740 bytes, redução de 2.259 bytes, ou
+1,71%, após a substituição de estilos claros explícitos por tokens. Nenhuma
+dependência foi adicionada e o limite de aviso do Vite não foi alterado.
