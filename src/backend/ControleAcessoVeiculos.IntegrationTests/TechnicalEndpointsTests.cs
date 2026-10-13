@@ -193,7 +193,28 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
 
         response.EnsureSuccessStatusCode();
         initializerResponse.EnsureSuccessStatusCode();
-        Assert.Contains("Controle de Acesso de Veículos — API", responseContent);
+
+        const string expectedDocumentTitle = "Controle de Acesso de Veículos — API";
+        const string titleOpeningTag = "<title>";
+        const string titleClosingTag = "</title>";
+
+        var titleStartIndex = responseContent.IndexOf(
+            titleOpeningTag,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.True(titleStartIndex >= 0, "Swagger UI document has no title element.");
+
+        var titleContentStartIndex = titleStartIndex + titleOpeningTag.Length;
+        var titleEndIndex = responseContent.IndexOf(
+            titleClosingTag,
+            titleContentStartIndex,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.True(titleEndIndex >= 0, "Swagger UI title element is not closed.");
+
+        var encodedDocumentTitle = responseContent[
+            titleContentStartIndex..titleEndIndex];
+        Assert.Equal(
+            expectedDocumentTitle,
+            WebUtility.HtmlDecode(encodedDocumentTitle));
         Assert.Contains("/openapi/v1.json", initializerContent);
     }
 
