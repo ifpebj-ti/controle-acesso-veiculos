@@ -1,9 +1,9 @@
 resource "oci_core_vcn" "homologation" {
   compartment_id = oci_identity_compartment.homologation.id
-  cidr_blocks     = [var.vcn_cidr]
-  display_name    = "${var.resource_prefix}-vcn"
-  dns_label       = "cavhml"
-  freeform_tags   = var.freeform_tags
+  cidr_blocks    = [var.vcn_cidr]
+  display_name   = "${var.resource_prefix}-vcn"
+  dns_label      = "cavhml"
+  freeform_tags  = var.freeform_tags
 }
 
 resource "oci_core_internet_gateway" "homologation" {
@@ -107,7 +107,7 @@ resource "oci_core_network_security_group_security_rule" "egress" {
 
 resource "oci_bastion_bastion" "homologation" {
   bastion_type                 = "STANDARD"
-  compartment_id              = oci_identity_compartment.homologation.id
+  compartment_id               = oci_identity_compartment.homologation.id
   target_subnet_id             = oci_core_subnet.public.id
   name                         = "${var.resource_prefix}-bastion"
   client_cidr_block_allow_list = [var.bastion_client_cidr]

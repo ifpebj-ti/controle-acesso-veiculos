@@ -15,7 +15,7 @@ resource "oci_budget_budget" "homologation" {
   targets                = [oci_identity_compartment.homologation.id]
   display_name           = "${var.resource_prefix}-monthly-budget"
   description            = "Monthly cost guardrail for the academic homologation environment."
-  freeform_tags           = var.freeform_tags
+  freeform_tags          = var.freeform_tags
 }
 
 resource "oci_budget_alert_rule" "homologation" {

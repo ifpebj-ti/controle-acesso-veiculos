@@ -1,9 +1,9 @@
 resource "oci_core_instance" "application" {
-  availability_domain = local.selected_ad
-  compartment_id      = oci_identity_compartment.homologation.id
-  display_name        = "${var.resource_prefix}-application"
-  shape               = var.instance_shape
-  freeform_tags       = var.freeform_tags
+  availability_domain  = local.selected_ad
+  compartment_id       = oci_identity_compartment.homologation.id
+  display_name         = "${var.resource_prefix}-application"
+  shape                = var.instance_shape
+  freeform_tags        = var.freeform_tags
   preserve_boot_volume = false
 
   shape_config {

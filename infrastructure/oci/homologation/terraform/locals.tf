@@ -1,5 +1,5 @@
 locals {
-  compartment_name = "${var.resource_prefix}-compartment"
+  compartment_name  = "${var.resource_prefix}-compartment"
   selected_ad       = var.availability_domain != "" ? var.availability_domain : data.oci_identity_availability_domains.available.availability_domains[0].name
   selected_image_id = var.instance_image_ocid != "" ? var.instance_image_ocid : data.oci_core_images.ubuntu.images[0].id
 
