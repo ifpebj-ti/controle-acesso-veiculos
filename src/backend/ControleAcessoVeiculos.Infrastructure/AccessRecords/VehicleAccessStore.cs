@@ -694,7 +694,8 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 ? null
                 : accessRecord.MotivoEncerramentoExcepcional.ToString(),
             accessRecord.ObservacaoEncerramentoExcepcional,
-            accessRecord.DataHoraRegularizacao);
+            accessRecord.DataHoraRegularizacao,
+            vehicle.Tipo);
 
     private static VehicleAccessRecord Map(
         RegistroAcesso accessRecord,
@@ -722,7 +723,8 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             accessRecord.TipoEncerramento?.ToString(),
             accessRecord.MotivoEncerramentoExcepcional?.ToString(),
             accessRecord.ObservacaoEncerramentoExcepcional,
-            accessRecord.DataHoraRegularizacao);
+            accessRecord.DataHoraRegularizacao,
+            vehicle.Tipo);
 
     private static VehicleAccessStoreRegistration Conflict(
         VehicleAccessStoreRegistrationStatus status =

@@ -43,6 +43,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Created, entryResponse.StatusCode);
         Assert.NotNull(entry);
         Assert.Equal("ABC1D23", entry.Plate);
+        Assert.Equal("Automóvel", entry.VehicleType);
         Assert.Equal("Aberto", entry.Status);
         Assert.Equal(userId, entry.CreatedById);
 
@@ -50,7 +51,9 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
 
         var openRecords = await client.GetFromJsonAsync<List<AccessRecordResponse>>("/access-records/open", cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Contains(openRecords!, item => item.Id == entry.Id);
+        Assert.Contains(
+            openRecords!,
+            item => item.Id == entry.Id && item.VehicleType == "Automóvel");
 
         var exitResponse = await client.PostAsync($"/access-records/{entry.Id}/exit", content: null, cancellationToken: TestContext.Current.CancellationToken);
         var closed = await exitResponse.Content.ReadFromJsonAsync<AccessRecordResponse>(cancellationToken: TestContext.Current.CancellationToken);
@@ -58,6 +61,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.OK, exitResponse.StatusCode);
         Assert.NotNull(closed);
         Assert.Equal("Encerrado", closed.Status);
+        Assert.Equal("Automóvel", closed.VehicleType);
         Assert.NotNull(closed.ExitAtUtc);
         Assert.Equal(userId, closed.UpdatedById);
 
@@ -131,6 +135,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>(cancellationToken: TestContext.Current.CancellationToken);
         entryResponse.EnsureSuccessStatusCode();
         Assert.NotNull(entry);
+        Assert.Null(entry.VehicleType);
 
         var responses = await Task.WhenAll(
             client.PostAsync($"/access-records/{entry.Id}/exit", content: null, TestContext.Current.CancellationToken),
@@ -255,6 +260,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
             plate,
             objective = "Visita inicial",
             categoryName = AccessCategoryNames.Visitor,
+            vehicleType = "Motocicleta",
             observation = "Observação inicial"
         }, cancellationToken: TestContext.Current.CancellationToken);
         var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>(cancellationToken: TestContext.Current.CancellationToken);
@@ -284,6 +290,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.Equal(entry.VehicleId, corrected.VehicleId);
         Assert.Equal(entry.PersonId, corrected.PersonId);
         Assert.Equal(entry.Plate, corrected.Plate);
+        Assert.Equal("Motocicleta", corrected.VehicleType);
         Assert.Equal(entry.DriverName, corrected.DriverName);
         Assert.Equal(entry.EntryAtUtc, corrected.EntryAtUtc, TimeSpan.FromMilliseconds(1));
         Assert.NotNull(closed.ExitAtUtc);
@@ -512,7 +519,8 @@ public sealed class VehicleAccessTests(ApiFactory factory)
                 driverName,
                 plate,
                 objective = "Visita técnica",
-                categoryName = AccessCategoryNames.Visitor
+                categoryName = AccessCategoryNames.Visitor,
+                vehicleType = "Automóvel"
             }, cancellationToken: TestContext.Current.CancellationToken);
             var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>(cancellationToken: TestContext.Current.CancellationToken);
             entryResponse.EnsureSuccessStatusCode();
@@ -548,6 +556,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
             Assert.Equal(plate, item.Plate);
             Assert.Equal(driverName, item.DriverName);
             Assert.Equal(AccessCategoryNames.Visitor, item.CategoryName);
+            Assert.Equal("Automóvel", item.VehicleType);
         });
 
         var closed = await client.GetFromJsonAsync<AccessHistoryResponse>($"/access-records/history?plate={formattedPlate}&status=encerrado" +
@@ -589,7 +598,8 @@ public sealed class VehicleAccessTests(ApiFactory factory)
             driverName = $"Condutor {suffix}",
             plate = suffix[..7],
             objective = "Visita técnica",
-            categoryName = AccessCategoryNames.Visitor
+            categoryName = AccessCategoryNames.Visitor,
+            vehicleType = "Van"
         }, cancellationToken: TestContext.Current.CancellationToken);
         var entry = await entryResponse.Content.ReadFromJsonAsync<AccessRecordResponse>(cancellationToken: TestContext.Current.CancellationToken);
         entryResponse.EnsureSuccessStatusCode();
@@ -607,6 +617,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         Assert.Equal("Encerrado", closed.Status);
         Assert.Equal("Excepcional", closed.ClosureType);
         Assert.Equal("RegistroDeSaidaOmitido", closed.ExceptionalClosureReason);
+        Assert.Equal("Van", closed.VehicleType);
         Assert.Null(closed.ExitAtUtc);
         Assert.NotNull(closed.RegularizedAtUtc);
         Assert.Equal(userId, closed.UpdatedById);
@@ -854,7 +865,8 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         string? ClosureType = null,
         string? ExceptionalClosureReason = null,
         string? ExceptionalClosureObservation = null,
-        DateTime? RegularizedAtUtc = null);
+        DateTime? RegularizedAtUtc = null,
+        string? VehicleType = null);
 
     private sealed record AccessHistoryResponse(
         List<AccessRecordResponse> Items,
