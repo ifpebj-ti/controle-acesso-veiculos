@@ -95,6 +95,57 @@ body {
   outline-offset: 4px;
 }
 
+.appearance-selector {
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--ui-text-inverse) 8%, transparent);
+}
+
+.appearance-selector-mark {
+  position: relative;
+  width: 1.75rem;
+  height: 1rem;
+  flex: none;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-brand-surface);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.appearance-selector-mark::after {
+  position: absolute;
+  top: 50%;
+  left: 0.14rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  background: var(--ui-warning-border);
+  box-shadow: 0 1px 0.2rem var(--ui-shadow);
+  content: "";
+  transform: translateY(-50%);
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease;
+}
+
+.appearance-selector-mark[data-resolved-theme="dark"] {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-navigation-surface);
+}
+
+.appearance-selector-mark[data-resolved-theme="dark"]::after {
+  background: var(--ui-primary);
+  transform: translate(0.74rem, -50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appearance-selector-mark,
+  .appearance-selector-mark::after {
+    transition: none;
+  }
+}
+
 .appearance-selector-option:hover {
   background: var(--ui-surface-subtle);
 }
@@ -2130,9 +2181,26 @@ button:disabled {
 }
 
 :root[data-theme="dark"] .institutional-brand-lockup {
-  padding: 0.4rem 0.55rem;
-  border-radius: 0.65rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 18%, transparent);
+  border-radius: 0.4rem;
   background: var(--ui-brand-surface);
+}
+
+:root[data-theme="dark"]
+  .sidebar-institutional-brand
+  .institutional-brand-lockup {
+  margin-inline: -0.5rem;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 0.2rem;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--ui-brand-surface) 14%,
+    var(--ui-brand-surface) 86%,
+    transparent
+  );
 }
 
 @keyframes login-spin {

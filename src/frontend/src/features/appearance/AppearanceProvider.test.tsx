@@ -71,7 +71,7 @@ describe("appearance preference", () => {
     installMatchMedia(true);
     renderSelector();
 
-    expect(screen.getByRole("button", { name: "Sistema" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Automático" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -105,12 +105,16 @@ describe("appearance preference", () => {
     expect(window.localStorage).toHaveLength(1);
     expect(window.localStorage.getItem(appearanceStorageKey)).toBe("dark");
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+    expect(document.querySelector(".appearance-selector-mark")).toHaveAttribute(
+      "data-resolved-theme",
+      "dark",
+    );
     expect(screen.getByRole("status")).toHaveTextContent(
       "Preferência Escuro. Tema aplicado: Escuro.",
     );
   });
 
-  it("follows system changes only while Sistema is selected", async () => {
+  it("follows system changes only while Automático is selected", async () => {
     const media = installMatchMedia(false);
     const user = userEvent.setup();
     renderSelector();
@@ -129,7 +133,7 @@ describe("appearance preference", () => {
     installMatchMedia(false);
     renderSelector();
 
-    expect(screen.getByRole("button", { name: "Sistema" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Automático" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );

@@ -167,7 +167,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
         </ul>
       </nav>
 
-      <AppearanceSelector className="mt-8 border-t border-border px-1 pt-4" />
+      <AppearanceSelector className="mt-8" />
 
       <div className="mt-4 border-t border-border pt-4">
         <NavLink

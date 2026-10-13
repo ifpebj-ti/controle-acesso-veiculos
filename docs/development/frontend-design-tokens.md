@@ -6,7 +6,7 @@ Esta fundação separa a identidade visual do IFPE da finalidade de cada cor na
 interface. Componentes devem consumir tokens semânticos; valores da paleta-base
 ficam restritos à definição do tema e a usos institucionais explícitos.
 
-Os tokens são ativados pelos modos Claro, Escuro e Sistema da Issue #407 sem
+Os tokens são ativados pelos modos Claro, Escuro e Automático da Issue #407 sem
 redesenhar páginas. O tema claro preserva o visual aprovado e os aliases antigos
 continuam somente como ponte de compatibilidade para componentes remanescentes.
 

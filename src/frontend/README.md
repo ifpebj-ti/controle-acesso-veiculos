@@ -5,7 +5,7 @@ Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jard
 ## Fundação visual
 
 O frontend possui um contrato de tokens semânticos para estrutura, texto,
-ações, foco e estados. Os temas Claro, Escuro e Sistema usam o mesmo contrato e
+ações, foco e estados. Os temas Claro, Escuro e Automático usam o mesmo contrato e
 preservam a hierarquia visual aprovada nas telas.
 A matriz de contraste, as combinações permitidas e o inventário de migração
 estão em [`docs/development/frontend-design-tokens.md`](../../docs/development/frontend-design-tokens.md).
@@ -20,7 +20,7 @@ registro.
 Um script externo de mesma origem é carregado no `<head>` antes do módulo React
 para aplicar a preferência antes da primeira pintura, sem exigir `unsafe-inline`
 na CSP. Preferência ausente, corrompida ou armazenamento indisponível usa
-`Sistema` com fallback claro seguro; quando `Sistema` está ativo, mudanças em
+`Automático` com fallback claro seguro; quando `Automático` está ativo, mudanças em
 `prefers-color-scheme` são acompanhadas sem substituir a escolha persistida.
 
 O primeiro incremento migra seletores, cabeçalhos, estados, badges e confirmação

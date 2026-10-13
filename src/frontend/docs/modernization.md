@@ -102,7 +102,7 @@ substituir a autorização do servidor:
 1. **#403**: primitivas compartilhadas sobre os tokens já integrados.
 2. **#404**: layout, navegação e superfícies de autenticação, após revisão de #403.
 3. **#405**: telas operacionais; **#406**: supervisão/gestão, após #403/#404.
-4. **#407**: Claro/Escuro/Sistema, somente após migrar superfícies de todas as telas.
+4. **#407**: Claro/Escuro/Automático, somente após migrar superfícies de todas as telas.
 
 Na #407, aplicar preferência antes da pintura por script same-origin compatível
 com CSP, `color-scheme` e `matchMedia`. Persistir apenas preferência visual
@@ -270,7 +270,7 @@ de autenticação, sem falhas. Tablet físico, zoom real a 200% e validação co
 leitor de tela permanecem como evidências manuais pendentes; por isso o PR deve
 continuar como draft.
 
-## Quinto incremento — aparência Claro, Escuro e Sistema
+## Quinto incremento — aparência Claro, Escuro e Automático
 
 A Issue #407 ativa o contrato semântico existente sem alterar layout, fluxos,
 sessão, capacidades ou contratos da API. A preferência aceita somente `light`,
@@ -283,7 +283,7 @@ mesma origem no `<head>`, antes do módulo React. Ele resolve a preferência e
 aplica `data-theme` e `color-scheme` antes da primeira pintura, mantendo a CSP
 sem `unsafe-inline`. O provider React mantém a seleção em memória quando o
 storage não está disponível, remove valores corrompidos e acompanha mudanças do
-sistema operacional apenas enquanto `Sistema` estiver selecionado.
+sistema operacional apenas enquanto `Automático` estiver selecionado.
 
 O seletor possui grupo e estado acessíveis, alvos mínimos de 44 px, foco visível
 e anúncio textual do tema efetivamente aplicado. Ele aparece no login, no menu
@@ -296,15 +296,15 @@ de alto contraste independente do tema e a assinatura visual do IFPE recebe uma
 superfície clara somente no modo escuro para preservar a legibilidade do arquivo
 oficial.
 
-As verificações automatizadas cobrem preferência explícita, modo Sistema,
+As verificações automatizadas cobrem preferência explícita, modo Automático,
 alteração de `prefers-color-scheme`, valor corrompido, storage indisponível,
 preservação de formulário, bootstrap anterior ao React e acessibilidade do
 controle. Tablet físico, Narrador e zoom real a 200% permanecem como evidências
 manuais da Issue #407 e não devem ser declarados concluídos por testes em JSDOM.
 
 Com a mesma instalação bloqueada da `main` no commit `1cc6c8c`, a soma dos
-arquivos JavaScript minificados passou de 926.350 para 930.480 bytes, incluindo
-os 897 bytes do bootstrap externo: aumento de 4.130 bytes, ou 0,45%. O CSS
-minificado passou de 131.999 para 129.740 bytes, redução de 2.259 bytes, ou
-1,71%, após a substituição de estilos claros explícitos por tokens. Nenhuma
+arquivos JavaScript minificados passou de 926.350 para 930.813 bytes, incluindo
+os 897 bytes do bootstrap externo: aumento de 4.463 bytes, ou 0,48%. O CSS
+minificado passou de 131.999 para 131.514 bytes, redução de 485 bytes, ou 0,37%,
+após a substituição de estilos claros explícitos por tokens. Nenhuma
 dependência foi adicionada e o limite de aviso do Vite não foi alterado.
