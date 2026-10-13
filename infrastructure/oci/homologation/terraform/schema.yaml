@@ -1,0 +1,122 @@
+title: "Vehicle Access MVP — Homologation Base"
+description: "Single-node, reversible and cost-controlled OCI homologation environment."
+schemaVersion: 1.1.0
+version: "0.1.0"
+locale: "en"
+allowViewState: false
+
+variableGroups:
+  - title: "Destination"
+    variables:
+      - compartment_ocid
+      - region
+      - resource_prefix
+      - availability_domain
+  - title: "Compute"
+    variables:
+      - instance_shape
+      - instance_ocpus
+      - instance_memory_gb
+      - boot_volume_size_gb
+      - instance_image_ocid
+  - title: "Network and administration"
+    variables:
+      - vcn_cidr
+      - public_subnet_cidr
+      - bastion_client_cidr
+  - title: "Cost guardrails"
+    variables:
+      - monthly_budget_amount
+      - budget_alert_recipients
+
+variables:
+  compartment_ocid:
+    type: oci:identity:compartment:id
+    required: true
+    title: "Parent compartment"
+  region:
+    type: oci:identity:region:name
+    required: true
+    title: "Region"
+    default: "sa-saopaulo-1"
+  resource_prefix:
+    type: string
+    required: true
+    title: "Resource prefix"
+    default: "cav-hml"
+  availability_domain:
+    type: oci:identity:availabilitydomain:name
+    required: false
+    title: "Availability domain"
+    dependsOn:
+      compartmentId: compartment_ocid
+  instance_shape:
+    type: oci:core:instanceshape:name
+    required: true
+    title: "Compute shape"
+    default: "VM.Standard.A1.Flex"
+    dependsOn:
+      compartmentId: compartment_ocid
+  instance_ocpus:
+    type: number
+    required: true
+    title: "OCPUs"
+    default: 1
+    minimum: 1
+    maximum: 4
+  instance_memory_gb:
+    type: number
+    required: true
+    title: "Memory (GiB)"
+    default: 6
+    minimum: 4
+    maximum: 24
+  boot_volume_size_gb:
+    type: number
+    required: true
+    title: "Boot volume (GiB)"
+    default: 50
+    minimum: 50
+    maximum: 100
+  instance_image_ocid:
+    type: string
+    required: false
+    title: "Reviewed image OCID (optional)"
+    description: "Leave empty to select the newest compatible Canonical Ubuntu 24.04 image during the first plan."
+  vcn_cidr:
+    type: string
+    required: true
+    title: "VCN CIDR"
+    default: "10.42.0.0/16"
+  public_subnet_cidr:
+    type: string
+    required: true
+    title: "Public subnet CIDR"
+    default: "10.42.10.0/24"
+  bastion_client_cidr:
+    type: string
+    required: true
+    title: "Approved Bastion client CIDR"
+    description: "Use the operator public address as a /32. 0.0.0.0/0 is rejected."
+  monthly_budget_amount:
+    type: number
+    required: true
+    title: "Monthly budget amount"
+    description: "Value in the tenancy rate-card currency. Review before apply."
+    default: 100
+    minimum: 1
+    maximum: 200
+  budget_alert_recipients:
+    type: string
+    required: true
+    title: "Institutional budget alert recipients"
+    description: "Comma-separated addresses. Enter in Resource Manager; never commit them."
+
+outputs:
+  deployment_summary:
+    type: json
+    title: "Sanitized deployment summary"
+  instance_public_ip:
+    type: string
+    title: "Restricted public IP for DNS configuration"
+    sensitive: true
