@@ -18,20 +18,22 @@ export function SectionHeader({
   titleId,
 }: SectionHeaderProps) {
   return (
-    <div className={className}>
-      <p className="text-sm font-semibold text-text-muted">{eyebrow}</p>
+    <div className={`section-header ${className}`}>
+      <p className="section-header__eyebrow text-sm font-semibold">{eyebrow}</p>
       <h2
-        className="mt-3 break-words text-xl font-semibold leading-tight text-text"
+        className="section-header__title mt-3 break-words text-xl font-semibold leading-tight"
         id={titleId}
       >
         {title}
       </h2>
       {description && (
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-text-muted">
+        <p className="section-header__description mt-2 max-w-3xl text-sm leading-6">
           {description}
         </p>
       )}
-      {meta && <div className="mt-2 text-sm text-text-muted">{meta}</div>}
+      {meta && (
+        <div className="section-header__description mt-2 text-sm">{meta}</div>
+      )}
     </div>
   );
 }

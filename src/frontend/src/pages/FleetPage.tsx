@@ -258,6 +258,7 @@ export function FleetPage() {
             ? "Frota institucional"
             : "Conferir frota institucional"
         }
+        variant="prominent"
       />
 
       {notice && (

@@ -24,16 +24,16 @@ interface MovementMetric {
 function PrimaryMetricCard({ metric }: { metric: PrimaryMetric }) {
   return (
     <article
-      className="summary-primary-metric rounded-2xl border p-4 sm:p-5"
+      className="summary-primary-metric p-4 sm:p-5"
       data-tone={metric.tone}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3.5">
         <span className="summary-primary-metric__icon">
-          <Icon className={metric.iconClassName} name={metric.icon} size={27} />
+          <Icon className={metric.iconClassName} name={metric.icon} size={24} />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-ink">{metric.label}</p>
-          <p className="mt-1 text-3xl font-extrabold tabular-nums text-ink">
+          <p className="text-sm font-semibold text-ink-soft">{metric.label}</p>
+          <p className="mt-1 text-3xl font-bold leading-none tabular-nums text-ink">
             {metric.value}
           </p>
           <p className="mt-1 text-xs leading-5 text-ink-soft">
@@ -46,30 +46,23 @@ function PrimaryMetricCard({ metric }: { metric: PrimaryMetric }) {
 }
 
 function MovementRows({ metrics }: { metrics: MovementMetric[] }) {
-  const largestValue = Math.max(1, ...metrics.map(({ value }) => value));
-
   return (
-    <div className="mt-4 grid gap-3">
+    <dl className="movement-summary-grid mt-4 grid gap-3 sm:grid-cols-2">
       {metrics.map((metric) => (
-        <div className="grid gap-2" key={metric.label}>
-          <div className="flex items-center justify-between gap-4 text-sm">
-            <span className="text-ink-soft">{metric.label}</span>
-            <strong className="font-bold tabular-nums text-ink">
-              {metric.value}
-            </strong>
-          </div>
-          <div
-            aria-hidden="true"
-            className="h-2 overflow-hidden rounded-full bg-surface-subtle"
-          >
-            <div
-              className="h-full min-w-1 rounded-full bg-primary"
-              style={{ width: `${(metric.value / largestValue) * 100}%` }}
-            />
-          </div>
+        <div
+          className="movement-summary-item"
+          data-empty={metric.value === 0 ? "true" : undefined}
+          key={metric.label}
+        >
+          <dt className="text-xs font-medium leading-5 text-text-muted">
+            {metric.label}
+          </dt>
+          <dd className="mt-1 text-2xl font-semibold leading-none tabular-nums text-text">
+            {metric.value}
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }
 
@@ -80,20 +73,27 @@ function PanelHeader({
   title,
 }: {
   icon: IconName;
-  linkLabel: string;
-  linkTo: string;
+  linkLabel?: string;
+  linkTo?: string;
   title: string;
 }) {
   return (
-    <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-      <Icon className="text-primary" name={icon} size={22} />
-      <h3 className="font-bold text-ink">{title}</h3>
-      <Link
-        className="ml-auto rounded-md text-sm font-semibold text-primary underline-offset-4 hover:underline focus:outline-3 focus:outline-offset-2 focus:outline-focus"
-        to={linkTo}
+    <div className="operational-panel-header flex items-center gap-3 border-b px-5 py-4">
+      <span
+        aria-hidden="true"
+        className="operational-panel-header__icon grid size-9 shrink-0 place-items-center rounded-full"
       >
-        {linkLabel}
-      </Link>
+        <Icon name={icon} size={19} />
+      </span>
+      <h3 className="font-semibold text-text">{title}</h3>
+      {linkLabel && linkTo && (
+        <Link
+          className="ml-auto rounded-md text-sm font-semibold text-primary underline-offset-4 hover:underline focus:outline-3 focus:outline-offset-2 focus:outline-focus"
+          to={linkTo}
+        >
+          {linkLabel}
+        </Link>
+      )}
     </div>
   );
 }
@@ -178,8 +178,8 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
         ))}
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <article className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(17rem,0.72fr)]">
+        <article className="operational-breakdown-panel overflow-hidden rounded-2xl border bg-surface">
           <PanelHeader
             icon="dashboard"
             linkLabel="Ver histórico"
@@ -194,7 +194,7 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
           </div>
         </article>
 
-        <article className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <article className="operational-breakdown-panel overflow-hidden rounded-2xl border bg-surface">
           <PanelHeader
             icon="bus"
             linkLabel="Ver utilizações"
@@ -203,26 +203,44 @@ export function DailySummaryPanel({ summary }: DailySummaryPanelProps) {
           />
           <div className="p-5">
             <p className="text-sm leading-6 text-ink-soft">
-              Movimentações da frota e entradas vinculadas a autorizações.
+              Saídas e retornos registrados para os veículos institucionais.
             </p>
             <MovementRows metrics={institutionalMetrics} />
-            <h4 className="mt-5 border-t border-border pt-4 font-bold text-ink">
-              Eventos
-            </h4>
-            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-success-surface p-4">
-                <dt className="text-xs font-semibold text-success-text">
+          </div>
+        </article>
+
+        <article className="operational-breakdown-panel overflow-hidden rounded-2xl border bg-surface">
+          <PanelHeader icon="calendar" title="Eventos" />
+          <div className="p-5">
+            <p className="text-sm leading-6 text-ink-soft">
+              Entradas gerais vinculadas a autorizações de eventos.
+            </p>
+            <dl className="mt-4 grid gap-3">
+              <div
+                className="movement-summary-item movement-summary-item--event"
+                data-empty={
+                  summary.eventAccess.entries === 0 ? "true" : undefined
+                }
+              >
+                <dt className="text-xs font-medium text-text-muted">
                   Entradas vinculadas
                 </dt>
-                <dd className="mt-2 text-2xl font-extrabold tabular-nums text-ink">
+                <dd className="mt-1 text-2xl font-semibold tabular-nums text-text">
                   {summary.eventAccess.entries}
                 </dd>
               </div>
-              <div className="rounded-xl bg-surface-subtle p-4">
-                <dt className="text-xs font-semibold text-ink-soft">
+              <div
+                className="movement-summary-item movement-summary-item--event"
+                data-empty={
+                  summary.eventAccess.eventsWithEntries === 0
+                    ? "true"
+                    : undefined
+                }
+              >
+                <dt className="text-xs font-medium text-text-muted">
                   Eventos com entradas
                 </dt>
-                <dd className="mt-2 text-2xl font-extrabold tabular-nums text-ink">
+                <dd className="mt-1 text-2xl font-semibold tabular-nums text-text">
                   {summary.eventAccess.eventsWithEntries}
                 </dd>
               </div>

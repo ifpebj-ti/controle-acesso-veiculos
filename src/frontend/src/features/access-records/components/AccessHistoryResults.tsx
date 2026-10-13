@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { Button } from "../../../components/ui/Button";
 import { ContentState } from "../../../components/ui/ContentState";
+import { Icon } from "../../../components/ui/Icon";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { AccessHistoryRequestStatus } from "../hooks/useAccessHistory";
 import {
@@ -9,6 +10,7 @@ import {
   exceptionalClosureReasons,
 } from "../model/exceptionalClosure";
 import type { AccessRecord, PagedAccessRecords } from "../types";
+import { VehicleTypeIndicator } from "./VehicleTypeIndicator";
 
 interface AccessHistoryResultsProps {
   errorMessage: string | null;
@@ -143,21 +145,9 @@ export function AccessHistoryResults({
   }
 
   return (
-    <div className="border-t border-border p-5 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="font-bold text-ink">
-            {result?.totalCount ?? 0} registro(s)
-          </p>
-          <p className="text-xs text-ink-soft">
-            Página {result?.page ?? 1} de {Math.max(1, result?.totalPages ?? 1)}
-          </p>
-        </div>
-      </div>
-
+    <div className="border-t border-border/55 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
       {records.length === 0 ? (
         <ContentState
-          className="mt-5"
           description="Ajuste o período ou limpe os filtros para tentar novamente."
           icon="history"
           title="Nenhum registro encontrado"
@@ -165,18 +155,25 @@ export function AccessHistoryResults({
         />
       ) : (
         <>
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:hidden">
+          <div className="grid gap-3 md:grid-cols-2 xl:hidden">
             {records.map((record) => (
               <article
-                className="rounded-xl border border-border bg-surface-subtle p-4"
+                className="history-record-card rounded-xl border border-border bg-surface-subtle p-4"
                 key={record.id}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <strong className="block text-ink">{record.plate}</strong>
-                    <span className="text-xs text-ink-soft">
-                      {record.categoryName} • #{record.id}
-                    </span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <VehicleTypeIndicator
+                      iconSize={22}
+                      showLabel={false}
+                      vehicleType={record.vehicleType}
+                    />
+                    <div>
+                      <strong className="block text-ink">{record.plate}</strong>
+                      <span className="text-xs text-ink-soft">
+                        {record.categoryName} • #{record.id}
+                      </span>
+                    </div>
                   </div>
                   <StatusBadge {...closureStatus(record)} />
                 </div>
@@ -209,7 +206,7 @@ export function AccessHistoryResults({
                   </div>
                 </dl>
                 <ExceptionalClosureDetails record={record} />
-                <div className="mt-4 grid gap-2">
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   <Button
                     aria-label={`Ver detalhes do registro ${record.plate} de ${record.driverName}`}
                     className="w-full"
@@ -217,6 +214,7 @@ export function AccessHistoryResults({
                     type="button"
                     variant="secondary"
                   >
+                    <Icon aria-hidden="true" name="search" size={16} />
                     Ver detalhes
                   </Button>
                   {onCorrect && (
@@ -229,6 +227,7 @@ export function AccessHistoryResults({
                       type="button"
                       variant="secondary"
                     >
+                      <Icon aria-hidden="true" name="wrench" size={16} />
                       Corrigir registro
                     </Button>
                   )}
@@ -237,13 +236,13 @@ export function AccessHistoryResults({
             ))}
           </div>
 
-          <div className="mt-4 hidden overflow-x-auto xl:block">
-            <table className="w-full min-w-[64rem] border-collapse text-left text-sm">
+          <div className="history-table-shell hidden overflow-x-auto xl:block">
+            <table className="w-full min-w-[72rem] border-collapse text-left text-sm">
               <caption className="sr-only">
                 Histórico de acessos retornado pela API
               </caption>
               <thead>
-                <tr className="border-b border-border bg-surface-subtle text-[0.68rem] uppercase tracking-[0.12em] text-text-muted">
+                <tr className="history-table-heading border-b border-border bg-surface-subtle text-[0.68rem] uppercase tracking-[0.12em] text-text-muted">
                   <th className="px-3 py-3" scope="col">
                     Data e veículo
                   </th>
@@ -259,7 +258,7 @@ export function AccessHistoryResults({
                   <th className="px-3 py-3" scope="col">
                     Situação
                   </th>
-                  <th className="px-3 py-3 text-center" scope="col">
+                  <th className="px-4 py-3 text-right" scope="col">
                     Ações
                   </th>
                 </tr>
@@ -267,17 +266,28 @@ export function AccessHistoryResults({
               <tbody>
                 {records.map((record) => (
                   <tr
-                    className="border-b border-border align-top last:border-0 hover:bg-surface-subtle"
+                    className="history-table-row border-b border-border/45 align-middle last:border-0 hover:bg-surface-subtle"
                     key={record.id}
                   >
                     <td className="px-3 py-4">
-                      <strong className="block text-ink">{record.plate}</strong>
-                      <span className="mt-1 block whitespace-nowrap text-xs text-ink-soft">
-                        {dateFormatter.format(new Date(record.entryAtUtc))}
-                      </span>
-                      <span className="mt-1 block text-[0.68rem] font-bold uppercase tracking-wider text-brand-dark">
-                        {record.categoryName}
-                      </span>
+                      <div className="flex items-start gap-2.5">
+                        <VehicleTypeIndicator
+                          iconSize={19}
+                          showLabel={false}
+                          vehicleType={record.vehicleType}
+                        />
+                        <div>
+                          <strong className="block text-ink">
+                            {record.plate}
+                          </strong>
+                          <span className="mt-1 block whitespace-nowrap text-xs text-ink-soft">
+                            {dateFormatter.format(new Date(record.entryAtUtc))}
+                          </span>
+                          <span className="mt-1 block text-[0.68rem] font-bold uppercase tracking-wider text-brand-dark">
+                            {record.categoryName}
+                          </span>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-4 text-ink-soft">
                       {record.driverName}
@@ -304,29 +314,31 @@ export function AccessHistoryResults({
                     <td className="px-3 py-4">
                       <StatusBadge {...closureStatus(record)} />
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="grid gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex min-w-[15rem] justify-end gap-2">
                         <Button
                           aria-label={`Ver detalhes do registro ${record.plate} de ${record.driverName}`}
-                          className="whitespace-nowrap text-xs"
+                          className="history-action-button whitespace-nowrap text-xs"
                           onClick={(event) =>
                             onDetails(record, event.currentTarget)
                           }
                           type="button"
                           variant="secondary"
                         >
+                          <Icon aria-hidden="true" name="search" size={15} />
                           Ver detalhes
                         </Button>
                         {onCorrect && (
                           <Button
                             aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
-                            className="whitespace-nowrap text-xs"
+                            className="history-action-button whitespace-nowrap text-xs"
                             onClick={(event) =>
                               onCorrect(record, event.currentTarget)
                             }
                             type="button"
                             variant="secondary"
                           >
+                            <Icon aria-hidden="true" name="wrench" size={15} />
                             Corrigir registro
                           </Button>
                         )}
@@ -339,6 +351,15 @@ export function AccessHistoryResults({
           </div>
         </>
       )}
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+        <p aria-live="polite" className="font-bold text-ink">
+          {result?.totalCount ?? 0} registro(s)
+        </p>
+        <p className="text-xs text-ink-soft">
+          Página {result?.page ?? 1} de {Math.max(1, result?.totalPages ?? 1)}
+        </p>
+      </div>
 
       {pageNumbers.length > 0 && result && (
         <nav

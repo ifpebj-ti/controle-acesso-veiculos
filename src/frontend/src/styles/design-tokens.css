@@ -38,6 +38,12 @@
   --ui-disabled-surface: #e5e9df;
   --ui-disabled-text: #52615e;
   --ui-disabled-border: #74837f;
+  --ui-data-1: #568f69;
+  --ui-data-2: #76ad72;
+  --ui-data-3: #5f9895;
+  --ui-data-4: #91aa78;
+  --ui-data-5: #c5aa67;
+  --ui-data-6: #cbd5c6;
 }
 
 /*
@@ -73,4 +79,10 @@
   --ui-disabled-surface: #263436;
   --ui-disabled-text: #aab5b1;
   --ui-disabled-border: #71827e;
+  --ui-data-1: #7ec98b;
+  --ui-data-2: #97d48f;
+  --ui-data-3: #75c1bc;
+  --ui-data-4: #b4cb8b;
+  --ui-data-5: #e0c675;
+  --ui-data-6: #71817a;
 }

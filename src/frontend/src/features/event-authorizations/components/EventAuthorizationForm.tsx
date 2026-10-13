@@ -2,6 +2,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 
+import { Button } from "../../../components/ui/Button";
+import { Icon, type IconName } from "../../../components/ui/Icon";
 import {
   eventAuthorizationFormSchema,
   type EventAuthorizationFormValues,
@@ -14,7 +16,7 @@ import type {
 import { EventVehicleRulesFields } from "./EventVehicleRulesFields";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
+  "mt-2 min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-ink outline-none transition placeholder:text-ink-soft/75 focus:border-primary focus:ring-3 focus:ring-primary/15 disabled:opacity-60";
 
 interface EventAuthorizationFormProps {
   busy: boolean;
@@ -115,23 +117,46 @@ export function EventAuthorizationForm({
     });
   }
 
-  const simpleFields = [
-    { id: "event-name", key: "name", label: "Nome do evento", maxLength: 200 },
+  const simpleFields: Array<{
+    icon: IconName;
+    id: string;
+    key: "name" | "responsible" | "area";
+    label: string;
+    maxLength: number;
+    placeholder: string;
+  }> = [
     {
+      icon: "calendar",
+      id: "event-name",
+      key: "name",
+      label: "Nome do evento",
+      maxLength: 200,
+      placeholder: "Ex.: Semana Acadêmica de TI",
+    },
+    {
+      icon: "user",
       id: "event-responsible",
       key: "responsible",
       label: "Responsável",
       maxLength: 200,
+      placeholder: "Ex.: Coordenação de Tecnologia",
     },
-    { id: "event-area", key: "area", label: "Local ou área", maxLength: 200 },
-  ] as const;
+    {
+      icon: "dashboard",
+      id: "event-area",
+      key: "area",
+      label: "Local ou área",
+      maxLength: 200,
+      placeholder: "Ex.: Auditório, quadra ou Bloco A",
+    },
+  ];
 
   return (
     <section
       aria-labelledby="event-form-title"
-      className="mt-6 overflow-hidden rounded-[2rem] border border-brand-dark/15 bg-white shadow-[0_14px_40px_rgba(1,36,40,0.07)]"
+      className="event-form-shell mt-6 overflow-hidden rounded-2xl border border-border bg-surface"
     >
-      <div className="border-b border-ink/8 bg-brand-soft/30 px-5 py-5 sm:px-7">
+      <div className="event-form-heading border-b border-border bg-success-surface/60 px-5 py-5 sm:px-7">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
           Autorização antecipada
         </p>
@@ -149,7 +174,7 @@ export function EventAuthorizationForm({
         </p>
       </div>
       <form
-        className="space-y-7 p-5 sm:p-7"
+        className="event-form-body space-y-6 p-5 sm:p-7"
         noValidate
         onSubmit={handleSubmit(submit)}
       >
@@ -160,9 +185,10 @@ export function EventAuthorizationForm({
             return (
               <div key={field.key}>
                 <label
-                  className="text-sm font-semibold text-ink"
+                  className="flex items-center gap-2 text-sm font-semibold text-ink"
                   htmlFor={field.id}
                 >
+                  <Icon className="text-primary" name={field.icon} size={17} />
                   {field.label}
                 </label>
                 <input
@@ -172,6 +198,7 @@ export function EventAuthorizationForm({
                   disabled={disabled}
                   id={field.id}
                   maxLength={field.maxLength}
+                  placeholder={field.placeholder}
                   {...register(field.key)}
                 />
                 <ErrorMessage id={errorId} message={message} />
@@ -180,9 +207,10 @@ export function EventAuthorizationForm({
           })}
           <div>
             <label
-              className="text-sm font-semibold text-ink"
+              className="flex items-center gap-2 text-sm font-semibold text-ink"
               htmlFor="event-start"
             >
+              <Icon className="text-primary" name="calendar" size={17} />
               Início
             </label>
             {(() => {
@@ -211,9 +239,10 @@ export function EventAuthorizationForm({
           </div>
           <div>
             <label
-              className="text-sm font-semibold text-ink"
+              className="flex items-center gap-2 text-sm font-semibold text-ink"
               htmlFor="event-end"
             >
+              <Icon className="text-primary" name="calendar" size={17} />
               Fim
             </label>
             {(() => {
@@ -240,20 +269,30 @@ export function EventAuthorizationForm({
               );
             })()}
           </div>
-          <label className="flex min-h-12 items-center gap-3 self-end rounded-xl border border-ink/15 bg-cream/45 px-4 text-sm font-semibold text-ink">
+          <label className="flex min-h-20 items-start gap-3 self-end rounded-xl border border-border bg-surface-subtle/55 px-4 py-3 text-sm text-ink">
             <input
-              className="size-5 accent-brand"
+              className="peer sr-only"
               disabled={disabled}
               type="checkbox"
               {...register("overnightAllowed")}
             />
-            Permitir pernoite
+            <span
+              aria-hidden="true"
+              className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-border transition peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-primary/25 peer-disabled:opacity-60 after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:after:translate-x-5"
+            />
+            <span>
+              <strong className="block font-bold">Permitir pernoite</strong>
+              <span className="mt-1 block text-xs leading-5 text-ink-soft">
+                Autoriza a permanência dos veículos após o horário do evento.
+              </span>
+            </span>
           </label>
           <p
-            className="text-xs text-ink-soft md:col-span-3"
+            className="flex items-center gap-2 rounded-xl bg-primary/5 px-3 py-2 text-xs text-ink-soft md:col-span-3"
             id="event-period-hint"
           >
-            Informe data e hora locais. O servidor armazenará o período em UTC.
+            <Icon className="shrink-0 text-primary" name="clock" size={16} />
+            Informe o início e o fim usando a data e a hora locais do campus.
           </p>
         </div>
 
@@ -268,9 +307,10 @@ export function EventAuthorizationForm({
 
         <div>
           <label
-            className="text-sm font-semibold text-ink"
+            className="flex items-center gap-2 text-sm font-semibold text-ink"
             htmlFor="event-notes"
           >
+            <Icon className="text-primary" name="clipboard" size={17} />
             Observação{" "}
             <span className="font-normal text-ink-soft">(opcional)</span>
           </label>
@@ -285,6 +325,7 @@ export function EventAuthorizationForm({
                   disabled={disabled}
                   id="event-notes"
                   maxLength={1000}
+                  placeholder="Inclua orientações necessárias para a portaria."
                   {...register("notes")}
                 />
                 <ErrorMessage id="event-notes-error" message={message} />
@@ -292,26 +333,20 @@ export function EventAuthorizationForm({
             );
           })()}
         </div>
-        <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:flex-row sm:justify-end">
-          <button
-            className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink disabled:opacity-60"
-            disabled={disabled}
-            onClick={onCancel}
-            type="button"
-          >
+        <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+          <Button disabled={disabled} onClick={onCancel} variant="secondary">
             Fechar formulário
-          </button>
-          <button
-            className="min-h-12 rounded-xl bg-brand-dark px-7 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
-            disabled={disabled}
-            type="submit"
-          >
+          </Button>
+          <Button className="px-7" disabled={disabled} type="submit">
+            {!disabled && (
+              <Icon name={event ? "clipboard" : "plus"} size={18} />
+            )}
             {disabled
               ? "Salvando…"
               : event
                 ? "Salvar alterações"
                 : "Criar autorização"}
-          </button>
+          </Button>
         </div>
       </form>
     </section>

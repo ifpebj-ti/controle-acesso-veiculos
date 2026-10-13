@@ -55,7 +55,7 @@ export function AccessHistoryCategoryTabs({
   return (
     <section
       aria-labelledby="history-category-shortcuts-title"
-      className="mt-6"
+      className="history-category-shelf mt-6 rounded-2xl border border-border px-3 pt-2 sm:px-4"
     >
       <h2 className="sr-only" id="history-category-shortcuts-title">
         Filtros rápidos por categoria

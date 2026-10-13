@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
+import { SectionPanel } from "../components/ui/SectionPanel";
 import { SelectField } from "../components/ui/SelectField";
 import { TextField } from "../components/ui/TextField";
 import {
@@ -309,7 +310,30 @@ export function NewAccessPage() {
         noValidate
         onSubmit={submitAndContinue}
       >
-        <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+        <section
+          aria-labelledby="entry-form-title"
+          className="institutional-catalog overflow-hidden rounded-[2rem] border border-border bg-surface shadow-sm"
+        >
+          <div className="entry-form-heading flex flex-wrap items-center gap-3 border-b border-border px-5 py-4 sm:px-7">
+            <span
+              aria-hidden="true"
+              className="grid size-11 shrink-0 place-items-center rounded-xl rounded-bl-md bg-success-surface text-primary"
+            >
+              <Icon name="vehicle" size={23} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-bold text-text" id="entry-form-title">
+                Dados do acesso
+              </h2>
+              <p className="mt-0.5 text-sm text-text-muted">
+                Identifique o veículo, o condutor e a finalidade da entrada.
+              </p>
+            </div>
+            <p className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text-muted">
+              <span className="font-bold text-danger-text">*</span> Campos
+              obrigatórios
+            </p>
+          </div>
           <div className="space-y-7 p-5 sm:p-7">
             <EntryCandidateSearch
               onClear={useManualEntry}
@@ -447,41 +471,8 @@ export function NewAccessPage() {
               />
             </div>
 
-            <section
-              className="rounded-xl border border-success-border bg-success-surface p-4 sm:p-5"
-              aria-labelledby="event-link-title"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex min-w-0 items-start gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface text-primary"
-                  >
-                    <Icon name="calendar" size={22} />
-                  </span>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3
-                        className="text-xl font-bold text-text"
-                        id="event-link-title"
-                      >
-                        Autorização de evento
-                      </h3>
-                      <span className="rounded-full border border-success-border bg-surface px-2.5 py-1 text-xs font-bold text-success-text">
-                        Opcional
-                      </span>
-                    </div>
-                    <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-soft">
-                      Escolha uma autorização vigente ou mantenha a entrada sem
-                      vínculo.
-                    </p>
-                    {selectedEvent && !eventSectionOpen && (
-                      <p className="mt-2 text-sm font-bold text-brand-dark">
-                        Evento vinculado: {selectedEvent.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
+            <SectionPanel
+              action={
                 <Button
                   aria-label={
                     eventSectionOpen
@@ -502,10 +493,25 @@ export function NewAccessPage() {
                       ? "Alterar"
                       : "Vincular a evento"}
                 </Button>
-              </div>
+              }
+              badge={
+                <span className="rounded-full border border-success-border bg-success-surface px-2.5 py-1 text-xs font-bold text-success-text">
+                  Opcional
+                </span>
+              }
+              className="entry-event-panel"
+              description="Escolha uma autorização vigente ou mantenha a entrada sem vínculo."
+              icon="calendar"
+              title="Autorização de evento"
+            >
+              {selectedEvent && !eventSectionOpen && (
+                <p className="border-b border-border px-5 py-3 text-sm font-bold text-brand-dark">
+                  Evento vinculado: {selectedEvent.name}
+                </p>
+              )}
 
               {eventSectionOpen && (
-                <div className="mt-5" id="event-authorization-options">
+                <div className="p-5" id="event-authorization-options">
                   <EventAuthorizationSelector
                     errorMessage={eventAuthorizations.errorMessage}
                     events={eventAuthorizations.events}
@@ -521,9 +527,9 @@ export function NewAccessPage() {
                   />
                 </div>
               )}
-            </section>
+            </SectionPanel>
 
-            <div className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:flex-wrap sm:justify-end">
+            <div className="entry-form-actions -mx-5 -mb-5 flex flex-col gap-3 border-t border-border px-5 py-5 sm:-mx-7 sm:-mb-7 sm:flex-row sm:flex-wrap sm:justify-end sm:px-7">
               <Button
                 disabled={isSubmitting}
                 onClick={() => navigate("/visao-geral")}
@@ -552,7 +558,7 @@ export function NewAccessPage() {
         </section>
 
         <aside className="h-fit space-y-4 xl:sticky xl:top-8">
-          <section className="rounded-2xl border border-success-border bg-success-surface p-6 text-text shadow-sm">
+          <section className="institutional-guide rounded-2xl border border-success-border bg-success-surface p-6 text-text shadow-sm">
             <div className="flex items-center gap-3">
               <span
                 aria-hidden="true"
@@ -589,7 +595,7 @@ export function NewAccessPage() {
             </ol>
           </section>
 
-          <section className="rounded-2xl border border-border bg-surface-subtle p-5 shadow-sm">
+          <section className="institutional-catalog rounded-2xl border border-border bg-surface-subtle p-5 shadow-sm">
             <div className="flex items-start gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface text-primary">
                 <Icon name="bus" size={20} />

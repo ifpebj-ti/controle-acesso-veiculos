@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 
 import { Button } from "../../../components/ui/Button";
+import { Icon } from "../../../components/ui/Icon";
 import { SelectField } from "../../../components/ui/SelectField";
 import { TextField } from "../../../components/ui/TextField";
 import { generalAccessCategories } from "../model/accessCategories";
@@ -41,15 +42,23 @@ export function AccessHistoryFilters({
 
   return (
     <form onSubmit={submit}>
-      <div className="border-b border-border bg-surface-subtle px-5 py-5 sm:px-6">
+      <div className="history-filter-heading border-b border-border bg-surface-subtle px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-              Filtros da consulta
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-text">
-              Encontre um registro
-            </h2>
+          <div className="flex min-w-0 items-start gap-3">
+            <span
+              aria-hidden="true"
+              className="grid size-11 shrink-0 place-items-center rounded-xl rounded-bl-md bg-surface text-primary shadow-sm"
+            >
+              <Icon name="search" size={22} />
+            </span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
+                Filtros da consulta
+              </p>
+              <h2 className="mt-1 text-2xl font-bold text-text">
+                Encontre um registro
+              </h2>
+            </div>
           </div>
           <Button onClick={onClear} type="button" variant="secondary">
             Limpar filtros
@@ -159,7 +168,7 @@ export function AccessHistoryFilters({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 rounded-xl border border-border bg-surface-subtle p-4 sm:grid-cols-2">
+        <div className="history-period-filter mt-4 grid items-end gap-4 rounded-xl border p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
           <div>
             <label
               className="text-sm font-semibold text-ink"
@@ -198,10 +207,12 @@ export function AccessHistoryFilters({
               value={draft.toDate}
             />
           </div>
-        </div>
-
-        <div className="mt-5 flex justify-end">
-          <Button aria-disabled={requestStatus === "loading"} type="submit">
+          <Button
+            aria-disabled={requestStatus === "loading"}
+            className="w-full lg:w-auto"
+            type="submit"
+          >
+            <Icon aria-hidden="true" name="search" size={17} />
             {requestStatus === "loading" ? "Consultando…" : "Aplicar filtros"}
           </Button>
         </div>

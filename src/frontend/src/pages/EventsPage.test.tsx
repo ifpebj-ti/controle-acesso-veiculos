@@ -169,6 +169,21 @@ describe("EventsPage", () => {
   it("separates planned capacity, recorded entries and remaining capacity", async () => {
     renderPage();
     await screen.findByText(authorization.name);
+    const summary = screen.getByRole("region", {
+      name: "Resumo dos eventos e autorizações",
+    });
+    expect(
+      within(summary).getByText("Eventos encontrados").nextSibling,
+    ).toHaveTextContent("1");
+    expect(
+      within(summary).getByText("Capacidade prevista").nextSibling,
+    ).toHaveTextContent("4");
+    expect(
+      within(summary).getByText("Entradas utilizadas").nextSibling,
+    ).toHaveTextContent("2");
+    expect(
+      within(summary).getByText("Autorizações restantes").nextSibling,
+    ).toHaveTextContent("2");
     expect(screen.getByText("Previstos").nextSibling).toHaveTextContent("4");
     expect(
       screen.getByText("Entradas registradas").nextSibling,
@@ -188,14 +203,14 @@ describe("EventsPage", () => {
       "Não foi possível consultar as autorizações.",
     );
     expect(
-      screen.queryByText("0 autorização(ões) encontrada(s)"),
+      screen.queryByText("Mostrando 0 de 0 autorização(ões)"),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText("Nenhuma autorização encontrada"),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(
-      await screen.findByText("0 autorização(ões) encontrada(s)"),
+      await screen.findByText("Mostrando 0 de 0 autorização(ões)"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Nenhuma autorização encontrada"),
@@ -328,7 +343,7 @@ describe("EventsPage", () => {
       "Encontro",
     );
     await selectFieldOption(user, screen.getByLabelText("Situação"), "all");
-    await user.click(screen.getByRole("button", { name: "Aplicar" }));
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
     await waitFor(() =>
       expect(searchEventAuthorizations).toHaveBeenLastCalledWith(
         expect.objectContaining({ active: "all", name: "Encontro", page: 1 }),
@@ -350,7 +365,7 @@ describe("EventsPage", () => {
     const end = screen.getByLabelText("Fim do período");
     fireEvent.change(start, { target: { value: "2030-06-11T08:00" } });
     fireEvent.change(end, { target: { value: "2030-06-10T08:00" } });
-    await user.click(screen.getByRole("button", { name: "Aplicar" }));
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 
     const error = screen.getByText(/início anterior ao fim/);
     expect(error).toHaveAttribute("id", "event-filter-period-error");

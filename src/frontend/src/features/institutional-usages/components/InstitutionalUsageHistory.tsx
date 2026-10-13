@@ -2,6 +2,7 @@ import type { InstitutionalDriver } from "../../institutional-drivers";
 import type { InstitutionalVehicle } from "../../institutional-vehicles";
 import { Icon } from "../../../components/ui/Icon";
 import { SelectField } from "../../../components/ui/SelectField";
+import { getVehiclePresentation } from "../../access-records/model/vehicleTypePresentation";
 import type {
   InstitutionalUsageHistoryFilters,
   InstitutionalUsageHistoryFilterErrors,
@@ -14,6 +15,10 @@ const fieldClass =
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
+});
+const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
 });
 
 function vehicleLabel(vehicle: InstitutionalVehicle) {
@@ -69,22 +74,24 @@ export function InstitutionalUsageHistory({
     <section
       aria-busy={status === "loading"}
       aria-labelledby="institutional-history-title"
-      className="mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
+      className="institutional-catalog mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
     >
-      <div className="px-5 pt-5 sm:px-6">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-          Supervisão da frota
-        </p>
-        <h2
-          className="mt-3 font-display text-2xl"
-          id="institutional-history-title"
-        >
-          Histórico institucional
-        </h2>
+      <div className="usage-history-heading flex items-start gap-3 px-5 pt-5 sm:px-6">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl rounded-bl-md bg-brand-soft/30 text-primary">
+          <Icon name="history" size={22} />
+        </span>
+        <div>
+          <h2 className="text-xl font-bold" id="institutional-history-title">
+            Histórico de utilizações
+          </h2>
+          <p className="mt-1 text-sm text-ink-soft">
+            Consulte as saídas e os retornos registrados da frota institucional.
+          </p>
+        </div>
       </div>
 
       <form
-        className="mt-5 grid gap-4 border-y border-ink/10 bg-brand-soft/20 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4"
+        className="usage-history-filters mt-5 grid gap-4 border-y border-ink/10 bg-brand-soft/20 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4"
         onSubmit={(event) => {
           event.preventDefault();
           onApply();
@@ -327,12 +334,6 @@ export function InstitutionalUsageHistory({
         </div>
       ) : status === "ready" && page ? (
         <>
-          <p
-            aria-live="polite"
-            className="px-5 pt-5 text-sm text-ink-soft sm:px-6"
-          >
-            {page.totalCount} utilização(ões) encontrada(s)
-          </p>
           {page.items.length === 0 ? (
             <div className="m-5 rounded-2xl border border-dashed border-ink/20 bg-cream/40 p-10 text-center sm:m-6">
               <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-soft/45">
@@ -344,65 +345,184 @@ export function InstitutionalUsageHistory({
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 p-5 sm:p-6 xl:grid-cols-2">
-              {page.items.map((usage) => {
-                const distance =
-                  usage.returnMileage === null
-                    ? null
-                    : usage.returnMileage - usage.departureMileage;
-                return (
-                  <article
-                    className="rounded-2xl border border-ink/10 bg-cream/25 p-5"
-                    key={usage.id}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-wider text-brand-dark">
-                          {usageVehicleLabel(usage)}
-                        </p>
-                        <h3 className="mt-1 text-lg font-bold">
-                          {usage.driverName}
-                        </h3>
-                      </div>
-                      <span className="rounded-full bg-brand-soft/55 px-3 py-1 text-xs font-bold">
-                        {usage.status === "EmUso" ? "Em uso" : "Concluído"}
-                      </span>
-                    </div>
-                    <p className="mt-4 break-words text-sm font-semibold">
-                      {usage.itinerary}
-                    </p>
-                    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                      <div>
-                        <dt className="text-ink-soft">Saída</dt>
-                        <dd>
-                          {dateTimeFormatter.format(
-                            new Date(usage.departureAtUtc),
-                          )}{" "}
-                          — {usage.departureMileage} km
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-ink-soft">Retorno</dt>
-                        <dd>
-                          {usage.returnAtUtc && usage.returnMileage !== null
-                            ? `${dateTimeFormatter.format(new Date(usage.returnAtUtc))} — ${usage.returnMileage} km`
-                            : "Ainda não registrado"}
-                        </dd>
-                      </div>
-                      {distance !== null && (
-                        <div className="sm:col-span-2">
-                          <dt className="text-ink-soft">
-                            Distância registrada
-                          </dt>
-                          <dd className="font-bold">{distance} km</dd>
+            <>
+              <div className="grid gap-4 p-5 sm:p-6 xl:hidden">
+                {page.items.map((usage) => {
+                  const distance =
+                    usage.returnMileage === null
+                      ? null
+                      : usage.returnMileage - usage.departureMileage;
+                  return (
+                    <article
+                      className="usage-history-card rounded-2xl border border-ink/10 bg-cream/25 p-5"
+                      key={usage.id}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-brand-dark">
+                            {usageVehicleLabel(usage)}
+                          </p>
+                          <h3 className="mt-1 text-lg font-bold">
+                            {usage.driverName}
+                          </h3>
                         </div>
-                      )}
-                    </dl>
-                  </article>
-                );
-              })}
-            </div>
+                        <span className="rounded-full bg-brand-soft/55 px-3 py-1 text-xs font-bold">
+                          {usage.status === "EmUso" ? "Em uso" : "Concluído"}
+                        </span>
+                      </div>
+                      <p className="mt-4 break-words text-sm font-semibold">
+                        {usage.itinerary}
+                      </p>
+                      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                        <div>
+                          <dt className="text-ink-soft">Saída</dt>
+                          <dd>
+                            {dateTimeFormatter.format(
+                              new Date(usage.departureAtUtc),
+                            )}{" "}
+                            — {usage.departureMileage} km
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-ink-soft">Retorno</dt>
+                          <dd>
+                            {usage.returnAtUtc && usage.returnMileage !== null
+                              ? `${dateTimeFormatter.format(new Date(usage.returnAtUtc))} — ${usage.returnMileage} km`
+                              : "Ainda não registrado"}
+                          </dd>
+                        </div>
+                        {distance !== null && (
+                          <div className="sm:col-span-2">
+                            <dt className="text-ink-soft">
+                              Distância registrada
+                            </dt>
+                            <dd className="font-bold">{distance} km</dd>
+                          </div>
+                        )}
+                      </dl>
+                    </article>
+                  );
+                })}
+              </div>
+              <div className="usage-history-table-shell hidden overflow-x-auto xl:block">
+                <table className="w-full min-w-[70rem] border-collapse text-left text-sm">
+                  <caption className="sr-only">
+                    Histórico de utilizações da frota institucional
+                  </caption>
+                  <thead>
+                    <tr className="usage-history-table-heading border-y border-border bg-surface-subtle text-[0.68rem] uppercase tracking-[0.08em] text-ink-soft">
+                      <th className="px-5 py-3" scope="col">
+                        Data e hora
+                      </th>
+                      <th className="px-4 py-3" scope="col">
+                        Veículo
+                      </th>
+                      <th className="px-4 py-3" scope="col">
+                        Motorista
+                      </th>
+                      <th className="px-4 py-3" scope="col">
+                        Itinerário
+                      </th>
+                      <th className="px-4 py-3" scope="col">
+                        Saída
+                      </th>
+                      <th className="px-4 py-3" scope="col">
+                        Retorno
+                      </th>
+                      <th className="px-5 py-3" scope="col">
+                        Situação
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {page.items.map((usage) => {
+                      const vehicle = vehicles.find(
+                        (item) => item.id === usage.vehicleId,
+                      );
+                      const presentation = getVehiclePresentation(
+                        vehicle?.vehicleType,
+                      );
+                      return (
+                        <tr
+                          className="usage-history-table-row border-b border-border last:border-0"
+                          key={usage.id}
+                        >
+                          <td className="px-5 py-4 whitespace-nowrap text-ink-soft">
+                            {dateTimeFormatter.format(
+                              new Date(usage.departureAtUtc),
+                            )}
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft/30 text-primary">
+                                <Icon name={presentation.icon} size={19} />
+                              </span>
+                              <span>
+                                <strong className="block font-mono text-ink">
+                                  {usageVehicleLabel(usage)}
+                                </strong>
+                                <small className="text-ink-soft">
+                                  {presentation.label}
+                                </small>
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-ink-soft">
+                            {usage.driverName}
+                          </td>
+                          <td className="max-w-72 px-4 py-4 text-ink-soft">
+                            <span className="line-clamp-2">
+                              {usage.itinerary}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-ink-soft">
+                            {timeFormatter.format(
+                              new Date(usage.departureAtUtc),
+                            )}
+                            <small className="block">
+                              {usage.departureMileage} km
+                            </small>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-ink-soft">
+                            {usage.returnAtUtc &&
+                            usage.returnMileage !== null ? (
+                              <>
+                                {timeFormatter.format(
+                                  new Date(usage.returnAtUtc),
+                                )}
+                                <small className="block">
+                                  {usage.returnMileage} km
+                                </small>
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={`rounded-full border px-3 py-1 text-xs font-bold ${usage.status === "EmUso" ? "border-success-border bg-success-surface text-success-text" : "border-primary/25 bg-primary/5 text-primary"}`}
+                            >
+                              {usage.status === "EmUso"
+                                ? "Em uso"
+                                : "Concluído"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
+          <div className="institutional-catalog__footer flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4 sm:px-6">
+            <p aria-live="polite" className="text-sm text-ink-soft">
+              {page.totalCount} utilização(ões) encontrada(s)
+            </p>
+            <p className="text-xs font-semibold text-ink-soft">
+              Página {page.page} de {Math.max(page.totalPages, 1)}
+            </p>
+          </div>
           {page.totalPages > 1 && (
             <nav
               aria-label="Paginação do histórico institucional"
@@ -416,9 +536,6 @@ export function InstitutionalUsageHistory({
               >
                 Anterior
               </button>
-              <span className="text-sm font-semibold">
-                Página {page.page} de {page.totalPages}
-              </span>
               <button
                 className="min-h-10 rounded-xl border border-ink/20 px-4 text-sm font-bold disabled:opacity-40"
                 disabled={page.page >= page.totalPages}

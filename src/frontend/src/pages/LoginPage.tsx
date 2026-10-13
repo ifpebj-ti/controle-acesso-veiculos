@@ -113,15 +113,15 @@ export function LoginPage() {
     .join(" ");
 
   return (
-    <main className="login-page relative min-h-svh overflow-x-hidden bg-background px-4 py-5 text-text sm:px-8 sm:py-8">
+    <main className="login-page relative min-h-svh overflow-x-hidden bg-background text-text">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-1 bg-primary"
       />
 
-      <div className="login-shell relative z-10 mx-auto flex min-h-[calc(100svh-2.5rem)] w-full max-w-7xl items-center justify-center sm:min-h-[calc(100svh-4rem)]">
-        <section className="login-composition grid w-full overflow-hidden rounded-[1.75rem] border border-border-strong bg-surface-raised shadow-2xl lg:grid-cols-[minmax(0,1fr)_minmax(25rem,0.9fr)]">
-          <div className="login-form-panel order-2 flex flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:order-1 lg:px-16 lg:py-12 xl:px-20">
+      <div className="login-shell relative z-10 flex min-h-svh w-full items-stretch">
+        <section className="login-composition grid min-h-svh w-full overflow-hidden bg-surface-raised lg:grid-cols-[minmax(34rem,54%)_minmax(28rem,46%)]">
+          <div className="login-form-panel order-2 flex min-h-full flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:order-1 lg:px-[clamp(4rem,7vw,9rem)] lg:py-12">
             <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
 
             <div className="my-auto py-8 sm:py-9 lg:py-8">
@@ -300,7 +300,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-primary-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-[40rem] lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
+          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-primary-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-svh lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
             <img
               alt=""
               className="login-visual-photo"
@@ -337,11 +337,13 @@ export function LoginPage() {
             </div>
 
             <div className="relative z-10 mt-auto pb-8 lg:mt-0 lg:pb-0">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary-text/85">
+              <p className="login-visual-eyebrow text-xs font-bold uppercase tracking-[0.18em]">
                 Controle de Acesso de Veículos
               </p>
               <p className="mt-3 max-w-md text-2xl font-bold leading-8 lg:text-3xl lg:leading-10">
-                Uma rotina mais clara para quem cuida da portaria.
+                Uma rotina{" "}
+                <span className="login-visual-highlight">mais clara</span> para
+                quem cuida da portaria.
               </p>
             </div>
 

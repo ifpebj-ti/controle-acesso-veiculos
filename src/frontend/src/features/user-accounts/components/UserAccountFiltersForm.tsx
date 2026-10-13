@@ -1,4 +1,6 @@
 import { SelectField } from "../../../components/ui/SelectField";
+import { Button } from "../../../components/ui/Button";
+import { Icon } from "../../../components/ui/Icon";
 import type { UserAccountFilters } from "../types";
 
 interface UserAccountFiltersFormProps {
@@ -11,7 +13,7 @@ interface UserAccountFiltersFormProps {
 }
 
 const fieldClass =
-  "mt-2 min-h-11 w-full rounded-xl border border-ink/20 bg-white px-3 text-sm text-ink outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:opacity-60";
+  "mt-2 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm text-ink outline-none focus:border-primary focus:ring-3 focus:ring-primary/15 disabled:cursor-wait disabled:opacity-60";
 
 export function UserAccountFiltersForm({
   disabled,
@@ -23,12 +25,26 @@ export function UserAccountFiltersForm({
 }: UserAccountFiltersFormProps) {
   return (
     <form
-      className="grid gap-4 border-b border-ink/8 p-5 sm:grid-cols-[minmax(14rem,1fr)_13rem_auto] sm:items-end sm:px-6"
+      className="account-filter-panel mt-4 grid gap-4 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-[minmax(14rem,1fr)_13rem_auto] sm:items-end sm:p-5"
       onSubmit={(event) => {
         event.preventDefault();
         onApply();
       }}
     >
+      <div className="account-filter-panel__heading flex items-start gap-3 sm:col-span-3">
+        <span
+          aria-hidden="true"
+          className="grid size-10 shrink-0 place-items-center rounded-xl bg-success-surface text-primary"
+        >
+          <Icon name="search" size={20} />
+        </span>
+        <div>
+          <h2 className="font-bold text-ink">Encontrar uma conta</h2>
+          <p className="mt-0.5 text-sm text-ink-soft">
+            Consulte por nome, e-mail ou situação de acesso.
+          </p>
+        </div>
+      </div>
       <div>
         <label
           className="text-sm font-semibold text-ink"
@@ -36,18 +52,26 @@ export function UserAccountFiltersForm({
         >
           Nome ou e-mail
         </label>
-        <input
-          aria-describedby={error ? "account-search-error" : undefined}
-          aria-invalid={Boolean(error)}
-          className={fieldClass}
-          disabled={disabled}
-          id="account-search"
-          maxLength={254}
-          onChange={(event) =>
-            onChange({ ...draft, page: 1, search: event.target.value })
-          }
-          value={draft.search}
-        />
+        <div className="relative">
+          <Icon
+            className="pointer-events-none absolute left-3 top-1/2 mt-1 -translate-y-1/2 text-primary"
+            name="search"
+            size={18}
+          />
+          <input
+            aria-describedby={error ? "account-search-error" : undefined}
+            aria-invalid={Boolean(error)}
+            className={`${fieldClass} pl-10`}
+            disabled={disabled}
+            id="account-search"
+            maxLength={254}
+            onChange={(event) =>
+              onChange({ ...draft, page: 1, search: event.target.value })
+            }
+            placeholder="Digite o nome ou e-mail"
+            value={draft.search}
+          />
+        </div>
         {error && (
           <p className="mt-1.5 text-sm text-red-800" id="account-search-error">
             {error}
@@ -81,21 +105,12 @@ export function UserAccountFiltersForm({
         />
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <button
-          className="min-h-11 rounded-xl border border-ink/20 px-4 text-sm font-bold text-ink hover:bg-cream disabled:cursor-wait disabled:opacity-60"
-          disabled={disabled}
-          onClick={onClear}
-          type="button"
-        >
+        <Button disabled={disabled} onClick={onClear} variant="secondary">
           Limpar
-        </button>
-        <button
-          className="min-h-11 rounded-xl bg-ink px-5 text-sm font-bold text-white hover:bg-brand-dark disabled:cursor-wait disabled:opacity-60"
-          disabled={disabled}
-          type="submit"
-        >
+        </Button>
+        <Button disabled={disabled} type="submit">
           Aplicar filtros
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -197,7 +197,7 @@ describe("InstitutionalUsagesPage", () => {
       screen.getByRole("button", { name: "Registrar saída" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("heading", { name: "Histórico institucional" }),
+      screen.queryByRole("heading", { name: "Histórico de utilizações" }),
     ).not.toBeInTheDocument();
     expect(searchInstitutionalUsageHistory).not.toHaveBeenCalled();
   });
@@ -205,7 +205,7 @@ describe("InstitutionalUsagesPage", () => {
   it("lets transportation review history without requesting operations", async () => {
     renderPage("SetorTransporte");
     expect(
-      await screen.findByRole("heading", { name: "Histórico institucional" }),
+      await screen.findByRole("heading", { name: "Histórico de utilizações" }),
     ).toBeInTheDocument();
     expect(await screen.findAllByText(openUsage.driverName)).not.toHaveLength(
       0,
@@ -608,6 +608,25 @@ describe("InstitutionalUsagesPage", () => {
     ).toBeInTheDocument();
     expect(registerInstitutionalReturn).toHaveBeenCalledTimes(1);
     expect(listOpenInstitutionalUsages).toHaveBeenCalledTimes(3);
+  });
+
+  it("shows only usage indicators supported by the current contracts", async () => {
+    renderPage("Administrador");
+
+    await screen.findAllByText(openUsage.driverName);
+    expect(
+      screen.getAllByText("Veículos em uso")[0].nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(
+      screen.getByText("Utilizações registradas").nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(
+      screen.getByText("Veículos ativos").nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(
+      screen.getByText("Motoristas autorizados").nextElementSibling,
+    ).toHaveTextContent("1");
+    expect(screen.queryByText("Tempo médio de uso")).not.toBeInTheDocument();
   });
 
   it("renders the administrator workflow without serious accessibility violations", async () => {

@@ -30,10 +30,14 @@ describe("LoginPage accessibility", () => {
     await screen.findByRole("heading", { name: /bem-vindo\(a\)!/i });
 
     const main = container.querySelector("main");
+    const shell = container.querySelector(".login-shell");
+    const composition = container.querySelector(".login-composition");
 
     expect(main).toHaveClass("login-page", "overflow-x-hidden");
     expect(main).not.toHaveClass("overflow-hidden");
-    expect(container.querySelector(".login-shell")).toBeInTheDocument();
+    expect(shell).toHaveClass("min-h-svh", "w-full");
+    expect(composition).toHaveClass("min-h-svh", "w-full");
+    expect(composition).not.toHaveClass("rounded-[1.75rem]", "shadow-2xl");
   });
 
   it("preserves the official IFPE brand and treats the campus photo as decorative", async () => {

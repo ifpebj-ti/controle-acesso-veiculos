@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { profileLabels } from "../../authentication";
+import { Button } from "../../../components/ui/Button";
 import { ContentState } from "../../../components/ui/ContentState";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { UserAccount, UserAccountPage } from "../types";
@@ -25,6 +26,15 @@ const credentialExpirationFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 const maximumTimerDelay = 2_147_483_647;
+
+function accountInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toLocaleUpperCase("pt-BR") ?? "")
+    .join("");
+}
 
 export function UserAccountCatalog({
   currentUserId,
@@ -93,10 +103,7 @@ export function UserAccountCatalog({
 
   return (
     <>
-      <p className="px-5 pt-5 text-sm text-ink-soft sm:px-6">
-        {page.totalCount} conta(s) encontrada(s)
-      </p>
-      <div className="grid gap-3 p-4 sm:p-5 md:grid-cols-2 xl:hidden">
+      <div className="account-catalog-grid grid gap-3 p-4 sm:p-5 md:grid-cols-2 xl:hidden">
         {page.items.map((account) => (
           <AccountCard
             account={account}
@@ -109,11 +116,11 @@ export function UserAccountCatalog({
           />
         ))}
       </div>
-      <div className="hidden overflow-x-auto xl:block">
+      <div className="account-table-shell hidden overflow-x-auto xl:block">
         <table className="w-full min-w-[64rem] border-collapse text-left text-sm">
           <caption className="sr-only">Contas de acesso do sistema</caption>
           <thead>
-            <tr className="border-b border-ink/10 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
+            <tr className="account-table-heading border-b border-border bg-surface-subtle/55 text-[0.68rem] uppercase tracking-[0.12em] text-ink-soft">
               <th className="px-6 py-3" scope="col">
                 Usuário
               </th>
@@ -130,19 +137,29 @@ export function UserAccountCatalog({
                 Criada em
               </th>
               <th className="px-6 py-3 text-right" scope="col">
-                Ação
+                Ações
               </th>
             </tr>
           </thead>
           <tbody>
             {page.items.map((account) => (
               <tr
-                className="border-b border-ink/6 last:border-0"
+                className="account-table-row border-b border-border/70 last:border-0 hover:bg-primary/[0.025]"
+                data-account-status={account.active ? "active" : "inactive"}
                 key={account.id}
               >
                 <td className="px-6 py-4">
-                  <strong className="block text-ink">{account.name}</strong>
-                  <span className="text-xs text-ink-soft">{account.email}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="account-avatar grid size-9 shrink-0 place-items-center rounded-full bg-surface-subtle text-xs font-extrabold text-primary">
+                      {accountInitials(account.name)}
+                    </span>
+                    <span className="min-w-0">
+                      <strong className="block text-ink">{account.name}</strong>
+                      <span className="break-all text-xs text-ink-soft">
+                        {account.email}
+                      </span>
+                    </span>
+                  </div>
                 </td>
                 <td className="px-4 py-4 text-ink-soft">
                   {profileLabels[account.profileName]}
@@ -183,30 +200,33 @@ export function UserAccountCatalog({
           </tbody>
         </table>
       </div>
+      <div className="institutional-catalog__footer flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4 sm:px-6">
+        <p aria-live="polite" className="text-sm text-ink-soft">
+          Mostrando {page.items.length} de {page.totalCount} conta(s)
+        </p>
+        <p className="text-xs font-semibold text-ink-soft">
+          Página {page.page} de {Math.max(page.totalPages, 1)}
+        </p>
+      </div>
       {page.totalPages > 1 && (
         <nav
           aria-label="Paginação das contas"
-          className="flex items-center justify-between gap-4 border-t border-ink/8 px-5 py-4 sm:px-6"
+          className="flex items-center justify-between gap-4 border-t border-border px-5 py-4 sm:px-6"
         >
-          <button
-            className="min-h-10 rounded-xl border border-ink/15 px-4 text-sm font-bold disabled:opacity-45"
+          <Button
             disabled={page.page <= 1 || pendingAction !== null}
             onClick={() => onPageChange(page.page - 1)}
-            type="button"
+            variant="secondary"
           >
             Anterior
-          </button>
-          <span className="text-sm text-ink-soft">
-            Página {page.page} de {page.totalPages}
-          </span>
-          <button
-            className="min-h-10 rounded-xl border border-ink/15 px-4 text-sm font-bold disabled:opacity-45"
+          </Button>
+          <Button
             disabled={page.page >= page.totalPages || pendingAction !== null}
             onClick={() => onPageChange(page.page + 1)}
-            type="button"
+            variant="secondary"
           >
             Próxima
-          </button>
+          </Button>
         </nav>
       )}
     </>
@@ -224,14 +244,14 @@ function ToggleButton({
 }) {
   const pending = pendingAction?.endsWith(`-${account.id}`) ?? false;
   return (
-    <button
-      className="min-h-10 rounded-xl border border-ink/15 px-3 text-xs font-bold text-ink hover:bg-cream disabled:cursor-wait disabled:opacity-60"
+    <Button
+      className="px-3 text-xs"
       disabled={pendingAction !== null}
       onClick={() => onToggle(account)}
-      type="button"
+      variant={account.active ? "danger" : "secondary"}
     >
       {pending ? "Processando…" : account.active ? "Desativar" : "Reativar"}
-    </button>
+    </Button>
   );
 }
 
@@ -251,23 +271,31 @@ function AccountCard({
   currentTime: number;
 }) {
   return (
-    <article className="rounded-2xl border border-ink/10 bg-cream/25 p-4">
+    <article
+      className="account-card rounded-2xl border border-border bg-surface p-4"
+      data-account-status={account.active ? "active" : "inactive"}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <strong className="block text-ink">{account.name}</strong>
-          <span className="break-all text-xs text-ink-soft">
-            {account.email}
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="account-avatar grid size-10 shrink-0 place-items-center rounded-full bg-surface-subtle text-xs font-extrabold text-primary">
+            {accountInitials(account.name)}
           </span>
+          <div className="min-w-0">
+            <strong className="block text-ink">{account.name}</strong>
+            <span className="break-all text-xs text-ink-soft">
+              {account.email}
+            </span>
+          </div>
         </div>
         <StatusBadge
           label={account.active ? "Ativa" : "Desativada"}
           tone={account.active ? "success" : "neutral"}
         />
       </div>
-      <div className="mt-3 border-t border-ink/8 pt-3">
+      <div className="mt-3 border-t border-border pt-3">
         <CredentialStatus account={account} currentTime={currentTime} />
       </div>
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-ink/8 pt-3">
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
         <span className="text-sm font-semibold text-brand-dark">
           {profileLabels[account.profileName]}
         </span>
@@ -332,14 +360,14 @@ function ResetButton({
 }) {
   const pending = pendingAction === `reset-${account.id}`;
   return (
-    <button
-      className="min-h-10 rounded-xl border border-brand-dark/25 px-3 text-xs font-bold text-ink hover:bg-brand-soft/25 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-60"
+    <Button
+      className="px-3 text-xs"
       data-reset-account-id={account.id}
       disabled={pendingAction !== null}
       onClick={(event) => onResetCredential(account, event.currentTarget)}
-      type="button"
+      variant="secondary"
     >
       {pending ? "Redefinindo…" : "Redefinir credencial"}
-    </button>
+    </Button>
   );
 }

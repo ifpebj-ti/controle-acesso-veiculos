@@ -1,4 +1,6 @@
 import { ContentState } from "../../../components/ui/ContentState";
+import { Button } from "../../../components/ui/Button";
+import { Icon } from "../../../components/ui/Icon";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { EventAuthorization, EventAuthorizationPage } from "../types";
 
@@ -8,13 +10,26 @@ const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
 });
 
 function eventStatus(event: EventAuthorization) {
-  if (!event.active) return { label: "Cancelado", tone: "danger" as const };
+  if (!event.active)
+    return {
+      key: "cancelled",
+      label: "Cancelado",
+      tone: "danger" as const,
+    };
   const now = Date.now();
   if (Date.parse(event.startsAtUtc) > now)
-    return { label: "Agendado", tone: "neutral" as const };
+    return {
+      key: "scheduled",
+      label: "Agendado",
+      tone: "neutral" as const,
+    };
   if (Date.parse(event.endsAtUtc) >= now)
-    return { label: "Em vigor", tone: "success" as const };
-  return { label: "Encerrado", tone: "warning" as const };
+    return {
+      key: "active",
+      label: "Em vigor",
+      tone: "success" as const,
+    };
+  return { key: "ended", label: "Encerrado", tone: "warning" as const };
 }
 
 interface EventAuthorizationCatalogProps {
@@ -38,31 +53,26 @@ export function EventAuthorizationCatalog({
 }: EventAuthorizationCatalogProps) {
   return (
     <div aria-busy={status === "loading"}>
-      {status === "ready" && page && (
-        <p
-          aria-live="polite"
-          className="px-5 pt-5 text-sm text-ink-soft sm:px-6"
-        >
-          {page.totalCount} autorização(ões) encontrada(s)
-        </p>
-      )}
       {status === "loading" ? (
         <ContentState
           className="m-5 sm:m-6"
           title="Carregando autorizações de eventos…"
           variant="loading"
         />
-      ) : status === "error" ? null : page?.items.length === 0 ? (
-        <ContentState
-          className="m-5 sm:m-6"
-          description="Revise os filtros ou cadastre uma nova autorização."
-          icon="calendar"
-          title="Nenhuma autorização encontrada"
-          variant="empty"
-        />
+      ) : status === "error" ? null : page && page.items.length === 0 ? (
+        <>
+          <ContentState
+            className="m-5 sm:m-6"
+            description="Revise os filtros ou cadastre uma nova autorização."
+            icon="calendar"
+            title="Nenhuma autorização encontrada"
+            variant="empty"
+          />
+          <EventCatalogFooter page={page} />
+        </>
       ) : page ? (
         <>
-          <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-2">
+          <div className="event-catalog-grid grid gap-4 p-5 sm:grid-cols-2 sm:p-6 2xl:grid-cols-3">
             {page.items.map((event) => {
               const statusInfo = eventStatus(event);
               const expected = event.vehicleRules.reduce(
@@ -79,59 +89,75 @@ export function EventAuthorizationCatalog({
               );
               return (
                 <article
-                  className="flex min-w-0 flex-col rounded-2xl border border-ink/10 bg-cream/25 p-5"
+                  className="event-authorization-card flex min-w-0 flex-col rounded-2xl border border-border bg-surface p-4"
+                  data-event-status={statusInfo.key}
                   key={event.id}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase tracking-wider text-brand-dark">
-                        {event.area}
+                  <div className="flex items-start gap-3">
+                    <span className="event-authorization-card__icon grid size-11 shrink-0 place-items-center rounded-xl bg-success-surface text-primary">
+                      <Icon name="calendar" size={22} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <h3 className="break-words text-base font-bold text-ink">
+                          {event.name}
+                        </h3>
+                        <StatusBadge
+                          label={statusInfo.label}
+                          tone={statusInfo.tone}
+                        />
+                      </div>
+                      <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-ink-soft">
+                        <Icon name="calendar" size={14} />
+                        <span>
+                          {dateTimeFormatter.format(
+                            new Date(event.startsAtUtc),
+                          )}{" "}
+                          até{" "}
+                          {dateTimeFormatter.format(new Date(event.endsAtUtc))}
+                        </span>
                       </p>
-                      <h3 className="mt-1 break-words text-xl font-bold text-ink">
-                        {event.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-ink-soft">
-                        Responsável: {event.responsible}
+                      <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-ink-soft">
+                        <Icon name="dashboard" size={14} />
+                        <span className="break-words">{event.area}</span>
+                      </p>
+                      <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-ink-soft">
+                        <Icon name="user" size={14} />
+                        <span className="break-words">{event.responsible}</span>
                       </p>
                     </div>
-                    <StatusBadge
-                      label={statusInfo.label}
-                      tone={statusInfo.tone}
-                    />
                   </div>
-                  <p className="mt-4 rounded-xl bg-white/80 p-3 text-sm text-ink-soft">
-                    <strong>
-                      {dateTimeFormatter.format(new Date(event.startsAtUtc))}
-                    </strong>{" "}
-                    até{" "}
-                    <strong>
-                      {dateTimeFormatter.format(new Date(event.endsAtUtc))}
-                    </strong>
-                  </p>
-                  <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-xl bg-brand-soft/35 p-3">
+                  <dl className="event-authorization-card__metrics mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-success-surface p-2.5">
                       <dt className="text-xs text-ink-soft">Previstos</dt>
                       <dd className="mt-1 text-lg font-bold">{expected}</dd>
                     </div>
-                    <div className="rounded-xl bg-blue-50 p-3">
+                    <div className="rounded-xl bg-primary/5 p-2.5">
                       <dt className="text-xs text-ink-soft">
                         Entradas registradas
                       </dt>
                       <dd className="mt-1 text-lg font-bold">{consumed}</dd>
                     </div>
-                    <div className="rounded-xl bg-amber-50 p-3">
+                    <div className="rounded-xl bg-warning-surface p-2.5">
                       <dt className="text-xs text-ink-soft">Restantes</dt>
                       <dd className="mt-1 text-lg font-bold">{remaining}</dd>
                     </div>
                   </dl>
-                  <div className="mt-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-ink-soft">
-                      Regras de veículos
-                    </h4>
-                    <ul className="mt-2 space-y-2 text-sm">
+                  <details className="event-authorization-card__rules group mt-4 rounded-xl border border-border bg-surface-subtle/55 p-3">
+                    <summary className="cursor-pointer list-none text-sm font-bold text-primary marker:hidden">
+                      <span className="flex items-center justify-between gap-3">
+                        Ver regras de veículos
+                        <Icon
+                          className="transition-transform group-open:rotate-180"
+                          name="chevron-down"
+                          size={16}
+                        />
+                      </span>
+                    </summary>
+                    <ul className="mt-3 space-y-2 text-sm">
                       {event.vehicleRules.map((rule) => (
                         <li
-                          className="flex flex-wrap justify-between gap-2 rounded-xl border border-ink/10 bg-white p-3"
+                          className="flex flex-wrap justify-between gap-2 rounded-lg border border-border bg-surface p-2.5"
                           key={rule.id}
                         >
                           <span className="font-semibold">
@@ -146,73 +172,82 @@ export function EventAuthorizationCatalog({
                         </li>
                       ))}
                     </ul>
-                  </div>
-                  <p className="mt-4 text-xs font-semibold text-ink-soft">
-                    {event.overnightAllowed
-                      ? "Pernoite permitido"
-                      : "Pernoite não permitido"}
-                  </p>
-                  {event.notes && (
-                    <p className="mt-2 text-sm leading-6 text-ink-soft">
-                      {event.notes}
+                    <p className="mt-3 text-xs font-semibold text-ink-soft">
+                      {event.overnightAllowed
+                        ? "Pernoite permitido"
+                        : "Pernoite não permitido"}
                     </p>
-                  )}
+                    {event.notes && (
+                      <p className="mt-2 text-sm leading-6 text-ink-soft">
+                        {event.notes}
+                      </p>
+                    )}
+                  </details>
                   {canManage && event.active && (
                     <div className="mt-auto flex flex-col gap-2 pt-5 sm:flex-row">
-                      <button
-                        className="min-h-11 flex-1 rounded-xl border border-ink/20 px-4 text-sm font-bold hover:bg-white disabled:opacity-60"
+                      <Button
+                        className="flex-1"
                         disabled={pendingAction !== null}
                         onClick={() => onEdit(event)}
-                        type="button"
+                        variant="secondary"
                       >
                         Editar
-                      </button>
-                      <button
-                        className="min-h-11 flex-1 rounded-xl border border-red-300 px-4 text-sm font-bold text-red-800 hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
+                      </Button>
+                      <Button
+                        className="flex-1"
                         disabled={pendingAction !== null}
                         onClick={() => onCancel(event)}
-                        type="button"
+                        variant="danger"
                       >
                         {pendingAction === `cancel-${event.id}`
                           ? "Cancelando…"
                           : "Cancelar autorização"}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </article>
               );
             })}
           </div>
+          <EventCatalogFooter page={page} />
           {page.totalPages > 1 && (
             <nav
               aria-label="Paginação de autorizações"
-              className="flex items-center justify-center gap-3 border-t border-ink/10 p-5"
+              className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-5"
             >
-              <button
-                className="min-h-10 rounded-xl border border-ink/20 px-4 text-sm font-bold disabled:opacity-45"
+              <Button
                 disabled={page.page <= 1 || pendingAction !== null}
                 onClick={() => onPageChange(page.page - 1)}
-                type="button"
+                variant="secondary"
               >
                 Anterior
-              </button>
-              <span className="text-sm text-ink-soft">
-                Página {page.page} de {page.totalPages}
-              </span>
-              <button
-                className="min-h-10 rounded-xl border border-ink/20 px-4 text-sm font-bold disabled:opacity-45"
+              </Button>
+              <Button
                 disabled={
                   page.page >= page.totalPages || pendingAction !== null
                 }
                 onClick={() => onPageChange(page.page + 1)}
-                type="button"
+                variant="secondary"
               >
                 Próxima
-              </button>
+              </Button>
             </nav>
           )}
         </>
       ) : null}
+    </div>
+  );
+}
+
+function EventCatalogFooter({ page }: { page: EventAuthorizationPage }) {
+  return (
+    <div className="institutional-catalog__footer flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4 sm:px-6">
+      <p aria-live="polite" className="text-sm text-ink-soft">
+        Mostrando {page.items.length} de {page.totalCount} autorização(ões)
+      </p>
+      <p className="text-xs font-semibold text-ink-soft">
+        Página {page.page} de {Math.max(page.totalPages, 1)}
+      </p>
     </div>
   );
 }
