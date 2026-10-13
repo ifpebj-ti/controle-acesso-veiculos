@@ -16,6 +16,7 @@ export const accessRecordSchema = z.object({
   driverName: z.string(),
   categoryName: z.string(),
   objective: z.string(),
+  vehicleType: z.string().nullable().optional(),
   entryAtUtc: z.string(),
   exitAtUtc: z.string().nullable(),
   status: z.string(),

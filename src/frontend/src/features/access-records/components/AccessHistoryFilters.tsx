@@ -1,6 +1,8 @@
 import type { FormEvent } from "react";
 
+import { Button } from "../../../components/ui/Button";
 import { SelectField } from "../../../components/ui/SelectField";
+import { TextField } from "../../../components/ui/TextField";
 import { generalAccessCategories } from "../model/accessCategories";
 import type {
   AccessHistoryFilterDraft,
@@ -16,9 +18,6 @@ interface AccessHistoryFiltersProps {
   onDraftChange: (draft: AccessHistoryFilterDraft) => void;
   onPeriodChange: (period: PeriodPreset) => void;
 }
-
-const fieldClass =
-  "mt-2 min-h-11 w-full rounded-xl border border-ink/18 bg-cream/45 px-3.5 text-sm text-ink outline-none focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 export function AccessHistoryFilters({
   draft,
@@ -42,23 +41,19 @@ export function AccessHistoryFilters({
 
   return (
     <form onSubmit={submit}>
-      <div className="border-b border-ink/8 bg-[#B8C9A4]/20 px-5 py-5 sm:px-6">
+      <div className="border-b border-border bg-surface-subtle px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
               Filtros da consulta
             </p>
-            <h2 className="mt-3 font-display text-2xl text-ink">
+            <h2 className="mt-2 text-2xl font-bold text-text">
               Encontre um registro
             </h2>
           </div>
-          <button
-            className="min-h-10 rounded-xl px-3 text-sm font-bold text-brand-dark hover:bg-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
-            onClick={onClear}
-            type="button"
-          >
+          <Button onClick={onClear} type="button" variant="secondary">
             Limpar filtros
-          </button>
+          </Button>
         </div>
 
         <fieldset className="mt-5">
@@ -73,19 +68,16 @@ export function AccessHistoryFilters({
               ["365", "12 meses"],
               ["custom", "Personalizado"],
             ].map(([value, label]) => (
-              <button
+              <Button
                 aria-pressed={draft.period === value}
-                className={`min-h-9 rounded-full border px-3.5 text-xs font-bold transition ${
-                  draft.period === value
-                    ? "border-ink bg-ink text-white"
-                    : "border-ink/15 bg-white/75 text-ink-soft hover:border-ink/35"
-                }`}
+                className="rounded-full text-xs"
                 key={value}
                 onClick={() => onPeriodChange(value as PeriodPreset)}
                 type="button"
+                variant={draft.period === value ? "primary" : "secondary"}
               >
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
         </fieldset>
@@ -100,8 +92,8 @@ export function AccessHistoryFilters({
             >
               Placa
             </label>
-            <input
-              className={fieldClass}
+            <TextField
+              className="mt-2 text-sm"
               id="history-plate"
               maxLength={10}
               onChange={(event) => update({ plate: event.target.value })}
@@ -116,8 +108,8 @@ export function AccessHistoryFilters({
             >
               Condutor
             </label>
-            <input
-              className={fieldClass}
+            <TextField
+              className="mt-2 text-sm"
               id="history-driver"
               maxLength={200}
               onChange={(event) => update({ driverName: event.target.value })}
@@ -133,7 +125,7 @@ export function AccessHistoryFilters({
               Situação
             </label>
             <SelectField
-              className={fieldClass}
+              className="mt-2 text-sm"
               id="history-status"
               onValueChange={(value) => update({ status: value })}
               options={[
@@ -152,7 +144,7 @@ export function AccessHistoryFilters({
               Categoria
             </label>
             <SelectField
-              className={fieldClass}
+              className="mt-2 text-sm"
               id="history-category"
               onValueChange={(value) => update({ categoryName: value })}
               options={[
@@ -167,7 +159,7 @@ export function AccessHistoryFilters({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 rounded-2xl border border-ink/10 bg-cream/30 p-4 sm:grid-cols-2">
+        <div className="mt-4 grid gap-4 rounded-xl border border-border bg-surface-subtle p-4 sm:grid-cols-2">
           <div>
             <label
               className="text-sm font-semibold text-ink"
@@ -175,8 +167,8 @@ export function AccessHistoryFilters({
             >
               Data inicial
             </label>
-            <input
-              className={fieldClass}
+            <TextField
+              className="mt-2 text-sm"
               id="history-from"
               max={draft.toDate}
               onChange={(event) =>
@@ -194,8 +186,8 @@ export function AccessHistoryFilters({
             >
               Data final
             </label>
-            <input
-              className={fieldClass}
+            <TextField
+              className="mt-2 text-sm"
               id="history-to"
               min={draft.fromDate}
               onChange={(event) =>
@@ -209,13 +201,9 @@ export function AccessHistoryFilters({
         </div>
 
         <div className="mt-5 flex justify-end">
-          <button
-            aria-disabled={requestStatus === "loading"}
-            className="min-h-11 rounded-xl bg-brand-dark px-6 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white aria-disabled:cursor-wait aria-disabled:bg-brand-soft aria-disabled:text-ink aria-disabled:opacity-100"
-            type="submit"
-          >
+          <Button aria-disabled={requestStatus === "loading"} type="submit">
             {requestStatus === "loading" ? "Consultando…" : "Aplicar filtros"}
-          </button>
+          </Button>
         </div>
       </div>
     </form>

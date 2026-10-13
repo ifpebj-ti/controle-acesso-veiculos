@@ -1,3 +1,4 @@
+import { Button } from "../../../components/ui/Button";
 import type { EventAuthorization } from "../types";
 import type { CurrentEventAuthorizationsStatus } from "../hooks/useCurrentEventAuthorizations";
 
@@ -43,7 +44,7 @@ export function EventAuthorizationSelector({
     return (
       <div
         aria-busy="true"
-        className="rounded-2xl bg-cream/45 p-5"
+        className="rounded-xl border border-border bg-surface-subtle p-5"
         role="status"
       >
         Consultando autorizações vigentes…
@@ -54,20 +55,21 @@ export function EventAuthorizationSelector({
   if (status === "error" || status === "contract-error") {
     return (
       <div
-        className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+        className="rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
         role="alert"
       >
         <p>{errorMessage}</p>
         <p className="mt-2">
           Você ainda pode registrar uma entrada comum sem vincular um evento.
         </p>
-        <button
-          className="mt-3 min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-800/30"
+        <Button
+          className="mt-3"
           onClick={onRetry}
           type="button"
+          variant="secondary"
         >
           Tentar novamente
-        </button>
+        </Button>
       </div>
     );
   }
@@ -75,7 +77,7 @@ export function EventAuthorizationSelector({
   if (status === "denied") {
     return (
       <div
-        className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"
+        className="rounded-xl border border-warning-border bg-warning-surface p-4 text-sm text-warning-text"
         role="alert"
       >
         <p>{errorMessage}</p>
@@ -88,20 +90,21 @@ export function EventAuthorizationSelector({
 
   if (status === "empty") {
     return (
-      <div className="rounded-2xl border border-dashed border-ink/20 bg-cream/35 p-5 text-sm text-ink-soft">
+      <div className="rounded-xl border border-dashed border-border bg-surface-subtle p-5 text-sm text-text-muted">
         <p className="font-bold text-ink">
           Nenhuma autorização vigente disponível
         </p>
         <p className="mt-1">
           Registre a entrada normalmente ou atualize a consulta.
         </p>
-        <button
-          className="mt-3 min-h-10 rounded-xl border border-ink/20 px-4 font-bold text-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
+        <Button
+          className="mt-3"
           onClick={onRetry}
           type="button"
+          variant="secondary"
         >
           Atualizar autorizações
-        </button>
+        </Button>
       </div>
     );
   }
@@ -118,16 +121,16 @@ export function EventAuthorizationSelector({
         autorização escolhida no momento do registro.
       </p>
       {selectionError && (
-        <p className="text-sm text-red-800" id="eventAuthorizationId-error">
+        <p className="text-sm text-danger-text" id="eventAuthorizationId-error">
           {selectionError}
         </p>
       )}
 
       <label
-        className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition focus-within:ring-3 focus-within:ring-brand/25 ${
+        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-focus ${
           selectedId === null
-            ? "border-brand-dark bg-white shadow-sm"
-            : "border-ink/12 bg-white/80 hover:border-ink/25"
+            ? "border-border-strong bg-surface"
+            : "border-border bg-surface hover:bg-surface-subtle"
         }`}
       >
         <input
@@ -142,7 +145,7 @@ export function EventAuthorizationSelector({
             <strong className="block text-ink">
               Sem autorização de evento
             </strong>
-            <span className="rounded-full border border-brand-dark/25 bg-cream px-2.5 py-1 text-xs font-bold text-brand-dark">
+            <span className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 text-xs font-bold text-text-muted">
               Padrão
             </span>
           </span>
@@ -154,10 +157,10 @@ export function EventAuthorizationSelector({
 
       {events.map((event) => (
         <label
-          className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition focus-within:ring-3 focus-within:ring-brand/25 ${
+          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-focus ${
             selectedId === event.id
-              ? "border-brand-dark bg-white shadow-sm"
-              : "border-ink/12 bg-white/80 hover:border-ink/25"
+              ? "border-border-strong bg-surface"
+              : "border-border bg-surface hover:bg-surface-subtle"
           }`}
           key={event.id}
         >
@@ -172,21 +175,21 @@ export function EventAuthorizationSelector({
             <span className="flex flex-wrap items-center justify-between gap-2">
               <strong className="block text-ink">{event.name}</strong>
               {selectedId === event.id && (
-                <span className="rounded-full bg-brand-dark px-2.5 py-1 text-xs font-bold text-white">
+                <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-text">
                   Selecionado
                 </span>
               )}
             </span>
             <span className="mt-3 grid gap-2 text-sm text-ink-soft sm:grid-cols-2">
-              <span className="rounded-xl bg-[#F4F8FC] px-3 py-2 sm:col-span-2">
+              <span className="rounded-xl bg-surface-subtle px-3 py-2 sm:col-span-2">
                 <strong className="text-ink">Período:</strong>{" "}
                 {dateFormatter.format(new Date(event.startsAtUtc))} até{" "}
                 {dateFormatter.format(new Date(event.endsAtUtc))}
               </span>
-              <span className="rounded-xl bg-[#F4F8FC] px-3 py-2">
+              <span className="rounded-xl bg-surface-subtle px-3 py-2">
                 <strong className="text-ink">Área:</strong> {event.area}
               </span>
-              <span className="rounded-xl bg-[#F4F8FC] px-3 py-2">
+              <span className="rounded-xl bg-surface-subtle px-3 py-2">
                 <strong className="text-ink">Responsável:</strong>{" "}
                 {event.responsible}
               </span>
@@ -197,7 +200,7 @@ export function EventAuthorizationSelector({
             <ul className="mt-2 grid gap-2 text-sm text-ink-soft sm:grid-cols-2">
               {event.vehicleRules.map((rule) => (
                 <li
-                  className="rounded-xl border border-ink/10 bg-cream/45 px-3 py-2"
+                  className="rounded-xl border border-border bg-surface-subtle px-3 py-2"
                   key={rule.id}
                 >
                   {ruleDescription(rule)}

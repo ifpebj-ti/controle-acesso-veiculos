@@ -1,9 +1,8 @@
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
+import { TextArea } from "../../../components/ui/TextField";
+import { Icon } from "../../../components/ui/Icon";
 import type { AccessEntryFormValues } from "../schemas/accessRecordSchemas";
-
-const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
 
 interface EntryAdditionalDetailsProps {
   errors: FieldErrors<AccessEntryFormValues>;
@@ -19,29 +18,30 @@ export function EntryAdditionalDetails({
   register,
 }: EntryAdditionalDetailsProps) {
   return (
-    <section className="md:col-span-2 rounded-2xl border border-ink/10 bg-cream/35 p-4">
+    <section className="rounded-xl border border-border bg-surface-subtle p-4 md:col-span-2">
       <button
         aria-controls="additional-entry-details"
         aria-expanded={open}
-        className="min-h-11 w-full rounded-lg text-left font-semibold text-ink outline-none focus-visible:ring-3 focus-visible:ring-brand/25"
+        className="flex min-h-11 w-full items-center gap-2 rounded-lg text-left font-semibold text-text outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus"
         onClick={() => onOpenChange(!open)}
         type="button"
       >
+        <Icon name="clipboard" size={19} />
         Detalhes adicionais
-        <span className="ml-2 font-normal text-ink-soft">(opcional)</span>
+        <span className="font-normal text-ink-soft">(opcional)</span>
       </button>
       <div className="mt-3" hidden={!open} id="additional-entry-details">
         <label className="text-sm font-semibold text-ink" htmlFor="observation">
           Observação
         </label>
-        <textarea
+        <TextArea
           aria-describedby={
             errors.observation
               ? "observation-help observation-error"
               : "observation-help"
           }
           aria-invalid={Boolean(errors.observation)}
-          className={`${fieldClass} min-h-24 resize-none py-3`}
+          className="mt-2 min-h-24 resize-none py-3"
           id="observation"
           maxLength={1000}
           placeholder="Inclua somente informação necessária para a operação."
@@ -52,7 +52,7 @@ export function EntryAdditionalDetails({
           acesso.
         </p>
         {errors.observation?.message && (
-          <p className="mt-1.5 text-sm text-red-800" id="observation-error">
+          <p className="mt-1.5 text-sm text-danger-text" id="observation-error">
             {errors.observation.message}
           </p>
         )}

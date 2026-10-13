@@ -2,10 +2,12 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { Button } from "../components/ui/Button";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SelectField } from "../components/ui/SelectField";
+import { TextField } from "../components/ui/TextField";
 import {
   AccessExitDialog,
   ExceptionalClosureDialog,
@@ -143,26 +145,24 @@ export function OpenAccessPage() {
     <div>
       <PageHeader
         action={
-          <Link
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-            to="/acessos/novo"
-          >
+          <Link className="ui-button ui-button--primary" to="/acessos/novo">
             <Icon name="plus" size={18} /> Nova entrada
           </Link>
         }
         description="Localize veículos que ainda não registraram saída e encerre o acesso após a conferência manual."
         eyebrow="Operação da portaria"
         title="Acessos em aberto"
+        variant="prominent"
       />
 
       {notice && (
         <div
-          className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
+          className="mt-6 flex items-start justify-between gap-4 rounded-xl border border-success-border bg-success-surface p-4 text-sm text-success-text"
           role="status"
         >
           <p>{notice}</p>
           <button
-            className="shrink-0 rounded-md font-bold underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
+            className="shrink-0 rounded-md font-bold underline underline-offset-4 focus:outline-3 focus:outline-offset-2 focus:outline-focus"
             onClick={dismissNotice}
             type="button"
           >
@@ -174,16 +174,16 @@ export function OpenAccessPage() {
       {accessRecords.queryError && (
         <ContentState
           action={
-            <button
-              className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30 disabled:cursor-wait disabled:opacity-60"
+            <Button
               disabled={
                 accessRecords.isRefreshing || accessRecords.closingId !== null
               }
               onClick={() => void accessRecords.refresh()}
               type="button"
+              variant="secondary"
             >
               Tentar novamente
-            </button>
+            </Button>
           }
           className="mt-6"
           title={accessRecords.queryError}
@@ -195,24 +195,22 @@ export function OpenAccessPage() {
         aria-busy={
           accessRecords.isRefreshing || accessRecords.status === "loading"
         }
-        className="mt-6 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
+        className="mt-6 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm"
       >
-        <div className="p-5 sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="w-full max-w-xl">
-              <label
-                className="text-sm font-semibold text-ink"
-                htmlFor="open-search"
-              >
+        <div className="p-4 sm:p-6">
+          <div className="grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_auto_auto] lg:items-end">
+            <div className="w-full">
+              <label className="sr-only" htmlFor="open-search">
                 Buscar acesso aberto
               </label>
-              <div className="relative mt-2">
+              <div className="relative">
                 <Icon
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft"
+                  className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-ink-soft"
                   name="search"
+                  size={22}
                 />
-                <input
-                  className="min-h-12 w-full rounded-xl border border-ink/20 bg-cream/45 pl-12 pr-4 text-ink outline-none placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20"
+                <TextField
+                  className="open-access-search-field min-h-13 rounded-xl"
                   id="open-search"
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Placa, condutor, categoria ou objetivo"
@@ -224,34 +222,45 @@ export function OpenAccessPage() {
             </div>
 
             {accessRecords.status === "ready" && (
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="text-sm text-ink-soft">
-                  <p aria-live="polite" className="font-bold text-ink">
-                    {accessRecords.records.length} em aberto
-                    {hasActiveFilters &&
-                      ` · ${filteredRecords.length} exibido(s)`}
-                  </p>
-                  {accessRecords.lastUpdatedAt && (
-                    <p className="mt-0.5 text-xs">
-                      Última atualização:{" "}
-                      {updateTimeFormatter.format(accessRecords.lastUpdatedAt)}
+              <>
+                <div className="flex min-h-13 items-center gap-3 rounded-xl border border-success-border bg-success-surface px-4 py-2.5 text-sm text-success-text">
+                  <Icon className="shrink-0" name="clock" size={26} />
+                  <div>
+                    <p aria-live="polite" className="font-bold text-ink">
+                      {accessRecords.records.length} em aberto
+                      {hasActiveFilters &&
+                        ` · ${filteredRecords.length} exibido(s)`}
                     </p>
-                  )}
+                    {accessRecords.lastUpdatedAt && (
+                      <p className="mt-0.5 whitespace-nowrap text-xs text-ink-soft">
+                        Última atualização:{" "}
+                        {updateTimeFormatter.format(
+                          accessRecords.lastUpdatedAt,
+                        )}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <button
-                  className="min-h-11 rounded-xl border border-ink/15 px-4 text-sm font-bold text-ink hover:bg-cream/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25 disabled:cursor-wait disabled:opacity-60"
+                <Button
+                  className="min-h-13 whitespace-nowrap rounded-xl px-5"
                   disabled={
                     accessRecords.isRefreshing ||
                     accessRecords.closingId !== null
                   }
                   onClick={() => void accessRecords.refresh()}
                   type="button"
+                  variant="secondary"
                 >
+                  <Icon
+                    className={accessRecords.isRefreshing ? "animate-spin" : ""}
+                    name="refresh"
+                    size={19}
+                  />
                   {accessRecords.isRefreshing
                     ? "Atualizando…"
                     : "Atualizar lista"}
-                </button>
-              </div>
+                </Button>
+              </>
             )}
           </div>
 
@@ -266,7 +275,7 @@ export function OpenAccessPage() {
                     Categoria
                   </label>
                   <SelectField
-                    className="mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-white px-4 text-ink outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
+                    className="mt-2"
                     id="open-category-filter"
                     onValueChange={(value) =>
                       setSelectedCategory(value || null)
@@ -287,35 +296,31 @@ export function OpenAccessPage() {
                     Filtrar por categoria
                   </legend>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <button
+                    <Button
                       aria-pressed={selectedCategory === null}
-                      className={`min-h-11 rounded-full border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
-                        selectedCategory === null
-                          ? "border-brand-dark bg-brand-dark text-white"
-                          : "border-ink/15 bg-white text-ink hover:bg-cream/60"
-                      }`}
+                      className="rounded-full"
                       onClick={() => setSelectedCategory(null)}
                       type="button"
+                      variant={
+                        selectedCategory === null ? "primary" : "secondary"
+                      }
                     >
                       Todos
-                    </button>
+                    </Button>
                     {availableCategories.map((category) => {
                       const isSelected = selectedCategory === category;
 
                       return (
-                        <button
+                        <Button
                           aria-pressed={isSelected}
-                          className={`min-h-11 rounded-full border px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
-                            isSelected
-                              ? "border-brand-dark bg-brand-dark text-white"
-                              : "border-ink/15 bg-white text-ink hover:bg-cream/60"
-                          }`}
+                          className="rounded-full"
                           key={category}
                           onClick={() => setSelectedCategory(category)}
                           type="button"
+                          variant={isSelected ? "primary" : "secondary"}
                         >
                           {category}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>

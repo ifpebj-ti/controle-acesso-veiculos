@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../../services/api";
 import {
   closeAccessRecord,
+  countAccessHistoryByCategory,
   correctAccessRecord,
   exceptionallyCloseAccessRecord,
   listOpenAccessRecords,
@@ -211,6 +212,54 @@ describe("accessRecordsService", () => {
       params: filters,
     });
     expect(result.totalCount).toBe(26);
+  });
+
+  it("requests accurate lightweight totals for featured history categories", async () => {
+    vi.mocked(api.get)
+      .mockResolvedValueOnce({
+        data: {
+          items: [],
+          page: 1,
+          pageSize: 1,
+          totalCount: 3,
+          totalPages: 3,
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          items: [],
+          page: 1,
+          pageSize: 1,
+          totalCount: 2,
+          totalPages: 2,
+        },
+      });
+
+    const counts = await countAccessHistoryByCategory(
+      { categoryName: "Evento", page: 2, pageSize: 25, status: "Encerrado" },
+      ["Visitante", "Prestador de serviço"],
+    );
+
+    expect(api.get).toHaveBeenNthCalledWith(1, "/access-records/history", {
+      params: {
+        categoryName: "Visitante",
+        page: 1,
+        pageSize: 1,
+        status: "Encerrado",
+      },
+    });
+    expect(api.get).toHaveBeenNthCalledWith(2, "/access-records/history", {
+      params: {
+        categoryName: "Prestador de serviço",
+        page: 1,
+        pageSize: 1,
+        status: "Encerrado",
+      },
+    });
+    expect(counts).toEqual({
+      "Prestador de serviço": 2,
+      Visitante: 3,
+    });
   });
 
   it("rejects an invalid response instead of presenting false data", async () => {

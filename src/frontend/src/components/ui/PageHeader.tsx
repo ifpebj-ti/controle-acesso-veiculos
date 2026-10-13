@@ -5,6 +5,7 @@ interface PageHeaderProps {
   title: string;
   description: string;
   action?: ReactNode;
+  variant?: "default" | "prominent";
 }
 
 export function PageHeader({
@@ -12,17 +13,36 @@ export function PageHeader({
   description,
   eyebrow,
   title,
+  variant = "default",
 }: PageHeaderProps) {
+  const isProminent = variant === "prominent";
+
   return (
     <header className="flex min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
       <div className="min-w-0 flex-1 break-words">
         {eyebrow && (
-          <p className="text-sm font-semibold text-text-muted">{eyebrow}</p>
+          <p
+            className={
+              isProminent
+                ? "text-xs font-bold uppercase tracking-[0.14em] text-primary"
+                : "text-sm font-semibold text-text-muted"
+            }
+          >
+            {eyebrow}
+          </p>
         )}
-        <h1 className="mt-3 text-2xl font-semibold leading-tight text-text sm:text-3xl">
+        <h1
+          className={
+            isProminent
+              ? "mt-2 text-3xl font-semibold leading-tight text-text sm:text-4xl"
+              : "mt-3 text-2xl font-semibold leading-tight text-text sm:text-3xl"
+          }
+        >
           {title}
         </h1>
-        <p className="mt-2 max-w-3xl text-base leading-6 text-text-muted">
+        <p
+          className={`${isProminent ? "max-w-5xl" : "max-w-3xl"} mt-2 text-base leading-6 text-text-muted`}
+        >
           {description}
         </p>
       </div>

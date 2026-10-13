@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { PageHeader } from "../components/ui/PageHeader";
 import { AccessCorrectionDialog } from "../features/access-records/components/AccessCorrectionDialog";
+import { AccessDetailsDialog } from "../features/access-records/components/AccessDetailsDialog";
+import { AccessHistoryCategoryTabs } from "../features/access-records/components/AccessHistoryCategoryTabs";
 import { AccessHistoryFilters } from "../features/access-records/components/AccessHistoryFilters";
 import { AccessHistoryResults } from "../features/access-records/components/AccessHistoryResults";
 import { useAccessHistory } from "../features/access-records/hooks/useAccessHistory";
@@ -15,11 +17,19 @@ interface ActiveCorrection {
   trigger: HTMLButtonElement;
 }
 
+interface ActiveDetails {
+  record: AccessRecord;
+  trigger: HTMLButtonElement;
+}
+
 export function HistoryPage() {
   const { user } = useAuthenticatedSession();
   const history = useAccessHistory();
   const [activeCorrection, setActiveCorrection] =
     useState<ActiveCorrection | null>(null);
+  const [activeDetails, setActiveDetails] = useState<ActiveDetails | null>(
+    null,
+  );
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [successFocusRequest, setSuccessFocusRequest] = useState(0);
   const successNoticeRef = useRef<HTMLDivElement>(null);
@@ -36,6 +46,17 @@ export function HistoryPage() {
   function openCorrection(record: AccessRecord, trigger: HTMLButtonElement) {
     setSuccessNotice(null);
     setActiveCorrection({ record, trigger });
+  }
+
+  function openDetails(record: AccessRecord, trigger: HTMLButtonElement) {
+    setActiveDetails({ record, trigger });
+  }
+
+  function correctFromDetails() {
+    if (!activeDetails || !canCorrect) return;
+    setSuccessNotice(null);
+    setActiveCorrection(activeDetails);
+    setActiveDetails(null);
   }
 
   async function finishCorrection(record: AccessRecord) {
@@ -59,14 +80,29 @@ export function HistoryPage() {
   return (
     <div>
       <PageHeader
-        description="Consulte entradas e saídas pelos filtros e limites aceitos pela API."
-        eyebrow="Consulta e rastreabilidade"
+        description="Consulte os registros de entrada e saída de veículos, com possibilidade de filtros e detalhamento das informações."
+        eyebrow="Operação da portaria"
         title="Histórico de acessos"
+        variant="prominent"
+      />
+
+      <AccessHistoryCategoryTabs
+        activeCategory={history.draft.categoryName}
+        categoryCounts={history.categoryCounts}
+        categoryCountsStatus={history.categoryCountsStatus}
+        onSelect={history.selectCategory}
+        onShowMore={() => {
+          document.getElementById("history-category")?.focus();
+          document
+            .getElementById("history-category")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }}
+        requestStatus={history.requestStatus}
       />
 
       {successNotice && (
         <div
-          className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-950"
+          className="mt-5 rounded-xl border border-success-border bg-success-surface p-4 text-sm font-semibold text-success-text"
           ref={successNoticeRef}
           role="status"
           tabIndex={-1}
@@ -75,7 +111,7 @@ export function HistoryPage() {
         </div>
       )}
 
-      <section className="mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]">
+      <section className="mt-5 overflow-hidden rounded-xl border border-border bg-surface">
         <AccessHistoryFilters
           draft={history.draft}
           onApply={history.applyFilters}
@@ -88,11 +124,21 @@ export function HistoryPage() {
           errorMessage={history.errorMessage}
           onPageChange={history.goToPage}
           onRetry={history.retry}
+          onDetails={openDetails}
           onCorrect={canCorrect ? openCorrection : undefined}
           requestStatus={history.requestStatus}
           result={history.result}
         />
       </section>
+
+      {activeDetails && (
+        <AccessDetailsDialog
+          onClose={() => setActiveDetails(null)}
+          onCorrect={canCorrect ? correctFromDetails : undefined}
+          record={activeDetails.record}
+          returnFocusTo={activeDetails.trigger}
+        />
+      )}
 
       {activeCorrection && (
         <AccessCorrectionDialog

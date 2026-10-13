@@ -2,7 +2,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { Button } from "../../../components/ui/Button";
 import { SelectField } from "../../../components/ui/SelectField";
+import { TextArea, TextField } from "../../../components/ui/TextField";
 import {
   describeApiError,
   getApiValidationErrors,
@@ -32,13 +34,10 @@ interface ExceptionalClosureDialogProps {
   successFocusRef: RefObject<HTMLElement | null>;
 }
 
-const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 py-3 text-ink outline-none transition focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:opacity-65";
-
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p className="mt-1 text-sm text-red-800" id={id}>
+    <p className="mt-1 text-sm text-danger-text" id={id}>
       {message}
     </p>
   );
@@ -172,12 +171,12 @@ export function ExceptionalClosureDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid items-end bg-ink/55 p-0 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 grid items-end bg-overlay p-0 sm:items-center sm:p-6">
       <div
         aria-describedby="exceptional-closure-guidance"
         aria-labelledby="exceptional-closure-title"
         aria-modal="true"
-        className="max-h-[100svh] w-full overflow-y-auto rounded-t-[2rem] bg-white p-5 shadow-2xl sm:mx-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-2xl sm:rounded-[2rem] sm:p-7"
+        className="max-h-[100svh] w-full overflow-y-auto rounded-t-xl border border-border bg-surface p-5 shadow-xl sm:mx-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-2xl sm:rounded-xl sm:p-7"
         ref={dialogRef}
         role="dialog"
       >
@@ -187,24 +186,25 @@ export function ExceptionalClosureDialog({
               Encerramento excepcional
             </p>
             <h2
-              className="mt-3 font-display text-3xl text-ink"
+              className="mt-2 text-3xl font-bold text-text"
               id="exceptional-closure-title"
             >
               Regularizar saída não registrada
             </h2>
           </div>
-          <button
+          <Button
             aria-label="Fechar regularização"
-            className="grid size-11 shrink-0 place-items-center rounded-full border border-ink/15 text-xl text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-50"
+            className="size-12 shrink-0 rounded-full p-0 text-xl"
             disabled={isSubmitting}
             onClick={onCancel}
             type="button"
+            variant="secondary"
           >
             ×
-          </button>
+          </Button>
         </div>
 
-        <dl className="mt-5 grid gap-3 rounded-2xl bg-cream/45 p-4 text-sm sm:grid-cols-2">
+        <dl className="mt-5 grid gap-3 rounded-xl border border-border bg-surface-subtle p-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-bold text-ink-soft">Placa</dt>
             <dd className="mt-1 text-ink">{record.plate}</dd>
@@ -216,7 +216,7 @@ export function ExceptionalClosureDialog({
         </dl>
 
         <p
-          className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950"
+          className="mt-4 rounded-xl border border-border bg-surface-subtle p-4 text-sm leading-6 text-text"
           id="exceptional-closure-guidance"
         >
           Use esta regularização somente quando a saída não foi registrada no
@@ -226,7 +226,7 @@ export function ExceptionalClosureDialog({
 
         {requestError && (
           <div
-            className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+            className="mt-4 rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
             role="alert"
           >
             {requestError}
@@ -254,7 +254,7 @@ export function ExceptionalClosureDialog({
                     errors.reason ? "exceptional-reason-error" : undefined
                   }
                   aria-invalid={Boolean(errors.reason)}
-                  className={fieldClass}
+                  className="mt-2"
                   disabled={isSubmitting}
                   id="exceptional-closure-reason"
                   onBlur={field.onBlur}
@@ -282,14 +282,14 @@ export function ExceptionalClosureDialog({
             >
               Observação <span aria-hidden="true">*</span>
             </label>
-            <textarea
+            <TextArea
               aria-describedby={
                 errors.observation
                   ? "exceptional-observation-error"
                   : "exceptional-observation-hint"
               }
               aria-invalid={Boolean(errors.observation)}
-              className={`${fieldClass} min-h-28 resize-none`}
+              className="mt-2 min-h-28 resize-none"
               disabled={isSubmitting}
               id="exceptional-closure-observation"
               maxLength={1000}
@@ -314,14 +314,14 @@ export function ExceptionalClosureDialog({
             >
               Horário observado da saída (opcional)
             </label>
-            <input
+            <TextField
               aria-describedby={
                 errors.observedExitAtLocal
                   ? "exceptional-observed-at-error"
                   : "exceptional-observed-at-hint"
               }
               aria-invalid={Boolean(errors.observedExitAtLocal)}
-              className={fieldClass}
+              className="mt-2"
               disabled={isSubmitting}
               id="exceptional-closure-observed-at"
               type="datetime-local"
@@ -340,24 +340,20 @@ export function ExceptionalClosureDialog({
             />
           </div>
 
-          <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:flex-row sm:justify-end">
-            <button
-              className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-50"
+          <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+            <Button
               disabled={isSubmitting}
               onClick={onCancel}
               type="button"
+              variant="secondary"
             >
               Cancelar
-            </button>
-            <button
-              className="min-h-12 rounded-xl bg-brand-dark px-6 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/45 disabled:cursor-wait disabled:opacity-65"
-              disabled={isSubmitting}
-              type="submit"
-            >
+            </Button>
+            <Button disabled={isSubmitting} type="submit">
               {isSubmitting
                 ? "Regularizando saída…"
                 : "Confirmar regularização excepcional"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

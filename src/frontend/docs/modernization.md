@@ -214,3 +214,30 @@ inalcançável; os quatro perfis mantiveram contenção e retorno de foco no men
 720×500 é somente uma aproximação de reflow e não substitui zoom real. Tablet
 físico e Narrador permanecem como validações humanas pendentes; nenhuma aprovação
 institucional é declarada.
+
+## Terceiro incremento — telas operacionais da portaria
+
+A Issue #405 migra a visão geral, o registro de entrada, os acessos em aberto e
+o histórico. A hierarquia prioriza placa, condutor, categoria, horário, tempo
+transcorrido e situação. Formulários, filtros, resultados, estados e diálogos
+passam a reutilizar `Button`, `Card`, `TextField`, `TextArea`, `SelectField`,
+`ContentState`, `StatusBadge` e os tokens semânticos da fundação visual.
+
+A busca de cadastro anterior, o vínculo opcional com eventos, a preservação do
+formulário, o encerramento normal e excepcional, a correção auditada e a
+paginação mantêm comportamento e contratos existentes. Cores continuam
+acompanhadas de texto. Nenhum serviço, rota, capacidade, contrato de API ou
+regra de autorização foi alterado; tema escuro permanece fora desta etapa.
+
+No Edge real em modo headless, dirigido por CDP e com respostas fictícias
+controladas, as quatro rotas foram verificadas em 390×844, 768×1024, 1366×768 e
+1440×1000, sem overflow horizontal ou controle operacional abaixo de 44 px.
+720×500 aproxima o espaço disponível no reflow de 200%, mas não comprova zoom
+real. O diálogo de saída iniciou o foco em “Cancelar”, fechou com Escape e
+devolveu o foco ao acionador. Tablet físico e zoom real permanecem pendentes.
+
+Foram aprovados 471 testes em 48 arquivos, lint, build, Prettier e verificação
+de whitespace. O JavaScript de produção passou de 873.940 para 866.076 bytes e
+o CSS de 61.259 para 53.285 bytes; o maior chunk passou de 289.801 para 290.191
+bytes. Nenhuma dependência foi adicionada. Os números são soma dos artefatos
+minificados por tipo e não equivalem ao download inicial das rotas sob demanda.

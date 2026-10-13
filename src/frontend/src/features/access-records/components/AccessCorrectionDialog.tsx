@@ -2,7 +2,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { Button } from "../../../components/ui/Button";
 import { SelectField } from "../../../components/ui/SelectField";
+import { TextArea } from "../../../components/ui/TextField";
 import {
   describeApiError,
   getApiValidationErrors,
@@ -30,13 +32,10 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short",
 });
 
-const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 py-3 text-ink outline-none transition focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:opacity-65";
-
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p className="mt-1 text-sm text-red-800" id={id}>
+    <p className="mt-1 text-sm text-danger-text" id={id}>
       {message}
     </p>
   );
@@ -170,12 +169,12 @@ export function AccessCorrectionDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid items-end bg-ink/55 p-0 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 grid items-end bg-overlay p-0 sm:items-center sm:p-6">
       <div
         aria-describedby="access-correction-audit-note"
         aria-labelledby="access-correction-title"
         aria-modal="true"
-        className="max-h-[100svh] w-full overflow-y-auto rounded-t-[2rem] bg-white p-5 shadow-2xl sm:mx-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-3xl sm:rounded-[2rem] sm:p-7"
+        className="max-h-[100svh] w-full overflow-y-auto rounded-t-xl border border-border bg-surface p-5 shadow-xl sm:mx-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-3xl sm:rounded-xl sm:p-7"
         ref={dialogRef}
         role="dialog"
       >
@@ -185,24 +184,25 @@ export function AccessCorrectionDialog({
               Registro #{record.id}
             </p>
             <h2
-              className="mt-3 font-display text-3xl text-ink"
+              className="mt-2 text-3xl font-bold text-text"
               id="access-correction-title"
             >
               Corrigir registro
             </h2>
           </div>
-          <button
+          <Button
             aria-label="Fechar correção"
-            className="grid size-11 shrink-0 place-items-center rounded-full border border-ink/15 text-xl text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-50"
+            className="size-12 shrink-0 rounded-full p-0 text-xl"
             disabled={isSubmitting}
             onClick={onClose}
             type="button"
+            variant="secondary"
           >
             ×
-          </button>
+          </Button>
         </div>
 
-        <dl className="mt-6 grid gap-4 rounded-2xl bg-cream/45 p-4 text-sm sm:grid-cols-2">
+        <dl className="mt-6 grid gap-4 rounded-xl border border-border bg-surface-subtle p-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-bold text-ink-soft">Placa</dt>
             <dd className="mt-1 text-ink">{record.plate}</dd>
@@ -242,7 +242,7 @@ export function AccessCorrectionDialog({
         </dl>
 
         <p
-          className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950"
+          className="mt-5 rounded-xl border border-border bg-surface-subtle p-4 text-sm text-text"
           id="access-correction-audit-note"
         >
           A correção e sua justificativa serão registradas na trilha de
@@ -251,7 +251,7 @@ export function AccessCorrectionDialog({
 
         {requestError && (
           <div
-            className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+            className="mt-4 rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
             role="alert"
           >
             {requestError}
@@ -266,13 +266,13 @@ export function AccessCorrectionDialog({
             >
               Objetivo
             </label>
-            <textarea
+            <TextArea
               {...objectiveRegistration}
               aria-describedby={
                 errors.objective ? "correction-objective-error" : undefined
               }
               aria-invalid={Boolean(errors.objective)}
-              className={fieldClass}
+              className="mt-2"
               disabled={isSubmitting}
               id="correction-objective"
               maxLength={500}
@@ -303,7 +303,7 @@ export function AccessCorrectionDialog({
                       : undefined
                   }
                   aria-invalid={Boolean(errors.categoryName)}
-                  className={fieldClass}
+                  className="mt-2"
                   disabled={isSubmitting}
                   id="correction-category"
                   name={field.name}
@@ -331,13 +331,13 @@ export function AccessCorrectionDialog({
               Observação{" "}
               <span className="font-normal text-ink-soft">(opcional)</span>
             </label>
-            <textarea
+            <TextArea
               {...register("observation")}
               aria-describedby={
                 errors.observation ? "correction-observation-error" : undefined
               }
               aria-invalid={Boolean(errors.observation)}
-              className={fieldClass}
+              className="mt-2"
               disabled={isSubmitting}
               id="correction-observation"
               maxLength={1000}
@@ -356,13 +356,13 @@ export function AccessCorrectionDialog({
             >
               Justificativa da correção
             </label>
-            <textarea
+            <TextArea
               {...register("justification")}
               aria-describedby={`correction-justification-guidance${
                 errors.justification ? " correction-justification-error" : ""
               }`}
               aria-invalid={Boolean(errors.justification)}
-              className={fieldClass}
+              className="mt-2"
               disabled={isSubmitting}
               id="correction-justification"
               maxLength={500}
@@ -380,22 +380,18 @@ export function AccessCorrectionDialog({
             />
           </div>
 
-          <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:flex-row sm:justify-end">
-            <button
-              className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 disabled:cursor-wait disabled:opacity-50"
+          <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+            <Button
               disabled={isSubmitting}
               onClick={onClose}
               type="button"
+              variant="secondary"
             >
               Cancelar
-            </button>
-            <button
-              className="min-h-12 rounded-xl bg-brand-dark px-6 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/45 disabled:cursor-wait disabled:opacity-65"
-              disabled={isSubmitting}
-              type="submit"
-            >
+            </Button>
+            <Button disabled={isSubmitting} type="submit">
               {isSubmitting ? "Salvando correção…" : "Salvar correção"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
