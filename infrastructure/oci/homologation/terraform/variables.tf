@@ -119,7 +119,7 @@ variable "bastion_client_cidr" {
 variable "monthly_budget_amount" {
   description = "Monthly budget amount in the tenancy rate-card currency. Review before apply."
   type        = number
-  default     = 100
+  default     = 25
 
   validation {
     condition     = var.monthly_budget_amount > 0 && var.monthly_budget_amount <= 200

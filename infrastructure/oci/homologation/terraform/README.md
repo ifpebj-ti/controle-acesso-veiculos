@@ -10,7 +10,8 @@ plano e da confirmação explícita do responsável pela conta.
 ## Recursos planejados
 
 - compartimento exclusivo com tags de custo e operação;
-- orçamento mensal com alertas previstos em 50%, 75% e 90% e alertas reais em
+- orçamento mensal padrão de 25 unidades na moeda da conta, alinhado à referência
+  anual da Issue #382, com alertas previstos em 50%, 75% e 90% e alertas reais em
   75%, 90% e 100%;
 - VCN, subnet pública, Internet Gateway, rota e lista de segurança sem ingresso;
 - NSG permitindo somente HTTPS 443 da internet e SSH 22 originado dentro da VCN;

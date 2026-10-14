@@ -103,7 +103,7 @@ variables:
     required: true
     title: "Monthly budget amount"
     description: "Value in the tenancy rate-card currency. Review before apply."
-    default: 100
+    default: 25
     minimum: 1
     maximum: 200
   budget_alert_recipients:
