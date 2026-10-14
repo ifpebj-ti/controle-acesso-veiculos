@@ -115,6 +115,9 @@ describe("LoginPage accessibility", () => {
         level: 1,
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: "Aparência" }),
+    ).not.toBeInTheDocument();
 
     const email = screen.getByRole("textbox", { name: /e-mail/i });
     const password = screen.getByLabelText("Senha:");

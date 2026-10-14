@@ -8,7 +8,6 @@ import { Button } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
 import { TextField } from "../components/ui/TextField";
 import { SessionLoadingState } from "../components/ui/SessionLoadingState";
-import { AppearanceSelector } from "../features/appearance";
 import {
   AuthenticationContractError,
   type SessionEndReason,
@@ -123,10 +122,7 @@ export function LoginPage() {
       <div className="login-shell relative z-10 flex min-h-svh w-full items-stretch">
         <section className="login-composition grid min-h-svh w-full overflow-hidden bg-surface-raised lg:grid-cols-[minmax(34rem,54%)_minmax(28rem,46%)]">
           <div className="login-form-panel order-2 flex min-h-full flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:order-1 lg:px-[clamp(4rem,7vw,9rem)] lg:py-12">
-            <div className="flex flex-wrap items-start justify-between gap-5">
-              <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
-              <AppearanceSelector className="ml-auto w-full max-w-xs" />
-            </div>
+            <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
 
             <div className="my-auto py-8 sm:py-9 lg:py-8">
               <header>

@@ -286,9 +286,11 @@ storage não está disponível, remove valores corrompidos e acompanha mudanças
 sistema operacional apenas enquanto `Automático` estiver selecionado.
 
 O seletor possui grupo e estado acessíveis, alvos mínimos de 44 px, foco visível
-e anúncio textual do tema efetivamente aplicado. Ele aparece no login, no menu
-autenticado e no cabeçalho restrito da troca obrigatória de senha. A troca não
-remonta a sessão, os formulários ou o roteador.
+e anúncio textual do tema efetivamente aplicado. Antes da autenticação, a
+aparência é aplicada automaticamente sem expor um controle concorrente ao
+formulário. Depois da entrada, o seletor aparece no menu autenticado e no
+cabeçalho restrito da troca obrigatória de senha. A troca não remonta a sessão,
+os formulários ou o roteador.
 
 Superfícies claras explícitas, ações e cores auxiliares das telas integradas
 foram migradas para tokens semânticos. A fotografia institucional mantém texto
@@ -303,8 +305,8 @@ controle. Tablet físico, Narrador e zoom real a 200% permanecem como evidência
 manuais da Issue #407 e não devem ser declarados concluídos por testes em JSDOM.
 
 Com a mesma instalação bloqueada da `main` no commit `1cc6c8c`, a soma dos
-arquivos JavaScript minificados passou de 926.350 para 930.813 bytes, incluindo
-os 897 bytes do bootstrap externo: aumento de 4.463 bytes, ou 0,48%. O CSS
+arquivos JavaScript minificados passou de 926.350 para 930.669 bytes, incluindo
+os 897 bytes do bootstrap externo: aumento de 4.319 bytes, ou 0,47%. O CSS
 minificado passou de 131.999 para 131.514 bytes, redução de 485 bytes, ou 0,37%,
 após a substituição de estilos claros explícitos por tokens. Nenhuma
 dependência foi adicionada e o limite de aviso do Vite não foi alterado.
