@@ -2181,26 +2181,14 @@ button:disabled {
 }
 
 :root[data-theme="dark"] .institutional-brand-lockup {
-  padding: 0.3rem 0.45rem;
-  border: 1px solid color-mix(in srgb, var(--ui-primary) 18%, transparent);
-  border-radius: 0.4rem;
-  background: var(--ui-brand-surface);
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
-:root[data-theme="dark"]
-  .sidebar-institutional-brand
-  .institutional-brand-lockup {
-  margin-inline: -0.5rem;
-  padding: 0.55rem 1rem;
-  border: 0;
-  border-radius: 0.2rem;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--ui-brand-surface) 14%,
-    var(--ui-brand-surface) 86%,
-    transparent
-  );
+:root[data-theme="dark"] .institutional-brand-lockup img {
+  opacity: 0.92;
+  filter: grayscale(1) brightness(0) invert(1);
 }
 
 @keyframes login-spin {

@@ -294,9 +294,9 @@ os formulários ou o roteador.
 
 Superfícies claras explícitas, ações e cores auxiliares das telas integradas
 foram migradas para tokens semânticos. A fotografia institucional mantém texto
-de alto contraste independente do tema e a assinatura visual do IFPE recebe uma
-superfície clara somente no modo escuro para preservar a legibilidade do arquivo
-oficial.
+de alto contraste independente do tema e a assinatura visual do IFPE usa a
+aplicação monocromática negativa no modo escuro, sem acrescentar um bloco claro
+ao redor da imagem.
 
 As verificações automatizadas cobrem preferência explícita, modo Automático,
 alteração de `prefers-color-scheme`, valor corrompido, storage indisponível,
@@ -307,6 +307,6 @@ manuais da Issue #407 e não devem ser declarados concluídos por testes em JSDO
 Com a mesma instalação bloqueada da `main` no commit `1cc6c8c`, a soma dos
 arquivos JavaScript minificados passou de 926.350 para 930.669 bytes, incluindo
 os 897 bytes do bootstrap externo: aumento de 4.319 bytes, ou 0,47%. O CSS
-minificado passou de 131.999 para 131.514 bytes, redução de 485 bytes, ou 0,37%,
+minificado passou de 131.999 para 131.055 bytes, redução de 944 bytes, ou 0,72%,
 após a substituição de estilos claros explícitos por tokens. Nenhuma
 dependência foi adicionada e o limite de aviso do Vite não foi alterado.
