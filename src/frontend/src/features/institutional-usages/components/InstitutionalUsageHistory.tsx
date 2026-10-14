@@ -346,7 +346,7 @@ export function InstitutionalUsageHistory({
             </div>
           ) : (
             <>
-              <div className="grid gap-4 p-5 sm:p-6 xl:hidden">
+              <div className="grid gap-4 p-5 sm:p-6 2xl:hidden">
                 {page.items.map((usage) => {
                   const distance =
                     usage.returnMileage === null
@@ -404,7 +404,7 @@ export function InstitutionalUsageHistory({
                   );
                 })}
               </div>
-              <div className="usage-history-table-shell hidden overflow-x-auto xl:block">
+              <div className="usage-history-table-shell hidden overflow-x-auto 2xl:block">
                 <table className="w-full min-w-[70rem] border-collapse text-left text-sm">
                   <caption className="sr-only">
                     Histórico de utilizações da frota institucional
