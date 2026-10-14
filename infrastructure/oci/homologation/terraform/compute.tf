@@ -54,6 +54,7 @@ resource "oci_core_instance" "application" {
 
   launch_options {
     is_pv_encryption_in_transit_enabled = true
+    network_type                        = "PARAVIRTUALIZED"
   }
 
   metadata = {
