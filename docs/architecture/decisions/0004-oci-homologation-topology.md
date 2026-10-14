@@ -163,6 +163,8 @@ manual não rastreado.
 - ADR 0003 — key ring persistente e protegido;
 - `docs/operations/oci-homologation-preflight.md` — verificação segura da conta,
   capacidade, custo e responsabilidades antes do Terraform;
+- `infrastructure/oci/homologation/edge` — configuração revisável da borda HTTPS,
+  ainda condicionada aos gates da Issue #382;
 - `infrastructure/docker/docker-compose.production.yml` — stack versionada;
 - `docs/operations/versioned-container-deployment.md` — implantação e rollback.
 
