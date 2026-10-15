@@ -6,10 +6,11 @@
 
 ## Contexto
 
-Professores e cliente validaram o uso da conta Google dos funcionários para o
-login cotidiano. O Google comprova a identidade, mas não conhece os perfis
-operacionais do campus nem pode decidir quem é Porteiro, Vigilante, Transporte
-ou Administrador.
+Professores e cliente validaram o uso de uma conta Google previamente
+autorizada para o login cotidiano. A conta pode ser institucional ou pessoal,
+pois nem todo funcionário possui conta institucional. O Google comprova a
+identidade, mas não conhece os perfis operacionais do campus nem pode decidir
+quem é Porteiro, Vigilante, Transporte ou Administrador.
 
 O sistema já possui sessão renovável própria, revogação e autorização local. A
 integração deve preservar esses controles, evitar tokens do Google no navegador
@@ -25,16 +26,18 @@ Adotar OpenID Connect Authorization Code Flow, iniciado e concluído no backend:
    `nonce`, `email_verified` e o `sub` estável;
 4. a API localiza uma conta ativa previamente autorizada;
 5. no primeiro vínculo, e somente nele, uma conta previamente cadastrada pode
-   associar seu e-mail institucional verificado ao `sub` do Google;
+   associar o e-mail Google verificado que o Administrador mestre autorizou ao
+   `sub` do Google;
 6. depois do vínculo, o `sub` é a identidade externa canônica; mudança de e-mail
    não transfere a conta;
 7. a aplicação emite sua própria sessão curta e renovável, já existente, com o
    perfil obtido exclusivamente do banco local.
 
-Uma conta Google válida, inclusive do domínio institucional, não recebe acesso
-automaticamente. O Administrador mestre provisiona a conta e atribui o perfil
-antes do primeiro login. A restrição de domínio é defesa adicional e deve ser
-verificada pelo backend; o parâmetro visual `hd` não é autorização.
+Uma conta Google válida não recebe acesso automaticamente, seja ela pessoal ou
+institucional. O Administrador mestre cadastra previamente o endereço exato e
+atribui o perfil antes do primeiro login. Não haverá restrição por domínio. O
+parâmetro `hd` do Google não será usado como autorização nem como requisito de
+acesso.
 
 Serão solicitados somente os escopos mínimos de OIDC (`openid`, `email` e
 `profile`). Access token, ID token, authorization code, client secret e refresh
@@ -89,7 +92,8 @@ mecanismo o servidor aceita.
 
 Client ID, client secret e chaves permanecem fora do Git. Desenvolvimento,
 homologação e produção usam clientes/redirect URIs separados. Fora de
-desenvolvimento, callback e aplicação exigem HTTPS e domínio aprovado.
+desenvolvimento, callback e aplicação exigem HTTPS e um domínio da aplicação
+previamente configurado no cliente OAuth.
 
 Variáveis previstas:
 
@@ -97,7 +101,6 @@ Variáveis previstas:
 Authentication__Google__Enabled
 Authentication__Google__ClientId
 Authentication__Google__ClientSecret
-Authentication__Google__AllowedHostedDomain
 Authentication__Google__CallbackPath
 ```
 
@@ -108,8 +111,10 @@ das contas cotidianas. Não haverá conversão em massa irreversível.
 
 ## Alternativas rejeitadas
 
-- **Confiar apenas no e-mail ou domínio:** permite concessão indevida e não
-  oferece identificador externo estável.
+- **Autorizar automaticamente por e-mail ou domínio:** permite concessão
+  indevida e não oferece identificador externo estável. O e-mail verificado é
+  usado apenas no primeiro vínculo com uma conta já provisionada; depois disso,
+  o `sub` é a identidade canônica.
 - **Receber ID token diretamente do frontend:** amplia a superfície e mistura o
   cliente público com a validação e troca de código.
 - **Usar perfil/grupo do Google como autorização local:** acopla regra do campus
