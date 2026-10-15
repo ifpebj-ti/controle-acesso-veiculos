@@ -183,10 +183,12 @@ public sealed class EventAccessAssociationTests(ApiFactory factory)
         {
             name,
             responsible = "Coordenação de Teste",
+            responsibleContact = "+55 81 99999-0000",
             startsAtUtc,
             endsAtUtc,
             area = "Área de teste",
             overnightAllowed = true,
+            parkingLocation = "Externo",
             vehicleRules = rules
         };
 

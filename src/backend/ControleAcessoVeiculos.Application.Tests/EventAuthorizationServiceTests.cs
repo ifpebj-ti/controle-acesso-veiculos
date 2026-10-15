@@ -16,14 +16,18 @@ public sealed class EventAuthorizationServiceTests
         var result = await service.CreateAsync(new CreateEventAuthorizationCommand(
                 null,
                 null,
+            null,
                 FixedNow.AddDays(2),
                 FixedNow.AddDays(1),
                 null,
                 false,
+            null,
                 []), actorUserId: 7, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(EventAuthorizationOperationStatus.Invalid, result.Status);
         Assert.Contains("name", result.Errors.Keys);
+        Assert.Contains("responsibleContact", result.Errors.Keys);
+        Assert.Contains("parkingLocation", result.Errors.Keys);
         Assert.Contains("period", result.Errors.Keys);
         Assert.Contains("vehicleRules", result.Errors.Keys);
         Assert.Equal(0, store.CreateCalls);
@@ -44,6 +48,8 @@ public sealed class EventAuthorizationServiceTests
         Assert.Equal(1, store.CreateCalls);
         Assert.Equal(FixedNow.UtcDateTime, store.LastOccurredAtUtc);
         Assert.Equal("AUTOMÓVEL", store.LastData!.VehicleRules[0].VehicleType);
+        Assert.Equal("extensao@example.test", store.LastData.ResponsibleContact);
+        Assert.Equal("Interno", store.LastData.ParkingLocation.ToString());
         Assert.Equal("ABC1D23", store.LastData.VehicleRules[0].Plate);
         Assert.Equal("ÔNIBUS", store.LastData.VehicleRules[1].VehicleType);
     }
@@ -65,6 +71,30 @@ public sealed class EventAuthorizationServiceTests
         Assert.Contains("vehicleRules[0]", result.Errors.Keys);
         Assert.Contains("vehicleRules[1]", result.Errors.Keys);
         Assert.Contains("vehicleRules[3]", result.Errors.Keys);
+        Assert.Equal(0, store.CreateCalls);
+    }
+
+    [Theory]
+    [InlineData("contato inválido", "Interno")]
+    [InlineData("+55 81 9999-0000", "Garagem")]
+    public async Task CreateAsync_ShouldRejectInvalidContactOrParking(
+        string responsibleContact,
+        string parkingLocation)
+    {
+        var store = new FakeStore();
+        var service = CreateService(store);
+        var command = ValidCommand([new("Automóvel", 1)]) with
+        {
+            ResponsibleContact = responsibleContact,
+            ParkingLocation = parkingLocation
+        };
+
+        var result = await service.CreateAsync(
+            command,
+            actorUserId: 7,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Invalid, result.Status);
         Assert.Equal(0, store.CreateCalls);
     }
 
@@ -105,10 +135,12 @@ public sealed class EventAuthorizationServiceTests
         new(
             " Jardim Digital ",
             " Coordenação de Extensão ",
+            " extensao@example.test ",
             FixedNow.AddDays(1),
             FixedNow.AddDays(2),
             " Pátio central ",
             true,
+            "Interno",
             rules,
             " Evento acadêmico ");
 
@@ -179,10 +211,12 @@ public sealed class EventAuthorizationServiceTests
                 1,
                 data.Name,
                 data.Responsible,
+                data.ResponsibleContact,
                 data.StartsAtUtc,
                 data.EndsAtUtc,
                 data.Area,
                 data.OvernightAllowed,
+                data.ParkingLocation.ToString(),
                 data.Notes,
                 true,
                 actorUserId,
