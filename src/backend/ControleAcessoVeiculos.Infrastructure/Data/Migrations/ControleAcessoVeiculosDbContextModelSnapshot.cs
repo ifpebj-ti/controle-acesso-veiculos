@@ -208,6 +208,11 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("atualizado_por_id");
 
+                    b.Property<string>("ContatoResponsavel")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("contato_responsavel");
+
                     b.Property<int>("CriadoPorId")
                         .HasColumnType("integer")
                         .HasColumnName("criado_por_id");
@@ -233,6 +238,14 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("local_area");
+
+                    b.Property<string>("LocalEstacionamento")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("ADefinir")
+                        .HasColumnName("local_estacionamento");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -272,6 +285,8 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
 
                     b.ToTable("eventos_acesso", "dbo", t =>
                         {
+                            t.HasCheckConstraint("ck_eventos_acesso_local_estacionamento", "local_estacionamento IN ('ADefinir', 'Interno', 'Externo')");
+
                             t.HasCheckConstraint("ck_eventos_acesso_periodo", "fim > inicio");
                         });
                 });

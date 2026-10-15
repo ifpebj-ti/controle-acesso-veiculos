@@ -1,4 +1,6 @@
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
+using System.Net.Mail;
 
 namespace ControleAcessoVeiculos.Application.EventAuthorizations;
 
@@ -24,10 +26,12 @@ public sealed class EventAuthorizationService(
             new CreateEventAuthorizationCommand(
                 command.Name,
                 command.Responsible,
+                command.ResponsibleContact,
                 command.StartsAtUtc,
                 command.EndsAtUtc,
                 command.Area,
                 command.OvernightAllowed,
+                command.ParkingLocation,
                 command.VehicleRules,
                 command.Notes),
             eventId,
@@ -133,10 +137,12 @@ public sealed class EventAuthorizationService(
         var data = new EventAuthorizationData(
             command.Name!.Trim(),
             command.Responsible!.Trim(),
+            command.ResponsibleContact!.Trim(),
             command.StartsAtUtc.ToUniversalTime().UtcDateTime,
             command.EndsAtUtc.ToUniversalTime().UtcDateTime,
             command.Area!.Trim(),
             command.OvernightAllowed,
+            ParseParkingLocation(command.ParkingLocation!),
             NormalizeOptional(command.Notes),
             command.VehicleRules!.Select(rule => new EventVehicleRuleData(
                 rule.VehicleType!.Trim().ToUpperInvariant(),
@@ -166,7 +172,26 @@ public sealed class EventAuthorizationService(
         var errors = new Dictionary<string, string[]>();
         ValidateRequired(command.Name, 200, "name", "nome", errors);
         ValidateRequired(command.Responsible, 200, "responsible", "responsável", errors);
+        ValidateRequired(
+            command.ResponsibleContact,
+            254,
+            "responsibleContact",
+            "contato do responsável",
+            errors);
         ValidateRequired(command.Area, 200, "area", "local ou área", errors);
+
+        if (!string.IsNullOrWhiteSpace(command.ResponsibleContact) &&
+            !IsValidResponsibleContact(command.ResponsibleContact.Trim()))
+        {
+            errors["responsibleContact"] =
+                ["Informe um e-mail válido ou telefone com 8 a 15 dígitos."];
+        }
+
+        if (!TryParseParkingLocation(command.ParkingLocation, out _))
+        {
+            errors["parkingLocation"] =
+                ["O estacionamento deve ser ADefinir, Interno ou Externo."];
+        }
 
         if (command.StartsAtUtc == default || command.EndsAtUtc <= command.StartsAtUtc)
         {
@@ -248,6 +273,33 @@ public sealed class EventAuthorizationService(
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static LocalEstacionamentoEvento ParseParkingLocation(string value) =>
+        Enum.Parse<LocalEstacionamentoEvento>(value, ignoreCase: true);
+
+    private static bool TryParseParkingLocation(
+        string? value,
+        out LocalEstacionamentoEvento parkingLocation)
+    {
+        parkingLocation = default;
+        return !string.IsNullOrWhiteSpace(value) &&
+            Enum.TryParse(value.Trim(), ignoreCase: true, out parkingLocation) &&
+            Enum.IsDefined(parkingLocation);
+    }
+
+    private static bool IsValidResponsibleContact(string value)
+    {
+        if (MailAddress.TryCreate(value, out var address) &&
+            string.Equals(address.Address, value, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var digitCount = value.Count(char.IsDigit);
+        return digitCount is >= 8 and <= 15 &&
+            value.All(character => char.IsDigit(character) ||
+                character is '+' or '-' or '(' or ')' or ' ' or '.');
+    }
 
     private static EventAuthorizationOperationResult Invalid(string key, string message) =>
         new(

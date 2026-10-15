@@ -87,10 +87,12 @@ public static class EventAuthorizationEndpoints
             new UpdateEventAuthorizationCommand(
                 request.Name,
                 request.Responsible,
+                request.ResponsibleContact,
                 request.StartsAtUtc,
                 request.EndsAtUtc,
                 request.Area,
                 request.OvernightAllowed,
+                request.ParkingLocation,
                 request.VehicleRules?.Select(ToInput).ToArray(),
                 request.Notes),
             actorUserId,
@@ -155,10 +157,12 @@ public static class EventAuthorizationEndpoints
         new(
             request.Name,
             request.Responsible,
+            request.ResponsibleContact,
             request.StartsAtUtc,
             request.EndsAtUtc,
             request.Area,
             request.OvernightAllowed,
+            request.ParkingLocation,
             request.VehicleRules?.Select(ToInput).ToArray(),
             request.Notes);
 
@@ -177,10 +181,12 @@ public sealed record SearchEventAuthorizationsRequest(
 public sealed record EventAuthorizationRequest(
     string? Name,
     string? Responsible,
+    string? ResponsibleContact,
     DateTimeOffset StartsAtUtc,
     DateTimeOffset EndsAtUtc,
     string? Area,
     bool OvernightAllowed,
+    string? ParkingLocation,
     IReadOnlyList<EventVehicleRuleRequest>? VehicleRules,
     string? Notes = null);
 

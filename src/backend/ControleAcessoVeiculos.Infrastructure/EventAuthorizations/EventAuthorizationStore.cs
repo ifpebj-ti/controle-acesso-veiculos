@@ -25,10 +25,12 @@ public sealed class EventAuthorizationStore(
             var entity = new EventoAcesso(
                 data.Name,
                 data.Responsible,
+                data.ResponsibleContact,
                 data.StartsAtUtc,
                 data.EndsAtUtc,
                 data.Area,
                 data.OvernightAllowed,
+                data.ParkingLocation,
                 data.Notes,
                 actorUserId,
                 occurredAtUtc);
@@ -142,13 +144,18 @@ public sealed class EventAuthorizationStore(
                 return new(EventAuthorizationStoreStatus.Conflict, null);
             }
 
+            var previousParkingLocation = entity.LocalEstacionamento.ToString();
+            var previouslyHadResponsibleContact = entity.ContatoResponsavel is not null;
+
             var eventChanged = entity.Atualizar(
                 data.Name,
                 data.Responsible,
+                data.ResponsibleContact,
                 data.StartsAtUtc,
                 data.EndsAtUtc,
                 data.Area,
                 data.OvernightAllowed,
+                data.ParkingLocation,
                 data.Notes,
                 actorUserId,
                 occurredAtUtc);
@@ -182,6 +189,8 @@ public sealed class EventAuthorizationStore(
                 actorUserId,
                 dadosAnteriores: JsonSerializer.Serialize(new
                 {
+                    hadResponsibleContact = previouslyHadResponsibleContact,
+                    parkingLocation = previousParkingLocation,
                     vehicleRuleCount = currentRules.Count
                 }),
                 dadosNovos: JsonSerializer.Serialize(new
@@ -190,6 +199,8 @@ public sealed class EventAuthorizationStore(
                     startsAtUtc = entity.Inicio,
                     endsAtUtc = entity.Fim,
                     overnightAllowed = entity.PermitePernoite,
+                    hadResponsibleContact = entity.ContatoResponsavel is not null,
+                    parkingLocation = entity.LocalEstacionamento.ToString(),
                     vehicleRuleCount = resultingRules.Count
                 }),
                 detalhes: "Event authorization updated."));
@@ -332,10 +343,12 @@ public sealed class EventAuthorizationStore(
             entity.Id,
             entity.Nome,
             entity.Responsavel,
+            entity.ContatoResponsavel,
             entity.Inicio,
             entity.Fim,
             entity.LocalArea,
             entity.PermitePernoite,
+            entity.LocalEstacionamento.ToString(),
             entity.Observacao,
             entity.Ativo,
             entity.CriadoPorId,
@@ -373,6 +386,7 @@ public sealed class EventAuthorizationStore(
                 startsAtUtc = entity.Inicio,
                 endsAtUtc = entity.Fim,
                 overnightAllowed = entity.PermitePernoite,
+                parkingLocation = entity.LocalEstacionamento.ToString(),
                 vehicleRuleCount
             }),
             detalhes: details);
