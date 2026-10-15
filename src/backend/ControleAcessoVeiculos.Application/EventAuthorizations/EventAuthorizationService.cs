@@ -208,7 +208,7 @@ public sealed class EventAuthorizationService(
             }
             catch (ArgumentException)
             {
-                errors[key] = ["A placa deve conter letras ou números."];
+                errors[key] = ["Informe uma placa no formato ABC-1234 ou ABC1D23."];
                 continue;
             }
 
@@ -216,10 +216,10 @@ public sealed class EventAuthorizationService(
             {
                 errors[key] = ["A placa não pode ser repetida no mesmo evento."];
             }
-            else if (plate?.Length > 10 || plate is not null && rule.Quantity != 1)
+            else if (plate is not null && rule.Quantity != 1)
             {
                 errors[key] =
-                    ["A placa deve possuir até 10 caracteres e, quando informada, autoriza exatamente um veículo."];
+                    ["Uma placa informada deve autorizar exatamente um veículo."];
             }
             else if (plate is null && !quotaTypes.Add(rule.VehicleType.Trim()))
             {
