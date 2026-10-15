@@ -29,6 +29,11 @@ import {
   type EventAuthorization,
 } from "../features/event-authorizations";
 import {
+  formatVehiclePlateInput,
+  normalizeVehiclePlate,
+  vehiclePlateFormatHint,
+} from "../features/vehicle-plates/vehiclePlate";
+import {
   describeApiError,
   getApiValidationErrors,
 } from "../services/api-errors";
@@ -85,6 +90,8 @@ export function NewAccessPage() {
     setValue,
   } = useForm<AccessEntryFormValues>({
     defaultValues,
+    mode: "onBlur",
+    reValidateMode: "onChange",
     resolver: zodResolver(accessEntryFormSchema),
   });
   const eventAuthorizations = useCurrentEventAuthorizations(eventSectionOpen);
@@ -195,7 +202,7 @@ export function NewAccessPage() {
             ? values.objectiveOther
             : values.objective,
         observation: values.observation || undefined,
-        plate: values.plate,
+        plate: normalizeVehiclePlate(values.plate),
         vehicleType:
           values.vehicleType === customEntryOption
             ? values.vehicleTypeOther
@@ -353,17 +360,31 @@ export function NewAccessPage() {
                   </span>
                 </label>
                 <TextField
-                  aria-describedby={errors.plate ? "plate-error" : undefined}
+                  aria-describedby={
+                    errors.plate
+                      ? "plate-format-hint plate-error"
+                      : "plate-format-hint"
+                  }
                   aria-invalid={Boolean(errors.plate)}
                   autoCapitalize="characters"
                   className="mt-2"
                   id="plate"
-                  maxLength={10}
-                  placeholder="Ex.: DEM-1A23"
+                  placeholder="Ex.: ABC-1234 ou ABC1D23"
+                  onInput={(event) => {
+                    event.currentTarget.value = formatVehiclePlateInput(
+                      event.currentTarget.value,
+                    );
+                  }}
                   {...register("plate", {
                     onChange: () => clearSelectedCandidateAfterEdit("plate"),
                   })}
                 />
+                <p
+                  className="mt-1.5 text-xs text-ink-soft"
+                  id="plate-format-hint"
+                >
+                  {vehiclePlateFormatHint}
+                </p>
                 <FieldError id="plate-error" message={errors.plate?.message} />
               </div>
 

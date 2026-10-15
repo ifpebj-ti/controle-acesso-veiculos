@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "../../../components/ui/Button";
 import { Icon, type IconName } from "../../../components/ui/Icon";
+import { normalizeVehiclePlate } from "../../vehicle-plates/vehiclePlate";
 import {
   eventAuthorizationFormSchema,
   type EventAuthorizationFormValues,
@@ -90,6 +91,8 @@ export function EventAuthorizationForm({
     setValue,
   } = useForm<EventAuthorizationFormValues>({
     defaultValues: defaultValues(event),
+    mode: "onBlur",
+    reValidateMode: "onChange",
     resolver: zodResolver(eventAuthorizationFormSchema),
   });
   const disabled = busy || isSubmitting;
@@ -110,7 +113,7 @@ export function EventAuthorizationForm({
       responsible: values.responsible.trim(),
       startsAtUtc: new Date(values.startsAtLocal).toISOString(),
       vehicleRules: values.vehicleRules.map((rule) => ({
-        plate: rule.mode === "plate" ? rule.plate.trim() : null,
+        plate: rule.mode === "plate" ? normalizeVehiclePlate(rule.plate) : null,
         quantity: rule.mode === "plate" ? 1 : rule.quantity,
         vehicleType: rule.vehicleType.trim(),
       })),

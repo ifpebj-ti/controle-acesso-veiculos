@@ -231,6 +231,34 @@ describe("EventsPage", () => {
     expect(createEventAuthorization).not.toHaveBeenCalled();
   });
 
+  it("rejects an invalid specific plate without losing the event data", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(authorization.name);
+    await user.click(screen.getByRole("button", { name: "Nova autorização" }));
+    await fillRequiredForm(user);
+    await user.click(screen.getByRole("radio", { name: /Placa específica/ }));
+    const plate = screen.getByLabelText("Placa");
+    await user.type(plate, "777777");
+    await user.click(screen.getByRole("button", { name: "Criar autorização" }));
+
+    expect(
+      await screen.findByText(
+        "Informe uma placa no formato ABC-1234 ou ABC1D23.",
+      ),
+    ).toBeInTheDocument();
+    expect(plate).toHaveValue("777777");
+    expect(plate).toHaveAttribute("aria-invalid", "true");
+    expect(plate).toHaveAttribute(
+      "aria-describedby",
+      expect.stringContaining("event-rule-0-plate-error"),
+    );
+    expect(screen.getByLabelText("Nome do evento")).toHaveValue(
+      "Encontro de Teste",
+    );
+    expect(createEventAuthorization).not.toHaveBeenCalled();
+  });
+
   it("associates validation errors returned by the API with their fields", async () => {
     vi.mocked(createEventAuthorization).mockRejectedValue(
       new Error("validation"),

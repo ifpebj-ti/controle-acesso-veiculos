@@ -3,6 +3,11 @@ import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 
 import {
+  formatVehiclePlateInput,
+  normalizeVehiclePlate,
+  vehiclePlateFormatHint,
+} from "../../vehicle-plates/vehiclePlate";
+import {
   institutionalVehicleFormSchema,
   type InstitutionalVehicleFormValues,
 } from "../schemas/institutionalVehicleSchemas";
@@ -69,6 +74,8 @@ export function InstitutionalVehicleForm({
     register,
   } = useForm<InstitutionalVehicleFormValues>({
     defaultValues: initialValues(vehicle),
+    mode: "onBlur",
+    reValidateMode: "onChange",
     resolver: zodResolver(institutionalVehicleFormSchema),
   });
 
@@ -84,7 +91,7 @@ export function InstitutionalVehicleForm({
       color: optionalValue(values.color),
       identification: optionalValue(values.identification),
       model: optionalValue(values.model),
-      plate: optionalValue(values.plate),
+      plate: values.plate ? normalizeVehiclePlate(values.plate) : null,
       vehicleType: optionalValue(values.vehicleType),
       year: values.year ? Number(values.year) : null,
     });
@@ -130,15 +137,26 @@ export function InstitutionalVehicleForm({
             Placa
           </label>
           <input
-            aria-describedby={errorFor("plate") ? errorId("plate") : undefined}
+            aria-describedby={
+              errorFor("plate")
+                ? `fleet-plate-hint ${errorId("plate")}`
+                : "fleet-plate-hint"
+            }
             aria-invalid={Boolean(errorFor("plate"))}
             autoCapitalize="characters"
             className={fieldClass}
             id="fleet-plate"
-            maxLength={10}
-            placeholder="Ex.: DEM-1A23"
+            placeholder="Ex.: ABC-1234 ou ABC1D23"
+            onInput={(event) => {
+              event.currentTarget.value = formatVehiclePlateInput(
+                event.currentTarget.value,
+              );
+            }}
             {...register("plate")}
           />
+          <p className="mt-1.5 text-xs text-ink-soft" id="fleet-plate-hint">
+            {vehiclePlateFormatHint}
+          </p>
           <FieldError id={errorId("plate")} message={errorFor("plate")} />
         </div>
 
