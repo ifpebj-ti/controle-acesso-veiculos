@@ -1,4 +1,5 @@
 import { Button } from "../../../components/ui/Button";
+import { eventParkingLocationLabel } from "../model/parkingLocations";
 import type { EventAuthorization } from "../types";
 import type { CurrentEventAuthorizationsStatus } from "../hooks/useCurrentEventAuthorizations";
 
@@ -193,6 +194,20 @@ export function EventAuthorizationSelector({
                 <strong className="text-ink">Responsável:</strong>{" "}
                 {event.responsible}
               </span>
+              <span className="rounded-xl bg-surface-subtle px-3 py-2">
+                <strong className="text-ink">Contato:</strong>{" "}
+                <span className="break-all">
+                  {event.responsibleContact ?? "Não informado"}
+                </span>
+              </span>
+              <span className="rounded-xl bg-surface-subtle px-3 py-2">
+                <strong className="text-ink">Estacionamento:</strong>{" "}
+                {eventParkingLocationLabel(event.parkingLocation)}
+              </span>
+            </span>
+            <span className="mt-3 block rounded-xl border border-warning-border bg-warning-surface px-3 py-2 text-xs leading-5 text-warning-text">
+              O estacionamento informado não libera a entrada automaticamente.
+              Confira e registre este acesso normalmente.
             </span>
             <span className="mt-4 block text-xs font-bold uppercase tracking-[0.1em] text-ink">
               Veículos autorizados
