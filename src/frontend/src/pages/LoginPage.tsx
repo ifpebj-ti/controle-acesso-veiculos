@@ -300,7 +300,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-primary-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-svh lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
+          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-visual-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-svh lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
             <img
               alt=""
               className="login-visual-photo"
@@ -347,8 +347,8 @@ export function LoginPage() {
               </p>
             </div>
 
-            <div className="relative z-10 hidden border-t border-primary-text/30 pt-5 sm:block">
-              <p className="max-w-md text-sm font-medium leading-6 text-primary-text/90">
+            <div className="relative z-10 hidden border-t border-visual-text/30 pt-5 sm:block">
+              <p className="max-w-md text-sm font-medium leading-6 text-visual-text/90">
                 Registre e acompanhe as movimentações de veículos do campus em
                 um único lugar.
               </p>

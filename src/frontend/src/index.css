@@ -12,6 +12,8 @@
   --color-text: var(--ui-text);
   --color-text-muted: var(--ui-text-muted);
   --color-text-inverse: var(--ui-text-inverse);
+  --color-visual-text: var(--ui-visual-text);
+  --color-brand-surface: var(--ui-brand-surface);
   --color-border: var(--ui-border);
   --color-border-strong: var(--ui-border-strong);
   --color-primary: var(--ui-primary);
@@ -44,7 +46,7 @@
   --color-ink-soft: var(--ui-text-muted);
   --color-brand: var(--palette-ifpe-green-500);
   --color-brand-dark: var(--ui-primary);
-  --color-brand-soft: var(--palette-ifpe-green-soft);
+  --color-brand-soft: var(--ui-surface-subtle);
   --color-cream: var(--ui-background);
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -91,6 +93,85 @@ body {
   border-radius: 0.25rem;
   outline: 2px solid var(--ui-focus);
   outline-offset: 4px;
+}
+
+.appearance-selector {
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--ui-text-inverse) 8%, transparent);
+}
+
+.appearance-selector-mark {
+  width: 4.5rem;
+  height: 3rem;
+  flex: none;
+  overflow: visible;
+  color: var(--ui-primary);
+  filter: drop-shadow(
+    0 0.15rem 0.15rem color-mix(in srgb, currentColor 16%, transparent)
+  );
+  transition:
+    color 220ms ease,
+    filter 220ms ease;
+}
+
+.appearance-brand-line,
+.appearance-gate-arm,
+.appearance-gate-stripes,
+.appearance-gate-pivot {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.35;
+}
+
+.appearance-gate-barrier {
+  transform: rotate(-50deg);
+  transform-box: view-box;
+  transform-origin: 56px 38px;
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.appearance-gate-stripes {
+  stroke-width: 1.6;
+}
+
+.appearance-gate-pivot {
+  fill: var(--ui-surface-subtle);
+  transition: fill 220ms ease;
+}
+
+.appearance-selector-mark[data-resolved-theme="dark"] {
+  filter: drop-shadow(
+    0 0.2rem 0.22rem color-mix(in srgb, currentColor 22%, transparent)
+  );
+}
+
+.appearance-selector-mark[data-resolved-theme="dark"] .appearance-gate-barrier {
+  transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appearance-selector-mark,
+  .appearance-gate-barrier,
+  .appearance-gate-pivot {
+    transition: none;
+  }
+}
+
+.appearance-selector-option:hover {
+  background: var(--ui-surface-subtle);
+}
+
+.appearance-selector-option:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.appearance-selector-option[aria-pressed="true"] {
+  color: var(--ui-primary-text);
+  background: var(--ui-primary);
+  box-shadow: 0 0.15rem 0.35rem var(--ui-shadow);
 }
 
 button,
@@ -924,20 +1005,28 @@ button:disabled {
 }
 
 .fleet-vehicle-card[data-vehicle-kind="motorcycle"] {
-  --fleet-card-accent: color-mix(in srgb, var(--ui-primary) 55%, #2563eb);
-  --fleet-card-visual: color-mix(in srgb, #dbeafe 58%, var(--ui-surface));
+  --fleet-card-accent: var(--ui-data-3);
+  --fleet-card-visual: color-mix(
+    in srgb,
+    var(--ui-data-3) 18%,
+    var(--ui-surface)
+  );
 }
 
 .fleet-vehicle-card[data-vehicle-kind="bus"] {
-  --fleet-card-accent: color-mix(in srgb, var(--ui-primary) 58%, #6d28d9);
-  --fleet-card-visual: color-mix(in srgb, #ede9fe 62%, var(--ui-surface));
+  --fleet-card-accent: var(--ui-data-4);
+  --fleet-card-visual: color-mix(
+    in srgb,
+    var(--ui-data-4) 18%,
+    var(--ui-surface)
+  );
 }
 
 .fleet-vehicle-card[data-vehicle-kind="van"],
 .fleet-vehicle-card[data-vehicle-kind="pickup"],
 .fleet-vehicle-card[data-vehicle-kind="truck"] {
-  --fleet-card-accent: color-mix(in srgb, var(--ui-primary) 52%, #d97706);
-  --fleet-card-visual: color-mix(in srgb, #fef3c7 54%, var(--ui-surface));
+  --fleet-card-accent: var(--ui-warning-border);
+  --fleet-card-visual: var(--ui-warning-surface);
 }
 
 .driver-authorization-card {
@@ -1076,20 +1165,28 @@ button:disabled {
 }
 
 .usage-active-card[data-vehicle-kind="motorcycle"] {
-  --usage-card-accent: color-mix(in srgb, var(--ui-primary) 55%, #2563eb);
-  --usage-card-visual: color-mix(in srgb, #dbeafe 58%, var(--ui-surface));
+  --usage-card-accent: var(--ui-data-3);
+  --usage-card-visual: color-mix(
+    in srgb,
+    var(--ui-data-3) 18%,
+    var(--ui-surface)
+  );
 }
 
 .usage-active-card[data-vehicle-kind="bus"] {
-  --usage-card-accent: color-mix(in srgb, var(--ui-primary) 58%, #6d28d9);
-  --usage-card-visual: color-mix(in srgb, #ede9fe 62%, var(--ui-surface));
+  --usage-card-accent: var(--ui-data-4);
+  --usage-card-visual: color-mix(
+    in srgb,
+    var(--ui-data-4) 18%,
+    var(--ui-surface)
+  );
 }
 
 .usage-active-card[data-vehicle-kind="van"],
 .usage-active-card[data-vehicle-kind="pickup"],
 .usage-active-card[data-vehicle-kind="truck"] {
-  --usage-card-accent: color-mix(in srgb, var(--ui-primary) 52%, #d97706);
-  --usage-card-visual: color-mix(in srgb, #fef3c7 54%, var(--ui-surface));
+  --usage-card-accent: var(--ui-warning-border);
+  --usage-card-visual: var(--ui-warning-surface);
 }
 
 .usage-history-filters {
@@ -1164,25 +1261,25 @@ button:disabled {
 }
 
 .open-access-vehicle-icon[data-vehicle-kind="motorcycle"] {
-  color: color-mix(in srgb, var(--ui-primary) 62%, #1d4ed8);
-  background: color-mix(in srgb, #dbeafe 76%, var(--ui-surface));
+  color: var(--ui-text);
+  background: color-mix(in srgb, var(--ui-data-3) 18%, var(--ui-surface));
 }
 
 .open-access-vehicle-icon[data-vehicle-kind="van"],
 .open-access-vehicle-icon[data-vehicle-kind="pickup"] {
-  color: #9a4f00;
-  background: color-mix(in srgb, #ffedd5 76%, var(--ui-surface));
+  color: var(--ui-warning-text);
+  background: var(--ui-warning-surface);
 }
 
 .open-access-vehicle-icon[data-vehicle-kind="bus"],
 .open-access-vehicle-icon[data-vehicle-kind="truck"] {
-  color: #5b3c99;
-  background: color-mix(in srgb, #ede9fe 76%, var(--ui-surface));
+  color: var(--ui-text);
+  background: color-mix(in srgb, var(--ui-data-4) 18%, var(--ui-surface));
 }
 
 .open-access-vehicle-icon[data-vehicle-kind="emergency"] {
-  color: #b42318;
-  background: color-mix(in srgb, #fee4e2 78%, var(--ui-surface));
+  color: var(--ui-danger-text);
+  background: var(--ui-danger-surface);
 }
 
 .open-access-vehicle-icon[data-vehicle-kind="unknown"] {
@@ -1244,12 +1341,12 @@ button:disabled {
 }
 
 .summary-primary-metric[data-tone="blue"] {
-  --summary-accent: #075985;
+  --summary-accent: var(--ui-data-3);
 }
 
 .summary-primary-metric[data-tone="blue"] .summary-primary-metric__icon {
-  color: #075985;
-  background: #e0f2fe;
+  color: var(--ui-text);
+  background: color-mix(in srgb, var(--ui-data-3) 18%, var(--ui-surface));
 }
 
 .summary-primary-metric[data-tone="yellow"] {
@@ -1262,12 +1359,12 @@ button:disabled {
 }
 
 .summary-primary-metric[data-tone="purple"] {
-  --summary-accent: #5b21b6;
+  --summary-accent: var(--ui-data-4);
 }
 
 .summary-primary-metric[data-tone="purple"] .summary-primary-metric__icon {
-  color: #5b21b6;
-  background: #ede9fe;
+  color: var(--ui-text);
+  background: color-mix(in srgb, var(--ui-data-4) 18%, var(--ui-surface));
 }
 
 .operational-breakdown-panel {
@@ -1885,8 +1982,8 @@ button:disabled {
 }
 
 ::selection {
-  color: white;
-  background: var(--color-brand-dark);
+  color: var(--ui-primary-text);
+  background: var(--ui-primary);
 }
 
 .login-page {
@@ -1933,20 +2030,28 @@ button:disabled {
   position: absolute;
   z-index: 2;
   inset: 1rem;
-  border: 1px solid color-mix(in srgb, var(--ui-primary-text) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-visual-text) 26%, transparent);
   border-radius: 1.25rem;
   content: "";
   pointer-events: none;
 }
 
 .login-visual-eyebrow {
-  color: color-mix(in srgb, var(--palette-ifpe-green-soft) 58%, white);
+  color: color-mix(
+    in srgb,
+    var(--palette-ifpe-green-soft) 58%,
+    var(--ui-visual-text)
+  );
   text-shadow: 0 1px 0.4rem
     color-mix(in srgb, var(--palette-ifpe-teal-900) 62%, transparent);
 }
 
 .login-visual-highlight {
-  color: color-mix(in srgb, var(--palette-ifpe-green-soft) 68%, white);
+  color: color-mix(
+    in srgb,
+    var(--palette-ifpe-green-soft) 68%,
+    var(--ui-visual-text)
+  );
   text-shadow: 0 1px 0.55rem
     color-mix(in srgb, var(--palette-ifpe-teal-900) 68%, transparent);
 }
@@ -2081,6 +2186,17 @@ button:disabled {
     var(--ui-danger-surface) 45%,
     var(--ui-surface)
   );
+}
+
+:root[data-theme="dark"] .institutional-brand-lockup {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:root[data-theme="dark"] .institutional-brand-lockup img {
+  opacity: 0.92;
+  filter: grayscale(1) brightness(0) invert(1);
 }
 
 @keyframes login-spin {
