@@ -2,6 +2,7 @@ import { ContentState } from "../../../components/ui/ContentState";
 import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
+import { eventParkingLocationLabel } from "../model/parkingLocations";
 import type { EventAuthorization, EventAuthorizationPage } from "../types";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -125,6 +126,19 @@ export function EventAuthorizationCatalog({
                         <Icon name="user" size={14} />
                         <span className="break-words">{event.responsible}</span>
                       </p>
+                      <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-ink-soft">
+                        <Icon name="mail" size={14} />
+                        <span className="break-all">
+                          {event.responsibleContact ?? "Contato não informado"}
+                        </span>
+                      </p>
+                      <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-ink-soft">
+                        <Icon name="car" size={14} />
+                        <span>
+                          Estacionamento:{" "}
+                          {eventParkingLocationLabel(event.parkingLocation)}
+                        </span>
+                      </p>
                     </div>
                   </div>
                   <dl className="event-authorization-card__metrics mt-4 grid grid-cols-3 gap-2 text-center">
@@ -176,6 +190,11 @@ export function EventAuthorizationCatalog({
                       {event.overnightAllowed
                         ? "Pernoite permitido"
                         : "Pernoite não permitido"}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-warning-text">
+                      A indicação de estacionamento não libera a entrada
+                      automaticamente; cada acesso deve ser conferido e
+                      registrado.
                     </p>
                     {event.notes && (
                       <p className="mt-2 text-sm leading-6 text-ink-soft">
