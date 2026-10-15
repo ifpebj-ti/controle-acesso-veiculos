@@ -109,6 +109,11 @@ describe("appearance preference", () => {
       "data-resolved-theme",
       "dark",
     );
+    expect(document.querySelector(".appearance-selector-mark")).toHaveAttribute(
+      "data-preference",
+      "dark",
+    );
+    expect(document.querySelector(".appearance-gate-barrier")).toBeVisible();
     expect(screen.getByRole("status")).toHaveTextContent(
       "Preferência Escuro. Tema aplicado: Escuro.",
     );
