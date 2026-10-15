@@ -95,7 +95,7 @@ export function TemporaryCredentialDialog({
         aria-describedby="temporary-credential-description"
         aria-labelledby="temporary-credential-title"
         aria-modal="true"
-        className="w-full rounded-t-[2rem] bg-white p-5 shadow-2xl sm:mx-auto sm:max-w-xl sm:rounded-[2rem] sm:p-7"
+        className="w-full rounded-t-[2rem] bg-surface p-5 shadow-2xl sm:mx-auto sm:max-w-xl sm:rounded-[2rem] sm:p-7"
         ref={dialogRef}
         role="dialog"
       >
@@ -158,7 +158,7 @@ export function TemporaryCredentialDialog({
             Fechar e apagar da tela
           </button>
           <button
-            className="min-h-12 rounded-xl bg-brand-dark px-6 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/45"
+            className="min-h-12 rounded-xl bg-primary px-6 font-bold text-primary-text hover:bg-primary-hover focus:outline-none focus-visible:ring-3 focus-visible:ring-focus"
             onClick={() => void copyCredential()}
             type="button"
           >

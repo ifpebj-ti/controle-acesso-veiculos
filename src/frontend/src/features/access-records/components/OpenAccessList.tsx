@@ -49,7 +49,7 @@ export function OpenAccessList({
   return (
     <>
       <div
-        className="mt-4 grid gap-3 md:grid-cols-2 xl:hidden"
+        className="mt-4 grid gap-3 md:grid-cols-2 2xl:hidden"
         data-testid="open-access-cards"
       >
         {records.map((record) => {
@@ -145,7 +145,7 @@ export function OpenAccessList({
       </div>
 
       <div
-        className="open-access-table-shell mt-4 hidden overflow-hidden rounded-xl border border-border xl:block"
+        className="open-access-table-shell mt-4 hidden overflow-hidden rounded-xl border border-border 2xl:block"
         data-testid="open-access-table"
       >
         <table className="w-full table-fixed border-collapse text-left text-sm">
