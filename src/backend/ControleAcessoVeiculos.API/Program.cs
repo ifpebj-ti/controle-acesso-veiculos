@@ -14,6 +14,7 @@ using ControleAcessoVeiculos.Application.InstitutionalVehicles;
 using ControleAcessoVeiculos.Application.InstitutionalDrivers;
 using ControleAcessoVeiculos.Application.EventAuthorizations;
 using ControleAcessoVeiculos.Application.OperationalSummaries;
+using ControleAcessoVeiculos.Application.AdministrativeReports;
 using ControleAcessoVeiculos.Infrastructure.Authentication;
 using ControleAcessoVeiculos.Infrastructure.Auditing;
 using ControleAcessoVeiculos.Infrastructure.AccessRecords;
@@ -23,6 +24,7 @@ using ControleAcessoVeiculos.Infrastructure.InstitutionalVehicles;
 using ControleAcessoVeiculos.Infrastructure.InstitutionalDrivers;
 using ControleAcessoVeiculos.Infrastructure.EventAuthorizations;
 using ControleAcessoVeiculos.Infrastructure.OperationalSummaries;
+using ControleAcessoVeiculos.Infrastructure.AdministrativeReports;
 using System.Globalization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -236,7 +238,9 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.Doorman,
         ProfileNames.SecurityGuard,
         ProfileNames.TransportationDepartment,
-        ProfileNames.Administrator));
+        ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ReviewAdministrativeReports,
+        policy => policy.RequireRole(ProfileNames.Administrator));
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(institutionalTimeZone);
@@ -252,6 +256,7 @@ builder.Services.AddScoped<IInstitutionalDriverStore, InstitutionalDriverStore>(
 builder.Services.AddScoped<IEventAuthorizationStore, EventAuthorizationStore>();
 builder.Services.AddScoped<IAuditTrailStore, AuditTrailStore>();
 builder.Services.AddScoped<IOperationalSummaryStore, OperationalSummaryStore>();
+builder.Services.AddScoped<IAdministrativeReportStore, AdministrativeReportStore>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddSingleton<IRefreshTokenService, CryptographicRefreshTokenService>();
 builder.Services.AddSingleton<ITemporaryCredentialGenerator,
@@ -271,6 +276,7 @@ builder.Services.AddScoped<InstitutionalDriverService>();
 builder.Services.AddScoped<EventAuthorizationService>();
 builder.Services.AddScoped<AuditTrailService>();
 builder.Services.AddScoped<OperationalSummaryService>();
+builder.Services.AddScoped<AdministrativeReportService>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
@@ -369,6 +375,7 @@ app.MapEventAuthorizationEndpoints();
 app.MapUserAccountEndpoints();
 app.MapAuditTrailEndpoints();
 app.MapOperationalSummaryEndpoints();
+app.MapAdministrativeReportEndpoints();
 
 app.MapPost("/auth/login", async (
     LoginRequest request,

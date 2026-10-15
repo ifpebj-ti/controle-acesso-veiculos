@@ -10,6 +10,10 @@ from its first published release.
 
 ### Added
 
+- Administrator-only vehicle-movement and institutional-fleet report queries
+  with institutional date boundaries, bounded pagination, canonical actor
+  attribution, data minimization, and consultation auditing.
+
 - Semantic frontend design tokens and a documented WCAG 2.2 contrast matrix
   for the future light, dark, and system appearance foundation.
 

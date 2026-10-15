@@ -17,4 +17,5 @@ public static class AuthorizationPolicies
     public const string ManageUsers = "users:manage";
     public const string ReviewAuditTrail = "audits:read";
     public const string ReviewOperationalSummary = "operations:summary:read";
+    public const string ReviewAdministrativeReports = "reports:read";
 }
