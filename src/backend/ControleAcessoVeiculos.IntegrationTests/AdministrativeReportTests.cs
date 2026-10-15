@@ -112,13 +112,17 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
             var category = new CategoriaAcesso($"Categoria {Guid.NewGuid():N}");
             dbContext.AddRange(driver, vehicle, category);
             await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
-            dbContext.RegistrosAcesso.Add(new RegistroAcesso(
+            var accessRecord = new RegistroAcesso(
                 vehicle.Id,
                 driver.Id,
                 category.Id,
                 new DateTime(2002, 5, 10, 12, 0, 0, DateTimeKind.Utc),
                 "Visita técnica",
-                administratorId));
+                administratorId);
+            accessRecord.RegistrarSaida(
+                new DateTime(2002, 5, 10, 13, 0, 0, DateTimeKind.Utc),
+                administratorId);
+            dbContext.RegistrosAcesso.Add(accessRecord);
             await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
