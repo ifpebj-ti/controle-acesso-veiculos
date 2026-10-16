@@ -205,7 +205,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         var pessoa = new Pessoa($"Pessoa {suffix}");
         var veiculo = new Veiculo(
-            $"T{suffix[..7]}",
+            TestPlate.From(suffix),
             "Teste",
             null,
             false);

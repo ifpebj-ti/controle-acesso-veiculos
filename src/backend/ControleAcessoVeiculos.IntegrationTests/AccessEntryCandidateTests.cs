@@ -51,18 +51,18 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N");
         var eligible = await CreateCandidateAsync(
             $"Condutor recorrente {suffix}",
-            suffix[..7],
+            TestPlate.From(suffix),
             $"DOC{suffix[..12]}",
             $"candidate-{suffix}@example.test");
         var institutional = await CreateCandidateAsync(
             $"Condutor recorrente {suffix}",
-            suffix[7..14],
+            TestPlate.From($"I{suffix}"),
             $"INS{suffix[..12]}",
             $"institutional-{suffix}@example.test",
             isInstitutional: true);
         await CreateCandidateAsync(
             $"Condutor recorrente {suffix}",
-            suffix[14..21],
+            TestPlate.From($"E{suffix}"),
             $"OLD{suffix[..12]}",
             $"expired-{suffix}@example.test",
             relationshipEnd: DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1));
@@ -140,7 +140,7 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
         {
             await CreateCandidateAsync(
                 $"Busca limitada {suffix} {index}",
-                $"{suffix[..4]}{index:D3}",
+                TestPlate.From($"{index:D2}{suffix}"),
                 $"LIM{suffix}{index:D2}",
                 null);
         }
@@ -160,7 +160,7 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N");
         var candidate = await CreateCandidateAsync(
             $"Condutor concorrente {suffix}",
-            suffix[..7],
+            TestPlate.From(suffix),
             $"CON{suffix[..12]}",
             null);
         var request = new
