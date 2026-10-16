@@ -33,6 +33,14 @@ Adotar OpenID Connect Authorization Code Flow, iniciado e concluído no backend:
 7. a aplicação emite sua própria sessão curta e renovável, já existente, com o
    perfil obtido exclusivamente do banco local.
 
+O callback do provedor não entregará um JWT da aplicação por query string. A
+API concluirá o fluxo em uma autenticação externa temporária, criará o cookie
+HttpOnly da sessão renovável e redirecionará apenas para um caminho local fixo
+do frontend. Nesse caminho, o frontend obterá o token CSRF e usará o endpoint
+de renovação existente para receber o access token curto somente em memória.
+Parâmetros de retorno fornecidos pelo navegador não decidirão o destino do
+redirecionamento.
+
 Uma conta Google válida não recebe acesso automaticamente, seja ela pessoal ou
 institucional. O Administrador mestre cadastra previamente o endereço exato e
 atribui o perfil antes do primeiro login. Não haverá restrição por domínio. O
@@ -102,6 +110,7 @@ Authentication__Google__Enabled
 Authentication__Google__ClientId
 Authentication__Google__ClientSecret
 Authentication__Google__CallbackPath
+Authentication__Google__FrontendCompletionPath
 ```
 
 Habilitar o provedor sem configuração completa deve impedir o startup. O deploy
