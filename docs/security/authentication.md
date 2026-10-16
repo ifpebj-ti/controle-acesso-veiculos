@@ -4,6 +4,14 @@
 
 A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor, a Issue #251 acrescenta a troca autenticada de senha e a Issue #258 acrescenta credencial temporária, troca obrigatória e redefinição administrativa. A Issue #220 consolida a decisão institucional do MVP: dois Administradores funcionais podem provisionar ou redefinir contas e entregam a credencial temporária diretamente ao titular. A observação do procedimento no ambiente real e a matriz final permanecem na Issue #162.
 
+Em 14/10/2026 foi aceita a substituição do login cotidiano por Google OIDC,
+registrada na [ADR 0005](../architecture/decisions/0005-google-oidc-and-emergency-access.md)
+e na Issue #448. O texto abaixo descreve o contrato local atualmente
+implementado; ele permanece funcional até a migração segura e não deve ser
+interpretado como estado final do login. Perfis, autorização, sessão da
+aplicação e auditoria continuarão locais. Senha será mantida apenas para contas
+de emergência de Administrador mestre depois da transição.
+
 ## Decisões implementadas
 
 - Senhas usam `PasswordHasher` do ASP.NET Core Identity no formato V3, PBKDF2-HMAC-SHA512, salt aleatório por senha e 210.000 iterações.

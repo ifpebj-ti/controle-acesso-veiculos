@@ -95,6 +95,13 @@ builder.Services.Configure<AuthenticationSessionOptions>(
     builder.Configuration.GetSection(AuthenticationSessionOptions.SectionName));
 builder.Services.AddSingleton(sessionPolicy);
 
+var googleOidcOptions = builder.Configuration
+    .GetSection(GoogleOidcOptions.SectionName)
+    .Get<GoogleOidcOptions>() ?? new GoogleOidcOptions();
+googleOidcOptions.Validate();
+builder.Services.Configure<GoogleOidcOptions>(
+    builder.Configuration.GetSection(GoogleOidcOptions.SectionName));
+
 var temporaryCredentialOptions = builder.Configuration
     .GetSection(TemporaryCredentialOptions.SectionName)
     .Get<TemporaryCredentialOptions>() ?? new TemporaryCredentialOptions();

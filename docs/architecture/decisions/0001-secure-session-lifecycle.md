@@ -78,8 +78,9 @@ local usa chaves efêmeras e, após reinício, o cliente obtém um novo par CSRF
   exposição de tokens no navegador, mas exigiria trocar o contrato já integrado,
   proteger todas as mutações contra CSRF e separar clientes não web. Pode ser
   reavaliado antes de uma arquitetura distribuída ou SSO institucional.
-- **OAuth/OIDC institucional:** desejável no futuro, mas depende de provedor,
-  governança e disponibilidade ainda não confirmados.
+- **OAuth/OIDC institucional:** posteriormente confirmado e detalhado na
+  [ADR 0005](0005-google-oidc-and-emergency-access.md). A sessão própria continua
+  válida depois que o Google comprova a identidade.
 
 ## Consequências
 

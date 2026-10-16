@@ -10,6 +10,10 @@ from its first published release.
 
 ### Added
 
+- An accepted architecture decision for backend-mediated Google OIDC, locally
+  governed profiles, stable subject binding, master-administrator governance,
+  method-aware step-up, and separately controlled emergency accounts.
+
 - Semantic frontend design tokens and a documented WCAG 2.2 contrast matrix
   for the future light, dark, and system appearance foundation.
 
