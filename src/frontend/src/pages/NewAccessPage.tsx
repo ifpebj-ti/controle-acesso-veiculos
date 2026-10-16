@@ -4,6 +4,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "../components/ui/Button";
+import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { Icon } from "../components/ui/Icon";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionPanel } from "../components/ui/SectionPanel";
@@ -288,21 +289,21 @@ export function NewAccessPage() {
       />
 
       {successNotice && (
-        <div
-          className="mt-6 rounded-xl border border-success-border bg-success-surface p-4 text-sm font-semibold text-success-text"
-          role="status"
-        >
-          {successNotice}
-        </div>
+        <ActionFeedback
+          className="mt-6 font-semibold"
+          floating
+          message={successNotice}
+          tone="success"
+        />
       )}
 
       {requestError && (
-        <div
-          className="mt-6 rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
-          role="alert"
-        >
-          {requestError}
-        </div>
+        <ActionFeedback
+          className="mt-6"
+          floating
+          message={requestError}
+          tone="error"
+        />
       )}
 
       <form

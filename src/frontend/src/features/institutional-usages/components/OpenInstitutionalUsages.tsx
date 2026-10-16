@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
 import type { InstitutionalVehicle } from "../../institutional-vehicles";
@@ -62,11 +63,6 @@ function ReturnForm({
       noValidate
       onSubmit={handleSubmit(onSubmit)}
     >
-      {formError && (
-        <p className="mb-3 text-sm font-semibold text-red-800" role="alert">
-          {formError}
-        </p>
-      )}
       <label
         className="text-sm font-semibold text-ink"
         htmlFor={`usage-return-${usage.id}`}
@@ -103,6 +99,11 @@ function ReturnForm({
           {message}
         </p>
       )}
+      <ActionFeedback
+        className="mt-4 font-semibold"
+        message={formError}
+        tone="error"
+      />
       <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button
           disabled={disabled}

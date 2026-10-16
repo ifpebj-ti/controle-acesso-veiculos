@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { PageHeader } from "../components/ui/PageHeader";
 import { AccessCorrectionDialog } from "../features/access-records/components/AccessCorrectionDialog";
 import { AccessDetailsDialog } from "../features/access-records/components/AccessDetailsDialog";
@@ -31,20 +32,15 @@ export function HistoryPage() {
     null,
   );
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
-  const [successFocusRequest, setSuccessFocusRequest] = useState(0);
-  const successNoticeRef = useRef<HTMLDivElement>(null);
+  const [successNeedsFocus, setSuccessNeedsFocus] = useState(false);
   const canCorrect = profileHasCapability(
     user.profileName,
     "correct-general-access",
   );
 
-  useEffect(() => {
-    if (successFocusRequest === 0) return;
-    successNoticeRef.current?.focus({ preventScroll: true });
-  }, [successFocusRequest]);
-
   function openCorrection(record: AccessRecord, trigger: HTMLButtonElement) {
     setSuccessNotice(null);
+    setSuccessNeedsFocus(false);
     setActiveCorrection({ record, trigger });
   }
 
@@ -55,6 +51,7 @@ export function HistoryPage() {
   function correctFromDetails() {
     if (!activeDetails || !canCorrect) return;
     setSuccessNotice(null);
+    setSuccessNeedsFocus(false);
     setActiveCorrection(activeDetails);
     setActiveDetails(null);
   }
@@ -62,6 +59,7 @@ export function HistoryPage() {
   async function finishCorrection(record: AccessRecord) {
     const trigger = activeCorrection?.trigger;
     setActiveCorrection(null);
+    setSuccessNeedsFocus(false);
     setSuccessNotice(`Registro #${record.id} corrigido com sucesso.`);
 
     const refreshed = await history.revalidateAfterCorrection(record);
@@ -69,7 +67,7 @@ export function HistoryPage() {
       !trigger?.isConnected ||
       !refreshed?.items.some(({ id }) => id === record.id)
     ) {
-      setSuccessFocusRequest((request) => request + 1);
+      setSuccessNeedsFocus(true);
     }
   }
 
@@ -101,14 +99,14 @@ export function HistoryPage() {
       />
 
       {successNotice && (
-        <div
-          className="mt-5 rounded-xl border border-success-border bg-success-surface p-4 text-sm font-semibold text-success-text"
-          ref={successNoticeRef}
-          role="status"
-          tabIndex={-1}
-        >
-          {successNotice}
-        </div>
+        <ActionFeedback
+          className="font-semibold"
+          floating
+          focusOnChange={successNeedsFocus}
+          message={successNotice}
+          onDismiss={() => setSuccessNotice(null)}
+          tone="success"
+        />
       )}
 
       <section className="institutional-catalog mt-5 overflow-hidden rounded-[2rem] border border-border bg-surface">

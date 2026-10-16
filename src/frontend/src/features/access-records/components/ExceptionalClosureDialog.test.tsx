@@ -76,7 +76,6 @@ function DialogHarness({
           onConfirm={onConfirm}
           record={record}
           returnFocusTo={returnFocusTo}
-          successFocusRef={triggerRef}
         />
       )}
     </>
