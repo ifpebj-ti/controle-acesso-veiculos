@@ -1,5 +1,6 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { Button } from "../../../components/ui/Button";
 import type { AccessRecord } from "../types";
 
@@ -10,7 +11,6 @@ interface AccessExitDialogProps {
   pending: boolean;
   record: AccessRecord;
   returnFocusTo: HTMLElement | null;
-  successFocusRef: RefObject<HTMLElement | null>;
 }
 
 export function AccessExitDialog({
@@ -20,7 +20,6 @@ export function AccessExitDialog({
   pending,
   record,
   returnFocusTo,
-  successFocusRef,
 }: AccessExitDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
@@ -33,7 +32,6 @@ export function AccessExitDialog({
   }, [onCancel, pending]);
 
   useEffect(() => {
-    const successFocusTarget = successFocusRef.current;
     const dialogElement = dialogRef.current;
     cancelButtonRef.current?.focus();
 
@@ -66,15 +64,12 @@ export function AccessExitDialog({
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      const target = returnFocusTo?.isConnected
-        ? returnFocusTo
-        : successFocusTarget;
       window.requestAnimationFrame(() => {
         if (dialogElement?.isConnected) return;
-        target?.focus();
+        if (returnFocusTo?.isConnected) returnFocusTo.focus();
       });
     };
-  }, [returnFocusTo, successFocusRef]);
+  }, [returnFocusTo]);
 
   function confirm() {
     onConfirm();
@@ -107,14 +102,7 @@ export function AccessExitDialog({
           por <strong>{record.driverName}</strong>.
         </p>
 
-        {errorMessage && (
-          <div
-            className="mt-4 rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
-            role="alert"
-          >
-            {errorMessage}
-          </div>
-        )}
+        <ActionFeedback className="mt-4" message={errorMessage} tone="error" />
 
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
           <Button

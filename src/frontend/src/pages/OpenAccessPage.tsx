@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { Button } from "../components/ui/Button";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
@@ -156,19 +157,14 @@ export function OpenAccessPage() {
       />
 
       {notice && (
-        <div
-          className="mt-6 flex items-start justify-between gap-4 rounded-xl border border-success-border bg-success-surface p-4 text-sm text-success-text"
-          role="status"
-        >
-          <p>{notice}</p>
-          <button
-            className="shrink-0 rounded-md font-bold underline underline-offset-4 focus:outline-3 focus:outline-offset-2 focus:outline-focus"
-            onClick={dismissNotice}
-            type="button"
-          >
-            Fechar
-          </button>
-        </div>
+        <ActionFeedback
+          className="font-semibold"
+          floating
+          focusOnChange={Boolean(accessRecords.notice)}
+          message={notice}
+          onDismiss={dismissNotice}
+          tone="success"
+        />
       )}
 
       {accessRecords.queryError && (
@@ -398,7 +394,6 @@ export function OpenAccessPage() {
           pending={accessRecords.closingId === exitSelection.record.id}
           record={exitSelection.record}
           returnFocusTo={exitSelection.trigger}
-          successFocusRef={searchRef}
         />
       )}
 
@@ -414,7 +409,6 @@ export function OpenAccessPage() {
           }
           record={exceptionalSelection.record}
           returnFocusTo={exceptionalSelection.trigger}
-          successFocusRef={searchRef}
         />
       )}
     </div>

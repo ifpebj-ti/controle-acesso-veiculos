@@ -37,8 +37,19 @@ describe("ActionFeedback", () => {
     const feedback = screen.getByRole("status");
     expect(feedback).toHaveFocus();
     expect(feedback).toHaveAttribute("aria-live", "polite");
-    expect(feedback).toHaveClass("fixed");
-    await user.click(screen.getByRole("button", { name: "Fechar mensagem" }));
+    expect(feedback).toHaveClass(
+      "fixed",
+      "inset-x-4",
+      "max-h-[min(50vh,20rem)]",
+      "overflow-auto",
+      "md:left-auto",
+      "md:max-w-xl",
+    );
+    await user.tab();
+    expect(
+      screen.getByRole("button", { name: "Fechar mensagem" }),
+    ).toHaveFocus();
+    await user.keyboard("{Enter}");
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
