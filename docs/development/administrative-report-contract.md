@@ -10,6 +10,8 @@ tela no frontend não substitui a política aplicada pela API.
 | --- | --- |
 | Movimentações gerais de veículos | `GET /reports/vehicle-movements` |
 | Utilizações da frota institucional | `GET /reports/institutional-fleet` |
+| PDF de movimentações | `POST /reports/vehicle-movements/pdf` |
+| PDF de utilizações da frota | `POST /reports/institutional-fleet/pdf` |
 
 Parâmetros comuns:
 
@@ -35,15 +37,31 @@ resultado; o conteúdo pessoal do relatório não é duplicado na auditoria.
 
 ## Exportação PDF e confirmação reforçada
 
-A exportação permanece pendente no mesmo caminho de entrega. Ela deve gerar o
-PDF no servidor, limitar volume, usar `Cache-Control: no-store` e exigir
-confirmação reforçada em cada operação.
+Os endpoints de exportação recebem período, filtros e `currentPassword` no corpo
+JSON. A senha nunca integra URL, nome de arquivo, PDF, log ou auditoria. No
+contrato local atual, cada exportação exige a senha vigente do Administrador e
+usa a mesma política de limitação de tentativas das operações sensíveis.
 
-Como a autenticação cotidiana passará a usar Google OIDC (#448), a confirmação
-não pode depender exclusivamente de senha local. A solução final deverá aceitar
-reauth OIDC para contas Google e senha apenas para a conta administrativa local
-de emergência. Nenhuma das opções reutilizará o endpoint de login nem enviará
-segredo em URL, log ou auditoria.
+O servidor:
+
+- aplica novamente autorização e estado da conta, mesmo após o JWT;
+- limita o período a 31 dias e o resultado a 1.000 registros;
+- resolve autoria e nome do exportador sem aceitar esses valores do navegador;
+- gera o arquivo em memória, sem armazenamento permanente;
+- devolve `application/pdf`, nome previsível e `Cache-Control: no-store`;
+- audita tipo, período, resultado e Administrador sem copiar o conteúdo;
+- produz um PDF vazio válido quando nenhum registro atende aos filtros.
+
+A renderização usa QuestPDF 2026.9.1 no processo da API. A dependência não faz
+chamadas de rede nem recebe dados do relatório; a licença Community foi escolhida
+por se tratar de projeto acadêmico e aberto. Qualquer atualização de versão ou
+mudança de finalidade exige nova revisão de licença e segurança.
+
+Como a autenticação cotidiana passará a usar Google OIDC (#448), este incremento
+ainda não fecha o critério de confirmação reforçada para contas Google. A solução
+final deverá aceitar reautenticação OIDC para essas contas e manter senha somente
+para a conta administrativa local de emergência. Nenhuma das opções reutilizará
+o endpoint de login nem enviará segredo em URL, log ou auditoria.
 
 DOCX não compõe o recorte por ser um formato editável. CSV também permanece fora
 do escopo inicial; poderá ser avaliado em issue própria se houver necessidade
