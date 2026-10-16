@@ -81,6 +81,64 @@ public sealed record PagedAdministrativeReport<T>(
     DateOnly To,
     string TimeZoneId);
 
+public sealed record AdministrativeReportExport<T>(
+    IReadOnlyList<T> Items,
+    int TotalCount,
+    DateOnly From,
+    DateOnly To,
+    string TimeZoneId,
+    DateTime GeneratedAtUtc,
+    string GeneratedBy,
+    IReadOnlyDictionary<string, string?> Filters);
+
+public sealed record GeneratedAdministrativeReport(
+    byte[] Content,
+    string FileName);
+
+public enum AdministrativeReportExportConfirmationStatus
+{
+    Success = 1,
+    Unauthorized = 2
+}
+
+public sealed record AdministrativeReportExportConfirmation(
+    AdministrativeReportExportConfirmationStatus Status,
+    string? ActorName)
+{
+    public static AdministrativeReportExportConfirmation Success(string actorName) =>
+        new(AdministrativeReportExportConfirmationStatus.Success, actorName);
+
+    public static AdministrativeReportExportConfirmation Unauthorized() =>
+        new(AdministrativeReportExportConfirmationStatus.Unauthorized, null);
+}
+
+public enum AdministrativeReportExportStatus
+{
+    Success = 1,
+    Invalid = 2,
+    Unauthorized = 3,
+    TooLarge = 4,
+    GenerationFailed = 5
+}
+
+public sealed record AdministrativeReportExportResult(
+    AdministrativeReportExportStatus Status,
+    GeneratedAdministrativeReport? Report,
+    IReadOnlyDictionary<string, string[]> Errors)
+{
+    public static AdministrativeReportExportResult Success(
+        GeneratedAdministrativeReport report) =>
+        new(AdministrativeReportExportStatus.Success, report, EmptyErrors);
+
+    public static AdministrativeReportExportResult Failure(
+        AdministrativeReportExportStatus status,
+        IReadOnlyDictionary<string, string[]>? errors = null) =>
+        new(status, null, errors ?? EmptyErrors);
+
+    private static readonly IReadOnlyDictionary<string, string[]> EmptyErrors =
+        new Dictionary<string, string[]>();
+}
+
 public enum AdministrativeReportStatus
 {
     Success,

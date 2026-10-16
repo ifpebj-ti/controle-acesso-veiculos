@@ -218,10 +218,44 @@ public sealed class AdministrativeReportStore(ControleAcessoVeiculosDbContext db
         DateOnly from,
         DateOnly to,
         bool succeeded,
+        CancellationToken cancellationToken) =>
+        await RecordActionAsync(
+            actorUserId,
+            "Consultation",
+            reportType,
+            from,
+            to,
+            succeeded,
+            cancellationToken);
+
+    public async Task RecordExportAsync(
+        int actorUserId,
+        string reportType,
+        DateOnly from,
+        DateOnly to,
+        bool succeeded,
+        CancellationToken cancellationToken) =>
+        await RecordActionAsync(
+            actorUserId,
+            "Export",
+            reportType,
+            from,
+            to,
+            succeeded,
+            cancellationToken);
+
+    private async Task RecordActionAsync(
+        int actorUserId,
+        string operation,
+        string reportType,
+        DateOnly from,
+        DateOnly to,
+        bool succeeded,
         CancellationToken cancellationToken)
     {
         var details = JsonSerializer.Serialize(new
         {
+            Operation = operation,
             ReportType = reportType,
             From = from.ToString("yyyy-MM-dd"),
             To = to.ToString("yyyy-MM-dd"),

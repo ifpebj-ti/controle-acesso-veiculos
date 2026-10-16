@@ -4,8 +4,13 @@ namespace ControleAcessoVeiculos.Application.AdministrativeReports;
 
 public sealed class AdministrativeReportService(
     IAdministrativeReportStore store,
-    TimeZoneInfo institutionalTimeZone)
+    IAdministrativeReportExportSecurity exportSecurity,
+    IAdministrativeReportPdfRenderer pdfRenderer,
+    TimeZoneInfo institutionalTimeZone,
+    TimeProvider timeProvider)
 {
+    private const int MaximumExportRecords = 1000;
+
     public async Task<AdministrativeReportResult<VehicleMovementReportItem>>
         SearchVehicleMovementsAsync(
             VehicleMovementReportQuery query,
@@ -84,6 +89,213 @@ public sealed class AdministrativeReportService(
         return new(AdministrativeReportStatus.Success, report, errors);
     }
 
+    public Task<AdministrativeReportExportResult> ExportVehicleMovementsAsync(
+        VehicleMovementReportQuery query,
+        int actorUserId,
+        string? currentPassword,
+        CancellationToken cancellationToken) =>
+        ExportAsync(
+            query.From,
+            query.To,
+            query.Plate,
+            query.DriverName,
+            query.CategoryName,
+            null,
+            query.Status,
+            actorUserId,
+            currentPassword,
+            "VehicleMovements",
+            async criteria =>
+            {
+                var page = await store.SearchVehicleMovementsAsync(
+                    criteria,
+                    institutionalTimeZone.Id,
+                    cancellationToken);
+                return (page.TotalCount, (IReadOnlyList<VehicleMovementReportItem>)page.Items);
+            },
+            (items, totalCount, actorName, filters) =>
+            {
+                var export = new AdministrativeReportExport<VehicleMovementReportItem>(
+                    items,
+                    totalCount,
+                    query.From,
+                    query.To,
+                    institutionalTimeZone.Id,
+                    timeProvider.GetUtcNow().UtcDateTime,
+                    actorName,
+                    filters);
+                return new GeneratedAdministrativeReport(
+                    pdfRenderer.RenderVehicleMovements(export),
+                    $"movimentacoes-veiculos-{query.From:yyyy-MM-dd}-a-{query.To:yyyy-MM-dd}.pdf");
+            },
+            cancellationToken);
+
+    public Task<AdministrativeReportExportResult> ExportInstitutionalFleetAsync(
+        InstitutionalFleetReportQuery query,
+        int actorUserId,
+        string? currentPassword,
+        CancellationToken cancellationToken) =>
+        ExportAsync(
+            query.From,
+            query.To,
+            query.Plate,
+            query.DriverName,
+            null,
+            query.VehicleIdentification,
+            query.Status,
+            actorUserId,
+            currentPassword,
+            "InstitutionalFleet",
+            async criteria =>
+            {
+                var page = await store.SearchInstitutionalFleetAsync(
+                    criteria,
+                    institutionalTimeZone.Id,
+                    cancellationToken);
+                return (page.TotalCount, (IReadOnlyList<InstitutionalFleetReportItem>)page.Items);
+            },
+            (items, totalCount, actorName, filters) =>
+            {
+                var export = new AdministrativeReportExport<InstitutionalFleetReportItem>(
+                    items,
+                    totalCount,
+                    query.From,
+                    query.To,
+                    institutionalTimeZone.Id,
+                    timeProvider.GetUtcNow().UtcDateTime,
+                    actorName,
+                    filters);
+                return new GeneratedAdministrativeReport(
+                    pdfRenderer.RenderInstitutionalFleet(export),
+                    $"utilizacoes-frota-{query.From:yyyy-MM-dd}-a-{query.To:yyyy-MM-dd}.pdf");
+            },
+            cancellationToken);
+
+    private async Task<AdministrativeReportExportResult> ExportAsync<TItem>(
+        DateOnly from,
+        DateOnly to,
+        string? plate,
+        string? driverName,
+        string? categoryName,
+        string? vehicleIdentification,
+        string? status,
+        int actorUserId,
+        string? currentPassword,
+        string reportType,
+        Func<AdministrativeReportCriteria,
+            Task<(int TotalCount, IReadOnlyList<TItem> Items)>> load,
+        Func<IReadOnlyList<TItem>, int, string, IReadOnlyDictionary<string, string?>,
+            GeneratedAdministrativeReport> render,
+        CancellationToken cancellationToken)
+    {
+        var (criteria, errors) = Validate(
+            from,
+            to,
+            plate,
+            driverName,
+            categoryName,
+            vehicleIdentification,
+            status,
+            1,
+            MaximumExportRecords,
+            MaximumExportRecords);
+
+        errors = reportType == "VehicleMovements"
+            ? ValidateStatus<StatusRegistroAcesso>(status, errors)
+            : ValidateStatus<StatusUsoVeiculoInstitucional>(status, errors);
+
+        if (criteria is null || errors.Count > 0)
+        {
+            return AdministrativeReportExportResult.Failure(
+                AdministrativeReportExportStatus.Invalid,
+                errors);
+        }
+
+        if (string.IsNullOrWhiteSpace(currentPassword) || currentPassword.Length > 1024)
+        {
+            return AdministrativeReportExportResult.Failure(
+                AdministrativeReportExportStatus.Invalid,
+                new Dictionary<string, string[]>
+                {
+                    ["currentPassword"] = ["A confirmação da senha atual é obrigatória."]
+                });
+        }
+
+        var confirmation = await exportSecurity.ConfirmLocalPasswordAsync(
+            actorUserId,
+            currentPassword,
+            cancellationToken);
+        if (confirmation.Status != AdministrativeReportExportConfirmationStatus.Success ||
+            string.IsNullOrWhiteSpace(confirmation.ActorName))
+        {
+            await store.RecordExportAsync(
+                actorUserId,
+                reportType,
+                from,
+                to,
+                false,
+                cancellationToken);
+            return AdministrativeReportExportResult.Failure(
+                AdministrativeReportExportStatus.Unauthorized);
+        }
+
+        try
+        {
+            var (totalCount, items) = await load(criteria);
+            if (totalCount > MaximumExportRecords)
+            {
+                await store.RecordExportAsync(
+                    actorUserId,
+                    reportType,
+                    from,
+                    to,
+                    false,
+                    cancellationToken);
+                return AdministrativeReportExportResult.Failure(
+                    AdministrativeReportExportStatus.TooLarge,
+                    new Dictionary<string, string[]>
+                    {
+                        ["report"] =
+                        [$"A exportação deve conter no máximo {MaximumExportRecords} registros. Reduza o período ou aplique filtros."]
+                    });
+            }
+
+            var filters = new Dictionary<string, string?>
+            {
+                ["plate"] = Normalize(plate),
+                ["driverName"] = Normalize(driverName),
+                ["categoryName"] = Normalize(categoryName),
+                ["vehicleIdentification"] = Normalize(vehicleIdentification),
+                ["status"] = Normalize(status)
+            };
+            var generated = render(items, totalCount, confirmation.ActorName, filters);
+            await store.RecordExportAsync(
+                actorUserId,
+                reportType,
+                from,
+                to,
+                true,
+                cancellationToken);
+            return AdministrativeReportExportResult.Success(generated);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            await store.RecordExportAsync(
+                actorUserId,
+                reportType,
+                from,
+                to,
+                false,
+                cancellationToken);
+            return AdministrativeReportExportResult.Failure(
+                AdministrativeReportExportStatus.GenerationFailed);
+        }
+    }
+
     private (AdministrativeReportCriteria? Criteria,
         IReadOnlyDictionary<string, string[]> Errors) Validate(
         DateOnly from,
@@ -94,7 +306,8 @@ public sealed class AdministrativeReportService(
         string? vehicleIdentification,
         string? status,
         int page,
-        int pageSize)
+        int pageSize,
+        int maximumPageSize = 100)
     {
         var errors = new Dictionary<string, string[]>();
 
@@ -106,15 +319,24 @@ public sealed class AdministrativeReportService(
         {
             errors["period"] = ["O período detalhado deve ter no máximo 31 dias."];
         }
+        else if (to == DateOnly.MaxValue)
+        {
+            errors["period"] = ["A data final informada está fora do intervalo permitido."];
+        }
 
         if (page < 1)
         {
             errors["page"] = ["A página deve ser maior que zero."];
         }
-
-        if (pageSize is < 1 or > 100)
+        else if (page - 1 > int.MaxValue / Math.Max(pageSize, 1))
         {
-            errors["pageSize"] = ["O tamanho da página deve estar entre 1 e 100."];
+            errors["page"] = ["A página informada está fora do intervalo permitido."];
+        }
+
+        if (pageSize < 1 || pageSize > maximumPageSize)
+        {
+            errors["pageSize"] =
+                [$"O tamanho da página deve estar entre 1 e {maximumPageSize}."];
         }
 
         ValidateFilter(errors, "plate", plate, 10);

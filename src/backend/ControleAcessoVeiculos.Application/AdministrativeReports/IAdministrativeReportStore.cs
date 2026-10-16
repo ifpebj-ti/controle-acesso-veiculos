@@ -19,4 +19,12 @@ public interface IAdministrativeReportStore
         DateOnly to,
         bool succeeded,
         CancellationToken cancellationToken);
+
+    Task RecordExportAsync(
+        int actorUserId,
+        string reportType,
+        DateOnly from,
+        DateOnly to,
+        bool succeeded,
+        CancellationToken cancellationToken);
 }

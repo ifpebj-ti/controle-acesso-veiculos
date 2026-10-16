@@ -3,6 +3,7 @@ using ControleAcessoVeiculos.API.Endpoints;
 using ControleAcessoVeiculos.API.Middleware;
 using ControleAcessoVeiculos.API.Observability;
 using ControleAcessoVeiculos.API.OpenApi;
+using ControleAcessoVeiculos.API.Reports;
 using ControleAcessoVeiculos.API.Security;
 using ControleAcessoVeiculos.Application.AccessRecords;
 using ControleAcessoVeiculos.Application.Accounts;
@@ -34,8 +35,11 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Text;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -257,6 +261,10 @@ builder.Services.AddScoped<IEventAuthorizationStore, EventAuthorizationStore>();
 builder.Services.AddScoped<IAuditTrailStore, AuditTrailStore>();
 builder.Services.AddScoped<IOperationalSummaryStore, OperationalSummaryStore>();
 builder.Services.AddScoped<IAdministrativeReportStore, AdministrativeReportStore>();
+builder.Services.AddScoped<IAdministrativeReportExportSecurity,
+    AdministrativeReportExportSecurity>();
+builder.Services.AddSingleton<IAdministrativeReportPdfRenderer,
+    AdministrativeReportPdfRenderer>();
 builder.Services.AddScoped<IAccessTokenService, JwtAccessTokenService>();
 builder.Services.AddSingleton<IRefreshTokenService, CryptographicRefreshTokenService>();
 builder.Services.AddSingleton<ITemporaryCredentialGenerator,
