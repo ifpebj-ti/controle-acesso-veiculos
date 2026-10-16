@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import {
+  isValidVehiclePlate,
+  normalizeVehiclePlate,
+  vehiclePlateFormatError,
+} from "../../vehicle-plates/vehiclePlate";
+
 const validDate = z
   .string()
   .refine((value) => !Number.isNaN(Date.parse(value)));
@@ -50,7 +56,7 @@ const eventVehicleRuleFormSchema = z.object({
     .int("A quantidade deve ser inteira.")
     .min(1, "A quantidade mínima é 1.")
     .max(1000, "A quantidade máxima é 1000."),
-  plate: z.string().trim().max(10, "A placa deve possuir até 10 caracteres."),
+  plate: z.string().trim(),
 });
 
 export const eventAuthorizationFormSchema = z
@@ -101,14 +107,19 @@ export const eventAuthorizationFormSchema = z
     const quotaTypes = new Set<string>();
     values.vehicleRules.forEach((rule, index) => {
       const normalizedType = rule.vehicleType.trim().toLocaleUpperCase("pt-BR");
-      const normalizedPlate = rule.plate
-        .replace(/[^\p{L}\p{N}]/gu, "")
-        .toUpperCase();
+      const normalizedPlate = normalizeVehiclePlate(rule.plate);
+      const validPlate = isValidVehiclePlate(rule.plate);
       if (rule.mode === "plate") {
         if (!normalizedPlate) {
           context.addIssue({
             code: "custom",
             message: "Informe a placa específica.",
+            path: ["vehicleRules", index, "plate"],
+          });
+        } else if (!validPlate) {
+          context.addIssue({
+            code: "custom",
+            message: vehiclePlateFormatError,
             path: ["vehicleRules", index, "plate"],
           });
         } else if (plates.has(normalizedPlate)) {
@@ -118,7 +129,7 @@ export const eventAuthorizationFormSchema = z
             path: ["vehicleRules", index, "plate"],
           });
         }
-        plates.add(normalizedPlate);
+        if (validPlate) plates.add(normalizedPlate);
         if (rule.quantity !== 1) {
           context.addIssue({
             code: "custom",
