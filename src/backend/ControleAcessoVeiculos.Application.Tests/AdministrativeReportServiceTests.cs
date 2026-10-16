@@ -11,7 +11,7 @@ public sealed class AdministrativeReportServiceTests
     public async Task VehicleMovementQueryUsesInstitutionalBoundariesAndAuditsConsultation()
     {
         var store = new FakeStore();
-        var service = new AdministrativeReportService(store, InstitutionalTimeZone);
+        var service = CreateService(store);
 
         var result = await service.SearchVehicleMovementsAsync(
             new(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 2), Plate: " abc "),
@@ -35,6 +35,7 @@ public sealed class AdministrativeReportServiceTests
     [InlineData("2026-09-01", "2026-10-02", 1, 25, "period")]
     [InlineData("2026-10-01", "2026-10-01", 0, 25, "page")]
     [InlineData("2026-10-01", "2026-10-01", 1, 101, "pageSize")]
+    [InlineData("9999-12-31", "9999-12-31", 1, 25, "period")]
     public async Task InvalidVehicleMovementQueryIsRejectedWithoutStoreAccess(
         string from,
         string to,
@@ -43,7 +44,7 @@ public sealed class AdministrativeReportServiceTests
         string expectedError)
     {
         var store = new FakeStore();
-        var service = new AdministrativeReportService(store, InstitutionalTimeZone);
+        var service = CreateService(store);
 
         var result = await service.SearchVehicleMovementsAsync(
             new(DateOnly.Parse(from), DateOnly.Parse(to), Page: page, PageSize: pageSize),
@@ -60,7 +61,7 @@ public sealed class AdministrativeReportServiceTests
     public async Task InstitutionalFleetQueryAcceptsEmptyResultAndAuditsConsultation()
     {
         var store = new FakeStore();
-        var service = new AdministrativeReportService(store, InstitutionalTimeZone);
+        var service = CreateService(store);
 
         var result = await service.SearchInstitutionalFleetAsync(
             new(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 1)),
@@ -76,7 +77,7 @@ public sealed class AdministrativeReportServiceTests
     public async Task UnknownStatusIsRejectedInsteadOfReturningAFalseEmptyReport()
     {
         var store = new FakeStore();
-        var service = new AdministrativeReportService(store, InstitutionalTimeZone);
+        var service = CreateService(store);
 
         var result = await service.SearchVehicleMovementsAsync(
             new(
@@ -91,10 +92,55 @@ public sealed class AdministrativeReportServiceTests
         Assert.Null(store.Criteria);
     }
 
+    [Fact]
+    public async Task ExportConfirmsPasswordRendersPdfAndAuditsSuccess()
+    {
+        var store = new FakeStore();
+        var security = new FakeExportSecurity();
+        var renderer = new FakePdfRenderer();
+        var service = CreateService(store, security, renderer);
+
+        var result = await service.ExportVehicleMovementsAsync(
+            new(
+                new DateOnly(2026, 10, 1),
+                new DateOnly(2026, 10, 2),
+                Plate: " abc1234 "),
+            7,
+            "Current-test-password-123!",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(AdministrativeReportExportStatus.Success, result.Status);
+        Assert.Equal("movimentacoes-veiculos-2026-10-01-a-2026-10-02.pdf",
+            result.Report!.FileName);
+        Assert.Equal("Current-test-password-123!", security.Password);
+        Assert.Equal((7, "VehicleMovements", true), store.LastExportAudit);
+        Assert.Equal("ABC1234", renderer.LastVehicleReport!.Filters["plate"]?.ToUpperInvariant());
+    }
+
+    [Fact]
+    public async Task ExportRejectsInvalidPasswordBeforeLoadingReportAndAuditsFailure()
+    {
+        var store = new FakeStore();
+        var security = new FakeExportSecurity { Authorized = false };
+        var service = CreateService(store, security, new FakePdfRenderer());
+
+        var result = await service.ExportVehicleMovementsAsync(
+            new(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 1)),
+            7,
+            "Wrong-test-password-123!",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(AdministrativeReportExportStatus.Unauthorized, result.Status);
+        Assert.Null(store.Criteria);
+        Assert.Equal((7, "VehicleMovements", false), store.LastExportAudit);
+    }
+
     private sealed class FakeStore : IAdministrativeReportStore
     {
         public AdministrativeReportCriteria? Criteria { get; private set; }
         public (int ActorId, string ReportType)? LastAudit { get; private set; }
+        public (int ActorId, string ReportType, bool Succeeded)? LastExportAudit
+        { get; private set; }
 
         public Task<PagedAdministrativeReport<VehicleMovementReportItem>>
             SearchVehicleMovementsAsync(
@@ -131,5 +177,61 @@ public sealed class AdministrativeReportServiceTests
             LastAudit = (actorUserId, reportType);
             return Task.CompletedTask;
         }
+
+        public Task RecordExportAsync(
+            int actorUserId,
+            string reportType,
+            DateOnly from,
+            DateOnly to,
+            bool succeeded,
+            CancellationToken cancellationToken)
+        {
+            LastExportAudit = (actorUserId, reportType, succeeded);
+            return Task.CompletedTask;
+        }
+    }
+
+    private static AdministrativeReportService CreateService(
+        FakeStore store,
+        FakeExportSecurity? security = null,
+        FakePdfRenderer? renderer = null) =>
+        new(
+            store,
+            security ?? new FakeExportSecurity(),
+            renderer ?? new FakePdfRenderer(),
+            InstitutionalTimeZone,
+            TimeProvider.System);
+
+    private sealed class FakeExportSecurity : IAdministrativeReportExportSecurity
+    {
+        public bool Authorized { get; init; } = true;
+        public string? Password { get; private set; }
+
+        public Task<AdministrativeReportExportConfirmation> ConfirmLocalPasswordAsync(
+            int actorUserId,
+            string password,
+            CancellationToken cancellationToken)
+        {
+            Password = password;
+            return Task.FromResult(Authorized
+                ? AdministrativeReportExportConfirmation.Success("Administrador")
+                : AdministrativeReportExportConfirmation.Unauthorized());
+        }
+    }
+
+    private sealed class FakePdfRenderer : IAdministrativeReportPdfRenderer
+    {
+        public AdministrativeReportExport<VehicleMovementReportItem>? LastVehicleReport
+        { get; private set; }
+
+        public byte[] RenderVehicleMovements(
+            AdministrativeReportExport<VehicleMovementReportItem> report)
+        {
+            LastVehicleReport = report;
+            return [1];
+        }
+
+        public byte[] RenderInstitutionalFleet(
+            AdministrativeReportExport<InstitutionalFleetReportItem> report) => [1];
     }
 }

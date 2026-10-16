@@ -67,6 +67,83 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task AdministratorCanExportEmptyPdfWithSafeHeadersAndAudit()
+    {
+        var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email);
+
+        var response = await client.PostAsJsonAsync(
+            "/reports/vehicle-movements/pdf",
+            new
+            {
+                from = "2001-01-01",
+                to = "2001-01-02",
+                currentPassword = Password
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        Assert.Equal(
+            "movimentacoes-veiculos-2001-01-01-a-2001-01-02.pdf",
+            response.Content.Headers.ContentDisposition?.FileNameStar);
+        var content = await response.Content.ReadAsByteArrayAsync(
+            TestContext.Current.CancellationToken);
+        Assert.True(content.Length > 100);
+        Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(content, 0, 5));
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var audit = await dbContext.Auditorias
+            .Where(item => item.Entidade == "AdministrativeReport" &&
+                item.UsuarioId == administratorId &&
+                item.Detalhes != null &&
+                item.Detalhes.Contains("Export"))
+            .OrderByDescending(item => item.Id)
+            .FirstAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("VehicleMovements", audit.Detalhes, StringComparison.Ordinal);
+        Assert.DoesNotContain(Password, audit.Detalhes, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PdfExportRejectsWrongPasswordWithoutReturningAFile()
+    {
+        var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email);
+
+        var response = await client.PostAsJsonAsync(
+            "/reports/institutional-fleet/pdf",
+            new
+            {
+                from = "2001-01-01",
+                to = "2001-01-02",
+                currentPassword = "Wrong-test-password-123!"
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.NotEqual("application/pdf", response.Content.Headers.ContentType?.MediaType);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var audit = await dbContext.Auditorias
+            .Where(item => item.Entidade == "AdministrativeReport" &&
+                item.UsuarioId == administratorId &&
+                item.Detalhes != null &&
+                item.Detalhes.Contains("Export"))
+            .OrderByDescending(item => item.Id)
+            .FirstAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("Failure", audit.Detalhes, StringComparison.Ordinal);
+        Assert.DoesNotContain("Wrong-test-password-123!", audit.Detalhes,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task InvalidReportPeriodReturnsValidationProblemWithoutAudit()
     {
         var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
