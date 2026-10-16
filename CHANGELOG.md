@@ -10,6 +10,13 @@ from its first published release.
 
 ### Added
 
+- Administrator-only vehicle-movement and institutional-fleet report queries
+  with institutional date boundaries, bounded pagination, canonical actor
+  attribution, data minimization, and consultation auditing.
+- Server-generated PDF exports for administrative reports with local-password
+  step-up, bounded volume, predictable filenames, no-store responses, and
+  content-minimized export auditing; Google OIDC step-up remains pending.
+
 - Semantic frontend design tokens and a documented WCAG 2.2 contrast matrix
   for the future light, dark, and system appearance foundation.
 
