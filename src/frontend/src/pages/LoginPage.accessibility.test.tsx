@@ -7,6 +7,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { SessionProvider } from "../features/authentication";
+import { AppearanceProvider } from "../features/appearance";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { LoginPage } from "./LoginPage";
 
@@ -20,11 +21,13 @@ describe("LoginPage accessibility", () => {
 
   it("keeps the page vertically scrollable on short viewports", async () => {
     const { container } = render(
-      <SessionProvider>
-        <MemoryRouter>
-          <LoginPage />
-        </MemoryRouter>
-      </SessionProvider>,
+      <AppearanceProvider>
+        <SessionProvider>
+          <MemoryRouter>
+            <LoginPage />
+          </MemoryRouter>
+        </SessionProvider>
+      </AppearanceProvider>,
     );
 
     await screen.findByRole("heading", { name: /bem-vindo\(a\)!/i });
@@ -42,11 +45,13 @@ describe("LoginPage accessibility", () => {
 
   it("preserves the official IFPE brand and treats the campus photo as decorative", async () => {
     const { container } = render(
-      <SessionProvider>
-        <MemoryRouter>
-          <LoginPage />
-        </MemoryRouter>
-      </SessionProvider>,
+      <AppearanceProvider>
+        <SessionProvider>
+          <MemoryRouter>
+            <LoginPage />
+          </MemoryRouter>
+        </SessionProvider>
+      </AppearanceProvider>,
     );
 
     expect(
@@ -62,11 +67,13 @@ describe("LoginPage accessibility", () => {
 
   it("places the photo before the form visually on mobile and restores the side-by-side order on desktop", async () => {
     const { container } = render(
-      <SessionProvider>
-        <MemoryRouter>
-          <LoginPage />
-        </MemoryRouter>
-      </SessionProvider>,
+      <AppearanceProvider>
+        <SessionProvider>
+          <MemoryRouter>
+            <LoginPage />
+          </MemoryRouter>
+        </SessionProvider>
+      </AppearanceProvider>,
     );
 
     await screen.findByRole("heading", { name: /bem-vindo\(a\)!/i });
@@ -93,11 +100,13 @@ describe("LoginPage accessibility", () => {
     const user = userEvent.setup();
 
     render(
-      <SessionProvider>
-        <MemoryRouter>
-          <LoginPage />
-        </MemoryRouter>
-      </SessionProvider>,
+      <AppearanceProvider>
+        <SessionProvider>
+          <MemoryRouter>
+            <LoginPage />
+          </MemoryRouter>
+        </SessionProvider>
+      </AppearanceProvider>,
     );
 
     expect(
@@ -106,6 +115,9 @@ describe("LoginPage accessibility", () => {
         level: 1,
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: "Aparência" }),
+    ).not.toBeInTheDocument();
 
     const email = screen.getByRole("textbox", { name: /e-mail/i });
     const password = screen.getByLabelText("Senha:");
@@ -131,11 +143,13 @@ describe("LoginPage accessibility", () => {
 
   it("provides direct account guidance without outdated browser-storage guidance", async () => {
     render(
-      <SessionProvider>
-        <MemoryRouter>
-          <LoginPage />
-        </MemoryRouter>
-      </SessionProvider>,
+      <AppearanceProvider>
+        <SessionProvider>
+          <MemoryRouter>
+            <LoginPage />
+          </MemoryRouter>
+        </SessionProvider>
+      </AppearanceProvider>,
     );
 
     expect(
@@ -150,11 +164,13 @@ describe("LoginPage accessibility", () => {
 
   it("has no serious automated accessibility violations", async () => {
     const { container } = render(
-      <SessionProvider>
-        <MemoryRouter>
-          <LoginPage />
-        </MemoryRouter>
-      </SessionProvider>,
+      <AppearanceProvider>
+        <SessionProvider>
+          <MemoryRouter>
+            <LoginPage />
+          </MemoryRouter>
+        </SessionProvider>
+      </AppearanceProvider>,
     );
 
     await expectNoSeriousAccessibilityViolations(container);

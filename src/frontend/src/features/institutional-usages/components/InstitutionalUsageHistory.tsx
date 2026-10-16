@@ -11,7 +11,7 @@ import type {
 } from "../types";
 
 const fieldClass =
-  "mt-2 min-h-11 w-full rounded-xl border border-ink/20 bg-white px-3 text-sm text-ink outline-none focus:border-brand-dark focus:ring-3 focus:ring-brand/20 disabled:opacity-60";
+  "mt-2 min-h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm text-text outline-none focus:border-primary focus:ring-3 focus:ring-focus disabled:opacity-60";
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
@@ -74,7 +74,7 @@ export function InstitutionalUsageHistory({
     <section
       aria-busy={status === "loading"}
       aria-labelledby="institutional-history-title"
-      className="institutional-catalog mt-7 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
+      className="institutional-catalog mt-7 overflow-hidden rounded-[2rem] border border-border bg-surface shadow-[0_12px_35px_var(--ui-shadow)]"
     >
       <div className="usage-history-heading flex items-start gap-3 px-5 pt-5 sm:px-6">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl rounded-bl-md bg-brand-soft/30 text-primary">
@@ -282,7 +282,7 @@ export function InstitutionalUsageHistory({
         </div>
         <div className="flex items-end gap-2 sm:col-span-2">
           <button
-            className="min-h-11 flex-1 rounded-xl bg-ink px-4 text-sm font-bold text-white disabled:opacity-60"
+            className="min-h-11 flex-1 rounded-xl bg-primary px-4 text-sm font-bold text-primary-text disabled:bg-disabled-surface disabled:text-disabled-text"
             disabled={disabled}
             type="submit"
           >
@@ -346,7 +346,7 @@ export function InstitutionalUsageHistory({
             </div>
           ) : (
             <>
-              <div className="grid gap-4 p-5 sm:p-6 xl:hidden">
+              <div className="grid gap-4 p-5 sm:p-6 2xl:hidden">
                 {page.items.map((usage) => {
                   const distance =
                     usage.returnMileage === null
@@ -404,7 +404,7 @@ export function InstitutionalUsageHistory({
                   );
                 })}
               </div>
-              <div className="usage-history-table-shell hidden overflow-x-auto xl:block">
+              <div className="usage-history-table-shell hidden overflow-x-auto 2xl:block">
                 <table className="w-full min-w-[70rem] border-collapse text-left text-sm">
                   <caption className="sr-only">
                     Histórico de utilizações da frota institucional
