@@ -142,6 +142,11 @@ public static class UserAccountEndpoints
             {
                 Message = "Use a troca autenticada para alterar a própria senha."
             }),
+            AdministrativeCredentialResetStatus.ExternalAuthentication =>
+                Results.Conflict(new
+                {
+                    Message = "A conta vinculada ao Google não utiliza credencial local."
+                }),
             _ => Results.ValidationProblem(result.Errors)
         };
     }

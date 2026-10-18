@@ -3,8 +3,10 @@ namespace ControleAcessoVeiculos.API.Security;
 public sealed class GoogleOidcOptions
 {
     public const string SectionName = "Authentication:Google";
+    public const string Scheme = "GoogleOidc";
+    public const string ExternalCookieScheme = "GoogleExternal";
     public const string DefaultCallbackPath = "/signin-google";
-    public const string DefaultFrontendCompletionPath = "/auth/google/complete";
+    public const string DefaultFrontendCompletionPath = "/login";
 
     public bool Enabled { get; init; }
     public string ClientId { get; init; } = string.Empty;
