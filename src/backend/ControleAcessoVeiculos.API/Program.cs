@@ -450,6 +450,18 @@ app.MapUserAccountEndpoints();
 app.MapAuditTrailEndpoints();
 app.MapOperationalSummaryEndpoints();
 
+app.MapGet("/auth/providers", (HttpContext httpContext) =>
+{
+    SetAuthenticationResponseHeaders(httpContext.Response);
+    return Results.Ok(new AuthenticationProvidersResponse(
+        GoogleEnabled: googleOidcOptions.Enabled));
+})
+.AllowAnonymous()
+.WithTags("Authentication")
+.WithName("GetAuthenticationProviders")
+.WithSummary("Informa os provedores de autenticação habilitados")
+.Produces<AuthenticationProvidersResponse>(StatusCodes.Status200OK);
+
 app.MapGet("/auth/google/start", (HttpContext httpContext) =>
 {
     SetAuthenticationResponseHeaders(httpContext.Response);
@@ -840,3 +852,4 @@ public sealed record LoginUserResponse(
     bool RequiresPasswordChange);
 public sealed record LoginErrorResponse(string Message);
 public sealed record CsrfTokenResponse(string RequestToken);
+public sealed record AuthenticationProvidersResponse(bool GoogleEnabled);

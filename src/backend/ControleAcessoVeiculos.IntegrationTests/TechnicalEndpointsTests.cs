@@ -40,6 +40,21 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
         Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
     }
 
+    [Fact]
+    public async Task AuthenticationProvidersReflectDisabledGoogleConfiguration()
+    {
+        var response = await _client.GetAsync(
+            "/auth/providers",
+            TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<AuthenticationProvidersResponse>(
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        Assert.NotNull(body);
+        Assert.False(body.GoogleEnabled);
+    }
+
     [Theory]
     [InlineData("/health/live")]
     [InlineData("/health/ready")]
