@@ -238,6 +238,52 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task AdministratorCannotIssueLocalCredentialForGoogleLinkedAccount()
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var target = await CreateUserAsync(ProfileNames.Doorman);
+        using var administratorClient = factory.CreateClient();
+        await AuthenticateClientAsync(
+            administratorClient,
+            administrator.Email,
+            PermanentPassword);
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var user = await dbContext.Usuarios
+                .SingleAsync(
+                    item => item.Id == target.Id,
+                    cancellationToken: TestContext.Current.CancellationToken);
+            user.VincularIdentidadeGoogle(
+                $"google-subject-{Guid.NewGuid():N}",
+                DateTime.UtcNow);
+            await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var response = await administratorClient.PostAsJsonAsync(
+            $"/users/{target.Id}/temporary-credential",
+            new { reason = CredentialResetReasons.Forgotten },
+            cancellationToken: TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("Google", body, StringComparison.Ordinal);
+
+        await using var verificationScope = factory.Services.CreateAsyncScope();
+        var verificationDbContext = verificationScope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var persistedUser = await verificationDbContext.Usuarios.AsNoTracking()
+            .SingleAsync(
+                item => item.Id == target.Id,
+                cancellationToken: TestContext.Current.CancellationToken);
+        Assert.False(persistedUser.TrocaSenhaObrigatoria);
+        Assert.Equal(2, persistedUser.VersaoCredencial);
+    }
+
+    [Fact]
     public async Task AdministratorCannotChooseAnotherUsersInitialPassword()
     {
         var administrator = await CreateUserAsync(ProfileNames.Administrator);

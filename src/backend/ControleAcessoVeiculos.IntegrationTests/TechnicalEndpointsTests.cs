@@ -28,6 +28,19 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
     }
 
     [Theory]
+    [InlineData("/auth/google/start")]
+    [InlineData("/auth/google/complete")]
+    public async Task DisabledGoogleAuthenticationIsNotExposed(string endpoint)
+    {
+        var response = await _client.GetAsync(
+            endpoint,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+    }
+
+    [Theory]
     [InlineData("/health/live")]
     [InlineData("/health/ready")]
     public async Task HealthEndpointsReturnHealthyStatus(string endpoint)
