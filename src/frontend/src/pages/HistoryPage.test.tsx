@@ -154,8 +154,13 @@ describe("HistoryPage", () => {
       .map((element) => element.closest("article"))
       .find((element): element is HTMLElement => element !== null);
 
-    expect(card?.parentElement).toHaveClass("md:grid-cols-2", "xl:hidden");
-    expect(table.parentElement).toHaveClass("xl:block");
+    expect(card?.parentElement).toHaveClass("md:grid-cols-2", "2xl:hidden");
+    expect(table.parentElement).toHaveClass("overflow-x-auto", "2xl:block");
+    expect(
+      within(table).getByRole("button", {
+        name: /Corrigir registro DEM1A23/,
+      }).parentElement,
+    ).toHaveClass("flex-col", "min-w-[10.5rem]");
   });
 
   it("distinguishes normal exit, observed exceptional exit and unknown exit time", async () => {

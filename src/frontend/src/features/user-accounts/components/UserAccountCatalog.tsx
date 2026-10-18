@@ -103,7 +103,7 @@ export function UserAccountCatalog({
 
   return (
     <>
-      <div className="account-catalog-grid grid gap-3 p-4 sm:p-5 md:grid-cols-2 xl:hidden">
+      <div className="account-catalog-grid grid gap-3 p-4 sm:p-5 md:grid-cols-2 2xl:hidden">
         {page.items.map((account) => (
           <AccountCard
             account={account}
@@ -116,7 +116,7 @@ export function UserAccountCatalog({
           />
         ))}
       </div>
-      <div className="account-table-shell hidden overflow-x-auto xl:block">
+      <div className="account-table-shell hidden overflow-x-auto 2xl:block">
         <table className="w-full min-w-[64rem] border-collapse text-left text-sm">
           <caption className="sr-only">Contas de acesso do sistema</caption>
           <thead>
