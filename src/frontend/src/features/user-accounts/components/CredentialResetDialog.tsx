@@ -101,7 +101,7 @@ export function CredentialResetDialog({
         aria-describedby="credential-reset-description"
         aria-labelledby="credential-reset-title"
         aria-modal="true"
-        className="w-full rounded-t-[2rem] bg-white p-5 shadow-2xl sm:mx-auto sm:max-w-xl sm:rounded-[2rem] sm:p-7"
+        className="w-full rounded-t-[2rem] bg-surface p-5 shadow-2xl sm:mx-auto sm:max-w-xl sm:rounded-[2rem] sm:p-7"
         ref={dialogRef}
         role="dialog"
       >
@@ -143,7 +143,7 @@ export function CredentialResetDialog({
               reasonError ? "credential-reset-reason-error" : undefined
             }
             aria-invalid={Boolean(reasonError)}
-            className="mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20 disabled:cursor-wait disabled:opacity-60"
+            className="mt-2 min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-text outline-none focus:border-primary focus:bg-surface-raised focus:ring-3 focus:ring-focus disabled:cursor-wait disabled:opacity-60"
             disabled={busy}
             id="credential-reset-reason"
             onValueChange={(value) => {
@@ -186,7 +186,7 @@ export function CredentialResetDialog({
               Cancelar
             </button>
             <button
-              className="min-h-12 rounded-xl bg-brand-dark px-6 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/45 disabled:cursor-wait disabled:opacity-65"
+              className="min-h-12 rounded-xl bg-primary px-6 font-bold text-primary-text hover:bg-primary-hover focus:outline-none focus-visible:ring-3 focus-visible:ring-focus disabled:cursor-wait disabled:bg-disabled-surface disabled:text-disabled-text"
               disabled={busy}
               type="submit"
             >

@@ -184,7 +184,7 @@ export function InstitutionalDriversPage() {
         action={
           canManage ? (
             <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-text hover:bg-primary-hover focus:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-wait disabled:bg-disabled-surface disabled:text-disabled-text disabled:opacity-100"
               disabled={pendingAction !== null}
               onClick={openForm}
               type="button"

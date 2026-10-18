@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { SessionLoadingState } from "../components/ui/SessionLoadingState";
+import { AppearanceProvider } from "../features/appearance";
 import { SessionContext } from "../features/authentication/session/SessionContext";
 import type { SessionEndReason } from "../features/authentication";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
@@ -16,22 +17,24 @@ import { NotFoundPage } from "./NotFoundPage";
 function renderLogin(sessionEndReason: SessionEndReason | null = null) {
   const login = vi.fn();
   const view = render(
-    <SessionContext.Provider
-      value={{
-        completePasswordChange: vi.fn(),
-        login,
-        logout: vi.fn(),
-        expiresAtUtc: null,
-        sessionEndReason,
-        sessionNotice: null,
-        status: "unauthenticated",
-        user: null,
-      }}
-    >
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>
-    </SessionContext.Provider>,
+    <AppearanceProvider>
+      <SessionContext.Provider
+        value={{
+          completePasswordChange: vi.fn(),
+          login,
+          logout: vi.fn(),
+          expiresAtUtc: null,
+          sessionEndReason,
+          sessionNotice: null,
+          status: "unauthenticated",
+          user: null,
+        }}
+      >
+        <MemoryRouter>
+          <LoginPage />
+        </MemoryRouter>
+      </SessionContext.Provider>
+    </AppearanceProvider>,
   );
   return { ...view, login };
 }

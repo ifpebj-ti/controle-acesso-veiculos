@@ -422,6 +422,17 @@ describe("InstitutionalUsagesPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps history cards until every table column fits beside the sidebar", async () => {
+    renderPage("SetorTransporte");
+
+    const table = await screen.findByRole("table", {
+      name: "Histórico de utilizações da frota institucional",
+    });
+    const tableShell = table.parentElement;
+    expect(tableShell).toHaveClass("overflow-x-auto", "2xl:block");
+    expect(tableShell?.previousElementSibling).toHaveClass("2xl:hidden");
+  });
+
   it("applies catalog filters and paginates the institutional history", async () => {
     vi.mocked(searchInstitutionalUsageHistory).mockResolvedValue({
       ...historyPage,
