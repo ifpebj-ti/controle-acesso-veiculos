@@ -13,6 +13,7 @@ Esta pasta contém a fonte versionada dos documentos de segurança do projeto.
 - [ADR 0002 — retenção de dados e backup protegido na OCI](../architecture/decisions/0002-data-retention-and-oci-backup.md)
 - [ADR 0003 — key ring persistente e protegido](../architecture/decisions/0003-protected-data-protection-key-ring.md)
 - [ADR 0004 — topologia segura e econômica da homologação na OCI](../architecture/decisions/0004-oci-homologation-topology.md)
+- [ADR 0005 — Google OIDC com autorização local e acesso de emergência](../architecture/decisions/0005-google-oidc-and-emergency-access.md)
 
 A Wiki apresenta cópias de leitura e contexto acadêmico, mas mudanças nestes
 documentos devem passar por Issue, branch, revisão e Pull Request.
@@ -41,8 +42,8 @@ externo:
 
 Antes da apresentação, confira se o relatório contém:
 
-- 1 ator, 5 processos, 4 depósitos, 8 fluxos e 5 fronteiras;
-- as ameaças `TM-01` a `TM-23` sem duplicidade;
+- 1 ator, 6 processos, 4 depósitos, 10 fluxos e 5 fronteiras;
+- as ameaças `TM-01` a `TM-27` sem duplicidade;
 - distinção entre controles mitigados e riscos ainda abertos;
 - desenho de backup na OCI como decisão aprovada, mas provisionamento, HTTPS,
   observabilidade operada e homologação como pendências, não funcionalidades prontas.
