@@ -7,6 +7,7 @@ Esta pasta contém a fonte versionada dos documentos de segurança do projeto.
 - [Modelo visual para OWASP Threat Dragon](controle-acesso-veiculos-threat-model.json)
 - [Guia de desenvolvimento seguro](secure-development-guide.md)
 - [Análise dinâmica com OWASP ZAP](dynamic-application-security-testing.md)
+- [Contingência de identidade Google](../operations/google-identity-contingency.md)
 - [Amostra histórica do baseline passivo do ZAP](evidence/zap-baseline-2026-09-16/README.md)
 - [ADR 0001 — ciclo de vida seguro de sessões](../architecture/decisions/0001-secure-session-lifecycle.md)
 - [ADR 0002 — retenção de dados e backup protegido na OCI](../architecture/decisions/0002-data-retention-and-oci-backup.md)

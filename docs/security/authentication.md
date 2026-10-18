@@ -85,6 +85,11 @@ integração da tela e testes observados. Enquanto `Authentication:Google:Enable
 for `false`, os endpoints de início e conclusão respondem como indisponíveis e o
 comportamento atual não é alterado.
 
+O procedimento planejado para indisponibilidade do provedor, uso individual de
+contas de emergência, retorno ao serviço e preservação de evidências está no
+[runbook de contingência de identidade Google](../operations/google-identity-contingency.md).
+Ele só se torna executável depois da implementação e homologação da Issue #449.
+
 ## Integração do frontend
 
 A Issue #117 aplica essa decisão no frontend React. O formulário usa e-mail e
