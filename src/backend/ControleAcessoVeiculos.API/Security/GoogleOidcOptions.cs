@@ -44,7 +44,9 @@ public sealed class GoogleOidcOptions
             path.StartsWith("//", StringComparison.Ordinal) ||
             path.Contains("?", StringComparison.Ordinal) ||
             path.Contains("#", StringComparison.Ordinal) ||
-            Uri.TryCreate(path, UriKind.Absolute, out _))
+            path.Any(character =>
+                !char.IsAsciiLetterOrDigit(character) &&
+                character is not '/' and not '-' and not '_'))
         {
             throw new InvalidOperationException(
                 $"Authentication:Google:{optionName} deve ser um caminho local absoluto, sem host, query string ou fragmento.");

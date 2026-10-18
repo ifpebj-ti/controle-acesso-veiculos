@@ -33,6 +33,8 @@ public sealed class GoogleOidcOptionsTests
     [InlineData("https://attacker.example/callback")]
     [InlineData("//attacker.example/callback")]
     [InlineData("signin-google")]
+    [InlineData("/\\attacker.example/callback")]
+    [InlineData("/%2f%2fattacker.example/callback")]
     [InlineData("/signin-google?next=https://attacker.example")]
     [InlineData("/signin-google#fragment")]
     public void EnabledProviderRejectsNonLocalCallbackPaths(string callbackPath)
