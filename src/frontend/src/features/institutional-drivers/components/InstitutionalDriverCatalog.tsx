@@ -90,7 +90,7 @@ export function InstitutionalDriverCatalog({
 
       <section
         aria-busy={status === "loading"}
-        className="institutional-catalog mt-6 overflow-hidden rounded-[2rem] border border-ink/10 bg-white shadow-[0_12px_35px_rgba(1,36,40,0.05)]"
+        className="institutional-catalog mt-6 overflow-hidden rounded-[2rem] border border-border bg-surface shadow-[0_12px_35px_var(--ui-shadow)]"
       >
         <div className="institutional-catalog__heading flex flex-col gap-4 border-b border-ink/8 bg-brand-soft/20 p-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex min-w-0 items-start gap-3">
@@ -128,7 +128,7 @@ export function InstitutionalDriverCatalog({
                   name="search"
                 />
                 <input
-                  className="min-h-12 w-full rounded-xl border border-ink/20 bg-white pl-12 pr-4 text-ink outline-none placeholder:text-ink-soft focus:border-brand-dark focus:ring-3 focus:ring-brand/20"
+                  className="min-h-12 w-full rounded-xl border border-border bg-surface pl-12 pr-4 text-text outline-none placeholder:text-text-muted focus:border-primary focus:ring-3 focus:ring-focus"
                   id="driver-search"
                   onChange={(event) => onQueryChange(event.target.value)}
                   placeholder="Nome do motorista"

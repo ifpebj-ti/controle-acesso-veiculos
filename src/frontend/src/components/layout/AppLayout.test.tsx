@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { SessionContext } from "../../features/authentication/session/SessionContext";
+import { AppearanceProvider } from "../../features/appearance";
 import type { ProfileName } from "../../features/authentication/types";
 import { RouteTransitionManager } from "../../routes/RouteTransitionManager";
 import { expectNoSeriousAccessibilityViolations } from "../../test/accessibility";
@@ -16,35 +17,37 @@ function renderLayout(
 ) {
   const logout = vi.fn();
   const view = render(
-    <SessionContext.Provider
-      value={{
-        completePasswordChange: vi.fn(),
-        expiresAtUtc: "2026-09-03T23:59:59.000Z",
-        login: vi.fn(),
-        logout,
-        sessionEndReason: null,
-        sessionNotice,
-        status: "authenticated",
-        user: {
-          email: "operador@example.test",
-          id: 42,
-          profileName,
-          requiresPasswordChange,
-        },
-      }}
-    >
-      <MemoryRouter
-        initialEntries={[
-          requiresPasswordChange ? "/conta/senha" : "/visao-geral",
-        ]}
+    <AppearanceProvider>
+      <SessionContext.Provider
+        value={{
+          completePasswordChange: vi.fn(),
+          expiresAtUtc: "2026-09-03T23:59:59.000Z",
+          login: vi.fn(),
+          logout,
+          sessionEndReason: null,
+          sessionNotice,
+          status: "authenticated",
+          user: {
+            email: "operador@example.test",
+            id: 42,
+            profileName,
+            requiresPasswordChange,
+          },
+        }}
       >
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route element={<h1>Visão operacional fictícia</h1>} path="*" />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </SessionContext.Provider>,
+        <MemoryRouter
+          initialEntries={[
+            requiresPasswordChange ? "/conta/senha" : "/visao-geral",
+          ]}
+        >
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route element={<h1>Visão operacional fictícia</h1>} path="*" />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </SessionContext.Provider>
+    </AppearanceProvider>,
   );
 
   return { ...view, logout };
@@ -52,39 +55,41 @@ function renderLayout(
 
 function renderNavigableLayout() {
   return render(
-    <SessionContext.Provider
-      value={{
-        completePasswordChange: vi.fn(),
-        expiresAtUtc: "2026-09-03T23:59:59.000Z",
-        login: vi.fn(),
-        logout: vi.fn(),
-        sessionEndReason: null,
-        status: "authenticated",
-        user: {
-          email: "operador@example.test",
-          id: 42,
-          profileName: "Porteiro",
-          requiresPasswordChange: false,
-        },
-      }}
-    >
-      <MemoryRouter initialEntries={["/visao-geral"]}>
-        <Routes>
-          <Route element={<RouteTransitionManager />}>
-            <Route element={<AppLayout />}>
-              <Route
-                element={<h1>Visão operacional fictícia</h1>}
-                path="/visao-geral"
-              />
-              <Route
-                element={<h1>Histórico fictício</h1>}
-                path="/acessos/historico"
-              />
+    <AppearanceProvider>
+      <SessionContext.Provider
+        value={{
+          completePasswordChange: vi.fn(),
+          expiresAtUtc: "2026-09-03T23:59:59.000Z",
+          login: vi.fn(),
+          logout: vi.fn(),
+          sessionEndReason: null,
+          status: "authenticated",
+          user: {
+            email: "operador@example.test",
+            id: 42,
+            profileName: "Porteiro",
+            requiresPasswordChange: false,
+          },
+        }}
+      >
+        <MemoryRouter initialEntries={["/visao-geral"]}>
+          <Routes>
+            <Route element={<RouteTransitionManager />}>
+              <Route element={<AppLayout />}>
+                <Route
+                  element={<h1>Visão operacional fictícia</h1>}
+                  path="/visao-geral"
+                />
+                <Route
+                  element={<h1>Histórico fictício</h1>}
+                  path="/acessos/historico"
+                />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </SessionContext.Provider>,
+          </Routes>
+        </MemoryRouter>
+      </SessionContext.Provider>
+    </AppearanceProvider>,
   );
 }
 

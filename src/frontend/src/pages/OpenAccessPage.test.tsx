@@ -148,8 +148,8 @@ describe("OpenAccessPage", () => {
 
     const table = await screen.findByTestId("open-access-table");
     const cards = screen.getByTestId("open-access-cards");
-    expect(cards).toHaveClass("md:grid-cols-2", "xl:hidden");
-    expect(table).toHaveClass("xl:block");
+    expect(cards).toHaveClass("md:grid-cols-2", "2xl:hidden");
+    expect(table).toHaveClass("2xl:block");
     expect(
       within(table).getByRole("columnheader", { name: "Placa" }),
     ).toBeInTheDocument();
