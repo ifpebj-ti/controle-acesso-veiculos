@@ -237,7 +237,7 @@ function AreaButton({
       aria-current={active ? "page" : undefined}
       className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-5 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
         active
-          ? "bg-primary text-white shadow-sm"
+          ? "bg-primary text-primary-text shadow-sm"
           : "text-primary hover:bg-primary/5"
       }`}
       onClick={onClick}

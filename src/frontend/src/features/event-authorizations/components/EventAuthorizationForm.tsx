@@ -375,7 +375,7 @@ export function EventAuthorizationForm({
             />
             <span
               aria-hidden="true"
-              className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-border transition peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-primary/25 peer-disabled:opacity-60 after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:after:translate-x-5"
+              className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-border transition peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-focus peer-disabled:opacity-60 after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-surface-raised after:shadow-sm after:transition-transform peer-checked:after:translate-x-5"
             />
             <span>
               <strong className="block font-bold">Permitir pernoite</strong>

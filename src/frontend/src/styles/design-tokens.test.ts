@@ -81,6 +81,8 @@ const semanticTokens = [
   "text",
   "text-muted",
   "text-inverse",
+  "visual-text",
+  "brand-surface",
   "border",
   "border-strong",
   "primary",
@@ -121,6 +123,14 @@ describe("semantic design tokens", () => {
     expect(indexCss).toContain("--color-ink-soft: var(--ui-text-muted);");
     expect(indexCss).toContain("--color-brand-dark: var(--ui-primary);");
     expect(indexCss).toContain("--color-cream: var(--ui-background);");
+  });
+
+  it("publishes a coherent browser color scheme for both themes", () => {
+    expect(readDeclarations(":root").get("color-scheme")).toBeUndefined();
+    expect(tokensCss).toMatch(/:root\s*\{\s*color-scheme:\s*light;/);
+    expect(tokensCss).toMatch(
+      /:root\[data-theme="dark"\]\s*\{\s*color-scheme:\s*dark;/,
+    );
   });
 
   it.each([

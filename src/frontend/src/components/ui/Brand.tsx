@@ -12,7 +12,9 @@ export function Brand({
   size = "default",
 }: BrandProps) {
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div
+      className={`institutional-brand-lockup flex items-center gap-3 ${className}`}
+    >
       <img
         alt={
           decorative
