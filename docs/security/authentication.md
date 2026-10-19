@@ -76,13 +76,32 @@ de emergência de Administrador mestre depois da transição.
   `users:manage-elevated-privileges` exige simultaneamente perfil Administrador
   e essa claim. Promoção e revogação incrementam a versão da credencial para
   invalidar access tokens anteriores.
-- Depois do bootstrap, somente `users:manage` pode criar uma conta individual em `POST /users`.
+- Depois do bootstrap, somente `users:manage-elevated-privileges` pode criar uma
+  conta individual em `POST /users`, desativar ou reativar contas e redefinir
+  credenciais locais. `users:manage` permanece suficiente apenas para a consulta
+  paginada, sem permitir alteração.
+- `PUT /users/{id}/authorization` altera perfil e capacidade mestre em uma única
+  transação. A operação exige uma conta mestre diferente do alvo, confirmação da
+  senha local atual e justificativa entre 10 e 500 caracteres. O servidor não
+  confia somente na claim: relê e bloqueia o ator e o alvo no banco, serializa as
+  alterações de privilégio e nega a operação se o ator deixou de ser mestre.
+- A confirmação de senha é o step-up do Administrador mestre local reservado à
+  recuperação e à governança. Ela não é persistida nem incluída na auditoria.
+  Contas vinculadas ao Google não podem usar esse caminho com o hash antigo.
+- Uma mudança de autorização registra perfil e capacidade mestre antes/depois,
+  ator, justificativa e horário; incrementa a versão da credencial e revoga as
+  sessões renováveis do alvo. Repetir exatamente o estado desejado é idempotente
+  e não cria uma segunda auditoria.
+- Autoalteração é negada, e um bloqueio transacional impede desativar ou revogar
+  o último Administrador mestre ativo mesmo sob requisições concorrentes.
 - A criação administrativa exige que `password` seja omitido; qualquer valor enviado é rejeitado. O servidor gera uma credencial temporária com 144 bits de entropia, devolvida uma única vez com `Cache-Control: no-store`, impedindo que o Administrador escolha ou conheça a senha permanente do titular.
 - Credenciais temporárias expiram em 30 minutos por padrão e são consumidas atomicamente no primeiro login. Tentativas posteriores recebem o mesmo HTTP 401 genérico; a sessão restrita criada no primeiro uso continua válida apenas para troca de senha, renovação e logout. Somente o hash e os estados técnicos mínimos são persistidos, e a conta não acessa operações de negócio antes de concluir `POST /auth/password`.
 - `POST /users/{id}/temporary-credential` permite somente ao Administrador redefinir outra conta ativa com motivo categorizado. A operação incrementa a versão, revoga sessões, registra auditoria transacional e retorna a nova credencial uma única vez.
 - Dois Administradores funcionais são os responsáveis institucionais pelo provisionamento e pela recuperação de acesso no MVP. A credencial temporária gerada pelo servidor deve ser entregue diretamente ao titular, sem planilha, issue, log ou mensageria não aprovada. Porteiro, Vigilante e Setor de Transporte não recebem poder de redefinição; recuperação automática por e-mail, SMS, MFA ou SSO não foi adotada neste recorte.
 - Login bem-sucedido e o momento do bloqueio temporário geram auditoria `Login` associada ao usuário, na mesma unidade de trabalho da mudança de estado.
-- Somente `users:manage` consulta, desativa ou reativa contas; auto-desativação e remoção do último Administrador ativo são rejeitadas.
+- `users:manage` consulta contas; mutações exigem
+  `users:manage-elevated-privileges`. Autoalteração e remoção do último
+  Administrador ou Administrador mestre ativo são rejeitadas.
 - A API confirma a cada requisição autenticada que a conta e o perfil do JWT permanecem ativos.
 - Desativação e reativação são auditadas atomicamente sem duplicar nome ou e-mail.
 - Criação administrativa registra o Administrador como ator; o bootstrap registra origem `Bootstrap` com ator nulo, pois ainda não existe usuário autenticado.
@@ -204,7 +223,22 @@ dotnet run --project src/backend/ControleAcessoVeiculos.API -- --bootstrap-admin
 
 O comando cria uma pessoa, o perfil `Administrador` e a primeira conta somente quando a tabela de usuários está vazia. Pessoa, conta e auditoria são persistidas na mesma transação. A auditoria usa ator nulo e origem explícita de sistema, sem nome, e-mail, senha ou hash. O comando não abre endpoint anônimo nem imprime credenciais. Remova as três variáveis logo após o uso.
 
-Administradores autenticados podem criar outras contas pelo endpoint `POST /users`. Nome, e-mail e perfil preliminar são obrigatórios, e `password` deve ser omitido para que a API gere a credencial temporária. A resposta é o único momento em que o valor bruto aparece, e o Administrador deve entregá-lo diretamente ao titular sem copiar para planilhas, issues, logs ou mensageria não aprovada. Esse procedimento e a existência de dois Administradores funcionais foram validados institucionalmente em 21 de setembro de 2026. O titular usa essa credencial uma vez, fica restrito ao fluxo de troca e define sua senha permanente. Se perder a sessão antes de concluir, precisa solicitar nova redefinição; reabrir o uso do mesmo segredo enfraqueceria o controle contra reutilização. `GET /users` pesquisa nome ou e-mail, informa o estado da credencial sem expor segredo e limita cada página a 100 itens. `DELETE /users/{id}` desativa sem apagar o histórico; `POST /users/{id}/reactivation` reativa e limpa tentativas e bloqueio temporário anteriores. Uma credencial temporária vencida exige nova redefinição administrativa.
+Administradores mestres autenticados podem criar outras contas pelo endpoint
+`POST /users`. Nome, e-mail e perfil preliminar são obrigatórios, e `password`
+deve ser omitido para que a API gere a credencial temporária. A resposta é o
+único momento em que o valor bruto aparece, e o Administrador mestre deve
+entregá-lo diretamente ao titular sem copiar para planilhas, issues, logs ou
+mensageria não aprovada. Esse procedimento e a existência de dois
+Administradores funcionais foram validados institucionalmente em 21 de setembro
+de 2026. O titular usa essa credencial uma vez, fica restrito ao fluxo de troca e
+define sua senha permanente. Se perder a sessão antes de concluir, precisa
+solicitar nova redefinição; reabrir o uso do mesmo segredo enfraqueceria o
+controle contra reutilização. `GET /users` pesquisa nome ou e-mail, informa o
+estado da credencial sem expor segredo e limita cada página a 100 itens.
+`DELETE /users/{id}` desativa sem apagar o histórico;
+`POST /users/{id}/reactivation` reativa e limpa tentativas e bloqueio temporário
+anteriores. Uma credencial temporária vencida exige nova redefinição
+administrativa.
 
 ## Políticas preliminares
 
@@ -218,8 +252,8 @@ Administradores autenticados podem criar outras contas pelo endpoint `POST /user
 | `operations:summary:read`            | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `event-authorizations:read`          | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `event-authorizations:manage`        | Administrador                                            |
-| `users:manage`                       | Administrador                                            |
-| `users:manage-elevated-privileges`   | Administrador mestre                                     |
+| `users:manage`                       | Administrador (somente consulta de contas)               |
+| `users:manage-elevated-privileges`   | Administrador mestre (mutações e privilégios)            |
 
 Esses nomes estão centralizados e não pertencem ao Domain. A matriz do MVP foi
 registrada na Issue #75 e continua revisável durante a homologação. O Setor de
@@ -240,9 +274,9 @@ fluxo operacional.
 - decidir se haverá integração com identidade institucional;
 - concluir no frontend a política de inatividade compartilhada da Issue #268 e validá-la no tablet da portaria;
 - definir retenção e limpeza operacional das sessões revogadas e expiradas;
-- concluir o fluxo auditado de troca de perfil e privilégio mestre, incluindo
-  step-up adequado ao método de autenticação e proteção transacional do último
-  mestre ativo — Issue #449;
+- integrar no frontend o fluxo auditado de troca de perfil e privilégio mestre,
+  mantendo a confirmação de senha fora de logs e estado persistente — Issue
+  #449;
 - proteger os endpoints de negócio com as políticas validadas.
 
 ## Validação automatizada
