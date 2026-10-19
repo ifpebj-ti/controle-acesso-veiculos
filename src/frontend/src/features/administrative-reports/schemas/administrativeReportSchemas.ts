@@ -19,7 +19,7 @@ export const vehicleMovementReportItemSchema = z.object({
   vehicleIdentification: z.string().nullable(),
   categoryName: z.string().trim().min(1),
   objective: z.string(),
-  status: z.string().trim().min(1),
+  status: z.enum(["Aberto", "Encerrado", "Pendente"]),
   closureType: z.string().nullable(),
   eventName: z.string().nullable(),
   entryRecordedBy: reportActorSchema,
@@ -37,7 +37,7 @@ export const institutionalFleetReportItemSchema = z.object({
   returnMileage: z.number().int().nonnegative().nullable(),
   distance: z.number().int().nonnegative().nullable(),
   itinerary: z.string().trim().min(1),
-  status: z.string().trim().min(1),
+  status: z.enum(["EmUso", "Concluido", "PendenteRetorno", "Corrigido"]),
   departureRecordedBy: reportActorSchema,
   returnRecordedBy: reportActorSchema.nullable(),
 });

@@ -20,7 +20,7 @@ export interface VehicleMovementReportItem {
   vehicleIdentification: string | null;
   categoryName: string;
   objective: string;
-  status: string;
+  status: VehicleMovementStatus;
   closureType: string | null;
   eventName: string | null;
   entryRecordedBy: ReportActor;
@@ -38,7 +38,7 @@ export interface InstitutionalFleetReportItem {
   returnMileage: number | null;
   distance: number | null;
   itinerary: string;
-  status: string;
+  status: InstitutionalFleetStatus;
   departureRecordedBy: ReportActor;
   returnRecordedBy: ReportActor | null;
 }
@@ -53,6 +53,10 @@ export interface AdministrativeReportPage<T> {
   to: string;
   timeZoneId: string;
 }
+
+export type AdministrativeReportResultPage =
+  | AdministrativeReportPage<VehicleMovementReportItem>
+  | AdministrativeReportPage<InstitutionalFleetReportItem>;
 
 export interface AdministrativeReportFilters {
   from: string;

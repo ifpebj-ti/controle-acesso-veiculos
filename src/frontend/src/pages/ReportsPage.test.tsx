@@ -4,7 +4,9 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  type AdministrativeReportPage,
   ReportExportReauthenticationError,
+  type VehicleMovementReportItem,
   exportVehicleMovementReport,
   searchInstitutionalFleetReport,
   searchVehicleMovementReport,
@@ -18,20 +20,25 @@ import { ReportsPage } from "./ReportsPage";
 vi.mock("../features/authentication", () => ({
   useAuthenticatedSession: vi.fn(),
 }));
-vi.mock("../features/administrative-reports", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("../features/administrative-reports")>();
-  return {
-    ...original,
-    exportInstitutionalFleetReport: vi.fn(),
-    exportVehicleMovementReport: vi.fn(),
-    searchInstitutionalFleetReport: vi.fn(),
-    searchVehicleMovementReport: vi.fn(),
-  };
-});
+vi.mock(
+  "../features/administrative-reports/services/administrativeReportsService",
+  async (importOriginal) => {
+    const original =
+      await importOriginal<
+        typeof import("../features/administrative-reports/services/administrativeReportsService")
+      >();
+    return {
+      ...original,
+      exportInstitutionalFleetReport: vi.fn(),
+      exportVehicleMovementReport: vi.fn(),
+      searchInstitutionalFleetReport: vi.fn(),
+      searchVehicleMovementReport: vi.fn(),
+    };
+  },
+);
 vi.mock("../services/api-errors", () => ({ describeApiError: vi.fn() }));
 
-const movementPage = {
+const movementPage: AdministrativeReportPage<VehicleMovementReportItem> = {
   items: [
     {
       id: 1,
@@ -229,7 +236,31 @@ describe("ReportsPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(exportVehicleMovementReport).toHaveBeenCalledTimes(1);
     expect(click).toHaveBeenCalledTimes(1);
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:report");
+    await waitFor(() =>
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:report"),
+    );
+  });
+
+  it("contains keyboard focus, closes with Escape and returns focus", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Pessoa Fictícia");
+    const trigger = screen.getByRole("button", { name: "Exportar PDF" });
+    await user.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "Confirmar exportação" });
+    const password = within(dialog).getByLabelText("Senha atual");
+    expect(password).toHaveFocus();
+
+    const close = within(dialog).getByRole("button", { name: "Fechar" });
+    close.focus();
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(
+      within(dialog).getByRole("button", { name: "Cancelar" }),
+    ).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
   it("preserves applied filters when the API is unavailable", async () => {
