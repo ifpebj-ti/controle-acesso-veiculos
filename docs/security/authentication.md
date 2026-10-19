@@ -40,7 +40,10 @@ de emergência de Administrador mestre depois da transição.
 - Cinco senhas incorretas bloqueiam a conta por 15 minutos.
 - O login também possui limite padrão de 30 requisições por minuto por endereço da conexão, sem fila; excesso retorna HTTP 429 sem revelar a existência da conta.
 - O login válido zera as tentativas anteriores.
-- A resposta de login válido expõe somente JWT, expiração, identificador, e-mail normalizado, perfil ativo e o indicador `requiresPasswordChange`; nome, hash, bloqueio e demais estados internos da conta não fazem parte do contrato.
+- A resposta de login válido expõe somente JWT, expiração, identificador, e-mail
+  normalizado, perfil ativo, `requiresPasswordChange` e
+  `isMasterAdministrator`; nome, hash, bloqueio e demais estados internos da
+  conta não fazem parte do contrato.
 - O access token é assinado com HMAC-SHA256 e expira em 15 minutos.
 - O login também cria uma família de sessão com duração absoluta de 12 horas e inatividade máxima de 15 minutos. Os valores são configuráveis, mas esses padrões refletem a decisão institucional registrada na Issue #268.
 - Login e renovação informam a referência temporal e os prazos calculados pelo servidor nos cabeçalhos `X-Session-Server-Time`, `X-Session-Inactivity-Expires-At` e `X-Session-Absolute-Expires-At`, sem colocar credenciais no corpo ou nos cabeçalhos. O cliente calcula durações a partir da mesma referência para não depender de o relógio do tablet estar perfeitamente sincronizado.
@@ -58,10 +61,21 @@ de emergência de Administrador mestre depois da transição.
   réplicas e protegido por certificado X.509 externo ao repositório. Produção e
   containers locais falham ao iniciar se volume, certificado ou senha não forem
   configurados, evitando fallback silencioso para chaves efêmeras.
-- O token contém apenas identificador do usuário, e-mail, perfil e identificador único do token.
+- O token contém apenas identificador do usuário, e-mail, perfil, versão da
+  credencial, indicadores de troca obrigatória e de Administrador mestre e o
+  identificador único do token.
 - A política global exige autenticação. Login, health checks e OpenAPI em desenvolvimento são exceções explícitas.
 - OpenAPI não é publicado fora do ambiente `Development`.
 - O primeiro administrador é criado somente por comando explícito, fora da superfície HTTP.
+- O primeiro administrador criado pelo bootstrap recebe a capacidade local
+  `Administrador mestre`. Em instalações existentes, a migration promove apenas
+  o Administrador ativo mais antigo, evitando tanto a ausência de autoridade de
+  recuperação quanto a elevação indiscriminada de todas as contas.
+- A capacidade mestre é independente do perfil: o JWT informa
+  `is_master_administrator`, e a política
+  `users:manage-elevated-privileges` exige simultaneamente perfil Administrador
+  e essa claim. Promoção e revogação incrementam a versão da credencial para
+  invalidar access tokens anteriores.
 - Depois do bootstrap, somente `users:manage` pode criar uma conta individual em `POST /users`.
 - A criação administrativa exige que `password` seja omitido; qualquer valor enviado é rejeitado. O servidor gera uma credencial temporária com 144 bits de entropia, devolvida uma única vez com `Cache-Control: no-store`, impedindo que o Administrador escolha ou conheça a senha permanente do titular.
 - Credenciais temporárias expiram em 30 minutos por padrão e são consumidas atomicamente no primeiro login. Tentativas posteriores recebem o mesmo HTTP 401 genérico; a sessão restrita criada no primeiro uso continua válida apenas para troca de senha, renovação e logout. Somente o hash e os estados técnicos mínimos são persistidos, e a conta não acessa operações de negócio antes de concluir `POST /auth/password`.
@@ -205,6 +219,7 @@ Administradores autenticados podem criar outras contas pelo endpoint `POST /user
 | `event-authorizations:read`          | Porteiro, Vigilante, Setor de Transporte e Administrador |
 | `event-authorizations:manage`        | Administrador                                            |
 | `users:manage`                       | Administrador                                            |
+| `users:manage-elevated-privileges`   | Administrador mestre                                     |
 
 Esses nomes estão centralizados e não pertencem ao Domain. A matriz do MVP foi
 registrada na Issue #75 e continua revisável durante a homologação. O Setor de
@@ -225,7 +240,9 @@ fluxo operacional.
 - decidir se haverá integração com identidade institucional;
 - concluir no frontend a política de inatividade compartilhada da Issue #268 e validá-la no tablet da portaria;
 - definir retenção e limpeza operacional das sessões revogadas e expiradas;
-- registrar auditoria de troca de perfil quando esse fluxo existir;
+- concluir o fluxo auditado de troca de perfil e privilégio mestre, incluindo
+  step-up adequado ao método de autenticação e proteção transacional do último
+  mestre ativo — Issue #449;
 - proteger os endpoints de negócio com as políticas validadas.
 
 ## Validação automatizada
