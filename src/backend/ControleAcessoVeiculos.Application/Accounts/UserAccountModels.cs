@@ -22,7 +22,8 @@ public sealed record UserAccountRecord(
     DateTime? UpdatedAtUtc,
     DateTime? LockedUntilUtc,
     bool RequiresPasswordChange,
-    DateTime? TemporaryCredentialExpiresAtUtc);
+    DateTime? TemporaryCredentialExpiresAtUtc,
+    bool IsMasterAdministrator);
 
 public sealed record PagedUserAccountResult(
     IReadOnlyList<UserAccountRecord> Items,

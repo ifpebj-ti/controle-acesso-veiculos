@@ -217,7 +217,8 @@ public sealed class RequestSafetyTests(ApiFactory factory)
             email,
             ProfileNames.Administrator,
             user.VersaoCredencial,
-            requiresPasswordChange: false).Value;
+            requiresPasswordChange: false,
+            isMasterAdministrator: false).Value;
     }
 
     private static string GetCorrelationId(HttpResponseMessage response) =>

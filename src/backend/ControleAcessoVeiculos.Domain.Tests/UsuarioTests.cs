@@ -215,4 +215,36 @@ public sealed class UsuarioTests
                 "different-google-subject",
                 now.AddMinutes(2)));
     }
+
+    [Fact]
+    public void MasterAdministratorPrivilegeRotatesCredentialVersionAndIsIdempotent()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("master@example.test", "hash", 1, 1);
+
+        usuario.PromoverAAdministradorMestre(now);
+        usuario.PromoverAAdministradorMestre(now.AddMinutes(1));
+
+        Assert.True(usuario.AdministradorMestre);
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.Equal(now, usuario.DataAlteracao);
+
+        usuario.RevogarAdministradorMestre(now.AddMinutes(2));
+        usuario.RevogarAdministradorMestre(now.AddMinutes(3));
+
+        Assert.False(usuario.AdministradorMestre);
+        Assert.Equal(3, usuario.VersaoCredencial);
+        Assert.Equal(now.AddMinutes(2), usuario.DataAlteracao);
+    }
+
+    [Fact]
+    public void InactiveAccountCannotBePromotedToMasterAdministrator()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("inactive@example.test", "hash", 1, 1);
+        usuario.Desativar(now);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            usuario.PromoverAAdministradorMestre(now.AddMinutes(1)));
+    }
 }

@@ -200,7 +200,8 @@ public sealed class RateLimitingTests(ApiFactory factory)
             email,
             ProfileNames.Administrator,
             user.VersaoCredencial,
-            requiresPasswordChange: false).Value;
+            requiresPasswordChange: false,
+            isMasterAdministrator: false).Value;
     }
 
     private static HttpClient CreateAuthenticatedClient(

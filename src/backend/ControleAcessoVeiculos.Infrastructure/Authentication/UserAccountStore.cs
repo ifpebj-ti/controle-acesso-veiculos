@@ -67,7 +67,8 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 person.Id,
                 profile.Id,
                 trocaSenhaObrigatoria: temporaryCredentialExpiresAtUtc.HasValue,
-                credencialTemporariaExpiraEm: temporaryCredentialExpiresAtUtc);
+                credencialTemporariaExpiraEm: temporaryCredentialExpiresAtUtc,
+                administradorMestre: audit.Origin == AccountCreationOrigin.Bootstrap);
             dbContext.Usuarios.Add(user);
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -81,6 +82,7 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 {
                     active = true,
                     profileName = profile.Nome,
+                    isMasterAdministrator = user.AdministradorMestre,
                     requiresPasswordChange = user.TrocaSenhaObrigatoria,
                     temporaryCredentialExpiresAtUtc =
                         user.CredencialTemporariaExpiraEm,
@@ -145,7 +147,8 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 item.User.DataAlteracao,
                 item.User.BloqueadoAte,
                 item.User.TrocaSenhaObrigatoria,
-                item.User.CredencialTemporariaExpiraEm))
+                item.User.CredencialTemporariaExpiraEm,
+                item.User.AdministradorMestre))
             .ToListAsync(cancellationToken);
 
         var totalPages = totalCount == 0

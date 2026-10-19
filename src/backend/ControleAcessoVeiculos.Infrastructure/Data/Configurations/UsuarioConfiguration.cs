@@ -95,6 +95,12 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
             .HasColumnName("google_vinculado_em")
             .HasColumnType("timestamp with time zone");
 
+        builder.Property(usuario => usuario.AdministradorMestre)
+            .HasColumnName("administrador_mestre")
+            .HasColumnType("boolean")
+            .HasDefaultValue(false)
+            .IsRequired();
+
         builder.ToTable(table => table.HasCheckConstraint(
             "ck_usuarios_credencial_temporaria",
             "(troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NOT NULL AND " +

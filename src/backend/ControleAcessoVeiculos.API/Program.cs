@@ -309,6 +309,11 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ManageElevatedPrivileges, policy => policy
+        .RequireRole(ProfileNames.Administrator)
+        .RequireClaim(
+            AuthenticationClaimTypes.IsMasterAdministrator,
+            bool.TrueString))
     .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewOperationalSummary, policy => policy.RequireRole(
@@ -605,7 +610,8 @@ app.MapPost("/auth/login", async (
             result.User!.Id,
             result.User.Email,
             result.User.ProfileName,
-            result.User.RequiresPasswordChange)));
+            result.User.RequiresPasswordChange,
+            result.User.IsMasterAdministrator)));
 })
 .AllowAnonymous()
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
@@ -677,7 +683,8 @@ app.MapPost("/auth/refresh", async (
             result.User!.Id,
             result.User.Email,
             result.User.ProfileName,
-            result.User.RequiresPasswordChange)));
+            result.User.RequiresPasswordChange,
+            result.User.IsMasterAdministrator)));
 })
 .AllowAnonymous()
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
@@ -849,7 +856,8 @@ public sealed record LoginUserResponse(
     int Id,
     string Email,
     string ProfileName,
-    bool RequiresPasswordChange);
+    bool RequiresPasswordChange,
+    bool IsMasterAdministrator);
 public sealed record LoginErrorResponse(string Message);
 public sealed record CsrfTokenResponse(string RequestToken);
 public sealed record AuthenticationProvidersResponse(bool GoogleEnabled);

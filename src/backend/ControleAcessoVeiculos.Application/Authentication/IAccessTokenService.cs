@@ -7,7 +7,8 @@ public interface IAccessTokenService
         string email,
         string profileName,
         int credentialVersion,
-        bool requiresPasswordChange);
+        bool requiresPasswordChange,
+        bool isMasterAdministrator);
 }
 
 public sealed record AccessToken(string Value, DateTime ExpiresAtUtc);

@@ -100,7 +100,8 @@ public sealed class GoogleAuthenticationService(
             authenticationUser.User.Email,
             authenticationUser.ProfileName,
             authenticationUser.User.VersaoCredencial,
-            requiresPasswordChange: false);
+            requiresPasswordChange: false,
+            authenticationUser.User.AdministradorMestre);
 
         return LoginResult.Success(
             token,
@@ -114,7 +115,8 @@ public sealed class GoogleAuthenticationService(
                 authenticationUser.User.Id,
                 authenticationUser.User.Email,
                 authenticationUser.ProfileName,
-                RequiresPasswordChange: false));
+                RequiresPasswordChange: false,
+                authenticationUser.User.AdministradorMestre));
     }
 
     private static bool TryNormalizeIdentity(

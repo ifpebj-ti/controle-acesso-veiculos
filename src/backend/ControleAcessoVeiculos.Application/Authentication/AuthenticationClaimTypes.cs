@@ -4,4 +4,5 @@ public static class AuthenticationClaimTypes
 {
     public const string CredentialVersion = "credential_version";
     public const string RequiresPasswordChange = "requires_password_change";
+    public const string IsMasterAdministrator = "is_master_administrator";
 }

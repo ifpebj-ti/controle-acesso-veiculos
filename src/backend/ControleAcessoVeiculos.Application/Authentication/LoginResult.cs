@@ -35,4 +35,5 @@ public sealed record LoginUser(
     int Id,
     string Email,
     string ProfileName,
-    bool RequiresPasswordChange);
+    bool RequiresPasswordChange,
+    bool IsMasterAdministrator);

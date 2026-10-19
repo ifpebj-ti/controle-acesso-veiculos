@@ -98,7 +98,8 @@ public sealed class LoginService(
             authenticationUser.User.Email,
             authenticationUser.ProfileName,
             authenticationUser.User.VersaoCredencial,
-            authenticationUser.User.TrocaSenhaObrigatoria);
+            authenticationUser.User.TrocaSenhaObrigatoria,
+            authenticationUser.User.AdministradorMestre);
 
         return LoginResult.Success(
             token,
@@ -112,6 +113,7 @@ public sealed class LoginService(
                 authenticationUser.User.Id,
                 authenticationUser.User.Email,
                 authenticationUser.ProfileName,
-                authenticationUser.User.TrocaSenhaObrigatoria));
+                authenticationUser.User.TrocaSenhaObrigatoria,
+                authenticationUser.User.AdministradorMestre));
     }
 }

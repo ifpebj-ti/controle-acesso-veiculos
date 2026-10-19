@@ -104,7 +104,8 @@ public sealed class AuthenticationSessionService(
                     authenticationSession.User.Email,
                     authenticationSession.ProfileName,
                     authenticationSession.User.VersaoCredencial,
-                    authenticationSession.User.TrocaSenhaObrigatoria);
+                    authenticationSession.User.TrocaSenhaObrigatoria,
+                    authenticationSession.User.AdministradorMestre);
 
                 return RenewSessionResult.Success(
                     accessToken,
@@ -118,7 +119,8 @@ public sealed class AuthenticationSessionService(
                         authenticationSession.User.Id,
                         authenticationSession.User.Email,
                         authenticationSession.ProfileName,
-                        authenticationSession.User.TrocaSenhaObrigatoria));
+                        authenticationSession.User.TrocaSenhaObrigatoria,
+                        authenticationSession.User.AdministradorMestre));
             },
             cancellationToken);
     }

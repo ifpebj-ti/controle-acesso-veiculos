@@ -18,7 +18,8 @@ public sealed class JwtAccessTokenService(
         string email,
         string profileName,
         int credentialVersion,
-        bool requiresPasswordChange)
+        bool requiresPasswordChange,
+        bool isMasterAdministrator)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(credentialVersion);
 
@@ -36,6 +37,9 @@ public sealed class JwtAccessTokenService(
             new Claim(
                 AuthenticationClaimTypes.RequiresPasswordChange,
                 requiresPasswordChange ? bool.TrueString : bool.FalseString),
+            new Claim(
+                AuthenticationClaimTypes.IsMasterAdministrator,
+                isMasterAdministrator ? bool.TrueString : bool.FalseString),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
         var token = new JwtSecurityToken(

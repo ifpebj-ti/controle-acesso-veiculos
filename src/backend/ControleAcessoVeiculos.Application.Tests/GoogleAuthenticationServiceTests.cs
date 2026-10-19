@@ -239,7 +239,8 @@ public sealed class GoogleAuthenticationServiceTests
             string email,
             string profileName,
             int credentialVersion,
-            bool requiresPasswordChange) =>
+            bool requiresPasswordChange,
+            bool isMasterAdministrator) =>
             new("test-access-token", FixedNow.UtcDateTime.AddMinutes(15));
     }
 

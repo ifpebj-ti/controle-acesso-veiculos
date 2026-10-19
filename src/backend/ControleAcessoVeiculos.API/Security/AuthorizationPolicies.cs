@@ -15,6 +15,7 @@ public static class AuthorizationPolicies
     public const string ReadEventAuthorizations = "event-authorizations:read";
     public const string ManageEventAuthorizations = "event-authorizations:manage";
     public const string ManageUsers = "users:manage";
+    public const string ManageElevatedPrivileges = "users:manage-elevated-privileges";
     public const string ReviewAuditTrail = "audits:read";
     public const string ReviewOperationalSummary = "operations:summary:read";
 }

@@ -13,7 +13,8 @@ public class Usuario
         int perfilId,
         bool trocaSenhaObrigatoria = false,
         DateTime? credencialTemporariaExpiraEm = null,
-        DateTime? credencialTemporariaUtilizadaEm = null)
+        DateTime? credencialTemporariaUtilizadaEm = null,
+        bool administradorMestre = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
         ArgumentException.ThrowIfNullOrWhiteSpace(senhaHash);
@@ -41,6 +42,7 @@ public class Usuario
         TrocaSenhaObrigatoria = trocaSenhaObrigatoria;
         CredencialTemporariaExpiraEm = credencialTemporariaExpiraEm;
         CredencialTemporariaUtilizadaEm = credencialTemporariaUtilizadaEm;
+        AdministradorMestre = administradorMestre;
         DataCriacao = DateTime.UtcNow;
     }
 
@@ -60,6 +62,7 @@ public class Usuario
     public DateTime? CredencialTemporariaUtilizadaEm { get; private set; }
     public string? GoogleSubject { get; private set; }
     public DateTime? GoogleVinculadoEm { get; private set; }
+    public bool AdministradorMestre { get; private set; }
 
     public bool PodeAutenticar(DateTime agoraUtc) =>
         Ativo &&
@@ -207,6 +210,36 @@ public class Usuario
         Ativo = true;
         TentativasFalhas = 0;
         BloqueadoAte = null;
+        DataAlteracao = agoraUtc;
+    }
+
+    public void PromoverAAdministradorMestre(DateTime agoraUtc)
+    {
+        if (!Ativo)
+        {
+            throw new InvalidOperationException(
+                "Uma conta inativa não pode receber privilégio de Administrador mestre.");
+        }
+
+        if (AdministradorMestre)
+        {
+            return;
+        }
+
+        AdministradorMestre = true;
+        VersaoCredencial = checked(VersaoCredencial + 1);
+        DataAlteracao = agoraUtc;
+    }
+
+    public void RevogarAdministradorMestre(DateTime agoraUtc)
+    {
+        if (!AdministradorMestre)
+        {
+            return;
+        }
+
+        AdministradorMestre = false;
+        VersaoCredencial = checked(VersaoCredencial + 1);
         DataAlteracao = agoraUtc;
     }
 
