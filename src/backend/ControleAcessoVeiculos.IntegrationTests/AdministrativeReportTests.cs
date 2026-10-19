@@ -236,11 +236,13 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
             var category = new CategoriaAcesso($"Categoria {Guid.NewGuid():N}");
             dbContext.AddRange(driver, vehicle, category);
             await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+            // Keep this intentionally open record after historical summary fixtures so
+            // the shared integration database cannot change their carry-over totals.
             dbContext.RegistrosAcesso.Add(new RegistroAcesso(
                 vehicle.Id,
                 driver.Id,
                 category.Id,
-                new DateTime(2003, 6, 10, 12, 0, 0, DateTimeKind.Utc),
+                new DateTime(2098, 6, 10, 12, 0, 0, DateTimeKind.Utc),
                 "Serviço autorizado",
                 administratorId));
             await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -249,7 +251,7 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email);
         var response = await client.GetAsync(
-            "/reports/vehicle-movements?from=2003-06-10&to=2003-06-10",
+            "/reports/vehicle-movements?from=2098-06-10&to=2098-06-10",
             TestContext.Current.CancellationToken);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken));
