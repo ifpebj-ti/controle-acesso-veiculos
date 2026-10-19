@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import {
   institutionalDriverFormSchema,
   type InstitutionalDriverFormValues,
@@ -15,6 +16,7 @@ export type InstitutionalDriverField = keyof InstitutionalDriverFormValues;
 
 interface InstitutionalDriverFormProps {
   busy: boolean;
+  formError?: string | null;
   onCancel: () => void;
   onSubmit: (input: InstitutionalDriverInput) => Promise<void>;
   serverErrors: Partial<Record<InstitutionalDriverField, string>>;
@@ -31,6 +33,7 @@ function optionalValue(value: string) {
 
 export function InstitutionalDriverForm({
   busy,
+  formError,
   onCancel,
   onSubmit,
   serverErrors,
@@ -161,6 +164,11 @@ export function InstitutionalDriverForm({
           {fieldError("documentNumber")}
         </div>
 
+        <ActionFeedback
+          className="sm:col-span-2 lg:col-span-3"
+          message={formError}
+          tone="error"
+        />
         <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:col-span-2 sm:flex-row sm:justify-end lg:col-span-3">
           <button
             className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25 disabled:cursor-wait disabled:opacity-60"

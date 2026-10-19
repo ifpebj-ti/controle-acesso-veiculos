@@ -1,4 +1,5 @@
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { MetricCard, type MetricCardTone } from "../components/ui/MetricCard";
@@ -95,19 +96,14 @@ export function InstitutionalUsagesPage() {
       )}
 
       {operations.notice && (
-        <div
-          className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
-          role="status"
-        >
-          <p>{operations.notice}</p>
-          <button
-            className="shrink-0 rounded-md font-bold underline underline-offset-4"
-            onClick={() => operations.setNotice(null)}
-            type="button"
-          >
-            Fechar
-          </button>
-        </div>
+        <ActionFeedback
+          className="mt-6"
+          floating
+          focusOnChange
+          message={operations.notice}
+          onDismiss={() => operations.setNotice(null)}
+          tone="success"
+        />
       )}
 
       {operations.status === "error" && operations.errorMessage && (
@@ -128,24 +124,15 @@ export function InstitutionalUsagesPage() {
       )}
 
       {canOperate && operations.departureOpen && (
-        <>
-          {operations.formError && (
-            <div
-              className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-              role="alert"
-            >
-              {operations.formError}
-            </div>
-          )}
-          <InstitutionalDepartureForm
-            busy={operations.pendingAction !== null}
-            drivers={catalogs.drivers}
-            onCancel={operations.closeDeparture}
-            onSubmit={operations.saveDeparture}
-            serverErrors={operations.serverErrors}
-            vehicles={catalogs.vehicles}
-          />
-        </>
+        <InstitutionalDepartureForm
+          busy={operations.pendingAction !== null}
+          drivers={catalogs.drivers}
+          formError={operations.formError}
+          onCancel={operations.closeDeparture}
+          onSubmit={operations.saveDeparture}
+          serverErrors={operations.serverErrors}
+          vehicles={catalogs.vehicles}
+        />
       )}
 
       <InstitutionalUsageSummary
