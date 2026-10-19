@@ -32,6 +32,16 @@ public interface IUserAccountStore
         DateTime expiresAtUtc,
         string reason,
         CancellationToken cancellationToken);
+
+    Task<ChangeUserAuthorizationStoreResult> TryChangeAuthorizationAsync(
+        int userId,
+        int actorUserId,
+        string profileName,
+        bool isMasterAdministrator,
+        string currentPassword,
+        string reason,
+        DateTime occurredAtUtc,
+        CancellationToken cancellationToken);
 }
 
 public sealed record CreatedUserAccount(int UserId, string Email, string ProfileName);
@@ -60,3 +70,19 @@ public sealed record AdministrativeCredentialResetStoreResult(
     AdministrativeCredentialResetStoreStatus Status,
     int? PreviousCredentialVersion = null,
     int? CurrentCredentialVersion = null);
+
+public enum ChangeUserAuthorizationStoreStatus
+{
+    Success = 1,
+    NotFound = 2,
+    ActorNotAuthorized = 3,
+    InvalidStepUp = 4,
+    SelfChange = 5,
+    Inactive = 6,
+    InvalidProfile = 7,
+    LastMasterAdministrator = 8
+}
+
+public sealed record ChangeUserAuthorizationStoreResult(
+    ChangeUserAuthorizationStoreStatus Status,
+    bool Changed = false);

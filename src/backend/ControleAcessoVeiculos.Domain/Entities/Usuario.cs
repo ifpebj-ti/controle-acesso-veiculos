@@ -243,6 +243,20 @@ public class Usuario
         DataAlteracao = agoraUtc;
     }
 
+    public void AlterarPerfil(int perfilId, DateTime agoraUtc)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(perfilId);
+
+        if (PerfilId == perfilId)
+        {
+            return;
+        }
+
+        PerfilId = perfilId;
+        VersaoCredencial = checked(VersaoCredencial + 1);
+        DataAlteracao = agoraUtc;
+    }
+
     public static string NormalizarEmail(string email)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);

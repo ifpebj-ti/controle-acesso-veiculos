@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ControleAcessoVeiculos.Application.Accounts;
+using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Domain.Entities;
 using ControleAcessoVeiculos.Domain.Enums;
@@ -9,7 +10,9 @@ using Npgsql;
 
 namespace ControleAcessoVeiculos.Infrastructure.Authentication;
 
-public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
+public sealed class UserAccountStore(
+    ControleAcessoVeiculosDbContext dbContext,
+    IPasswordHashService passwordHashService)
     : IUserAccountStore
 {
     public Task<bool> HasAnyUserAsync(CancellationToken cancellationToken) =>
@@ -216,6 +219,17 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             }
         }
 
+        if (!active && user.AdministradorMestre)
+        {
+            var activeMasterCount = await dbContext.Usuarios.CountAsync(
+                candidate => candidate.Ativo && candidate.AdministradorMestre,
+                cancellationToken);
+            if (activeMasterCount <= 1)
+            {
+                return UserAccountStoreStateStatus.LastAdministrator;
+            }
+        }
+
         var previousActive = user.Ativo;
         if (active)
         {
@@ -343,6 +357,139 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             AdministrativeCredentialResetStoreStatus.Success,
             previousCredentialVersion,
             user.VersaoCredencial);
+    }
+
+    public async Task<ChangeUserAuthorizationStoreResult> TryChangeAuthorizationAsync(
+        int userId,
+        int actorUserId,
+        string profileName,
+        bool isMasterAdministrator,
+        string currentPassword,
+        string reason,
+        DateTime occurredAtUtc,
+        CancellationToken cancellationToken)
+    {
+        if (userId == actorUserId)
+        {
+            return new(ChangeUserAuthorizationStoreStatus.SelfChange);
+        }
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync(
+            "SELECT pg_advisory_xact_lock(73000174)",
+            cancellationToken);
+
+        var actor = await LockUserAsync(actorUserId, cancellationToken);
+        if (actor is null || !actor.Ativo || !actor.AdministradorMestre)
+        {
+            return new(ChangeUserAuthorizationStoreStatus.ActorNotAuthorized);
+        }
+
+        var actorProfileName = await dbContext.Perfis
+            .Where(profile => profile.Id == actor.PerfilId && profile.Ativo)
+            .Select(profile => profile.Nome)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (actorProfileName != ProfileNames.Administrator)
+        {
+            return new(ChangeUserAuthorizationStoreStatus.ActorNotAuthorized);
+        }
+
+        if (!actor.PodeAutenticarComSenha(occurredAtUtc) ||
+            passwordHashService.Verify(actor.SenhaHash, currentPassword) ==
+                PasswordHashVerificationResult.Failed)
+        {
+            return new(ChangeUserAuthorizationStoreStatus.InvalidStepUp);
+        }
+
+        var target = await LockUserAsync(userId, cancellationToken);
+        if (target is null)
+        {
+            return new(ChangeUserAuthorizationStoreStatus.NotFound);
+        }
+
+        if (!target.Ativo)
+        {
+            return new(ChangeUserAuthorizationStoreStatus.Inactive);
+        }
+
+        var profile = await dbContext.Perfis.SingleOrDefaultAsync(
+            candidate => candidate.Nome == profileName && candidate.Ativo,
+            cancellationToken);
+        if (profile is null)
+        {
+            return new(ChangeUserAuthorizationStoreStatus.InvalidProfile);
+        }
+
+        var previousProfileName = await dbContext.Perfis
+            .Where(candidate => candidate.Id == target.PerfilId)
+            .Select(candidate => candidate.Nome)
+            .SingleAsync(cancellationToken);
+        var previousIsMasterAdministrator = target.AdministradorMestre;
+
+        if (previousIsMasterAdministrator && !isMasterAdministrator)
+        {
+            var activeMasterCount = await dbContext.Usuarios.CountAsync(
+                candidate => candidate.Ativo && candidate.AdministradorMestre,
+                cancellationToken);
+            if (activeMasterCount <= 1)
+            {
+                return new(ChangeUserAuthorizationStoreStatus.LastMasterAdministrator);
+            }
+        }
+
+        if (previousProfileName == profileName &&
+            previousIsMasterAdministrator == isMasterAdministrator)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return new(ChangeUserAuthorizationStoreStatus.Success, Changed: false);
+        }
+
+        target.AlterarPerfil(profile.Id, occurredAtUtc);
+        if (isMasterAdministrator)
+        {
+            target.PromoverAAdministradorMestre(occurredAtUtc);
+        }
+        else
+        {
+            target.RevogarAdministradorMestre(occurredAtUtc);
+        }
+
+        var sessions = await dbContext.SessoesAutenticacao
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM dbo.sessoes_autenticacao
+                WHERE usuario_id = {userId} AND revogada_em IS NULL
+                FOR UPDATE
+                """)
+            .ToListAsync(cancellationToken);
+        foreach (var session in sessions)
+        {
+            session.Revogar(occurredAtUtc, MotivoRevogacaoSessao.AutorizacaoAlterada);
+        }
+
+        dbContext.Auditorias.Add(new Auditoria(
+            occurredAtUtc,
+            TipoAcaoAuditoria.Alteracao,
+            nameof(Usuario),
+            target.Id,
+            actorUserId,
+            dadosAnteriores: JsonSerializer.Serialize(new
+            {
+                profileName = previousProfileName,
+                isMasterAdministrator = previousIsMasterAdministrator
+            }),
+            dadosNovos: JsonSerializer.Serialize(new
+            {
+                profileName,
+                isMasterAdministrator,
+                reason
+            }),
+            detalhes: "Master administrator changed account authorization."));
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return new(ChangeUserAuthorizationStoreStatus.Success, Changed: true);
     }
 
     private Task<Usuario?> LockUserAsync(

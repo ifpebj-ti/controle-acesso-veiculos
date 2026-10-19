@@ -57,6 +57,29 @@ public sealed record ChangeUserAccountStateResult(
     ChangeUserAccountStateStatus Status,
     IReadOnlyDictionary<string, string[]> Errors);
 
+public sealed record ChangeUserAuthorizationCommand(
+    string ProfileName,
+    bool IsMasterAdministrator,
+    string CurrentPassword,
+    string Reason);
+
+public enum ChangeUserAuthorizationStatus
+{
+    Success,
+    Invalid,
+    NotFound,
+    Forbidden,
+    InvalidStepUp,
+    SelfChange,
+    Inactive,
+    Conflict
+}
+
+public sealed record ChangeUserAuthorizationResult(
+    ChangeUserAuthorizationStatus Status,
+    bool Changed,
+    IReadOnlyDictionary<string, string[]> Errors);
+
 public enum UserAccountStoreStateStatus
 {
     Success,

@@ -135,5 +135,16 @@ public sealed class UserAccountLifecycleServiceTests
             string reason,
             CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
+        public Task<ChangeUserAuthorizationStoreResult> TryChangeAuthorizationAsync(
+            int userId,
+            int actorUserId,
+            string profileName,
+            bool isMasterAdministrator,
+            string currentPassword,
+            string reason,
+            DateTime occurredAtUtc,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 }

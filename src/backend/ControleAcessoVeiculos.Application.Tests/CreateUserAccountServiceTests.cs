@@ -146,6 +146,17 @@ public sealed class CreateUserAccountServiceTests
             string reason,
             CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
+        public Task<ChangeUserAuthorizationStoreResult> TryChangeAuthorizationAsync(
+            int userId,
+            int actorUserId,
+            string profileName,
+            bool isMasterAdministrator,
+            string currentPassword,
+            string reason,
+            DateTime occurredAtUtc,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FakeTemporaryCredentialGenerator : ITemporaryCredentialGenerator

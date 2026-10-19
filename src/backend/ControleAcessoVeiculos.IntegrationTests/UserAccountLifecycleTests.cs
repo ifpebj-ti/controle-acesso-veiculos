@@ -20,7 +20,9 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
     [Fact]
     public async Task AdministratorCanSearchPaginatedAccountsWithoutPasswordHashes()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         var target = await CreateUserAsync(ProfileNames.Doorman);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, administrator.Email);
@@ -57,7 +59,9 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
     [Fact]
     public async Task DeactivationRevokesExistingTokenAndReactivationRestoresLogin()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         var target = await CreateUserAsync(ProfileNames.Doorman);
         using var administratorClient = factory.CreateClient();
         using var targetClient = factory.CreateClient();
@@ -131,7 +135,9 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
     [Fact]
     public async Task AdministratorCannotDeactivateOwnAccount()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, administrator.Email);
 
@@ -144,8 +150,12 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
     [Fact]
     public async Task ConcurrentDeactivationKeepsOneAdministratorActive()
     {
-        var first = await CreateUserAsync(ProfileNames.Administrator);
-        var second = await CreateUserAsync(ProfileNames.Administrator);
+        var first = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
+        var second = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         using var firstClient = factory.CreateClient();
         using var secondClient = factory.CreateClient();
         await AuthenticateClientAsync(firstClient, first.Email);
@@ -165,7 +175,9 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
             Assert.Equal(1, responses.Count(response =>
                 response.StatusCode == HttpStatusCode.NoContent));
             Assert.Equal(1, responses.Count(response =>
-                response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.Unauthorized));
+                response.StatusCode is HttpStatusCode.Conflict or
+                    HttpStatusCode.Forbidden or
+                    HttpStatusCode.Unauthorized));
             Assert.Equal(1, await CountActiveAdministratorsAsync(first.Id, second.Id));
         }
         finally
@@ -178,7 +190,9 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
     [Fact]
     public async Task AuditFailureRollsBackAccountDeactivation()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         var target = await CreateUserAsync(ProfileNames.Doorman);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, administrator.Email);
@@ -203,7 +217,9 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
             item.TipoAcao == TipoAcaoAuditoria.Alteracao, cancellationToken: TestContext.Current.CancellationToken));
     }
 
-    private async Task<TestUser> CreateUserAsync(string profileName)
+    private async Task<TestUser> CreateUserAsync(
+        string profileName,
+        bool isMasterAdministrator = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
@@ -222,7 +238,12 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         await dbContext.SaveChangesAsync();
 
         var email = $"account-{suffix}@example.test";
-        var user = new Usuario(email, passwordHasher.Hash(Password), person.Id, profile.Id);
+        var user = new Usuario(
+            email,
+            passwordHasher.Hash(Password),
+            person.Id,
+            profile.Id,
+            administradorMestre: isMasterAdministrator);
         dbContext.Usuarios.Add(user);
         await dbContext.SaveChangesAsync();
         return new TestUser(user.Id, email);

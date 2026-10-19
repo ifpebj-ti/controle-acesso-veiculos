@@ -16,21 +16,37 @@ public static class UserAccountEndpoints
             .WithName("SearchUsers")
             .WithSummary("Consulta contas de usuário");
         group.MapPost(string.Empty, CreateAsync)
+            .RequireAuthorization(AuthorizationPolicies.ManageElevatedPrivileges)
             .WithName("CreateUser")
             .WithSummary("Cria uma conta com credencial temporária");
         group.MapDelete("/{id:int}", DeactivateAsync)
+            .RequireAuthorization(AuthorizationPolicies.ManageElevatedPrivileges)
             .WithName("DeactivateUser")
             .WithSummary("Desativa uma conta de usuário");
         group.MapPost("/{id:int}/reactivation", ReactivateAsync)
+            .RequireAuthorization(AuthorizationPolicies.ManageElevatedPrivileges)
             .WithName("ReactivateUser")
             .WithSummary("Reativa uma conta de usuário");
         group.MapPost("/{id:int}/temporary-credential", ResetCredentialAsync)
+            .RequireAuthorization(AuthorizationPolicies.ManageElevatedPrivileges)
             .RequireRateLimiting(ApiRateLimiting.PasswordChangePolicy)
             .WithName("ResetUserCredential")
             .WithSummary("Emite uma nova credencial temporária para a conta")
             .Produces<TemporaryCredentialResponse>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
+            .Produces(StatusCodes.Status429TooManyRequests);
+        group.MapPut("/{id:int}/authorization", ChangeAuthorizationAsync)
+            .RequireAuthorization(AuthorizationPolicies.ManageElevatedPrivileges)
+            .RequireRateLimiting(ApiRateLimiting.PasswordChangePolicy)
+            .WithName("ChangeUserAuthorization")
+            .WithSummary("Altera o perfil e o privilégio de Administrador mestre")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status409Conflict)
             .Produces(StatusCodes.Status429TooManyRequests);
@@ -206,6 +222,54 @@ public static class UserAccountEndpoints
             _ => Results.ValidationProblem(result.Errors)
         };
     }
+
+    private static async Task<IResult> ChangeAuthorizationAsync(
+        int id,
+        ChangeUserAuthorizationRequest request,
+        HttpContext httpContext,
+        MasterAdministratorGovernanceService service,
+        CancellationToken cancellationToken)
+    {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await service.ChangeAuthorizationAsync(
+            id,
+            actorUserId,
+            new ChangeUserAuthorizationCommand(
+                request.ProfileName,
+                request.IsMasterAdministrator,
+                request.CurrentPassword,
+                request.Reason),
+            cancellationToken);
+
+        return result.Status switch
+        {
+            ChangeUserAuthorizationStatus.Success => Results.NoContent(),
+            ChangeUserAuthorizationStatus.Invalid =>
+                Results.ValidationProblem(result.Errors),
+            ChangeUserAuthorizationStatus.NotFound => Results.NotFound(new
+            {
+                Message = "Conta de usuário não encontrada."
+            }),
+            ChangeUserAuthorizationStatus.Forbidden => Results.Forbid(),
+            ChangeUserAuthorizationStatus.InvalidStepUp => Results.Unauthorized(),
+            ChangeUserAuthorizationStatus.Inactive => Results.Conflict(new
+            {
+                Message = "Reative a conta antes de alterar sua autorização."
+            }),
+            ChangeUserAuthorizationStatus.SelfChange => Results.Conflict(new
+            {
+                Message = "Use outra conta de Administrador mestre para alterar a própria autorização."
+            }),
+            _ => Results.Conflict(new
+            {
+                Message = "A alteração removeria o último Administrador mestre ativo ou produziria uma autorização inválida."
+            })
+        };
+    }
 }
 
 public sealed record SearchUserAccountsRequest(
@@ -232,3 +296,9 @@ public sealed record AdministrativeCredentialResetRequest(string Reason);
 public sealed record TemporaryCredentialResponse(
     string TemporaryCredential,
     DateTime TemporaryCredentialExpiresAtUtc);
+
+public sealed record ChangeUserAuthorizationRequest(
+    string ProfileName,
+    bool IsMasterAdministrator,
+    string CurrentPassword,
+    string Reason);

@@ -320,10 +320,13 @@ public sealed class AuthenticationTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task AdministratorCanCreateIndividualAccount()
+    public async Task MasterAdministratorCanCreateIndividualAccount()
     {
         const string adminPassword = "Test-only-admin-password-123!";
-        var adminEmail = await CreateUserAsync(ProfileNames.Administrator, adminPassword);
+        var adminEmail = await CreateUserAsync(
+            ProfileNames.Administrator,
+            adminPassword,
+            isMasterAdministrator: true);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, adminEmail, adminPassword);
         var suffix = Guid.NewGuid().ToString("N");
@@ -368,10 +371,13 @@ public sealed class AuthenticationTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task AccountCreationAuditFailureRollsBackPersonAndUser()
+    public async Task MasterAdministratorCreationAuditFailureRollsBackPersonAndUser()
     {
         const string adminPassword = "Test-only-admin-password-123!";
-        var adminEmail = await CreateUserAsync(ProfileNames.Administrator, adminPassword);
+        var adminEmail = await CreateUserAsync(
+            ProfileNames.Administrator,
+            adminPassword,
+            isMasterAdministrator: true);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, adminEmail, adminPassword);
         var suffix = Guid.NewGuid().ToString("N");
@@ -436,7 +442,8 @@ public sealed class AuthenticationTests(ApiFactory factory)
         string profileName,
         string password,
         bool active = true,
-        bool outdatedPasswordHash = false)
+        bool outdatedPasswordHash = false,
+        bool isMasterAdministrator = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
@@ -458,7 +465,12 @@ public sealed class AuthenticationTests(ApiFactory factory)
         var passwordHash = outdatedPasswordHash
             ? CreateOutdatedPasswordHash(password)
             : passwordHasher.Hash(password);
-        var user = new Usuario(email, passwordHash, person.Id, profile.Id);
+        var user = new Usuario(
+            email,
+            passwordHash,
+            person.Id,
+            profile.Id,
+            administradorMestre: isMasterAdministrator);
 
         if (!active)
         {

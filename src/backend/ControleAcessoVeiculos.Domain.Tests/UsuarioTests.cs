@@ -247,4 +247,18 @@ public sealed class UsuarioTests
         Assert.Throws<InvalidOperationException>(() =>
             usuario.PromoverAAdministradorMestre(now.AddMinutes(1)));
     }
+
+    [Fact]
+    public void ProfileChangeRotatesCredentialVersionAndIsIdempotent()
+    {
+        var usuario = new Usuario("user@example.test", "hash", 1, 2);
+        var now = new DateTime(2026, 10, 19, 12, 0, 0, DateTimeKind.Utc);
+
+        usuario.AlterarPerfil(3, now);
+        usuario.AlterarPerfil(3, now.AddMinutes(1));
+
+        Assert.Equal(3, usuario.PerfilId);
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.Equal(now, usuario.DataAlteracao);
+    }
 }

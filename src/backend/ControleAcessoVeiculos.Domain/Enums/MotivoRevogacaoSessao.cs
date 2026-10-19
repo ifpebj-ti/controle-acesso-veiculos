@@ -9,5 +9,6 @@ public enum MotivoRevogacaoSessao
     ReutilizacaoDetectada = 5,
     SenhaAlterada = 6,
     RedefinicaoAdministrativa = 7,
-    MetodoAutenticacaoAlterado = 8
+    MetodoAutenticacaoAlterado = 8,
+    AutorizacaoAlterada = 9
 }

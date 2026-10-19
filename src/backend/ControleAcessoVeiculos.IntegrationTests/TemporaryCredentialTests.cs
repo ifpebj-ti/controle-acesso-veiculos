@@ -21,7 +21,9 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     [Fact]
     public async Task GeneratedCredentialRestrictsOperationsUntilPasswordChange()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         using var administratorClient = factory.CreateClient();
         await AuthenticateClientAsync(
             administratorClient,
@@ -149,7 +151,9 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     [Fact]
     public async Task AdministrativeResetRevokesSessionsAndOnlyLatestCredentialRemainsValid()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         var target = await CreateUserAsync(ProfileNames.Doorman);
         using var administratorClient = factory.CreateClient();
         using var targetClient = factory.CreateClient();
@@ -220,7 +224,9 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     [Fact]
     public async Task NonAdministratorCannotResetCredentialAndAdministratorCannotResetOwn()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         var doorman = await CreateUserAsync(ProfileNames.Doorman);
         using var doormanClient = factory.CreateClient();
         await AuthenticateClientAsync(doormanClient, doorman.Email, PermanentPassword);
@@ -238,9 +244,11 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task AdministratorCannotIssueLocalCredentialForGoogleLinkedAccount()
+    public async Task MasterAdministratorCannotIssueLocalCredentialForGoogleLinkedAccount()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         var target = await CreateUserAsync(ProfileNames.Doorman);
         using var administratorClient = factory.CreateClient();
         await AuthenticateClientAsync(
@@ -284,9 +292,11 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task AdministratorCannotChooseAnotherUsersInitialPassword()
+    public async Task MasterAdministratorCannotChooseAnotherUsersInitialPassword()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(
             client,
@@ -335,7 +345,9 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     [Fact]
     public async Task AuditFailureRollsBackAdministrativeResetAndSessionRevocation()
     {
-        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var administrator = await CreateUserAsync(
+            ProfileNames.Administrator,
+            isMasterAdministrator: true);
         var target = await CreateUserAsync(ProfileNames.Doorman);
         using var administratorClient = factory.CreateClient();
         using var targetClient = factory.CreateClient();
@@ -382,7 +394,8 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
     private async Task<TestUser> CreateUserAsync(
         string profileName,
         bool requiresPasswordChange = false,
-        DateTime? temporaryCredentialExpiresAtUtc = null)
+        DateTime? temporaryCredentialExpiresAtUtc = null,
+        bool isMasterAdministrator = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
@@ -406,7 +419,8 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
             person.Id,
             profile.Id,
             requiresPasswordChange,
-            temporaryCredentialExpiresAtUtc);
+            temporaryCredentialExpiresAtUtc,
+            administradorMestre: isMasterAdministrator);
         dbContext.Usuarios.Add(user);
         await dbContext.SaveChangesAsync();
         return new TestUser(user.Id, email);

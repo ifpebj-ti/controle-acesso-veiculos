@@ -348,6 +348,7 @@ builder.Services.AddScoped<AuthenticatedPasswordChangeService>();
 builder.Services.AddScoped<CreateUserAccountService>();
 builder.Services.AddScoped<AdministrativeCredentialResetService>();
 builder.Services.AddScoped<UserAccountLifecycleService>();
+builder.Services.AddScoped<MasterAdministratorGovernanceService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
