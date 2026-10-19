@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, type ChangeEvent } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { SelectField } from "../../../components/ui/SelectField";
 import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
@@ -14,6 +15,7 @@ import type { CreateUserAccountInput, UserAccountServerErrors } from "../types";
 
 interface UserAccountFormProps {
   busy: boolean;
+  formError?: string | null;
   onCancel: () => void;
   onFieldChange: (field: keyof UserAccountServerErrors) => void;
   onSubmit: (input: CreateUserAccountInput) => Promise<void>;
@@ -40,6 +42,7 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 export function UserAccountForm({
   busy,
+  formError,
   onCancel,
   onFieldChange,
   onSubmit,
@@ -191,6 +194,11 @@ export function UserAccountForm({
           />
         </div>
 
+        <ActionFeedback
+          className="sm:col-span-2"
+          message={formError}
+          tone="error"
+        />
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:col-span-2 sm:flex-row sm:justify-end">
           <Button disabled={disabled} onClick={onCancel} variant="secondary">
             Cancelar
