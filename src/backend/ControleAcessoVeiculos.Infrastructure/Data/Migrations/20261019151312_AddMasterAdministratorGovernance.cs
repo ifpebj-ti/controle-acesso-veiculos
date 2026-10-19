@@ -10,6 +10,11 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropCheckConstraint(
+                name: "ck_sessoes_autenticacao_motivo_revogacao",
+                schema: "dbo",
+                table: "sessoes_autenticacao");
+
             migrationBuilder.AddColumn<bool>(
                 name: "administrador_mestre",
                 schema: "dbo",
@@ -36,15 +41,32 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                     LIMIT 1
                 );
                 """);
+
+            migrationBuilder.AddCheckConstraint(
+                name: "ck_sessoes_autenticacao_motivo_revogacao",
+                schema: "dbo",
+                table: "sessoes_autenticacao",
+                sql: "motivo_revogacao IS NULL OR motivo_revogacao IN ('Rotacao', 'Logout', 'Expiracao', 'ContaDesativada', 'ReutilizacaoDetectada', 'SenhaAlterada', 'RedefinicaoAdministrativa', 'AutorizacaoAlterada')");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropCheckConstraint(
+                name: "ck_sessoes_autenticacao_motivo_revogacao",
+                schema: "dbo",
+                table: "sessoes_autenticacao");
+
             migrationBuilder.DropColumn(
                 name: "administrador_mestre",
                 schema: "dbo",
                 table: "usuarios");
+
+            migrationBuilder.AddCheckConstraint(
+                name: "ck_sessoes_autenticacao_motivo_revogacao",
+                schema: "dbo",
+                table: "sessoes_autenticacao",
+                sql: "motivo_revogacao IS NULL OR motivo_revogacao IN ('Rotacao', 'Logout', 'Expiracao', 'ContaDesativada', 'ReutilizacaoDetectada', 'SenhaAlterada', 'RedefinicaoAdministrativa')");
         }
     }
 }

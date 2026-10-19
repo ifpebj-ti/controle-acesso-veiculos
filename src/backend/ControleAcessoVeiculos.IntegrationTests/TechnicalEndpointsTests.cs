@@ -132,7 +132,7 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
 
         Assert.Equal(["accessToken", "expiresAtUtc", "user"], loginProperties);
         Assert.Equal(
-            ["email", "id", "profileName", "requiresPasswordChange"],
+            ["email", "id", "isMasterAdministrator", "profileName", "requiresPasswordChange"],
             userProperties);
         Assert.Equal(
             "bearer",

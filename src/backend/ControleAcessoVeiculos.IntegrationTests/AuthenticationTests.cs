@@ -59,7 +59,7 @@ public sealed class AuthenticationTests(ApiFactory factory)
                 .Order()
                 .ToArray();
             Assert.Equal(
-                ["email", "id", "profileName", "requiresPasswordChange"],
+                ["email", "id", "isMasterAdministrator", "profileName", "requiresPasswordChange"],
                 userProperties);
             Assert.False(responseJson.RootElement.TryGetProperty("refreshToken", out _));
         }
