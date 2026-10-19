@@ -121,6 +121,10 @@ public sealed class AdministrativeReportPdfRenderer(
         IContainer container,
         VehicleMovementReportItem item)
     {
+        var vehicle = string.Join(
+            " · ",
+            new[] { item.Plate, item.VehicleIdentification }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
         container
             .Border(1)
             .BorderColor(Colors.Grey.Lighten2)
@@ -130,7 +134,8 @@ public sealed class AdministrativeReportPdfRenderer(
                 column.Spacing(4);
                 column.Item().Row(row =>
                 {
-                    row.RelativeItem().Text($"{item.Plate} — {item.DriverName}").Bold();
+                    row.RelativeItem().Text(
+                        $"{ValueOrFallback(vehicle)} — {item.DriverName}").Bold();
                     row.AutoItem().Text($"#{item.Id} · {item.Status}").SemiBold();
                 });
                 AddPair(column, "Entrada", FormatDateTime(item.EntryAtUtc),

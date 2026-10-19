@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Domain.Entities;
@@ -125,8 +126,11 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
             },
             TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.NotEqual("application/pdf", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<ExportProblem>(
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal("report_export_reauthentication_failed", problem?.Code);
 
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider
@@ -217,6 +221,47 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
         Assert.DoesNotContain(sensitiveDocument, body, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task MovementReportDoesNotPresentInternalIdentificationAsPlate()
+    {
+        var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
+        var internalIdentification = $"INT-{Guid.NewGuid():N}"[..12].ToUpperInvariant();
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var driver = new Pessoa("Condutor sem placa");
+            var vehicle = new Veiculo(null, "Trator", internalIdentification, false);
+            var category = new CategoriaAcesso($"Categoria {Guid.NewGuid():N}");
+            dbContext.AddRange(driver, vehicle, category);
+            await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+            dbContext.RegistrosAcesso.Add(new RegistroAcesso(
+                vehicle.Id,
+                driver.Id,
+                category.Id,
+                new DateTime(2003, 6, 10, 12, 0, 0, DateTimeKind.Utc),
+                "Serviço autorizado",
+                administratorId));
+            await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email);
+        var response = await client.GetAsync(
+            "/reports/vehicle-movements?from=2003-06-10&to=2003-06-10",
+            TestContext.Current.CancellationToken);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(
+            TestContext.Current.CancellationToken));
+        var item = body.RootElement.GetProperty("items")[0];
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(JsonValueKind.Null, item.GetProperty("plate").ValueKind);
+        Assert.Equal(
+            internalIdentification,
+            item.GetProperty("vehicleIdentification").GetString());
+    }
+
     private async Task<(int UserId, string Email)> CreateUserAsync(
         string profileName,
         string? personName = null)
@@ -270,4 +315,6 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
     private sealed record ReportResponse(
         IReadOnlyList<object> Items,
         string TimeZoneId);
+
+    private sealed record ExportProblem(string Code);
 }

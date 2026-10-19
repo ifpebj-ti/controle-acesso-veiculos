@@ -14,21 +14,41 @@ public static class AdministrativeReportEndpoints
 
         group.MapGet("/vehicle-movements", SearchVehicleMovementsAsync)
             .WithName("SearchVehicleMovementReport")
-            .WithSummary("Consulta o relatório de movimentações de veículos");
+            .WithSummary("Consulta o relatório de movimentações de veículos")
+            .Produces<PagedAdministrativeReport<VehicleMovementReportItem>>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
 
         group.MapGet("/institutional-fleet", SearchInstitutionalFleetAsync)
             .WithName("SearchInstitutionalFleetReport")
-            .WithSummary("Consulta o relatório de utilizações da frota institucional");
+            .WithSummary("Consulta o relatório de utilizações da frota institucional")
+            .Produces<PagedAdministrativeReport<InstitutionalFleetReportItem>>()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
 
         group.MapPost("/vehicle-movements/pdf", ExportVehicleMovementsAsync)
             .RequireRateLimiting(ApiRateLimiting.PasswordChangePolicy)
             .WithName("ExportVehicleMovementReportPdf")
-            .WithSummary("Exporta o relatório de movimentações em PDF");
+            .WithSummary("Exporta o relatório de movimentações em PDF")
+            .Produces(StatusCodes.Status200OK, contentType: "application/pdf")
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         group.MapPost("/institutional-fleet/pdf", ExportInstitutionalFleetAsync)
             .RequireRateLimiting(ApiRateLimiting.PasswordChangePolicy)
             .WithName("ExportInstitutionalFleetReportPdf")
-            .WithSummary("Exporta o relatório de utilizações da frota em PDF");
+            .WithSummary("Exporta o relatório de utilizações da frota em PDF")
+            .Produces(StatusCodes.Status200OK, contentType: "application/pdf")
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status429TooManyRequests)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         return endpoints;
     }
@@ -165,8 +185,12 @@ public static class AdministrativeReportEndpoints
                 AdministrativeReportExportStatus.TooLarge =>
                 Results.ValidationProblem(result.Errors),
             AdministrativeReportExportStatus.Unauthorized => Results.Problem(
-                statusCode: StatusCodes.Status401Unauthorized,
-                title: "Não foi possível confirmar a autorização da exportação."),
+                statusCode: StatusCodes.Status403Forbidden,
+                title: "Não foi possível confirmar a autorização da exportação.",
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = "report_export_reauthentication_failed"
+                }),
             _ => Results.Problem(
                 statusCode: StatusCodes.Status503ServiceUnavailable,
                 title: "Não foi possível gerar o relatório agora.")

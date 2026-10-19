@@ -20,9 +20,19 @@ Parâmetros comuns:
 - `page` a partir de 1 e `pageSize` entre 1 e 100;
 - `status` opcional.
 
+Os valores públicos aceitos em `status` são:
+
+- movimentações gerais: `Aberto`, `Encerrado` e `Pendente`;
+- frota institucional: `EmUso`, `Concluido`, `PendenteRetorno` e `Corrigido`.
+
+Valores desconhecidos são rejeitados com `400`; não são convertidos em uma
+consulta vazia bem-sucedida.
+
 Movimentações também aceitam `plate`, `driverName` e `categoryName`. Frota
 institucional aceita `plate`, `vehicleIdentification` e `driverName`. Os
 filtros textuais são parciais e não diferenciam maiúsculas de minúsculas.
+`plate` e `vehicleIdentification` são propriedades distintas e opcionais na
+resposta: uma identificação interna nunca é apresentada como se fosse placa.
 
 A resposta informa o período escolhido e o identificador do fuso institucional.
 Um período sem dados retorna uma coleção vazia válida. Documento, credencial,
@@ -41,6 +51,10 @@ Os endpoints de exportação recebem período, filtros e `currentPassword` no co
 JSON. A senha nunca integra URL, nome de arquivo, PDF, log ou auditoria. No
 contrato local atual, cada exportação exige a senha vigente do Administrador e
 usa a mesma política de limitação de tentativas das operações sensíveis.
+Uma falha nessa confirmação devolve `403` com o código estável
+`report_export_reauthentication_failed`. Ela não significa que a sessão venceu;
+o frontend não deve encerrar a sessão nem repetir automaticamente a exportação.
+Ausência ou invalidez da sessão continua sendo representada por `401`.
 
 O servidor:
 
