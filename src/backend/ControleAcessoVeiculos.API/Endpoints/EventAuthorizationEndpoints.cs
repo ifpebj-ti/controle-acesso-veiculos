@@ -14,19 +14,40 @@ public static class EventAuthorizationEndpoints
 
         group.MapGet(string.Empty, SearchAsync)
             .WithName("SearchEventAuthorizations")
-            .WithSummary("Consulta autorizações de eventos");
+            .WithSummary("Consulta autorizações de eventos")
+            .Produces<PagedEventAuthorizations>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
         group.MapPost(string.Empty, CreateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("CreateEventAuthorization")
-            .WithSummary("Cria uma autorização de evento");
+            .WithSummary("Cria uma autorização de evento")
+            .Produces<EventAuthorizationRecord>(StatusCodes.Status201Created)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
         group.MapPut("/{id:int}", UpdateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("UpdateEventAuthorization")
-            .WithSummary("Atualiza uma autorização de evento");
+            .WithSummary("Atualiza uma autorização de evento")
+            .Produces<EventAuthorizationRecord>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
         group.MapDelete("/{id:int}", CancelAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("CancelEventAuthorization")
-            .WithSummary("Cancela uma autorização de evento");
+            .WithSummary("Cancela uma autorização de evento")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         return endpoints;
     }
