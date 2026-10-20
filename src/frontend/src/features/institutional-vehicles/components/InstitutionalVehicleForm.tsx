@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import {
   formatVehiclePlateInput,
   normalizeVehiclePlate,
@@ -20,6 +21,7 @@ export type InstitutionalVehicleField = keyof InstitutionalVehicleFormValues;
 
 interface InstitutionalVehicleFormProps {
   busy: boolean;
+  formError?: string | null;
   mode: "create" | "edit";
   onCancel: () => void;
   onSubmit: (input: InstitutionalVehicleInput) => Promise<void>;
@@ -61,6 +63,7 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 export function InstitutionalVehicleForm({
   busy,
+  formError,
   mode,
   onCancel,
   onSubmit,
@@ -282,6 +285,11 @@ export function InstitutionalVehicleForm({
           <FieldError id={errorId("year")} message={errorFor("year")} />
         </div>
 
+        <ActionFeedback
+          className="sm:col-span-2 lg:col-span-3"
+          message={formError}
+          tone="error"
+        />
         <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:col-span-2 sm:flex-row sm:justify-end lg:col-span-3">
           <button
             className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25"

@@ -408,6 +408,71 @@
             }
           },
           {
+            "position": { "x": 700, "y": 760 },
+            "size": { "width": 220, "height": 120 },
+            "attrs": { "text": { "text": "Google OpenID\nConnect" }, "body": { "stroke": "#d97706", "strokeWidth": 2, "strokeDasharray": null } },
+            "shape": "process",
+            "id": "00000000-0000-4000-8000-000000000011",
+            "zIndex": 11,
+            "data": {
+              "name": "Google OpenID Connect",
+              "description": "Provedor externo comprova a identidade. Perfis, pré-autorização, sessão e autorização permanecem sob controle local.",
+              "type": "tm.Process",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-26 — Vínculo Google incorreto ou privilégio externo",
+                  "type": "Spoofing / Elevation of privilege",
+                  "description": "Uma identidade Google pode ser associada à conta local errada ou receber perfil apenas por possuir um e-mail válido.",
+                  "mitigation": "Exigir conta local ativa pré-autorizada, email_verified, vínculo único pelo sub, conflito fechado e perfil decidido somente pelo banco local. Gestão mestre e homologação real permanecem pendentes na Issue #448.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000026"
+                },
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-27 — Callback OIDC forjado ou vazamento de token",
+                  "type": "Spoofing / Tampering / Information disclosure",
+                  "description": "Replay, CSRF, open redirect ou exposição de código, token e segredo pode tomar ou desviar uma sessão.",
+                  "mitigation": "Authorization Code com PKCE, state, nonce, caminhos locais fixos, cookie externo curto, SaveTokens=false e callback no backend sem token em URL ou storage. HTTPS e teste real permanecem pendentes.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000027"
+                }
+              ]
+            }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#d97706", "strokeWidth": 2, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000009",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Code + PKCE" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000002" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000011" },
+            "data": { "type": "tm.Flow", "name": "Autenticação Google", "description": "Redirecionamento público protegido por state, nonce e PKCE, sem tokens persistidos pelo frontend.", "protocol": "HTTPS/OIDC", "isEncrypted": true, "isPublicNetwork": true, "isTrustBoundary": true, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
+          },
+          {
+            "shape": "flow",
+            "attrs": { "line": { "stroke": "#d97706", "strokeWidth": 2, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
+            "width": 200,
+            "height": 100,
+            "zIndex": 20,
+            "connector": "smooth",
+            "id": "20000000-0000-4000-8000-000000000010",
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Callback OIDC" } } }],
+            "source": { "cell": "00000000-0000-4000-8000-000000000011" },
+            "target": { "cell": "00000000-0000-4000-8000-000000000004" },
+            "data": { "type": "tm.Flow", "name": "Callback Google", "description": "A API troca o código, valida a identidade e cria somente sua própria sessão local.", "protocol": "HTTPS/OIDC", "isEncrypted": true, "isPublicNetwork": true, "isTrustBoundary": true, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
+          },
+          {
             "shape": "flow",
             "attrs": { "line": { "stroke": "#333333", "strokeWidth": 1, "targetMarker": { "name": "block" }, "strokeDasharray": null } },
             "width": 200,

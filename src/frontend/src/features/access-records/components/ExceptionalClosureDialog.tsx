@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { Button } from "../../../components/ui/Button";
 import { SelectField } from "../../../components/ui/SelectField";
 import { TextArea, TextField } from "../../../components/ui/TextField";
@@ -31,7 +32,6 @@ interface ExceptionalClosureDialogProps {
   ) => Promise<AccessRecord>;
   record: AccessRecord;
   returnFocusTo: HTMLElement | null;
-  successFocusRef: RefObject<HTMLElement | null>;
 }
 
 function FieldError({ id, message }: { id: string; message?: string }) {
@@ -49,7 +49,6 @@ export function ExceptionalClosureDialog({
   onConfirm,
   record,
   returnFocusTo,
-  successFocusRef,
 }: ExceptionalClosureDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onCancel);
@@ -77,7 +76,6 @@ export function ExceptionalClosureDialog({
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
-    const successFocusTarget = successFocusRef.current;
     const dialogElement = dialogRef.current;
     document.body.style.overflow = "hidden";
     document.getElementById("exceptional-closure-reason")?.focus();
@@ -112,15 +110,12 @@ export function ExceptionalClosureDialog({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
-      const target = returnFocusTo?.isConnected
-        ? returnFocusTo
-        : successFocusTarget;
       window.requestAnimationFrame(() => {
         if (dialogElement?.isConnected) return;
-        target?.focus();
+        if (returnFocusTo?.isConnected) returnFocusTo.focus();
       });
     };
-  }, [returnFocusTo, successFocusRef]);
+  }, [returnFocusTo]);
 
   async function submit(values: ExceptionalClosureFormValues) {
     setRequestError(null);
@@ -223,15 +218,6 @@ export function ExceptionalClosureDialog({
           momento real. Informe o horário observado apenas quando existir uma
           fonte confiável; o sistema não estima esse horário.
         </p>
-
-        {requestError && (
-          <div
-            className="mt-4 rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
-            role="alert"
-          >
-            {requestError}
-          </div>
-        )}
 
         <form
           className="mt-5 grid gap-5"
@@ -339,6 +325,8 @@ export function ExceptionalClosureDialog({
               message={errors.observedExitAtLocal?.message}
             />
           </div>
+
+          <ActionFeedback message={requestError} tone="error" />
 
           <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
             <Button

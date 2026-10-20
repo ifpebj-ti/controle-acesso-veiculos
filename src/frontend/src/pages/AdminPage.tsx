@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { Button } from "../components/ui/Button";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
@@ -96,19 +97,14 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
       </nav>
 
       {activeArea === "accounts" && accounts.notice && (
-        <div
-          className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
-          role="status"
-        >
-          <p>{accounts.notice}</p>
-          <button
-            className="shrink-0 rounded-md font-bold underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
-            onClick={() => accounts.setNotice(null)}
-            type="button"
-          >
-            Fechar
-          </button>
-        </div>
+        <ActionFeedback
+          className="mt-6"
+          floating
+          focusOnChange
+          message={accounts.notice}
+          onDismiss={() => accounts.setNotice(null)}
+          tone="success"
+        />
       )}
 
       {activeArea === "accounts" &&
@@ -133,23 +129,14 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
         )}
 
       {activeArea === "accounts" && accounts.formOpen && (
-        <>
-          {accounts.formError && (
-            <div
-              className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-              role="alert"
-            >
-              {accounts.formError}
-            </div>
-          )}
-          <UserAccountForm
-            busy={accounts.pendingAction !== null}
-            onCancel={accounts.closeForm}
-            onFieldChange={accounts.clearServerError}
-            onSubmit={accounts.saveAccount}
-            serverErrors={accounts.serverErrors}
-          />
-        </>
+        <UserAccountForm
+          busy={accounts.pendingAction !== null}
+          formError={accounts.formError}
+          onCancel={accounts.closeForm}
+          onFieldChange={accounts.clearServerError}
+          onSubmit={accounts.saveAccount}
+          serverErrors={accounts.serverErrors}
+        />
       )}
 
       {activeArea === "accounts" ? (

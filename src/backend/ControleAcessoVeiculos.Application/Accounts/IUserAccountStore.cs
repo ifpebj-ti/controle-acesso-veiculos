@@ -52,7 +52,8 @@ public enum AdministrativeCredentialResetStoreStatus
     Success = 1,
     NotFound = 2,
     Inactive = 3,
-    SelfReset = 4
+    SelfReset = 4,
+    ExternalAuthentication = 5
 }
 
 public sealed record AdministrativeCredentialResetStoreResult(

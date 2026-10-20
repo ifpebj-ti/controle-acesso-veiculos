@@ -866,6 +866,15 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(254)")
                         .HasColumnName("email");
 
+                    b.Property<string>("GoogleSubject")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("google_subject");
+
+                    b.Property<DateTime?>("GoogleVinculadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("google_vinculado_em");
+
                     b.Property<int>("PerfilId")
                         .HasColumnType("integer")
                         .HasColumnName("perfil_id");
@@ -908,6 +917,11 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_usuarios_email");
 
+                    b.HasIndex("GoogleSubject")
+                        .IsUnique()
+                        .HasDatabaseName("ux_usuarios_google_subject")
+                        .HasFilter("google_subject IS NOT NULL");
+
                     b.HasIndex("PerfilId")
                         .HasDatabaseName("ix_usuarios_perfil_id");
 
@@ -918,6 +932,8 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                     b.ToTable("usuarios", "dbo", t =>
                         {
                             t.HasCheckConstraint("ck_usuarios_credencial_temporaria", "(troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NOT NULL AND (credencial_temporaria_utilizada_em IS NULL OR credencial_temporaria_utilizada_em < credencial_temporaria_expira_em)) OR (NOT troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NULL AND credencial_temporaria_utilizada_em IS NULL)");
+
+                            t.HasCheckConstraint("ck_usuarios_vinculo_google", "(google_subject IS NULL AND google_vinculado_em IS NULL) OR (google_subject IS NOT NULL AND google_vinculado_em IS NOT NULL)");
                         });
                 });
 

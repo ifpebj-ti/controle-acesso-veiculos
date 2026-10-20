@@ -133,14 +133,11 @@ public sealed class InstitutionalVehicleCatalogService(
         {
             try
             {
-                if (Veiculo.NormalizarPlaca(command.Plate!).Length > 10)
-                {
-                    errors["plate"] = ["A placa deve possuir até 10 letras ou números."];
-                }
+                Veiculo.NormalizarPlaca(command.Plate!);
             }
             catch (ArgumentException)
             {
-                errors["plate"] = ["A placa deve conter letras ou números."];
+                errors["plate"] = ["Informe uma placa no formato ABC-1234 ou ABC1D23."];
             }
         }
 

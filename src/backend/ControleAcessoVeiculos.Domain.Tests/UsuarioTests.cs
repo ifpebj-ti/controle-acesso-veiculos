@@ -183,4 +183,36 @@ public sealed class UsuarioTests
         Assert.Equal(0, usuario.TentativasFalhas);
         Assert.Null(usuario.BloqueadoAte);
     }
+
+    [Fact]
+    public void GoogleLinkDisablesPasswordAuthenticationAndRotatesCredentialVersion()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("google@example.com", "local-hash", 1, 1);
+
+        usuario.VincularIdentidadeGoogle(" google-subject-123 ", now);
+
+        Assert.Equal("google-subject-123", usuario.GoogleSubject);
+        Assert.Equal(now, usuario.GoogleVinculadoEm);
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.False(usuario.PodeAutenticarComSenha(now));
+        Assert.True(usuario.PodeAutenticar(now));
+    }
+
+    [Fact]
+    public void RepeatingSameGoogleLinkIsIdempotentButDifferentSubjectIsRejected()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("google@example.com", "local-hash", 1, 1);
+        usuario.VincularIdentidadeGoogle("google-subject-123", now);
+
+        usuario.VincularIdentidadeGoogle("google-subject-123", now.AddMinutes(1));
+
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.Equal(now, usuario.GoogleVinculadoEm);
+        Assert.Throws<InvalidOperationException>(() =>
+            usuario.VincularIdentidadeGoogle(
+                "different-google-subject",
+                now.AddMinutes(2)));
+    }
 }

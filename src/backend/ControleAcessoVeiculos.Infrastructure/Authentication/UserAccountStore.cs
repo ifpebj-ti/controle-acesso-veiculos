@@ -282,6 +282,12 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             return new(AdministrativeCredentialResetStoreStatus.Inactive);
         }
 
+        if (user.GoogleSubject is not null)
+        {
+            return new(
+                AdministrativeCredentialResetStoreStatus.ExternalAuthentication);
+        }
+
         var previousCredentialVersion = user.VersaoCredencial;
         var previousRequiresPasswordChange = user.TrocaSenhaObrigatoria;
         var previousExpiresAtUtc = user.CredencialTemporariaExpiraEm;

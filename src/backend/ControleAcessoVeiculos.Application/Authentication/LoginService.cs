@@ -37,7 +37,7 @@ public sealed class LoginService(
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
         if (authenticationUser is null ||
-            !authenticationUser.User.PodeAutenticar(now) ||
+            !authenticationUser.User.PodeAutenticarComSenha(now) ||
             !authenticationUser.ProfileIsActive)
         {
             passwordHashService.PerformDummyVerification(password);

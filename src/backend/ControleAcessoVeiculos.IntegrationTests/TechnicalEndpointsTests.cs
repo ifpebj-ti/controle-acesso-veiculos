@@ -28,6 +28,34 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
     }
 
     [Theory]
+    [InlineData("/auth/google/start")]
+    [InlineData("/auth/google/complete")]
+    public async Task DisabledGoogleAuthenticationIsNotExposed(string endpoint)
+    {
+        var response = await _client.GetAsync(
+            endpoint,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+    }
+
+    [Fact]
+    public async Task AuthenticationProvidersReflectDisabledGoogleConfiguration()
+    {
+        var response = await _client.GetAsync(
+            "/auth/providers",
+            TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<AuthenticationProvidersResponse>(
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        Assert.NotNull(body);
+        Assert.False(body.GoogleEnabled);
+    }
+
+    [Theory]
     [InlineData("/health/live")]
     [InlineData("/health/ready")]
     public async Task HealthEndpointsReturnHealthyStatus(string endpoint)
@@ -171,6 +199,34 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
         }
 
         Assert.NotEqual(0, operationCount);
+    }
+
+    [Fact]
+    public async Task DevelopmentOpenApiDistinguishesCompletePlatesFromSearchFilters()
+    {
+        using var developmentFactory = factory.WithWebHostBuilder(builder =>
+            builder.UseEnvironment("Development"));
+        using var client = developmentFactory.CreateClient();
+
+        var documentJson = await client.GetStringAsync(
+            "/openapi/v1.json",
+            TestContext.Current.CancellationToken);
+        using var document = JsonDocument.Parse(documentJson);
+        var paths = document.RootElement.GetProperty("paths");
+        var completeDescription = paths.GetProperty("/access-records/entries")
+            .GetProperty("post")
+            .GetProperty("description")
+            .GetString();
+        var filterDescription = paths.GetProperty("/access-records/history")
+            .GetProperty("get")
+            .GetProperty("description")
+            .GetString();
+
+        Assert.Contains("LLLNNNN", completeDescription, StringComparison.Ordinal);
+        Assert.Contains("LLLNLNN", completeDescription, StringComparison.Ordinal);
+        Assert.Contains("não comprova", completeDescription, StringComparison.Ordinal);
+        Assert.Contains("somente para pesquisa", filterDescription, StringComparison.Ordinal);
+        Assert.DoesNotContain("comprova emissão", filterDescription, StringComparison.Ordinal);
     }
 
     [Fact]
