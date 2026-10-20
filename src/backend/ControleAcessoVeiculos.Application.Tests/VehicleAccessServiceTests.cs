@@ -52,6 +52,22 @@ public sealed class VehicleAccessServiceTests
     }
 
     [Fact]
+    public async Task RegisterEntryAsync_ShouldRejectNumericOnlyPlate()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.RegisterEntryAsync(
+            new("Condutor", "777777", "Visita", AccessCategoryNames.Visitor),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(RegisterVehicleEntryStatus.Invalid, result.Status);
+        Assert.Contains("plate", result.Errors.Keys);
+        Assert.Equal(0, store.RegisterCalls);
+    }
+
+    [Fact]
     public async Task RegisterEntryAsync_ShouldRejectInvalidEventAuthorizationId()
     {
         var store = new FakeVehicleAccessStore();

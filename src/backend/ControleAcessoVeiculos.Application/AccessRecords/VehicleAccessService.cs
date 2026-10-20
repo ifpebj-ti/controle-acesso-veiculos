@@ -266,14 +266,11 @@ public sealed class VehicleAccessService(
         {
             try
             {
-                if (Veiculo.NormalizarPlaca(command.Plate).Length > 10)
-                {
-                    errors["plate"] = ["A placa deve possuir até 10 letras ou números."];
-                }
+                Veiculo.NormalizarPlaca(command.Plate);
             }
             catch (ArgumentException)
             {
-                errors["plate"] = ["A placa deve conter letras ou números."];
+                errors["plate"] = ["Informe uma placa no formato ABC-1234 ou ABC1D23."];
             }
         }
 
@@ -348,14 +345,11 @@ public sealed class VehicleAccessService(
         {
             try
             {
-                if (Veiculo.NormalizarPlaca(command.Plate).Length > 10)
-                {
-                    errors["plate"] = ["A placa deve possuir até 10 letras ou números."];
-                }
+                Veiculo.NormalizarFiltroPlaca(command.Plate);
             }
             catch (ArgumentException)
             {
-                errors["plate"] = ["A placa deve conter letras ou números."];
+                errors["plate"] = ["O filtro deve conter até 7 letras ou números."];
             }
         }
 
@@ -464,13 +458,13 @@ public sealed class VehicleAccessService(
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string? NormalizePlate(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : Veiculo.NormalizarPlaca(value);
+        string.IsNullOrWhiteSpace(value) ? null : Veiculo.NormalizarFiltroPlaca(value);
 
     private static string NormalizeCandidatePlatePrefix(string value)
     {
         try
         {
-            return Veiculo.NormalizarPlaca(value);
+            return Veiculo.NormalizarFiltroPlaca(value);
         }
         catch (ArgumentException)
         {

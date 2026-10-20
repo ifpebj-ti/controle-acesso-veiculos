@@ -27,7 +27,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var name = $"Jardim Digital {suffix}";
         var responsible = $"Coordenação {suffix}";
-        var plate = $"EV{suffix[..5]}";
+        var plate = TestPlate.From(suffix);
         var startsAtUtc = DateTimeOffset.UtcNow.AddDays(1);
         var endsAtUtc = startsAtUtc.AddDays(2);
 
@@ -157,6 +157,17 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
             vehicleRules = Array.Empty<object>()
         }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, administratorInvalid.StatusCode);
+
+        var invalidPlate = await administrator.PostAsJsonAsync(
+            "/event-authorizations",
+            Request(
+                "Evento com placa inválida",
+                "Responsável de teste",
+                "777777",
+                DateTimeOffset.UtcNow.AddDays(1),
+                DateTimeOffset.UtcNow.AddDays(2)),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidPlate.StatusCode);
     }
 
     [Fact]
@@ -177,7 +188,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
             var response = await client.PostAsJsonAsync("/event-authorizations", Request(
                     name,
                     "Responsável de teste",
-                    $"RB{suffix[..5]}",
+                    TestPlate.From(suffix),
                     DateTimeOffset.UtcNow.AddDays(1),
                     DateTimeOffset.UtcNow.AddDays(2)), cancellationToken: TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
