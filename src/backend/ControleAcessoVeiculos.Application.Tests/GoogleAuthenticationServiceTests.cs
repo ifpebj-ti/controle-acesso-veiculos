@@ -146,6 +146,31 @@ public sealed class GoogleAuthenticationServiceTests
         Assert.Null(store.Audit);
     }
 
+    [Fact]
+    public async Task AdministratorProfileIsDeniedThroughGoogle()
+    {
+        var user = CreateUser(12, "administrator@example.test");
+        var store = new FakeUserStore(new(
+            null,
+            new AuthenticationUser(
+                user,
+                "Administrador",
+                ProfileIsActive: true)));
+        var sessions = new FakeSessionStore();
+        var service = CreateService(store, sessions);
+
+        var result = await service.AuthenticateAsync(
+            "administrator-google-subject",
+            "administrator@example.test",
+            emailVerified: true,
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(user.GoogleSubject);
+        Assert.Null(sessions.AddedSession);
+        Assert.Null(store.Audit);
+    }
+
     private static GoogleAuthenticationService CreateService(
         FakeUserStore userStore,
         FakeSessionStore sessionStore) =>
@@ -161,7 +186,12 @@ public sealed class GoogleAuthenticationServiceTests
 
     private static Usuario CreateUser(int id, string email)
     {
-        var user = new Usuario(email, "local-password-hash", id, 1);
+        var user = new Usuario(
+            email,
+            senhaHash: null,
+            pessoaId: id,
+            perfilId: 1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
         typeof(Usuario)
             .GetProperty(nameof(Usuario.Id), BindingFlags.Instance | BindingFlags.Public)!
             .SetValue(user, id);

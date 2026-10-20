@@ -86,6 +86,7 @@ public static class UserAccountEndpoints
                     result.UserId!.Value,
                     result.Email!,
                     result.ProfileName!,
+                    result.AuthenticationMethod!.Value.ToString(),
                     result.TemporaryCredential,
                     result.TemporaryCredentialExpiresAtUtc));
         }
@@ -224,6 +225,7 @@ public sealed record CreateUserResponse(
     int Id,
     string Email,
     string ProfileName,
+    string AuthenticationMethod,
     string? TemporaryCredential,
     DateTime? TemporaryCredentialExpiresAtUtc);
 

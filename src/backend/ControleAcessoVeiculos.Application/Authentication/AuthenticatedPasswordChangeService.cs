@@ -26,7 +26,10 @@ public sealed class AuthenticatedPasswordChangeService(
                     userId,
                     transactionCancellationToken);
 
-                if (user is null || !user.Ativo)
+                if (user is null ||
+                    !user.Ativo ||
+                    user.MetodoAutenticacao != MetodoAutenticacao.Local ||
+                    user.SenhaHash is null)
                 {
                     passwordHashService.PerformDummyVerification(currentPassword!);
                     return AuthenticatedPasswordChangeResult.Unauthorized();

@@ -1,6 +1,7 @@
 using System.Net.Mail;
 using ControleAcessoVeiculos.Domain.Entities;
 using ControleAcessoVeiculos.Domain.Enums;
+using ControleAcessoVeiculos.Application.Authorization;
 
 namespace ControleAcessoVeiculos.Application.Authentication;
 
@@ -50,6 +51,7 @@ public sealed class GoogleAuthenticationService(
         var now = timeProvider.GetUtcNow().UtcDateTime;
         if (authenticationUser is null ||
             !authenticationUser.User.PodeAutenticar(now) ||
+            authenticationUser.ProfileName == ProfileNames.Administrator ||
             !authenticationUser.ProfileIsActive)
         {
             return LoginResult.InvalidCredentials();

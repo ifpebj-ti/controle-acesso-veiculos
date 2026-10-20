@@ -488,7 +488,8 @@ public sealed class AuthenticationTests(ApiFactory factory)
             .AsNoTracking()
             .Where(item => item.Email == email)
             .Select(item => item.SenhaHash)
-            .SingleAsync();
+            .SingleAsync() ?? throw new InvalidOperationException(
+                "A conta de teste local não possui hash de senha.");
     }
 
     private async Task LinkGoogleIdentityAsync(string email, string subject)
