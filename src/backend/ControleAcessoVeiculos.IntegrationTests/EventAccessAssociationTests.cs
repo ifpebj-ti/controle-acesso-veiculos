@@ -21,7 +21,7 @@ public sealed class EventAccessAssociationTests(ApiFactory factory)
     {
         using var client = await CreateAdministratorClientAsync();
         var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
-        var plate = $"SP{suffix[..5]}";
+        var plate = TestPlate.From(suffix);
         var eventAuthorization = await CreateEventAsync(
             client,
             [
@@ -76,8 +76,8 @@ public sealed class EventAccessAssociationTests(ApiFactory factory)
             [new { vehicleType = "Van", quantity = 1, plate = (string?)null }]);
 
         var responses = await Task.WhenAll(
-            RegisterEntryAsync(client, $"A{suffix[..6]}", "Van", eventAuthorization.Id),
-            RegisterEntryAsync(client, $"B{suffix[..6]}", "Van", eventAuthorization.Id));
+            RegisterEntryAsync(client, TestPlate.From($"A{suffix}"), "Van", eventAuthorization.Id),
+            RegisterEntryAsync(client, TestPlate.From($"B{suffix}"), "Van", eventAuthorization.Id));
 
         Assert.Single(responses, item => item.StatusCode == HttpStatusCode.Created);
         Assert.Single(responses, item => item.StatusCode == HttpStatusCode.Conflict);
@@ -99,7 +99,11 @@ public sealed class EventAccessAssociationTests(ApiFactory factory)
     {
         using var client = await CreateAdministratorClientAsync();
         var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
-        var missing = await RegisterEntryAsync(client, $"M{suffix[..6]}", "Van", int.MaxValue);
+        var missing = await RegisterEntryAsync(
+            client,
+            TestPlate.From($"M{suffix}"),
+            "Van",
+            int.MaxValue);
         Assert.Equal(HttpStatusCode.Conflict, missing.StatusCode);
 
         var future = await CreateEventAsync(
@@ -109,7 +113,7 @@ public sealed class EventAccessAssociationTests(ApiFactory factory)
             DateTimeOffset.UtcNow.AddDays(3));
         var outside = await RegisterEntryAsync(
             client,
-            $"F{suffix[..6]}",
+            TestPlate.From($"F{suffix}"),
             "Van",
             future.Id);
         Assert.Equal(HttpStatusCode.Conflict, outside.StatusCode);
@@ -119,7 +123,7 @@ public sealed class EventAccessAssociationTests(ApiFactory factory)
             [new { vehicleType = "Ônibus", quantity = 2, plate = (string?)null }]);
         var unauthorized = await RegisterEntryAsync(
             client,
-            $"U{suffix[..6]}",
+            TestPlate.From($"U{suffix}"),
             "Motocicleta",
             active.Id);
         Assert.Equal(HttpStatusCode.Conflict, unauthorized.StatusCode);
@@ -128,7 +132,7 @@ public sealed class EventAccessAssociationTests(ApiFactory factory)
             .EnsureSuccessStatusCode();
         var inactive = await RegisterEntryAsync(
             client,
-            $"I{suffix[..6]}",
+            TestPlate.From($"I{suffix}"),
             "Ônibus",
             active.Id);
         Assert.Equal(HttpStatusCode.Conflict, inactive.StatusCode);

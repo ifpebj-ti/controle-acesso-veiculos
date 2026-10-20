@@ -25,7 +25,7 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
         using var managementClient = factory.CreateClient();
         await AuthenticateClientAsync(managementClient, transportationEmail, password);
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        var plate = $"if-{suffix[..5]}";
+        var plate = TestPlate.From(suffix).Insert(3, "-").ToLowerInvariant();
         var identification = $" frota-{suffix} ";
 
         var createResponse = await managementClient.PostAsJsonAsync("/institutional-vehicles", new
@@ -105,7 +105,7 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
             password);
         using var managementClient = factory.CreateClient();
         await AuthenticateClientAsync(managementClient, transportationEmail, password);
-        var invalidResponse = await managementClient.PostAsJsonAsync("/institutional-vehicles", new { plate = "---", identification = (string?)null, year = 2028 }, cancellationToken: TestContext.Current.CancellationToken);
+        var invalidResponse = await managementClient.PostAsJsonAsync("/institutional-vehicles", new { plate = "777777", identification = (string?)null, year = 2028 }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, invalidResponse.StatusCode);
     }
@@ -120,7 +120,7 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         var request = new
         {
-            plate = $"IF{suffix[..5]}",
+            plate = TestPlate.From(suffix),
             identification = $"FROTA-{suffix}",
             vehicleType = "Automóvel"
         };
@@ -149,14 +149,14 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
         var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
-        var originalPlate = $"IF{suffix[..5]}";
+        var originalPlate = TestPlate.From($"A{suffix}");
         var originalIdentification = $"FROTA-{suffix}";
         var createResponse = await client.PostAsJsonAsync("/institutional-vehicles", new { plate = originalPlate, identification = originalIdentification }, cancellationToken: TestContext.Current.CancellationToken);
         var created = await createResponse.Content
             .ReadFromJsonAsync<InstitutionalVehicleResponse>(cancellationToken: TestContext.Current.CancellationToken);
         createResponse.EnsureSuccessStatusCode();
         Assert.NotNull(created);
-        var updatedPlate = $"UP{suffix[..5]}";
+        var updatedPlate = TestPlate.From($"B{suffix}");
         var updatedIdentification = $"ATUAL-{suffix}";
 
         var updateResponse = await client.PutAsJsonAsync($"/institutional-vehicles/{created.Id}", new
@@ -229,9 +229,9 @@ public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
         var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
-        var firstPlate = $"AA{suffix[..5]}";
+        var firstPlate = TestPlate.From($"C{suffix}");
         var first = await client.PostAsJsonAsync("/institutional-vehicles", new { plate = firstPlate, identification = $"FIRST-{suffix}" }, cancellationToken: TestContext.Current.CancellationToken);
-        var second = await client.PostAsJsonAsync("/institutional-vehicles", new { plate = $"BB{suffix[..5]}", identification = $"SECOND-{suffix}" }, cancellationToken: TestContext.Current.CancellationToken);
+        var second = await client.PostAsJsonAsync("/institutional-vehicles", new { plate = TestPlate.From($"D{suffix}"), identification = $"SECOND-{suffix}" }, cancellationToken: TestContext.Current.CancellationToken);
         var secondVehicle = await second.Content
             .ReadFromJsonAsync<InstitutionalVehicleResponse>(cancellationToken: TestContext.Current.CancellationToken);
         first.EnsureSuccessStatusCode();
