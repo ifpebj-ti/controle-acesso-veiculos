@@ -54,12 +54,13 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
                 .SingleAsync(item => item.Email == email, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.True(user.TrocaSenhaObrigatoria);
+            Assert.NotNull(user.SenhaHash);
             Assert.Equal(
                 PasswordHashVerificationResult.Success,
-                passwordHasher.Verify(user.SenhaHash, created.TemporaryCredential!));
+                passwordHasher.Verify(user.SenhaHash!, created.TemporaryCredential!));
             Assert.DoesNotContain(
                 created.TemporaryCredential!,
-                user.SenhaHash,
+                user.SenhaHash!,
                 StringComparison.Ordinal);
         }
 
@@ -188,9 +189,10 @@ public sealed class TemporaryCredentialTests(ApiFactory factory)
         var user = await dbContext.Usuarios.AsNoTracking()
             .SingleAsync(item => item.Id == target.Id, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(user.TrocaSenhaObrigatoria);
+        Assert.NotNull(user.SenhaHash);
         Assert.Equal(3, user.VersaoCredencial);
         Assert.Equal(1, credentials.Count(credential =>
-            passwordHasher.Verify(user.SenhaHash, credential) !=
+            passwordHasher.Verify(user.SenhaHash!, credential) !=
             PasswordHashVerificationResult.Failed));
 
         var session = await dbContext.SessoesAutenticacao.AsNoTracking()

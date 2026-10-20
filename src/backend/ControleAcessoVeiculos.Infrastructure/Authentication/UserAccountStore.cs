@@ -18,8 +18,9 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
     public async Task<CreatedUserAccount?> TryCreateAsync(
         string name,
         string normalizedEmail,
-        string passwordHash,
+        string? passwordHash,
         string profileName,
+        MetodoAutenticacao authenticationMethod,
         DateTime? temporaryCredentialExpiresAtUtc,
         AccountCreationAudit audit,
         CancellationToken cancellationToken)
@@ -67,7 +68,8 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 person.Id,
                 profile.Id,
                 trocaSenhaObrigatoria: temporaryCredentialExpiresAtUtc.HasValue,
-                credencialTemporariaExpiraEm: temporaryCredentialExpiresAtUtc);
+                credencialTemporariaExpiraEm: temporaryCredentialExpiresAtUtc,
+                metodoAutenticacao: authenticationMethod);
             dbContext.Usuarios.Add(user);
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -81,6 +83,7 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 {
                     active = true,
                     profileName = profile.Nome,
+                    authenticationMethod = user.MetodoAutenticacao.ToString(),
                     requiresPasswordChange = user.TrocaSenhaObrigatoria,
                     temporaryCredentialExpiresAtUtc =
                         user.CredencialTemporariaExpiraEm,
@@ -92,7 +95,11 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return new CreatedUserAccount(user.Id, user.Email, profile.Nome);
+            return new CreatedUserAccount(
+                user.Id,
+                user.Email,
+                profile.Nome,
+                user.MetodoAutenticacao);
         }
         catch (DbUpdateException exception)
             when (exception.InnerException is PostgresException
@@ -145,7 +152,9 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
                 item.User.DataAlteracao,
                 item.User.BloqueadoAte,
                 item.User.TrocaSenhaObrigatoria,
-                item.User.CredencialTemporariaExpiraEm))
+                item.User.CredencialTemporariaExpiraEm,
+                item.User.MetodoAutenticacao,
+                item.User.GoogleSubject != null))
             .ToListAsync(cancellationToken);
 
         var totalPages = totalCount == 0
@@ -282,7 +291,7 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             return new(AdministrativeCredentialResetStoreStatus.Inactive);
         }
 
-        if (user.GoogleSubject is not null)
+        if (user.MetodoAutenticacao == MetodoAutenticacao.Google)
         {
             return new(
                 AdministrativeCredentialResetStoreStatus.ExternalAuthentication);

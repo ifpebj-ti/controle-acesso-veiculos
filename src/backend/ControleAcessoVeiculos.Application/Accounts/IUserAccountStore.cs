@@ -1,5 +1,7 @@
 namespace ControleAcessoVeiculos.Application.Accounts;
 
+using ControleAcessoVeiculos.Domain.Enums;
+
 public interface IUserAccountStore
 {
     Task<bool> HasAnyUserAsync(CancellationToken cancellationToken);
@@ -7,8 +9,9 @@ public interface IUserAccountStore
     Task<CreatedUserAccount?> TryCreateAsync(
         string name,
         string normalizedEmail,
-        string passwordHash,
+        string? passwordHash,
         string profileName,
+        MetodoAutenticacao authenticationMethod,
         DateTime? temporaryCredentialExpiresAtUtc,
         AccountCreationAudit audit,
         CancellationToken cancellationToken);
@@ -34,7 +37,11 @@ public interface IUserAccountStore
         CancellationToken cancellationToken);
 }
 
-public sealed record CreatedUserAccount(int UserId, string Email, string ProfileName);
+public sealed record CreatedUserAccount(
+    int UserId,
+    string Email,
+    string ProfileName,
+    MetodoAutenticacao AuthenticationMethod);
 
 public sealed record AccountCreationAudit(
     int? ActorUserId,

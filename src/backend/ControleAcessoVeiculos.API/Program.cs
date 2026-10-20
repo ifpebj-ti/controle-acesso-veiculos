@@ -106,6 +106,8 @@ var googleOidcOptions = builder.Configuration
 googleOidcOptions.Validate();
 builder.Services.Configure<GoogleOidcOptions>(
     builder.Configuration.GetSection(GoogleOidcOptions.SectionName));
+builder.Services.AddSingleton(
+    new AuthenticationMethodPolicy(googleOidcOptions.Enabled));
 
 var temporaryCredentialOptions = builder.Configuration
     .GetSection(TemporaryCredentialOptions.SectionName)

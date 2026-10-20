@@ -1,5 +1,7 @@
 namespace ControleAcessoVeiculos.Application.Accounts;
 
+using ControleAcessoVeiculos.Domain.Enums;
+
 public enum CreateUserAccountStatus
 {
     Success,
@@ -12,6 +14,7 @@ public sealed record CreateUserAccountResult(
     int? UserId,
     string? Email,
     string? ProfileName,
+    MetodoAutenticacao? AuthenticationMethod,
     string? TemporaryCredential,
     DateTime? TemporaryCredentialExpiresAtUtc,
     IReadOnlyDictionary<string, string[]> Errors)
@@ -20,17 +23,19 @@ public sealed record CreateUserAccountResult(
         int userId,
         string email,
         string profileName,
+        MetodoAutenticacao authenticationMethod,
         string? temporaryCredential,
         DateTime? temporaryCredentialExpiresAtUtc) =>
         new(CreateUserAccountStatus.Success, userId, email, profileName,
+            authenticationMethod,
             temporaryCredential, temporaryCredentialExpiresAtUtc,
             new Dictionary<string, string[]>());
 
     public static CreateUserAccountResult Invalid(
         IReadOnlyDictionary<string, string[]> errors) =>
-        new(CreateUserAccountStatus.Invalid, null, null, null, null, null, errors);
+        new(CreateUserAccountStatus.Invalid, null, null, null, null, null, null, errors);
 
     public static CreateUserAccountResult Conflict(string field, string message) =>
-        new(CreateUserAccountStatus.Conflict, null, null, null, null, null,
+        new(CreateUserAccountStatus.Conflict, null, null, null, null, null, null,
             new Dictionary<string, string[]> { [field] = [message] });
 }
