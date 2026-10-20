@@ -70,6 +70,8 @@ locais do perfil Administrador depois da transição.
 - A criação administrativa exige que `password` seja omitido; qualquer valor enviado é rejeitado. Com Google habilitado, contas operacionais são pré-autorizadas sem senha local. Contas Administrador locais e o modo legado de desenvolvimento recebem credencial temporária com 144 bits de entropia, devolvida uma única vez com `Cache-Control: no-store`.
 - Credenciais temporárias expiram em 30 minutos por padrão e são consumidas atomicamente no primeiro login. Tentativas posteriores recebem o mesmo HTTP 401 genérico; a sessão restrita criada no primeiro uso continua válida apenas para troca de senha, renovação e logout. Somente o hash e os estados técnicos mínimos são persistidos, e a conta não acessa operações de negócio antes de concluir `POST /auth/password`.
 - `POST /users/{id}/temporary-credential` permite somente ao Administrador redefinir outra conta local ativa com motivo categorizado. Contas Google, vinculadas ou pendentes, são rejeitadas. A operação incrementa a versão, revoga sessões, registra auditoria transacional e retorna a nova credencial uma única vez.
+- `PUT /users/{id}/profile` permite somente ao Administrador alterar o perfil de outra conta ativa mediante justificativa. A autoalteração e a remoção do último Administrador ativo são rejeitadas. A operação é serializada, revoga todas as sessões e registra em auditoria os perfis, métodos de autenticação e versões de credencial anterior e nova, sem copiar senha, hash ou identificador externo.
+- Os quatro perfis permanecem únicos, sem variante de "Administrador mestre". Ao promover uma conta operacional para Administrador, a identidade Google é desvinculada e o servidor emite uma credencial local temporária de uso único. Ao retirar o perfil Administrador, a credencial local é apagada e a conta passa ao método Google pendente de vínculo. Trocas entre Porteiro, Vigilante e Setor de Transporte preservam o vínculo Google existente.
 - Dois Administradores funcionais são os responsáveis institucionais pelo provisionamento e pela recuperação de acesso no MVP. A credencial temporária gerada pelo servidor deve ser entregue diretamente ao titular, sem planilha, issue, log ou mensageria não aprovada. Porteiro, Vigilante e Setor de Transporte não recebem poder de redefinição; recuperação automática por e-mail, SMS, MFA ou SSO não foi adotada neste recorte.
 - Login bem-sucedido e o momento do bloqueio temporário geram auditoria `Login` associada ao usuário, na mesma unidade de trabalho da mudança de estado.
 - Somente `users:manage` consulta, desativa ou reativa contas; auto-desativação e remoção do último Administrador ativo são rejeitadas.
@@ -229,7 +231,7 @@ fluxo operacional.
 - decidir se haverá integração com identidade institucional;
 - concluir no frontend a política de inatividade compartilhada da Issue #268 e validá-la no tablet da portaria;
 - definir retenção e limpeza operacional das sessões revogadas e expiradas;
-- registrar auditoria de troca de perfil quando esse fluxo existir;
+- validar com o provedor real a promoção, a remoção de perfil e o novo vínculo Google depois de uma mudança administrativa;
 - proteger os endpoints de negócio com as políticas validadas.
 
 ## Validação automatizada

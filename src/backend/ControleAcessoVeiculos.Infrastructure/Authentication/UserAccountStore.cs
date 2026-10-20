@@ -10,7 +10,7 @@ using Npgsql;
 namespace ControleAcessoVeiculos.Infrastructure.Authentication;
 
 public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
-    : IUserAccountStore
+    : IUserAccountStore, IAccountProfileStore
 {
     public Task<bool> HasAnyUserAsync(CancellationToken cancellationToken) =>
         dbContext.Usuarios.AnyAsync(cancellationToken);
@@ -349,6 +349,130 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             AdministrativeCredentialResetStoreStatus.Success,
             previousCredentialVersion,
             user.VersaoCredencial);
+    }
+
+    public async Task<ChangeAccountProfileStoreResult> TryChangeProfileAsync(
+        int userId,
+        int actorUserId,
+        string profileName,
+        MetodoAutenticacao authenticationMethod,
+        string? temporaryPasswordHash,
+        DateTime? temporaryCredentialExpiresAtUtc,
+        DateTime occurredAtUtc,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        if (userId == actorUserId)
+        {
+            return new(ChangeAccountProfileStoreStatus.SelfChange);
+        }
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            cancellationToken);
+        await dbContext.Database.ExecuteSqlRawAsync(
+            "SELECT pg_advisory_xact_lock(73000173)",
+            cancellationToken);
+
+        var user = await LockUserAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return new(ChangeAccountProfileStoreStatus.NotFound);
+        }
+
+        if (!user.Ativo)
+        {
+            return new(ChangeAccountProfileStoreStatus.Inactive);
+        }
+
+        var currentProfile = await dbContext.Perfis
+            .SingleAsync(profile => profile.Id == user.PerfilId, cancellationToken);
+        var targetProfile = await dbContext.Perfis
+            .SingleOrDefaultAsync(
+                profile => profile.Ativo && profile.Nome == profileName,
+                cancellationToken);
+        if (targetProfile is null)
+        {
+            return new(ChangeAccountProfileStoreStatus.ProfileNotFound);
+        }
+
+        if (currentProfile.Id == targetProfile.Id)
+        {
+            return new(ChangeAccountProfileStoreStatus.Conflict);
+        }
+
+        if (currentProfile.Nome == ProfileNames.Administrator)
+        {
+            var activeAdministratorCount = await dbContext.Usuarios
+                .Where(candidate => candidate.Ativo)
+                .Join(
+                    dbContext.Perfis.Where(profile =>
+                        profile.Ativo && profile.Nome == ProfileNames.Administrator),
+                    candidate => candidate.PerfilId,
+                    profile => profile.Id,
+                    (_, _) => 1)
+                .CountAsync(cancellationToken);
+            if (activeAdministratorCount <= 1)
+            {
+                return new(ChangeAccountProfileStoreStatus.LastAdministrator);
+            }
+        }
+
+        var previousAuthenticationMethod = user.MetodoAutenticacao;
+        var previousCredentialVersion = user.VersaoCredencial;
+        var previousExternalIdentityLinked = user.GoogleSubject is not null;
+        user.AlterarPerfilEAutenticacao(
+            targetProfile.Id,
+            authenticationMethod,
+            occurredAtUtc,
+            temporaryPasswordHash,
+            temporaryCredentialExpiresAtUtc);
+
+        var sessions = await dbContext.SessoesAutenticacao
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM dbo.sessoes_autenticacao
+                WHERE usuario_id = {userId} AND revogada_em IS NULL
+                FOR UPDATE
+                """)
+            .ToListAsync(cancellationToken);
+        foreach (var session in sessions)
+        {
+            session.Revogar(
+                occurredAtUtc,
+                MotivoRevogacaoSessao.MetodoAutenticacaoAlterado);
+        }
+
+        dbContext.Auditorias.Add(new Auditoria(
+            occurredAtUtc,
+            TipoAcaoAuditoria.Alteracao,
+            nameof(Usuario),
+            user.Id,
+            actorUserId,
+            dadosAnteriores: JsonSerializer.Serialize(new
+            {
+                profileName = currentProfile.Nome,
+                authenticationMethod = previousAuthenticationMethod.ToString(),
+                credentialVersion = previousCredentialVersion,
+                externalIdentityLinked = previousExternalIdentityLinked
+            }),
+            dadosNovos: JsonSerializer.Serialize(new
+            {
+                profileName = targetProfile.Nome,
+                authenticationMethod = user.MetodoAutenticacao.ToString(),
+                credentialVersion = user.VersaoCredencial,
+                externalIdentityLinked = user.GoogleSubject is not null,
+                requiresPasswordChange = user.TrocaSenhaObrigatoria,
+                reason
+            }),
+            detalhes: "Administrator changed the account profile and authentication boundary."));
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return new(
+            ChangeAccountProfileStoreStatus.Success,
+            currentProfile.Nome,
+            targetProfile.Nome,
+            user.MetodoAutenticacao);
     }
 
     private Task<Usuario?> LockUserAsync(

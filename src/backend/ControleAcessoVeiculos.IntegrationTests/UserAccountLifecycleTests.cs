@@ -203,6 +203,75 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
             item.TipoAcao == TipoAcaoAuditoria.Alteracao, cancellationToken: TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task AdministratorPromotionChangesAuthenticationBoundaryAndRevokesSessions()
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var target = await CreateUserAsync(ProfileNames.Doorman);
+        using var administratorClient = factory.CreateClient();
+        using var targetClient = factory.CreateClient();
+        await AuthenticateClientAsync(administratorClient, administrator.Email);
+        await AuthenticateClientAsync(targetClient, target.Email);
+
+        var response = await administratorClient.PutAsJsonAsync(
+            $"/users/{target.Id}/profile",
+            new
+            {
+                profileName = ProfileNames.Administrator,
+                reason = "Promoção autorizada para apoio administrativo temporário."
+            },
+            TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<ChangeProfileResponse>(
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        response.EnsureSuccessStatusCode();
+        Assert.NotNull(body);
+        Assert.Equal(ProfileNames.Doorman, body.PreviousProfileName);
+        Assert.Equal(ProfileNames.Administrator, body.CurrentProfileName);
+        Assert.Equal(nameof(MetodoAutenticacao.Local), body.AuthenticationMethod);
+        Assert.False(string.IsNullOrWhiteSpace(body.TemporaryCredential));
+        Assert.True(body.TemporaryCredentialExpiresAtUtc > DateTime.UtcNow);
+
+        var requestWithPreviousSession = await targetClient.GetAsync(
+            "/access-records/open",
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, requestWithPreviousSession.StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var updated = await dbContext.Usuarios
+            .AsNoTracking()
+            .SingleAsync(item => item.Id == target.Id,
+                cancellationToken: TestContext.Current.CancellationToken);
+        var profileName = await dbContext.Perfis
+            .Where(item => item.Id == updated.PerfilId)
+            .Select(item => item.Nome)
+            .SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var session = await dbContext.SessoesAutenticacao
+            .AsNoTracking()
+            .SingleAsync(item => item.UsuarioId == target.Id,
+                cancellationToken: TestContext.Current.CancellationToken);
+        var audit = await dbContext.Auditorias
+            .AsNoTracking()
+            .Where(item =>
+                item.Entidade == nameof(Usuario) &&
+                item.RegistroId == target.Id &&
+                item.UsuarioId == administrator.Id)
+            .OrderByDescending(item => item.Id)
+            .FirstAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(ProfileNames.Administrator, profileName);
+        Assert.Equal(MetodoAutenticacao.Local, updated.MetodoAutenticacao);
+        Assert.True(updated.TrocaSenhaObrigatoria);
+        Assert.NotNull(updated.SenhaHash);
+        Assert.Null(updated.GoogleSubject);
+        Assert.Equal(MotivoRevogacaoSessao.MetodoAutenticacaoAlterado,
+            session.MotivoRevogacao);
+        Assert.DoesNotContain(body.TemporaryCredential!, audit.DadosNovos!);
+        Assert.Contains("Promoção autorizada", audit.DadosNovos!);
+    }
+
     private async Task<TestUser> CreateUserAsync(string profileName)
     {
         using var scope = factory.Services.CreateScope();
@@ -326,6 +395,12 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
 
     private sealed record TestUser(int Id, string Email);
     private sealed record LoginResponse(string AccessToken, DateTime ExpiresAtUtc);
+    private sealed record ChangeProfileResponse(
+        string PreviousProfileName,
+        string CurrentProfileName,
+        string AuthenticationMethod,
+        string? TemporaryCredential,
+        DateTime? TemporaryCredentialExpiresAtUtc);
     private sealed record UserResponse(
         int Id,
         string Email,

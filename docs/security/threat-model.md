@@ -145,7 +145,7 @@ flowchart LR
 | B6        | Repositório para runner e registry        | CI valida Pull Requests e `main` sem publicação; uma tag de release revisada reconstrói, analisa e publica imagens no GHCR e registra proveniência e SBOM por digest no GitHub Artifact Attestations com permissão mínima                     |
 | B7        | Registry para infraestrutura OCI          | Não implementado                                                                                                                                                                                                                              |
 | B8        | API para collector OTLP                   | Exportação opt-in implementada; endpoint e infraestrutura externa pendentes                                                                                                                                                                   |
-| B9        | Navegador/API para Google OIDC            | Code Flow com PKCE, `state`, `nonce`, callback fixo, e-mail verificado e vínculo por `sub`; credenciais, HTTPS real, governança mestre e homologação ainda pendentes — #448                                                                    |
+| B9        | Navegador/API para Google OIDC            | Code Flow com PKCE, `state`, `nonce`, callback fixo, e-mail verificado e vínculo por `sub`; credenciais, HTTPS real e homologação ainda pendentes — #448                                                                                       |
 
 Todo dado vindo do navegador atravessa uma fronteira não confiável. Validação no
 frontend melhora usabilidade, mas não é controle de segurança suficiente.
@@ -213,6 +213,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - login bem-sucedido e bloqueio temporário auditados atomicamente sem credenciais, token, e-mail ou IP, com emissão de token impedida quando a auditoria falha;
 - consulta de contas paginada e restrita a Administrador, sem exposição de hash;
 - desativação e reativação auditadas atomicamente, com auto-desativação proibida e serialização das mudanças para preservar ao menos um Administrador ativo;
+- troca de perfil restrita ao Administrador, com justificativa, auditoria transacional, revogação das sessões, autoalteração proibida e preservação de ao menos um Administrador ativo; a transição também força método Google nos três perfis operacionais e método local no Administrador;
 - conta ou perfil inativo rejeitado na validação de toda requisição com JWT, inclusive para token emitido anteriormente;
 - criação administrativa e bootstrap auditados atomicamente, distinguindo ator autenticado de origem de sistema sem duplicar dados da conta;
 - consulta da trilha restrita a Administrador por política dedicada, com filtros, paginação, janela máxima e distinção entre ator humano e sistema;

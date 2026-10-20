@@ -238,6 +238,58 @@ public class Usuario
         DataAlteracao = agoraUtc;
     }
 
+    public void AlterarPerfilEAutenticacao(
+        int perfilId,
+        MetodoAutenticacao metodoAutenticacao,
+        DateTime agoraUtc,
+        string? senhaHashTemporaria = null,
+        DateTime? credencialTemporariaExpiraEm = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(perfilId);
+
+        if (metodoAutenticacao == MetodoAutenticacao.Local)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(senhaHashTemporaria);
+            if (credencialTemporariaExpiraEm <= agoraUtc)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(credencialTemporariaExpiraEm));
+            }
+        }
+        else if (senhaHashTemporaria is not null ||
+            credencialTemporariaExpiraEm.HasValue)
+        {
+            throw new ArgumentException(
+                "Uma conta Google não pode receber credencial local.");
+        }
+
+        var preserveGoogleIdentity =
+            MetodoAutenticacao == MetodoAutenticacao.Google &&
+            metodoAutenticacao == MetodoAutenticacao.Google;
+
+        PerfilId = perfilId;
+        MetodoAutenticacao = metodoAutenticacao;
+        SenhaHash = metodoAutenticacao == MetodoAutenticacao.Local
+            ? senhaHashTemporaria
+            : null;
+        TrocaSenhaObrigatoria = metodoAutenticacao == MetodoAutenticacao.Local;
+        CredencialTemporariaExpiraEm = metodoAutenticacao == MetodoAutenticacao.Local
+            ? credencialTemporariaExpiraEm
+            : null;
+        CredencialTemporariaUtilizadaEm = null;
+
+        if (!preserveGoogleIdentity)
+        {
+            GoogleSubject = null;
+            GoogleVinculadoEm = null;
+        }
+
+        VersaoCredencial = checked(VersaoCredencial + 1);
+        TentativasFalhas = 0;
+        BloqueadoAte = null;
+        DataAlteracao = agoraUtc;
+    }
+
     public void Desativar(DateTime agoraUtc)
     {
         Ativo = false;
