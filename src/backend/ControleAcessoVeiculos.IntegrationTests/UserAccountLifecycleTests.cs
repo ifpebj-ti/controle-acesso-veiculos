@@ -272,6 +272,38 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         Assert.Contains("Promoção autorizada", audit.DadosNovos!);
     }
 
+    [Fact]
+    public async Task OperationalUserCannotChangeAnotherAccountProfile()
+    {
+        var operatorUser = await CreateUserAsync(ProfileNames.Doorman);
+        var target = await CreateUserAsync(ProfileNames.SecurityGuard);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, operatorUser.Email);
+
+        var response = await client.PutAsJsonAsync(
+            $"/users/{target.Id}/profile",
+            new
+            {
+                profileName = ProfileNames.TransportationDepartment,
+                reason = "Tentativa sem autorização administrativa."
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var profileName = await dbContext.Usuarios
+            .Where(user => user.Id == target.Id)
+            .Join(
+                dbContext.Perfis,
+                user => user.PerfilId,
+                profile => profile.Id,
+                (_, profile) => profile.Nome)
+            .SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(ProfileNames.SecurityGuard, profileName);
+    }
+
     private async Task<TestUser> CreateUserAsync(string profileName)
     {
         using var scope = factory.Services.CreateScope();
