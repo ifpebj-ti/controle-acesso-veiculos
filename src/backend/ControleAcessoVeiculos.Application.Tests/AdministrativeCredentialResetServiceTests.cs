@@ -48,6 +48,8 @@ public sealed class AdministrativeCredentialResetServiceTests
         AdministrativeCredentialResetStatus.Inactive)]
     [InlineData(AdministrativeCredentialResetStoreStatus.SelfReset,
         AdministrativeCredentialResetStatus.SelfReset)]
+    [InlineData(AdministrativeCredentialResetStoreStatus.ExternalAuthentication,
+        AdministrativeCredentialResetStatus.ExternalAuthentication)]
     public async Task StoreStatusIsMappedWithoutReturningCredential(
         AdministrativeCredentialResetStoreStatus storeStatus,
         AdministrativeCredentialResetStatus expectedStatus)

@@ -58,6 +58,8 @@ public class Usuario
     public bool TrocaSenhaObrigatoria { get; private set; }
     public DateTime? CredencialTemporariaExpiraEm { get; private set; }
     public DateTime? CredencialTemporariaUtilizadaEm { get; private set; }
+    public string? GoogleSubject { get; private set; }
+    public DateTime? GoogleVinculadoEm { get; private set; }
 
     public bool PodeAutenticar(DateTime agoraUtc) =>
         Ativo &&
@@ -65,6 +67,41 @@ public class Usuario
         (!TrocaSenhaObrigatoria ||
          (CredencialTemporariaExpiraEm > agoraUtc &&
           !CredencialTemporariaUtilizadaEm.HasValue));
+
+    public bool PodeAutenticarComSenha(DateTime agoraUtc) =>
+        GoogleSubject is null && PodeAutenticar(agoraUtc);
+
+    public void VincularIdentidadeGoogle(string subject, DateTime agoraUtc)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(subject);
+
+        var normalizedSubject = subject.Trim();
+        if (normalizedSubject.Length > 255)
+        {
+            throw new ArgumentOutOfRangeException(nameof(subject));
+        }
+
+        if (GoogleSubject is not null)
+        {
+            if (string.Equals(GoogleSubject, normalizedSubject, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                "A conta jÃ¡ possui uma identidade Google diferente.");
+        }
+
+        GoogleSubject = normalizedSubject;
+        GoogleVinculadoEm = agoraUtc;
+        VersaoCredencial = checked(VersaoCredencial + 1);
+        TrocaSenhaObrigatoria = false;
+        CredencialTemporariaExpiraEm = null;
+        CredencialTemporariaUtilizadaEm = null;
+        TentativasFalhas = 0;
+        BloqueadoAte = null;
+        DataAlteracao = agoraUtc;
+    }
 
     public void ConsumirCredencialTemporaria(DateTime agoraUtc)
     {

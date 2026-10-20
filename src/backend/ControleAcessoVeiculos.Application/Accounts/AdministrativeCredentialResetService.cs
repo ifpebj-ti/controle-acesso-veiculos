@@ -45,6 +45,8 @@ public sealed class AdministrativeCredentialResetService(
                 AdministrativeCredentialResetResult.Inactive(),
             AdministrativeCredentialResetStoreStatus.SelfReset =>
                 AdministrativeCredentialResetResult.SelfReset(),
+            AdministrativeCredentialResetStoreStatus.ExternalAuthentication =>
+                AdministrativeCredentialResetResult.ExternalAuthentication(),
             _ => throw new ArgumentOutOfRangeException(nameof(storeResult))
         };
     }
@@ -92,7 +94,8 @@ public enum AdministrativeCredentialResetStatus
     Validation = 2,
     NotFound = 3,
     Inactive = 4,
-    SelfReset = 5
+    SelfReset = 5,
+    ExternalAuthentication = 6
 }
 
 public sealed record AdministrativeCredentialResetResult(
@@ -125,4 +128,11 @@ public sealed record AdministrativeCredentialResetResult(
 
     public static AdministrativeCredentialResetResult SelfReset() =>
         new(AdministrativeCredentialResetStatus.SelfReset, null, null, EmptyErrors);
+
+    public static AdministrativeCredentialResetResult ExternalAuthentication() =>
+        new(
+            AdministrativeCredentialResetStatus.ExternalAuthentication,
+            null,
+            null,
+            EmptyErrors);
 }
