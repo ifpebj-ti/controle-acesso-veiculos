@@ -14,21 +14,42 @@ public static class EventAuthorizationEndpoints
 
         group.MapGet(string.Empty, SearchAsync)
             .WithName("SearchEventAuthorizations")
-            .WithSummary("Consulta autorizações de eventos");
+            .WithSummary("Consulta autorizações de eventos")
+            .Produces<PagedEventAuthorizations>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden);
         group.MapPost(string.Empty, CreateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("CreateEventAuthorization")
             .WithSummary("Cria uma autorização de evento")
-            .WithDescription(VehiclePlateOpenApi.OptionalCompletePlate);
+            .WithDescription(VehiclePlateOpenApi.OptionalCompletePlate)
+            .Produces<EventAuthorizationRecord>(StatusCodes.Status201Created)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
         group.MapPut("/{id:int}", UpdateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("UpdateEventAuthorization")
             .WithSummary("Atualiza uma autorização de evento")
-            .WithDescription(VehiclePlateOpenApi.OptionalCompletePlate);
+            .WithDescription(VehiclePlateOpenApi.OptionalCompletePlate)
+            .Produces<EventAuthorizationRecord>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
         group.MapDelete("/{id:int}", CancelAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("CancelEventAuthorization")
-            .WithSummary("Cancela uma autorização de evento");
+            .WithSummary("Cancela uma autorização de evento")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         return endpoints;
     }
@@ -89,10 +110,12 @@ public static class EventAuthorizationEndpoints
             new UpdateEventAuthorizationCommand(
                 request.Name,
                 request.Responsible,
+                request.ResponsibleContact,
                 request.StartsAtUtc,
                 request.EndsAtUtc,
                 request.Area,
                 request.OvernightAllowed,
+                request.ParkingLocation,
                 request.VehicleRules?.Select(ToInput).ToArray(),
                 request.Notes),
             actorUserId,
@@ -157,10 +180,12 @@ public static class EventAuthorizationEndpoints
         new(
             request.Name,
             request.Responsible,
+            request.ResponsibleContact,
             request.StartsAtUtc,
             request.EndsAtUtc,
             request.Area,
             request.OvernightAllowed,
+            request.ParkingLocation,
             request.VehicleRules?.Select(ToInput).ToArray(),
             request.Notes);
 
@@ -179,10 +204,12 @@ public sealed record SearchEventAuthorizationsRequest(
 public sealed record EventAuthorizationRequest(
     string? Name,
     string? Responsible,
+    string? ResponsibleContact,
     DateTimeOffset StartsAtUtc,
     DateTimeOffset EndsAtUtc,
     string? Area,
     bool OvernightAllowed,
+    string? ParkingLocation,
     IReadOnlyList<EventVehicleRuleRequest>? VehicleRules,
     string? Notes = null);
 

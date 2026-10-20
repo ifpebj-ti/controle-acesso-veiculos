@@ -1,4 +1,5 @@
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -9,9 +10,14 @@ public sealed class EventoAcessoConfiguration : IEntityTypeConfiguration<EventoA
     public void Configure(EntityTypeBuilder<EventoAcesso> builder)
     {
         builder.ToTable("eventos_acesso", "dbo", table =>
+        {
             table.HasCheckConstraint(
                 "ck_eventos_acesso_periodo",
-                "fim > inicio"));
+                "fim > inicio");
+            table.HasCheckConstraint(
+                "ck_eventos_acesso_local_estacionamento",
+                "local_estacionamento IN ('ADefinir', 'Interno', 'Externo')");
+        });
 
         builder.HasKey(evento => evento.Id).HasName("pk_eventos_acesso");
 
@@ -29,6 +35,10 @@ public sealed class EventoAcessoConfiguration : IEntityTypeConfiguration<EventoA
             .HasColumnType("character varying(200)")
             .HasMaxLength(200)
             .IsRequired();
+        builder.Property(evento => evento.ContatoResponsavel)
+            .HasColumnName("contato_responsavel")
+            .HasColumnType("character varying(254)")
+            .HasMaxLength(254);
         builder.Property(evento => evento.Inicio)
             .HasColumnName("inicio")
             .HasColumnType("timestamp with time zone")
@@ -45,6 +55,13 @@ public sealed class EventoAcessoConfiguration : IEntityTypeConfiguration<EventoA
         builder.Property(evento => evento.PermitePernoite)
             .HasColumnName("permite_pernoite")
             .HasColumnType("boolean")
+            .IsRequired();
+        builder.Property(evento => evento.LocalEstacionamento)
+            .HasColumnName("local_estacionamento")
+            .HasColumnType("character varying(20)")
+            .HasMaxLength(20)
+            .HasConversion<string>()
+            .HasDefaultValue(LocalEstacionamentoEvento.ADefinir)
             .IsRequired();
         builder.Property(evento => evento.Observacao)
             .HasColumnName("observacao")

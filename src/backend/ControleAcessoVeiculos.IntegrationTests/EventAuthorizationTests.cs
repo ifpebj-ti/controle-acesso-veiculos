@@ -39,6 +39,8 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         Assert.NotNull(created);
         Assert.Equal(plate.ToUpperInvariant(), created.VehicleRules[0].Plate);
         Assert.Equal(3, created.VehicleRules[1].Quantity);
+        Assert.Equal("eventos@example.test", created.ResponsibleContact);
+        Assert.Equal("Interno", created.ParkingLocation);
         Assert.Equal(managerId, created.CreatedById);
 
         using var doorman = factory.CreateClient();
@@ -90,6 +92,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
             }).Where(value => value is not null));
         Assert.DoesNotContain(name, auditContent, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(responsible, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("eventos@example.test", auditContent, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(plate, auditContent, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -213,10 +216,12 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         {
             name,
             responsible,
+            responsibleContact = "eventos@example.test",
             startsAtUtc,
             endsAtUtc,
             area = "Pátio central",
             overnightAllowed = true,
+            parkingLocation = "Interno",
             notes = "Observação operacional",
             vehicleRules = new object[]
             {
@@ -308,10 +313,12 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         int Id,
         string Name,
         string Responsible,
+        string? ResponsibleContact,
         DateTime StartsAtUtc,
         DateTime EndsAtUtc,
         string Area,
         bool OvernightAllowed,
+        string ParkingLocation,
         string? Notes,
         bool Active,
         int CreatedById,
