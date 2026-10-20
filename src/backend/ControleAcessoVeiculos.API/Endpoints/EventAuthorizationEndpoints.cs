@@ -18,11 +18,13 @@ public static class EventAuthorizationEndpoints
         group.MapPost(string.Empty, CreateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("CreateEventAuthorization")
-            .WithSummary("Cria uma autorização de evento");
+            .WithSummary("Cria uma autorização de evento")
+            .WithDescription(VehiclePlateOpenApi.OptionalCompletePlate);
         group.MapPut("/{id:int}", UpdateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("UpdateEventAuthorization")
-            .WithSummary("Atualiza uma autorização de evento");
+            .WithSummary("Atualiza uma autorização de evento")
+            .WithDescription(VehiclePlateOpenApi.OptionalCompletePlate);
         group.MapDelete("/{id:int}", CancelAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageEventAuthorizations)
             .WithName("CancelEventAuthorization")

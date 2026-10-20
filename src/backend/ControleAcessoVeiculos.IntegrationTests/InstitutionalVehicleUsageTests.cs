@@ -415,7 +415,7 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
         var suffix = Guid.NewGuid().ToString("N");
-        var plate = $"IF{suffix[..5]}".ToUpperInvariant();
+        var plate = TestPlate.From(suffix);
         var driverName = $"Motorista {suffix}";
         var vehicle = new Veiculo(
             plate,

@@ -41,6 +41,11 @@ from its first published release.
 
 ### Changed
 
+- Backend plate validation now distinguishes complete Brazilian plates from
+  partial search filters, rejects numeric-only values such as `777777`, and
+  applies the canonical rule to general access, institutional fleet, and event
+  authorization records.
+
 - The API authorizes the Transport Sector to perform supervised descriptive
   access corrections under the same audited server-side rules used by the
   other authorized profiles; matching frontend exposure remains pending.
