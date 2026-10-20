@@ -39,13 +39,68 @@ variable "vcn_cidr" {
 }
 
 variable "public_subnet_cidr" {
-  description = "Public subnet used by the single-node pilot."
+  description = "Public subnet used exclusively by the OCI Flexible Load Balancer."
   type        = string
   default     = "10.42.10.0/24"
 
   validation {
     condition     = can(cidrhost(var.public_subnet_cidr, 1))
     error_message = "public_subnet_cidr must be a valid IPv4 CIDR."
+  }
+}
+
+variable "application_subnet_cidr" {
+  description = "Private subnet used by the application VM and OCI Bastion target sessions."
+  type        = string
+  default     = "10.42.20.0/24"
+
+  validation {
+    condition     = can(cidrhost(var.application_subnet_cidr, 1)) && var.application_subnet_cidr != var.public_subnet_cidr
+    error_message = "application_subnet_cidr must be a valid IPv4 CIDR different from public_subnet_cidr."
+  }
+}
+
+variable "load_balancer_certificate_id" {
+  description = "OCID of a reviewed OCI Certificates service certificate for the approved homologation hostname. Supply only through Resource Manager."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = can(regex("^ocid1\\.certificate\\.", var.load_balancer_certificate_id))
+    error_message = "load_balancer_certificate_id must be an OCI Certificates service certificate OCID."
+  }
+}
+
+variable "load_balancer_minimum_bandwidth_mbps" {
+  description = "Guaranteed Flexible Load Balancer bandwidth. Keep at the reviewed pilot minimum."
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.load_balancer_minimum_bandwidth_mbps >= 10 && var.load_balancer_minimum_bandwidth_mbps <= 100
+    error_message = "The minimum Load Balancer bandwidth must be between 10 and 100 Mbps for this pilot."
+  }
+}
+
+variable "load_balancer_maximum_bandwidth_mbps" {
+  description = "Maximum Flexible Load Balancer bandwidth. A fixed 10 Mbps ceiling is the cost-controlled default."
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.load_balancer_maximum_bandwidth_mbps >= var.load_balancer_minimum_bandwidth_mbps && var.load_balancer_maximum_bandwidth_mbps <= 100
+    error_message = "The maximum Load Balancer bandwidth must be at least the minimum and no more than 100 Mbps for this pilot."
+  }
+}
+
+variable "waf_login_requests_per_minute" {
+  description = "Edge request ceiling per source for authentication routes. The API keeps its own independent limits."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.waf_login_requests_per_minute >= 10 && var.waf_login_requests_per_minute <= 120
+    error_message = "waf_login_requests_per_minute must be between 10 and 120."
   }
 }
 

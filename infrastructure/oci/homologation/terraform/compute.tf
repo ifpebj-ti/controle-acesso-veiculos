@@ -19,9 +19,9 @@ resource "oci_core_instance" "application" {
   }
 
   create_vnic_details {
-    subnet_id                 = oci_core_subnet.public.id
+    subnet_id                 = oci_core_subnet.application.id
     nsg_ids                   = [oci_core_network_security_group.application.id]
-    assign_public_ip          = true
+    assign_public_ip          = false
     assign_private_dns_record = true
     hostname_label            = "app"
     display_name              = "${var.resource_prefix}-primary-vnic"
@@ -59,7 +59,8 @@ resource "oci_core_instance" "application" {
 
   metadata = {
     user_data = base64encode(templatefile("${path.module}/cloud-init.yaml.tftpl", {
-      vcn_cidr = var.vcn_cidr
+      vcn_cidr                  = var.vcn_cidr
+      load_balancer_subnet_cidr = var.public_subnet_cidr
     }))
   }
 
