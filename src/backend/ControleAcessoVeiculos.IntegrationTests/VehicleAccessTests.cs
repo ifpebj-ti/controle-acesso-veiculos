@@ -578,6 +578,15 @@ public sealed class VehicleAccessTests(ApiFactory factory)
             Assert.Equal("Automóvel", item.VehicleType);
         });
 
+        var prefix = plate[..3].ToLowerInvariant();
+        var prefixResult = await client.GetFromJsonAsync<AccessHistoryResponse>(
+            $"/access-records/history?plate={prefix}&from={from}&to={to}",
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(prefixResult);
+        Assert.Equal(3, prefixResult.TotalCount);
+        Assert.All(prefixResult.Items, item =>
+            Assert.StartsWith(plate[..3], item.Plate, StringComparison.Ordinal));
+
         var closed = await client.GetFromJsonAsync<AccessHistoryResponse>($"/access-records/history?plate={formattedPlate}&status=encerrado" +
             $"&from={from}&to={to}&page=2&pageSize=1", cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(closed);
