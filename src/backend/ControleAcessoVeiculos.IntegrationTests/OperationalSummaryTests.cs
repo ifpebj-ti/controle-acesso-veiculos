@@ -133,7 +133,11 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
         await dbContext.SaveChangesAsync();
 
         var generalVehicles = Enumerable.Range(0, 7)
-            .Select(index => new Veiculo($"G{suffix}{index}", "Automóvel", null, false))
+            .Select(index => new Veiculo(
+                TestPlate.From($"GEN{index}{suffix}"),
+                "Automóvel",
+                null,
+                false))
             .ToArray();
         var institutionalVehicles = Enumerable.Range(0, 5)
             .Select(index => new Veiculo(

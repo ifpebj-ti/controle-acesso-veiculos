@@ -540,14 +540,17 @@ describe("HistoryPage", () => {
       expect(
         await screen.findAllByText("Objetivo devolvido pela API"),
       ).toHaveLength(2);
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "Registro #10 corrigido com sucesso.",
-      );
+      const feedback = screen
+        .getByText("Registro #10 corrigido com sucesso.")
+        .closest('[role="status"]');
+      expect(feedback).toHaveClass("fixed", "md:left-auto", "md:max-w-xl");
+      expect(feedback).toHaveAttribute("aria-live", "polite");
       expect(searchAccessHistory).toHaveBeenCalledTimes(2);
       expect(searchAccessHistory).toHaveBeenLastCalledWith(
         expect.objectContaining({ categoryName: undefined, page: 1 }),
       );
       expect(correctionButton).toHaveFocus();
+      expect(feedback).not.toHaveFocus();
     },
   );
 
@@ -647,10 +650,12 @@ describe("HistoryPage", () => {
     expect(screen.getByText("0 registro(s)")).toBeInTheDocument();
     expect(screen.getByText("Página 1 de 1")).toBeInTheDocument();
     expect(screen.getByLabelText("Categoria")).toHaveTextContent("Entrega");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Registro #10 corrigido com sucesso.",
-    );
-    await waitFor(() => expect(screen.getByRole("status")).toHaveFocus());
+    const filteredFeedback = screen
+      .getByText("Registro #10 corrigido com sucesso.")
+      .closest('[role="status"]');
+    expect(filteredFeedback).toHaveAttribute("aria-live", "polite");
+    expect(filteredFeedback).toHaveClass("fixed", "inset-x-4");
+    await waitFor(() => expect(filteredFeedback).toHaveFocus());
   });
 
   it("offers correction for both open and closed records", async () => {
@@ -779,7 +784,13 @@ describe("HistoryPage", () => {
       expect.objectContaining({ categoryName: "Visitante", page: 1 }),
     );
     expect(correctAccessRecord).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.getByRole("status")).toHaveFocus());
+    await waitFor(() =>
+      expect(
+        screen
+          .getByText("Registro #10 corrigido com sucesso.")
+          .closest('[role="status"]'),
+      ).toHaveFocus(),
+    );
   });
 
   it("has no serious accessibility violations in the empty state", async () => {

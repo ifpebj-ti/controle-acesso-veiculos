@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { Button } from "../../../components/ui/Button";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { SelectField } from "../../../components/ui/SelectField";
@@ -23,6 +24,7 @@ const fieldClass =
 interface EventAuthorizationFormProps {
   busy: boolean;
   event: EventAuthorization | null;
+  formError?: string | null;
   onCancel: () => void;
   onSubmit: (input: EventAuthorizationInput) => Promise<void>;
   serverErrors: EventAuthorizationServerErrors;
@@ -83,6 +85,7 @@ function ErrorMessage({ id, message }: { id: string; message?: string }) {
 export function EventAuthorizationForm({
   busy,
   event,
+  formError,
   onCancel,
   onSubmit,
   serverErrors,
@@ -441,6 +444,7 @@ export function EventAuthorizationForm({
             );
           })()}
         </div>
+        <ActionFeedback message={formError} tone="error" />
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
           <Button disabled={disabled} onClick={onCancel} variant="secondary">
             Fechar formulário

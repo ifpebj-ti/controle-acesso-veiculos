@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { SelectField } from "../../../components/ui/SelectField";
 import type { InstitutionalDriver } from "../../institutional-drivers";
 import type { InstitutionalVehicle } from "../../institutional-vehicles";
@@ -20,6 +21,7 @@ const fieldClass =
 interface InstitutionalDepartureFormProps {
   busy: boolean;
   drivers: InstitutionalDriver[];
+  formError?: string | null;
   onCancel: () => void;
   onSubmit: (input: InstitutionalDepartureInput) => Promise<void>;
   serverErrors: InstitutionalUsageServerErrors;
@@ -44,6 +46,7 @@ function ErrorMessage({ id, message }: { id: string; message?: string }) {
 export function InstitutionalDepartureForm({
   busy,
   drivers,
+  formError,
   onCancel,
   onSubmit,
   serverErrors,
@@ -219,6 +222,11 @@ export function InstitutionalDepartureForm({
           />
           <ErrorMessage id="usage-itinerary-error" message={itineraryError} />
         </div>
+        <ActionFeedback
+          className="lg:col-span-2"
+          message={formError}
+          tone="error"
+        />
         <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:flex-row sm:justify-end lg:col-span-2">
           <button
             className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold disabled:opacity-60"

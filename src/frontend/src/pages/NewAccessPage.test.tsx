@@ -727,10 +727,12 @@ describe("NewAccessPage", () => {
     );
 
     expect(
-      await screen.findByText(
-        "Entrada registrada. O formulário está pronto para o próximo veículo.",
-      ),
-    ).toHaveAttribute("role", "status");
+      (
+        await screen.findByText(
+          "Entrada registrada. O formulário está pronto para o próximo veículo.",
+        )
+      ).closest('[role="status"]'),
+    ).toBeInTheDocument();
     expect(plateField).toHaveValue("");
     expect(driverField).toHaveValue("");
     expect(objectiveField).not.toBeChecked();
@@ -801,10 +803,11 @@ describe("NewAccessPage", () => {
     consecutiveButton.focus();
     await user.keyboard("{Enter}");
 
-    expect(await screen.findByText(/formulário está pronto/)).toHaveAttribute(
-      "role",
-      "status",
-    );
+    expect(
+      (await screen.findByText(/formulário está pronto/)).closest(
+        '[role="status"]',
+      ),
+    ).toBeInTheDocument();
     await waitFor(() => expect(plateField).toHaveFocus());
     expect(
       screen.getByRole("heading", { name: "Registrar entrada" }),

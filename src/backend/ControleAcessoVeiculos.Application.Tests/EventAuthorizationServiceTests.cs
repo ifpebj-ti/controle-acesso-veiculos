@@ -99,6 +99,22 @@ public sealed class EventAuthorizationServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ShouldRejectNumericOnlyPlateRule()
+    {
+        var store = new FakeStore();
+        var service = CreateService(store);
+
+        var result = await service.CreateAsync(
+            ValidCommand([new("Automóvel", 1, "777777")]),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Invalid, result.Status);
+        Assert.Contains("vehicleRules[0]", result.Errors.Keys);
+        Assert.Equal(0, store.CreateCalls);
+    }
+
+    [Fact]
     public async Task SearchAsync_ShouldUseBoundedDefaultPeriod()
     {
         var store = new FakeStore();
