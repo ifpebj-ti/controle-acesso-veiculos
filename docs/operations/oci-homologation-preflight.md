@@ -3,7 +3,7 @@
 ## Objetivo e limite
 
 Este runbook prepara a decisão de executar um `terraform plan` para o ambiente de
-homologação descrito na Issue #382 e na ADR 0004. Ele deve ser executado com uma
+homologação descrito nas Issues #382 e #468 e na ADR 0006. Ele deve ser executado com uma
 pessoa autorizada a consultar a tenancy, mas **não cria recursos, não configura
 credenciais e não autoriza `terraform apply`**.
 
@@ -95,8 +95,8 @@ serviços disponíveis e operação pela equipe. Na região escolhida, verificar
 - presença e capacidade atual de `VM.Standard.A1.Flex`;
 - imagem Linux compatível com `aarch64`;
 - alternativa AMD64 caso Arm esteja indisponível;
-- compatibilidade dos serviços de Bastion, Vault, Object Storage, Monitoring e
-  Notifications necessários;
+- compatibilidade dos serviços de Bastion, Certificates, Flexible Load Balancer,
+  WAF, NAT Gateway, Object Storage, Logging, Monitoring e Notifications necessários;
 - limites regionais e por domínio de disponibilidade.
 
 As imagens da aplicação são multi-arquitetura, mas isso não garante capacidade do
@@ -114,7 +114,8 @@ No painel de limites, quotas e uso, conferir pelo menos:
 
 - compute flexível por arquitetura, OCPU e memória;
 - instâncias e volumes de inicialização/bloco;
-- VCN, subnet, Network Security Group, IP público e Bastion;
+- VCN, subnets, Network Security Groups, NAT Gateway, Flexible Load Balancer e Bastion;
+- WAF regional, OCI Certificates e capacidades de proteção disponíveis;
 - Object Storage, Vault, Logging, Monitoring, Notifications e Budgets;
 - escopo de cada limite: tenancy, região ou domínio de disponibilidade;
 - uso atual que possa disputar a mesma capacidade.
@@ -144,7 +145,8 @@ calculado for zero:
 |---|---|
 | compute | shape, OCPUs, memória e horas mensais |
 | armazenamento | boot/block volume, desempenho, backups e crescimento |
-| rede | IP, tráfego de saída e eventual gateway ou load balancer |
+| rede | NAT Gateway, Flexible Load Balancer de 10 Mbps, IP e tráfego de saída |
+| WAF | primeira instância, volume mensal de requisições e logs |
 | segurança | Vault, chaves e operações criptográficas |
 | backup | Object Storage, operações, retenção de 35 dias e restauração |
 | observabilidade | ingestão e retenção de logs, métricas, alarmes e notificações |
@@ -178,8 +180,11 @@ Confirmar antes do Terraform:
 - domínio ou subdomínio dedicado à homologação;
 - papel autorizado a alterar o DNS;
 - método de emissão e renovação automática do certificado;
+- certificado gerenciado no OCI Certificates service e respectivo OCID fornecido
+  somente no Resource Manager;
 - responsável por falha de renovação;
-- exposição pública limitada a HTTPS na porta 443;
+- exposição pública limitada a HTTPS na porta 443 do Load Balancer protegido pelo WAF;
+- VM em subnet privada, sem IP público, aceitando a borda interna somente do NSG do Load Balancer;
 - frontend publicado pelo proxy e conectado ao serviço local;
 - API, PostgreSQL, Docker, métricas e administração sem portas públicas;
 - OCI Bastion ou caminho temporário equivalente, limitado por identidade, origem,
@@ -238,7 +243,7 @@ backup e rollback definidos e autorização explícita do responsável pela tena
 
 ## Referências
 
-- [ADR 0004 — topologia da homologação](../architecture/decisions/0004-oci-homologation-topology.md)
+- [ADR 0006 — borda protegida pelo OCI WAF](../architecture/decisions/0006-oci-waf-protected-homologation-edge.md)
 - [Issue #382 — ambiente de homologação](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/382)
 - [OCI Budgets](https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/budgetsoverview.htm)
 - [OCI service limits](https://docs.oracle.com/en-us/iaas/Content/General/service-limits/default.htm)
