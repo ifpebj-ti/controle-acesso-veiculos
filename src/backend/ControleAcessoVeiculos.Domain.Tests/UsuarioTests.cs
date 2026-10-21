@@ -267,4 +267,74 @@ public sealed class UsuarioTests
         Assert.Equal("stable-subject", usuario.GoogleSubject);
         Assert.False(usuario.PodeAutenticarComSenha(now));
     }
+
+    [Fact]
+    public void OperationalProfileChangePreservesLinkedGoogleIdentity()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario(
+            "google@example.com",
+            senhaHash: null,
+            pessoaId: 1,
+            perfilId: 1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
+        usuario.VincularIdentidadeGoogle("stable-subject", now);
+
+        usuario.AlterarPerfilEAutenticacao(
+            perfilId: 2,
+            MetodoAutenticacao.Google,
+            now.AddMinutes(1));
+
+        Assert.Equal(2, usuario.PerfilId);
+        Assert.Equal(MetodoAutenticacao.Google, usuario.MetodoAutenticacao);
+        Assert.Equal("stable-subject", usuario.GoogleSubject);
+        Assert.Null(usuario.SenhaHash);
+        Assert.Equal(3, usuario.VersaoCredencial);
+    }
+
+    [Fact]
+    public void PromotionToAdministratorRemovesGoogleLinkAndRequiresTemporaryCredential()
+    {
+        var now = DateTime.UtcNow;
+        var expiresAt = now.AddMinutes(30);
+        var usuario = new Usuario(
+            "google@example.com",
+            senhaHash: null,
+            pessoaId: 1,
+            perfilId: 1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
+        usuario.VincularIdentidadeGoogle("stable-subject", now);
+
+        usuario.AlterarPerfilEAutenticacao(
+            perfilId: 2,
+            MetodoAutenticacao.Local,
+            now.AddMinutes(1),
+            "temporary-hash",
+            expiresAt);
+
+        Assert.Equal(MetodoAutenticacao.Local, usuario.MetodoAutenticacao);
+        Assert.Equal("temporary-hash", usuario.SenhaHash);
+        Assert.True(usuario.TrocaSenhaObrigatoria);
+        Assert.Equal(expiresAt, usuario.CredencialTemporariaExpiraEm);
+        Assert.Null(usuario.GoogleSubject);
+        Assert.Null(usuario.GoogleVinculadoEm);
+    }
+
+    [Fact]
+    public void DemotionToOperationalProfileRemovesLocalCredential()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("admin@example.com", "hash", 1, 1);
+
+        usuario.AlterarPerfilEAutenticacao(
+            perfilId: 2,
+            MetodoAutenticacao.Google,
+            now);
+
+        Assert.Equal(MetodoAutenticacao.Google, usuario.MetodoAutenticacao);
+        Assert.Null(usuario.SenhaHash);
+        Assert.False(usuario.TrocaSenhaObrigatoria);
+        Assert.Null(usuario.CredencialTemporariaExpiraEm);
+        Assert.False(usuario.PodeAutenticarComSenha(now));
+    }
 }

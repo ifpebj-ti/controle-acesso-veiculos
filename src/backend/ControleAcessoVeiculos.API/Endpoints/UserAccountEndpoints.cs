@@ -34,6 +34,14 @@ public static class UserAccountEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status409Conflict)
             .Produces(StatusCodes.Status429TooManyRequests);
+        group.MapPut("/{id:int}/profile", ChangeProfileAsync)
+            .WithName("ChangeUserProfile")
+            .WithSummary("Altera o perfil e a fronteira de autenticação da conta")
+            .Produces<ChangeUserProfileResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict);
 
         return endpoints;
     }
@@ -159,6 +167,67 @@ public static class UserAccountEndpoints
         CancellationToken cancellationToken) =>
         ChangeStateAsync(id, reactivate: false, httpContext, service, cancellationToken);
 
+    private static async Task<IResult> ChangeProfileAsync(
+        int id,
+        ChangeUserProfileRequest request,
+        HttpContext httpContext,
+        ChangeAccountProfileService service,
+        CancellationToken cancellationToken)
+    {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await service.ChangeAsync(
+            id,
+            actorUserId,
+            request.ProfileName,
+            request.Reason,
+            cancellationToken);
+
+        if (result.Status == ChangeAccountProfileStatus.Success)
+        {
+            httpContext.Response.Headers.CacheControl = "no-store";
+            httpContext.Response.Headers.Pragma = "no-cache";
+            return Results.Ok(new ChangeUserProfileResponse(
+                result.PreviousProfileName!,
+                result.CurrentProfileName!,
+                result.AuthenticationMethod!.Value.ToString(),
+                result.TemporaryCredential,
+                result.TemporaryCredentialExpiresAtUtc));
+        }
+
+        return result.Status switch
+        {
+            ChangeAccountProfileStatus.NotFound => Results.NotFound(new
+            {
+                Message = "Conta de usuário não encontrada."
+            }),
+            ChangeAccountProfileStatus.Inactive => Results.Conflict(new
+            {
+                Message = "Reative a conta antes de alterar seu perfil."
+            }),
+            ChangeAccountProfileStatus.SelfChange => Results.Conflict(new
+            {
+                Message = "Um administrador não pode alterar o próprio perfil."
+            }),
+            ChangeAccountProfileStatus.ProfileNotFound => Results.Conflict(new
+            {
+                Message = "O perfil solicitado não está ativo no sistema."
+            }),
+            ChangeAccountProfileStatus.LastAdministrator => Results.Conflict(new
+            {
+                Message = "A operação deixaria o sistema sem administrador ativo."
+            }),
+            ChangeAccountProfileStatus.Conflict => Results.Conflict(new
+            {
+                Message = "A conta já possui o perfil solicitado."
+            }),
+            _ => Results.ValidationProblem(result.Errors)
+        };
+    }
+
     private static Task<IResult> ReactivateAsync(
         int id,
         HttpContext httpContext,
@@ -230,6 +299,15 @@ public sealed record CreateUserResponse(
     DateTime? TemporaryCredentialExpiresAtUtc);
 
 public sealed record AdministrativeCredentialResetRequest(string Reason);
+
+public sealed record ChangeUserProfileRequest(string ProfileName, string Reason);
+
+public sealed record ChangeUserProfileResponse(
+    string PreviousProfileName,
+    string CurrentProfileName,
+    string AuthenticationMethod,
+    string? TemporaryCredential,
+    DateTime? TemporaryCredentialExpiresAtUtc);
 
 public sealed record TemporaryCredentialResponse(
     string TemporaryCredential,

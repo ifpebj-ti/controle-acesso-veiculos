@@ -722,7 +722,7 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
 
                     b.ToTable("sessoes_autenticacao", "dbo", t =>
                         {
-                            t.HasCheckConstraint("ck_sessoes_autenticacao_motivo_revogacao", "motivo_revogacao IS NULL OR motivo_revogacao IN ('Rotacao', 'Logout', 'Expiracao', 'ContaDesativada', 'ReutilizacaoDetectada', 'SenhaAlterada', 'RedefinicaoAdministrativa')");
+                            t.HasCheckConstraint("ck_sessoes_autenticacao_motivo_revogacao", "motivo_revogacao IS NULL OR motivo_revogacao IN ('Rotacao', 'Logout', 'Expiracao', 'ContaDesativada', 'ReutilizacaoDetectada', 'SenhaAlterada', 'RedefinicaoAdministrativa', 'MetodoAutenticacaoAlterado')");
 
                             t.HasCheckConstraint("ck_sessoes_autenticacao_periodo", "expira_em > criada_em");
 

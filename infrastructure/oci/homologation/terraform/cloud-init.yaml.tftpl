@@ -1,0 +1,52 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  - docker.io
+  - docker-compose-v2
+  - jq
+  - unattended-upgrades
+  - ufw
+
+write_files:
+  - path: /etc/docker/daemon.json
+    owner: root:root
+    permissions: "0644"
+    content: |
+      {
+        "live-restore": true,
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      }
+  - path: /etc/sysctl.d/60-controle-acesso-veiculos.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      net.ipv4.conf.all.accept_redirects = 0
+      net.ipv4.conf.default.accept_redirects = 0
+      net.ipv4.conf.all.send_redirects = 0
+      net.ipv4.conf.default.send_redirects = 0
+      net.ipv4.conf.all.accept_source_route = 0
+      net.ipv4.conf.default.accept_source_route = 0
+      net.ipv4.tcp_syncookies = 1
+
+runcmd:
+  - [systemctl, enable, --now, docker]
+  - [systemctl, enable, --now, unattended-upgrades]
+  - [sysctl, --system]
+  - [ufw, default, deny, incoming]
+  - [ufw, default, allow, outgoing]
+  - [ufw, allow, from, "${load_balancer_subnet_cidr}", to, any, port, "8088", proto, tcp]
+  - [ufw, allow, from, "${vcn_cidr}", to, any, port, "22", proto, tcp]
+  - [ufw, --force, enable]
+  - [install, -d, -o, root, -g, root, -m, "0750", /opt/controle-acesso-veiculos]
+  - [install, -d, -o, root, -g, root, -m, "0700", /etc/controle-acesso-veiculos]
+  - [usermod, -aG, docker, ubuntu]
+
+final_message: "Homologation host baseline completed. Application deployment, DNS and secrets remain separate controlled steps."
