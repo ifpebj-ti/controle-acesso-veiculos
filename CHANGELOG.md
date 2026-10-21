@@ -10,9 +10,15 @@ from its first published release.
 
 ### Added
 
+- Administrator-only vehicle-movement and institutional-fleet report queries
+  with institutional date boundaries, bounded pagination, canonical actor
+  attribution, data minimization, and consultation auditing.
+- Server-generated PDF exports for administrative reports with local-password
+  step-up, bounded volume, predictable filenames, no-store responses, and
+  content-minimized export auditing.
 - An accepted architecture decision for backend-mediated Google OIDC, locally
-  governed profiles, stable subject binding, master-administrator governance,
-  method-aware step-up, and separately controlled emergency accounts.
+  governed profiles, stable subject binding, single-Administrator governance,
+  method-aware authentication, and local-only Administrator continuity accounts.
 - A disabled-by-default Google OIDC backend foundation validates secure
   configuration, uses Authorization Code with PKCE, links only verified
   preauthorized accounts by stable subject, rotates local credential state and
