@@ -1,9 +1,13 @@
 # ADR 0004 — Topologia segura e econômica da homologação na OCI
 
-- **Status:** Proposta; depende do preflight da tenancy e da revisão de custo
+- **Status:** Substituída pela ADR 0006 antes da primeira implantação
 - **Data:** 1º de outubro de 2026
 - **Issue:** #391
 - **Issue de implantação:** #382
+
+> A exigência institucional de OCI WAF registrada em 20/10/2026 tornou necessária
+> uma borda com Flexible Load Balancer e VM privada. A decisão vigente está na
+> ADR 0006; este documento permanece como registro da alternativa original.
 
 ## Contexto
 

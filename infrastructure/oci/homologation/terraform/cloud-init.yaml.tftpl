@@ -42,7 +42,7 @@ runcmd:
   - [sysctl, --system]
   - [ufw, default, deny, incoming]
   - [ufw, default, allow, outgoing]
-  - [ufw, allow, 443/tcp]
+  - [ufw, allow, from, "${load_balancer_subnet_cidr}", to, any, port, "8088", proto, tcp]
   - [ufw, allow, from, "${vcn_cidr}", to, any, port, "22", proto, tcp]
   - [ufw, --force, enable]
   - [install, -d, -o, root, -g, root, -m, "0750", /opt/controle-acesso-veiculos]

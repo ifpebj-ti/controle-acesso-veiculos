@@ -2,12 +2,17 @@ region                = "sa-saopaulo-1"
 resource_prefix       = "cav-hml"
 vcn_cidr              = "10.42.0.0/16"
 public_subnet_cidr    = "10.42.10.0/24"
+application_subnet_cidr = "10.42.20.0/24"
 instance_shape        = "VM.Standard.A1.Flex"
 instance_ocpus        = 1
 instance_memory_gb    = 6
 boot_volume_size_gb   = 50
 monthly_budget_amount = 25
+load_balancer_minimum_bandwidth_mbps = 10
+load_balancer_maximum_bandwidth_mbps = 10
+waf_login_requests_per_minute        = 30
 
 # Supply only through OCI Resource Manager or a local ignored terraform.tfvars.
 bastion_client_cidr     = "192.0.2.10/32"
 budget_alert_recipients = "responsible@example.invalid"
+load_balancer_certificate_id = "ocid1.certificate.oc1.sa-saopaulo-1.exampleuniqueid"

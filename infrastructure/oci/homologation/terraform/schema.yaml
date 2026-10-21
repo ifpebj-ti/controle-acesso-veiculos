@@ -23,7 +23,14 @@ variableGroups:
     variables:
       - vcn_cidr
       - public_subnet_cidr
+      - application_subnet_cidr
       - bastion_client_cidr
+  - title: "Protected HTTPS edge"
+    variables:
+      - load_balancer_certificate_id
+      - load_balancer_minimum_bandwidth_mbps
+      - load_balancer_maximum_bandwidth_mbps
+      - waf_login_requests_per_minute
   - title: "Cost guardrails"
     variables:
       - monthly_budget_amount
@@ -93,6 +100,37 @@ variables:
     required: true
     title: "Public subnet CIDR"
     default: "10.42.10.0/24"
+  application_subnet_cidr:
+    type: string
+    required: true
+    title: "Private application subnet CIDR"
+    default: "10.42.20.0/24"
+  load_balancer_certificate_id:
+    type: string
+    required: true
+    title: "OCI Certificates service certificate OCID"
+    description: "Use the reviewed certificate for the approved homologation hostname. Enter only in Resource Manager."
+  load_balancer_minimum_bandwidth_mbps:
+    type: number
+    required: true
+    title: "Minimum Load Balancer bandwidth (Mbps)"
+    default: 10
+    minimum: 10
+    maximum: 100
+  load_balancer_maximum_bandwidth_mbps:
+    type: number
+    required: true
+    title: "Maximum Load Balancer bandwidth (Mbps)"
+    default: 10
+    minimum: 10
+    maximum: 100
+  waf_login_requests_per_minute:
+    type: number
+    required: true
+    title: "Authentication requests per source per minute"
+    default: 30
+    minimum: 10
+    maximum: 120
   bastion_client_cidr:
     type: string
     required: true
@@ -116,7 +154,7 @@ outputs:
   deployment_summary:
     type: json
     title: "Sanitized deployment summary"
-  instance_public_ip:
+  load_balancer_public_ip:
     type: string
-    title: "Restricted public IP for DNS configuration"
+    title: "Restricted WAF-protected IP for DNS configuration"
     sensitive: true

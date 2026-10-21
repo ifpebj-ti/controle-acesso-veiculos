@@ -2,28 +2,31 @@
 
 ## Estado e limite
 
-Estes arquivos preparam o terminador HTTPS definido na ADR 0004 e na Issue #437.
+Estes arquivos preparam a borda interna definida na ADR 0004 e nas Issues #437 e
+#468.
 Eles **não comprovam** que exista VM, domínio, certificado ou ambiente OCI
 implantado. Não execute esta configuração antes de concluir os gates da Issue
 #382: autorização, custo, DNS, rede, responsáveis e revisão do plano.
 
-O Caddy executa como serviço do host e encaminha somente para o frontend do
-Compose em `127.0.0.1:8080`. A API e o PostgreSQL continuam acessíveis apenas nas
-redes internas do Compose. A interface administrativa do Caddy fica limitada a
-`127.0.0.1:2019` para permitir validação e reload local sem exposição pública.
+O OCI Flexible Load Balancer encerra TLS e aplica o OCI WAF. A VM não possui IP
+público. O Caddy executa como serviço do host privado, recebe HTTP apenas do NSG
+do Load Balancer em `8088` e encaminha para o frontend do Compose em
+`127.0.0.1:8080`. A API e o PostgreSQL continuam acessíveis apenas nas redes
+internas do Compose. A interface administrativa do Caddy fica limitada a
+`127.0.0.1:2019`.
 
 ## Decisões de segurança
 
-- o único ingresso público da aplicação é TCP 443;
-- o desafio ACME por HTTP é desabilitado; a emissão usa TLS-ALPN na porta 443;
-- a porta 80 não é requisito desta configuração e não deve ser aberta apenas para
-  redirecionar tráfego inseguro;
-- o hostname vem de arquivo local do serviço e nenhum identificador da tenancy é
-  versionado;
+- o único ingresso público da aplicação é TCP 443 no Load Balancer protegido pelo WAF;
+- a VM permanece em subnet privada e não recebe `443`, `80` ou `8088` da internet;
+- o certificado vem do OCI Certificates service e sua chave privada não entra no
+  host, no Terraform nem no repositório;
+- o Caddy confia em cabeçalhos encaminhados somente quando a conexão vem do CIDR
+  da subnet do Load Balancer;
 - o upstream é fixo em loopback, impedindo encaminhamento acidental para serviço
   de rede arbitrário;
-- HSTS só deve chegar aos usuários depois que DNS, certificado e HTTPS forem
-  validados; não teste a aplicação real por HTTP;
+- HSTS só deve chegar aos usuários depois que DNS, certificado e HTTPS do Load
+  Balancer forem validados; não teste a aplicação real pelo endereço privado;
 - os logs são estruturados e enviados ao `journald`; eles ainda exigem acesso,
   retenção e exportação definidos para a homologação;
 - a CSP permanece responsabilidade do frontend. A borda acrescenta apenas
@@ -31,14 +34,15 @@ redes internas do Compose. A interface administrativa do Caddy fica limitada a
 
 ## Pré-requisitos para ativação
 
-1. domínio ou subdomínio aprovado apontando para o endpoint da VM;
-2. NSG e firewall do host aceitando somente TCP 443 para usuários;
-3. frontend saudável e publicado somente em `127.0.0.1:8080` pelo
+1. domínio ou subdomínio aprovado apontando para o endpoint do Load Balancer;
+2. certificado gerenciado e validado no OCI Certificates service;
+3. NSG do Load Balancer aceitando somente TCP 443 da internet;
+4. NSG e firewall do host aceitando `8088` somente da subnet do Load Balancer;
+5. frontend saudável e publicado somente em `127.0.0.1:8080` pelo
    `docker-compose.production.yml`;
-4. saída HTTPS e resolução DNS permitidas para emissão e renovação do certificado;
-5. pacote oficial estável do Caddy instalado como serviço `systemd`;
-6. operador individual autorizado e caminho administrativo temporário auditável;
-7. plano de rollback, observabilidade e resposta a falha de renovação definido.
+6. pacote oficial estável do Caddy instalado como serviço `systemd`;
+7. operador individual autorizado e caminho administrativo temporário auditável;
+8. plano de rollback, observabilidade e resposta a falha definido.
 
 Consulte a documentação oficial do Caddy para instalar o pacote da distribuição.
 Não baixe binários por comandos improvisados no `cloud-init` e não grave
@@ -59,10 +63,8 @@ sudo install -o root -g caddy -m 0640 \
   /etc/caddy/controle-acesso-veiculos.env
 ```
 
-Substitua somente `homologation.example.invalid` no arquivo local pelo hostname
-aprovado. Esse arquivo não deve receber token DNS, senha ou chave. Se futuramente
-um desafio DNS exigir credencial, ela deverá vir de um secret manager e de um
-módulo revisado separadamente.
+Mantenha `LOAD_BALANCER_SUBNET_CIDR` igual ao valor aplicado pelo Terraform. Esse
+arquivo não deve receber senha, token, OCID ou chave.
 
 Conecte o arquivo de ambiente ao serviço por um drop-in local:
 
@@ -81,8 +83,8 @@ sudo -u caddy caddy fmt --diff /etc/caddy/Caddyfile
 sudo -u caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 ```
 
-Depois de confirmar DNS e porta 443, ative ou recarregue sem interromper uma
-configuração válida:
+Depois de confirmar a rede privada e o frontend, ative ou recarregue sem
+interromper uma configuração válida:
 
 ```bash
 sudo systemctl daemon-reload
@@ -106,15 +108,16 @@ curl --fail --show-error --silent \
   "https://${APP_HOSTNAME}/"
 ```
 
-Confirme também:
+Confirme também, sempre pelo domínio HTTPS público:
 
 - certificado válido, hostname correto e cadeia confiável;
-- HTTP/2 ou HTTP/3 negociado sem tornar UDP 443 obrigatório para o MVP;
+- HTTP/2 negociado no Load Balancer;
 - cabeçalho HSTS presente somente no endpoint HTTPS;
 - login e renovação de sessão funcionando com cookie `Secure`;
 - API e PostgreSQL inacessíveis diretamente pela internet;
-- `127.0.0.1:2019` e `127.0.0.1:8080` não vinculados à interface pública;
-- emissão e renovação registradas sem expor material criptográfico.
+- `127.0.0.1:2019` e `127.0.0.1:8080` não vinculados à interface privada;
+- `8088` inacessível fora do Load Balancer;
+- VM sem IP público e certificado gerenciado sem exportação de chave.
 
 Logs recentes ficam no journal do serviço:
 
@@ -127,9 +130,8 @@ sanitizada, pois URLs, agentes de usuário e endereços podem constituir metadad
 
 ## Renovação, atualização e rollback
 
-O Caddy mantém certificados gerenciados no diretório persistente do usuário do
-serviço. Inclua esse estado no inventário operacional, mas não no Git. Monitore
-erros de renovação e validade do certificado externamente.
+O OCI Certificates service mantém o certificado usado pelo Load Balancer. Monitore
+validade e renovação na OCI sem copiar chave privada para o host ou para o Git.
 
 Antes de atualizar o pacote ou o Caddyfile:
 
