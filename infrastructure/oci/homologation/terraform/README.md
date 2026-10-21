@@ -58,17 +58,17 @@ Na raiz deste diretório:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  hashicorp/terraform:1.5.7 fmt -check -recursive
+  hashicorp/terraform:1.13.5 fmt -check -recursive
 
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  hashicorp/terraform:1.5.7 init -backend=false
+  hashicorp/terraform:1.13.5 init -backend=false -input=false -lockfile=readonly
 
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  hashicorp/terraform:1.5.7 validate
+  hashicorp/terraform:1.13.5 validate
 ```
 
 `init` baixa o provider para `.terraform`, que é ignorado pelo Git. A validação
