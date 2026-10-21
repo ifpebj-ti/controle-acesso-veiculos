@@ -130,6 +130,7 @@ export function EventAuthorizationForm({
 
   const simpleFields: Array<{
     icon: IconName;
+    hint?: string;
     id: string;
     key: "name" | "responsible" | "area";
     label: string;
@@ -138,6 +139,7 @@ export function EventAuthorizationForm({
   }> = [
     {
       icon: "calendar",
+      hint: "Use o nome oficial ou mais conhecido do evento.",
       id: "event-name",
       key: "name",
       label: "Nome do evento",
@@ -146,6 +148,7 @@ export function EventAuthorizationForm({
     },
     {
       icon: "user",
+      hint: "Informe a pessoa ou o setor responsável pelo evento.",
       id: "event-responsible",
       key: "responsible",
       label: "Responsável",
@@ -161,6 +164,43 @@ export function EventAuthorizationForm({
       placeholder: "Ex.: Auditório, quadra ou Bloco A",
     },
   ];
+
+  function renderSimpleField(field: (typeof simpleFields)[number]) {
+    const message = errorFor(field.key, errors[field.key]?.message);
+    const errorId = `${field.id}-error`;
+    const hintId = `${field.id}-hint`;
+    const describedBy = [field.hint ? hintId : null, message ? errorId : null]
+      .filter(Boolean)
+      .join(" ");
+
+    return (
+      <div key={field.key}>
+        <label
+          className="flex items-center gap-2 text-sm font-semibold text-ink"
+          htmlFor={field.id}
+        >
+          <Icon className="text-primary" name={field.icon} size={17} />
+          {field.label}
+        </label>
+        <input
+          aria-describedby={describedBy || undefined}
+          aria-invalid={Boolean(message)}
+          className={fieldClass}
+          disabled={disabled}
+          id={field.id}
+          maxLength={field.maxLength}
+          placeholder={field.placeholder}
+          {...register(field.key)}
+        />
+        {field.hint ? (
+          <p className="mt-1.5 text-xs text-ink-soft" id={hintId}>
+            {field.hint}
+          </p>
+        ) : null}
+        <ErrorMessage id={errorId} message={message} />
+      </div>
+    );
+  }
 
   return (
     <section
@@ -190,32 +230,7 @@ export function EventAuthorizationForm({
         onSubmit={handleSubmit(submit)}
       >
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {simpleFields.map((field) => {
-            const message = errorFor(field.key, errors[field.key]?.message);
-            const errorId = `${field.id}-error`;
-            return (
-              <div key={field.key}>
-                <label
-                  className="flex items-center gap-2 text-sm font-semibold text-ink"
-                  htmlFor={field.id}
-                >
-                  <Icon className="text-primary" name={field.icon} size={17} />
-                  {field.label}
-                </label>
-                <input
-                  aria-describedby={message ? errorId : undefined}
-                  aria-invalid={Boolean(message)}
-                  className={fieldClass}
-                  disabled={disabled}
-                  id={field.id}
-                  maxLength={field.maxLength}
-                  placeholder={field.placeholder}
-                  {...register(field.key)}
-                />
-                <ErrorMessage id={errorId} message={message} />
-              </div>
-            );
-          })}
+          {simpleFields.slice(0, 2).map(renderSimpleField)}
           <div>
             <label
               className="flex items-center gap-2 text-sm font-semibold text-ink"
@@ -260,6 +275,7 @@ export function EventAuthorizationForm({
               );
             })()}
           </div>
+          {simpleFields.slice(2).map(renderSimpleField)}
           <div>
             <label
               className="flex items-center gap-2 text-sm font-semibold text-ink"

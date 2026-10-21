@@ -277,7 +277,10 @@ describe("EventsPage", () => {
     const name = screen.getByLabelText("Nome do evento");
     const error = await screen.findByText("Informe o nome do evento.");
     expect(name).toHaveAttribute("aria-invalid", "true");
-    expect(name).toHaveAttribute("aria-describedby", "event-name-error");
+    expect(name).toHaveAttribute(
+      "aria-describedby",
+      "event-name-hint event-name-error",
+    );
     expect(error).toHaveAttribute("id", "event-name-error");
     expect(createEventAuthorization).not.toHaveBeenCalled();
   });
@@ -327,7 +330,10 @@ describe("EventsPage", () => {
 
     const name = screen.getByLabelText("Nome do evento");
     const error = await screen.findByText("Nome fictício inválido.");
-    expect(name).toHaveAttribute("aria-describedby", "event-name-error");
+    expect(name).toHaveAttribute(
+      "aria-describedby",
+      "event-name-hint event-name-error",
+    );
     expect(name).toHaveAttribute("aria-invalid", "true");
     expect(error).toHaveAttribute("id", "event-name-error");
     expect(screen.getByText("Revise o contato informado.")).toHaveAttribute(
