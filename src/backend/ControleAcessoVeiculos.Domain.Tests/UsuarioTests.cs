@@ -1,4 +1,5 @@
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 
 namespace ControleAcessoVeiculos.Domain.Tests;
 
@@ -182,5 +183,88 @@ public sealed class UsuarioTests
         Assert.Null(usuario.CredencialTemporariaUtilizadaEm);
         Assert.Equal(0, usuario.TentativasFalhas);
         Assert.Null(usuario.BloqueadoAte);
+    }
+
+    [Fact]
+    public void GoogleLinkDisablesPasswordAuthenticationAndRotatesCredentialVersion()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario(
+            "google@example.com",
+            senhaHash: null,
+            pessoaId: 1,
+            perfilId: 1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
+
+        usuario.VincularIdentidadeGoogle(" google-subject-123 ", now);
+
+        Assert.Equal("google-subject-123", usuario.GoogleSubject);
+        Assert.Equal(now, usuario.GoogleVinculadoEm);
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.False(usuario.PodeAutenticarComSenha(now));
+        Assert.True(usuario.PodeAutenticarComGoogle(now));
+    }
+
+    [Fact]
+    public void RepeatingSameGoogleLinkIsIdempotentButDifferentSubjectIsRejected()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario(
+            "google@example.com",
+            senhaHash: null,
+            pessoaId: 1,
+            perfilId: 1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
+        usuario.VincularIdentidadeGoogle("google-subject-123", now);
+
+        usuario.VincularIdentidadeGoogle("google-subject-123", now.AddMinutes(1));
+
+        Assert.Equal(2, usuario.VersaoCredencial);
+        Assert.Equal(now, usuario.GoogleVinculadoEm);
+        Assert.Throws<InvalidOperationException>(() =>
+            usuario.VincularIdentidadeGoogle(
+                "different-google-subject",
+                now.AddMinutes(2)));
+    }
+
+    [Fact]
+    public void GoogleAccountCannotContainLocalPassword()
+    {
+        Assert.Throws<ArgumentException>(() => new Usuario(
+            "google@example.com",
+            "unexpected-local-hash",
+            pessoaId: 1,
+            perfilId: 1,
+            metodoAutenticacao: MetodoAutenticacao.Google));
+    }
+
+    [Fact]
+    public void PendingGoogleAccountHasNoUsableAuthenticationUntilLinked()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario(
+            "pending@example.com",
+            senhaHash: null,
+            pessoaId: 1,
+            perfilId: 1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
+
+        Assert.False(usuario.PodeAutenticarComSenha(now));
+        Assert.True(usuario.PodeAutenticarComGoogle(now));
+        Assert.Null(usuario.GoogleSubject);
+    }
+
+    [Fact]
+    public void GoogleLinkConvertsLegacyLocalAccountAndRemovesPassword()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("legacy@example.com", "legacy-hash", 1, 1);
+
+        usuario.VincularIdentidadeGoogle("stable-subject", now);
+
+        Assert.Equal(MetodoAutenticacao.Google, usuario.MetodoAutenticacao);
+        Assert.Null(usuario.SenhaHash);
+        Assert.Equal("stable-subject", usuario.GoogleSubject);
+        Assert.False(usuario.PodeAutenticarComSenha(now));
     }
 }

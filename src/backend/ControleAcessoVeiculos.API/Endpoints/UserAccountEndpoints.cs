@@ -86,6 +86,7 @@ public static class UserAccountEndpoints
                     result.UserId!.Value,
                     result.Email!,
                     result.ProfileName!,
+                    result.AuthenticationMethod!.Value.ToString(),
                     result.TemporaryCredential,
                     result.TemporaryCredentialExpiresAtUtc));
         }
@@ -142,6 +143,11 @@ public static class UserAccountEndpoints
             {
                 Message = "Use a troca autenticada para alterar a própria senha."
             }),
+            AdministrativeCredentialResetStatus.ExternalAuthentication =>
+                Results.Conflict(new
+                {
+                    Message = "A conta vinculada ao Google não utiliza credencial local."
+                }),
             _ => Results.ValidationProblem(result.Errors)
         };
     }
@@ -219,6 +225,7 @@ public sealed record CreateUserResponse(
     int Id,
     string Email,
     string ProfileName,
+    string AuthenticationMethod,
     string? TemporaryCredential,
     DateTime? TemporaryCredentialExpiresAtUtc);
 

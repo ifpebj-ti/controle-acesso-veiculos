@@ -48,6 +48,8 @@ public sealed class AdministrativeCredentialResetServiceTests
         AdministrativeCredentialResetStatus.Inactive)]
     [InlineData(AdministrativeCredentialResetStoreStatus.SelfReset,
         AdministrativeCredentialResetStatus.SelfReset)]
+    [InlineData(AdministrativeCredentialResetStoreStatus.ExternalAuthentication,
+        AdministrativeCredentialResetStatus.ExternalAuthentication)]
     public async Task StoreStatusIsMappedWithoutReturningCredential(
         AdministrativeCredentialResetStoreStatus storeStatus,
         AdministrativeCredentialResetStatus expectedStatus)
@@ -96,8 +98,9 @@ public sealed class AdministrativeCredentialResetServiceTests
         public Task<CreatedUserAccount?> TryCreateAsync(
             string name,
             string normalizedEmail,
-            string passwordHash,
+            string? passwordHash,
             string profileName,
+            ControleAcessoVeiculos.Domain.Enums.MetodoAutenticacao authenticationMethod,
             DateTime? temporaryCredentialExpiresAtUtc,
             AccountCreationAudit audit,
             CancellationToken cancellationToken) =>

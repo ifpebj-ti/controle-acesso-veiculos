@@ -38,6 +38,23 @@ public sealed class AuthenticationUserStore(
         return new AuthenticationUser(user, profile.Nome, profile.Ativo);
     }
 
+    public async Task<GoogleAuthenticationLookup> FindForGoogleAuthenticationAsync(
+        string subject,
+        string normalizedEmail,
+        CancellationToken cancellationToken)
+    {
+        var subjectMatch = await FindByGoogleSubjectForUpdateAsync(
+            subject,
+            cancellationToken);
+        var emailMatch = await FindByEmailForUpdateAsync(
+            normalizedEmail,
+            cancellationToken);
+
+        return new GoogleAuthenticationLookup(
+            await AddProfileAsync(subjectMatch, cancellationToken),
+            await AddProfileAsync(emailMatch, cancellationToken));
+    }
+
     public Task<bool> IsAuthenticationStateValidAsync(
         int userId,
         int credentialVersion,
@@ -104,8 +121,56 @@ public sealed class AuthenticationUserStore(
                 outcome = audit.Outcome.ToString(),
                 lockedUntilUtc = audit.LockedUntilUtc
             })
+            : audit.Provider is null && !audit.IdentityLinked
+                ? JsonSerializer.Serialize(new
+                {
+                    outcome = audit.Outcome.ToString()
+                })
             : JsonSerializer.Serialize(new
             {
-                outcome = audit.Outcome.ToString()
+                outcome = audit.Outcome.ToString(),
+                provider = audit.Provider,
+                identityLinked = audit.IdentityLinked
             });
+
+    private async Task<Usuario?> FindByGoogleSubjectForUpdateAsync(
+        string subject,
+        CancellationToken cancellationToken) =>
+        await dbContext.Usuarios
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM dbo.usuarios
+                WHERE google_subject = {subject}
+                FOR UPDATE
+                """)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    private async Task<Usuario?> FindByEmailForUpdateAsync(
+        string normalizedEmail,
+        CancellationToken cancellationToken) =>
+        await dbContext.Usuarios
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM dbo.usuarios
+                WHERE email = {normalizedEmail}
+                FOR UPDATE
+                """)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    private async Task<AuthenticationUser?> AddProfileAsync(
+        Usuario? user,
+        CancellationToken cancellationToken)
+    {
+        if (user is null)
+        {
+            return null;
+        }
+
+        var profile = await dbContext.Perfis
+            .Where(candidate => candidate.Id == user.PerfilId)
+            .Select(candidate => new { candidate.Nome, candidate.Ativo })
+            .SingleAsync(cancellationToken);
+
+        return new AuthenticationUser(user, profile.Nome, profile.Ativo);
+    }
 }

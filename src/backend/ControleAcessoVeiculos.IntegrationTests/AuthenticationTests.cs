@@ -127,6 +127,25 @@ public sealed class AuthenticationTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task GoogleLinkedAccountCannotUseItsPreviousLocalPassword()
+    {
+        const string password = "Test-only-password-123!";
+        var email = await CreateUserAsync(ProfileNames.Doorman, password);
+        var auditsBefore = await CountAuthenticationAuditsAsync();
+        await LinkGoogleIdentityAsync(email, "integration-google-subject");
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/auth/login", new
+        {
+            email,
+            password
+        }, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(auditsBefore, await CountAuthenticationAuditsAsync());
+    }
+
+    [Fact]
     public async Task SuccessfulLoginUpgradesOutdatedPasswordHash()
     {
         const string password = "Test-only-password-123!";
@@ -469,7 +488,17 @@ public sealed class AuthenticationTests(ApiFactory factory)
             .AsNoTracking()
             .Where(item => item.Email == email)
             .Select(item => item.SenhaHash)
-            .SingleAsync();
+            .SingleAsync() ?? throw new InvalidOperationException(
+                "A conta de teste local não possui hash de senha.");
+    }
+
+    private async Task LinkGoogleIdentityAsync(string email, string subject)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var user = await dbContext.Usuarios.SingleAsync(item => item.Email == email);
+        user.VincularIdentidadeGoogle(subject, DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
     }
 
     private async Task<Auditoria> GetSingleAuthenticationAuditAsync(string email)

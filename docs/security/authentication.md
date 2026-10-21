@@ -4,7 +4,38 @@
 
 A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor, a Issue #251 acrescenta a troca autenticada de senha e a Issue #258 acrescenta credencial temporária, troca obrigatória e redefinição administrativa. A Issue #220 consolida a decisão institucional do MVP: dois Administradores funcionais podem provisionar ou redefinir contas e entregam a credencial temporária diretamente ao titular. A observação do procedimento no ambiente real e a matriz final permanecem na Issue #162.
 
+Em 14/10/2026 foi aceita a substituição do login cotidiano por Google OIDC,
+registrada na [ADR 0005](../architecture/decisions/0005-google-oidc-and-emergency-access.md)
+e na Issue #448. O texto abaixo descreve o contrato local atualmente
+implementado; ele permanece funcional até a migração segura e não deve ser
+interpretado como estado final do login. Perfis, autorização, sessão da
+aplicação e auditoria continuarão locais. Senha será mantida apenas para contas
+locais do perfil Administrador depois da transição.
+
 ## Decisões implementadas
+
+- A base Google OIDC usa Authorization Code Flow com PKCE no backend, `state` e
+  `nonce` validados pelo middleware, escopos mínimos `openid email profile` e
+  cookie externo efêmero. O provedor permanece desabilitado por padrão e falha
+  no startup quando habilitado sem Client ID/secret ou com caminho de retorno
+  externo.
+- O primeiro login Google aceita somente e-mail verificado que corresponda
+  exatamente a uma conta local ativa previamente criada. O vínculo persiste o
+  `sub` estável e único; logins posteriores usam esse identificador, não o
+  e-mail mutável. Conflito entre proprietário do `sub` e proprietário do e-mail
+  falha sem criar sessão.
+- Quando o provedor está habilitado, contas operacionais novas são criadas com
+  método `Google`, sem hash ou credencial temporária local. Porteiro, Vigilante
+  e Setor de Transporte não podem usar `POST /auth/login`; o perfil Administrador
+  não pode usar o callback Google. Uma conta operacional local preexistente é
+  convertida atomicamente para Google no primeiro vínculo autorizado, removendo
+  seu hash e revogando sessões anteriores. Com o provedor desabilitado, o modo
+  local legado permanece disponível somente para desenvolvimento e migração
+  controlada.
+- Tokens, authorization code e segredos do Google não são persistidos nem
+  enviados ao frontend. O callback cria a sessão local renovável, descarta o
+  cookie externo e redireciona para um caminho local fixo com apenas o estado
+  genérico `success` ou `denied`.
 
 - Senhas usam `PasswordHasher` do ASP.NET Core Identity no formato V3, PBKDF2-HMAC-SHA512, salt aleatório por senha e 210.000 iterações.
 - Quando um login válido usa um hash compatível, porém abaixo da configuração vigente, a API recalcula e persiste o hash antes de emitir a sessão. A atualização, a sessão e a auditoria compartilham a mesma unidade de trabalho; uma falha impede a emissão da credencial e desfaz todas as mudanças.
@@ -36,9 +67,9 @@ A fundação técnica da Issue #29 implementa login individual, provisionamento 
 - OpenAPI não é publicado fora do ambiente `Development`.
 - O primeiro administrador é criado somente por comando explícito, fora da superfície HTTP.
 - Depois do bootstrap, somente `users:manage` pode criar uma conta individual em `POST /users`.
-- A criação administrativa exige que `password` seja omitido; qualquer valor enviado é rejeitado. O servidor gera uma credencial temporária com 144 bits de entropia, devolvida uma única vez com `Cache-Control: no-store`, impedindo que o Administrador escolha ou conheça a senha permanente do titular.
+- A criação administrativa exige que `password` seja omitido; qualquer valor enviado é rejeitado. Com Google habilitado, contas operacionais são pré-autorizadas sem senha local. Contas Administrador locais e o modo legado de desenvolvimento recebem credencial temporária com 144 bits de entropia, devolvida uma única vez com `Cache-Control: no-store`.
 - Credenciais temporárias expiram em 30 minutos por padrão e são consumidas atomicamente no primeiro login. Tentativas posteriores recebem o mesmo HTTP 401 genérico; a sessão restrita criada no primeiro uso continua válida apenas para troca de senha, renovação e logout. Somente o hash e os estados técnicos mínimos são persistidos, e a conta não acessa operações de negócio antes de concluir `POST /auth/password`.
-- `POST /users/{id}/temporary-credential` permite somente ao Administrador redefinir outra conta ativa com motivo categorizado. A operação incrementa a versão, revoga sessões, registra auditoria transacional e retorna a nova credencial uma única vez.
+- `POST /users/{id}/temporary-credential` permite somente ao Administrador redefinir outra conta local ativa com motivo categorizado. Contas Google, vinculadas ou pendentes, são rejeitadas. A operação incrementa a versão, revoga sessões, registra auditoria transacional e retorna a nova credencial uma única vez.
 - Dois Administradores funcionais são os responsáveis institucionais pelo provisionamento e pela recuperação de acesso no MVP. A credencial temporária gerada pelo servidor deve ser entregue diretamente ao titular, sem planilha, issue, log ou mensageria não aprovada. Porteiro, Vigilante e Setor de Transporte não recebem poder de redefinição; recuperação automática por e-mail, SMS, MFA ou SSO não foi adotada neste recorte.
 - Login bem-sucedido e o momento do bloqueio temporário geram auditoria `Login` associada ao usuário, na mesma unidade de trabalho da mudança de estado.
 - Somente `users:manage` consulta, desativa ou reativa contas; auto-desativação e remoção do último Administrador ativo são rejeitadas.
@@ -51,6 +82,17 @@ O servidor possui renovação, rotação, revogação e logout, mas não mantém
 O procedimento de armazenamento, rotação, resposta a comprometimento, backup e
 restauração do key ring está registrado na
 [ADR 0003](../architecture/decisions/0003-protected-data-protection-key-ring.md).
+
+A integração Google ainda não é declarada homologada: faltam credenciais OAuth
+separadas por ambiente, callback HTTPS real, gestão administrativa da pré-autorização,
+integração da tela e testes observados. Enquanto `Authentication:Google:Enabled`
+for `false`, os endpoints de início e conclusão respondem como indisponíveis e o
+comportamento atual não é alterado.
+
+O procedimento planejado para indisponibilidade do provedor, uso individual de
+contas de emergência, retorno ao serviço e preservação de evidências está no
+[runbook de contingência de identidade Google](../operations/google-identity-contingency.md).
+Ele só se torna executável depois da implementação e homologação da Issue #449.
 
 ## Integração do frontend
 
