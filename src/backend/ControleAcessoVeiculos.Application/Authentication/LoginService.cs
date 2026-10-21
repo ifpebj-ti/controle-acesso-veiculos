@@ -1,4 +1,5 @@
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Application.Authorization;
 
 namespace ControleAcessoVeiculos.Application.Authentication;
 
@@ -9,6 +10,7 @@ public sealed class LoginService(
     IRefreshTokenService refreshTokenService,
     IAuthenticationSessionStore sessionStore,
     AuthenticationSessionPolicy sessionPolicy,
+    AuthenticationMethodPolicy authenticationMethodPolicy,
     TimeProvider timeProvider)
 {
     public const int MaximumFailedAttempts = 5;
@@ -37,7 +39,9 @@ public sealed class LoginService(
         var now = timeProvider.GetUtcNow().UtcDateTime;
 
         if (authenticationUser is null ||
-            !authenticationUser.User.PodeAutenticar(now) ||
+            !authenticationUser.User.PodeAutenticarComSenha(now) ||
+            (authenticationMethodPolicy.OperationalGoogleOnly &&
+             authenticationUser.ProfileName != ProfileNames.Administrator) ||
             !authenticationUser.ProfileIsActive)
         {
             passwordHashService.PerformDummyVerification(password);
@@ -45,7 +49,7 @@ public sealed class LoginService(
         }
 
         var passwordVerification = passwordHashService.Verify(
-            authenticationUser.User.SenhaHash,
+            authenticationUser.User.SenhaHash!,
             password);
 
         if (passwordVerification == PasswordHashVerificationResult.Failed)

@@ -57,7 +57,9 @@ const authorization: EventAuthorization = {
   name: "Evento Fictício",
   notes: "Dados exclusivos para teste.",
   overnightAllowed: false,
+  parkingLocation: "Externo",
   responsible: "Coordenação Fictícia",
+  responsibleContact: "+55 81 99999-0000",
   startsAtUtc: "2030-05-10T12:00:00Z",
   updatedAtUtc: null,
   updatedById: null,
@@ -123,6 +125,10 @@ function renderPage(profileName: ProfileName = "Administrador") {
 async function fillRequiredForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Nome do evento"), "Encontro de Teste");
   await user.type(screen.getByLabelText("Responsável"), "Setor de Teste");
+  await user.type(
+    screen.getByLabelText("Contato do responsável"),
+    "eventos@example.test",
+  );
   await user.type(screen.getByLabelText("Local ou área"), "Pátio Fictício");
   await user.type(screen.getByLabelText("Início"), "2030-06-10T08:00");
   await user.type(screen.getByLabelText("Fim"), "2030-06-10T18:00");
@@ -151,6 +157,8 @@ describe("EventsPage", () => {
         }),
       ).toBeInTheDocument();
       expect(screen.getByText("Previstos").nextSibling).toHaveTextContent("4");
+      expect(screen.getByText("+55 81 99999-0000")).toBeInTheDocument();
+      expect(screen.getByText("Estacionamento: Externo")).toBeInTheDocument();
       expect(
         screen.queryByRole("button", { name: "Nova autorização" }),
       ).not.toBeInTheDocument();
@@ -165,6 +173,49 @@ describe("EventsPage", () => {
       expect(cancelEventAuthorization).not.toHaveBeenCalled();
     },
   );
+
+  it("presents legacy events safely and requires contact only when editing", async () => {
+    const legacyEvent: EventAuthorization = {
+      ...authorization,
+      parkingLocation: "ADefinir",
+      responsibleContact: null,
+    };
+    vi.mocked(searchEventAuthorizations).mockResolvedValue({
+      ...populatedPage,
+      items: [legacyEvent],
+    });
+    vi.mocked(updateEventAuthorization).mockResolvedValue({
+      ...legacyEvent,
+      parkingLocation: "Interno",
+      responsibleContact: "+55 81 99999-0000",
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(
+      await screen.findByText("Contato não informado"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Estacionamento: A definir")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Editar" }));
+    const contact = screen.getByLabelText("Contato do responsável");
+    expect(contact).toHaveValue("");
+    await user.type(contact, "+55 81 99999-0000");
+    const parking = screen.getByLabelText("Estacionamento");
+    parking.focus();
+    await user.keyboard("{Enter}{ArrowDown}{Enter}");
+    expect(parking).toHaveTextContent("Interno");
+    await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    await waitFor(() =>
+      expect(updateEventAuthorization).toHaveBeenCalledWith(
+        legacyEvent.id,
+        expect.objectContaining({
+          parkingLocation: "Interno",
+          responsibleContact: "+55 81 99999-0000",
+        }),
+      ),
+    );
+  });
 
   it("separates planned capacity, recorded entries and remaining capacity", async () => {
     renderPage();
@@ -226,8 +277,38 @@ describe("EventsPage", () => {
     const name = screen.getByLabelText("Nome do evento");
     const error = await screen.findByText("Informe o nome do evento.");
     expect(name).toHaveAttribute("aria-invalid", "true");
-    expect(name).toHaveAttribute("aria-describedby", "event-name-error");
+    expect(name).toHaveAttribute(
+      "aria-describedby",
+      "event-name-hint event-name-error",
+    );
     expect(error).toHaveAttribute("id", "event-name-error");
+    expect(createEventAuthorization).not.toHaveBeenCalled();
+  });
+
+  it("associates an invalid contact with its hint and preserves event data", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(authorization.name);
+    await user.click(screen.getByRole("button", { name: "Nova autorização" }));
+    await fillRequiredForm(user);
+    const contact = screen.getByLabelText("Contato do responsável");
+    await user.clear(contact);
+    await user.type(contact, "777777");
+    await user.click(screen.getByRole("button", { name: "Criar autorização" }));
+
+    expect(
+      await screen.findByText(
+        "Informe um e-mail válido ou telefone com 8 a 15 dígitos.",
+      ),
+    ).toBeInTheDocument();
+    expect(contact).toHaveValue("777777");
+    expect(contact).toHaveAttribute(
+      "aria-describedby",
+      "event-responsible-contact-hint event-responsible-contact-error",
+    );
+    expect(screen.getByLabelText("Nome do evento")).toHaveValue(
+      "Encontro de Teste",
+    );
     expect(createEventAuthorization).not.toHaveBeenCalled();
   });
 
@@ -237,6 +318,8 @@ describe("EventsPage", () => {
     );
     vi.mocked(getApiValidationErrors).mockReturnValue({
       name: "Nome fictício inválido.",
+      parkingLocation: "Revise o estacionamento informado.",
+      responsibleContact: "Revise o contato informado.",
     });
     const user = userEvent.setup();
     renderPage();
@@ -247,9 +330,27 @@ describe("EventsPage", () => {
 
     const name = screen.getByLabelText("Nome do evento");
     const error = await screen.findByText("Nome fictício inválido.");
-    expect(name).toHaveAttribute("aria-describedby", "event-name-error");
+    expect(name).toHaveAttribute(
+      "aria-describedby",
+      "event-name-hint event-name-error",
+    );
     expect(name).toHaveAttribute("aria-invalid", "true");
     expect(error).toHaveAttribute("id", "event-name-error");
+    expect(screen.getByText("Revise o contato informado.")).toHaveAttribute(
+      "id",
+      "event-responsible-contact-error",
+    );
+    expect(screen.getByLabelText("Contato do responsável")).toHaveAttribute(
+      "aria-describedby",
+      "event-responsible-contact-hint event-responsible-contact-error",
+    );
+    expect(
+      screen.getByText("Revise o estacionamento informado."),
+    ).toHaveAttribute("id", "event-parking-location-error");
+    expect(screen.getByLabelText("Estacionamento")).toHaveAttribute(
+      "aria-describedby",
+      "event-parking-hint event-parking-location-error",
+    );
   });
 
   it("associates backend rule errors with the rule and its relevant controls", async () => {
@@ -298,6 +399,12 @@ describe("EventsPage", () => {
     await user.click(screen.getByRole("button", { name: "Criar autorização" }));
     await waitFor(() =>
       expect(createEventAuthorization).toHaveBeenCalledTimes(1),
+    );
+    expect(createEventAuthorization).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parkingLocation: "ADefinir",
+        responsibleContact: "eventos@example.test",
+      }),
     );
     expect(
       await screen.findByText("Autorização criada com sucesso."),

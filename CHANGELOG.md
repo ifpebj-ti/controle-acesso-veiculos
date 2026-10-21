@@ -15,7 +15,15 @@ from its first published release.
   attribution, data minimization, and consultation auditing.
 - Server-generated PDF exports for administrative reports with local-password
   step-up, bounded volume, predictable filenames, no-store responses, and
-  content-minimized export auditing; Google OIDC step-up remains pending.
+  content-minimized export auditing.
+- An accepted architecture decision for backend-mediated Google OIDC, locally
+  governed profiles, stable subject binding, single-Administrator governance,
+  method-aware authentication, and local-only Administrator continuity accounts.
+- A disabled-by-default Google OIDC backend foundation validates secure
+  configuration, uses Authorization Code with PKCE, links only verified
+  preauthorized accounts by stable subject, rotates local credential state and
+  creates the existing protected application session without exposing provider
+  tokens to the browser.
 
 - Semantic frontend design tokens and a documented WCAG 2.2 contrast matrix
   for the future light, dark, and system appearance foundation.
@@ -38,6 +46,11 @@ from its first published release.
   contribution guidance, and area-based code-owner routing.
 
 ### Changed
+
+- Backend plate validation now distinguishes complete Brazilian plates from
+  partial search filters, rejects numeric-only values such as `777777`, and
+  applies the canonical rule to general access, institutional fleet, and event
+  authorization records.
 
 - The API authorizes the Transport Sector to perform supervised descriptive
   access corrections under the same audited server-side rules used by the

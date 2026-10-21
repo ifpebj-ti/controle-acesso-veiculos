@@ -133,7 +133,11 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
         await dbContext.SaveChangesAsync();
 
         var generalVehicles = Enumerable.Range(0, 7)
-            .Select(index => new Veiculo($"G{suffix}{index}", "Automóvel", null, false))
+            .Select(index => new Veiculo(
+                TestPlate.From($"GEN{index}{suffix}"),
+                "Automóvel",
+                null,
+                false))
             .ToArray();
         var institutionalVehicles = Enumerable.Range(0, 5)
             .Select(index => new Veiculo(
@@ -148,20 +152,24 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
         var eventOne = new EventoAcesso(
             $"Evento A {suffix}",
             "Responsável de Teste",
+            "responsavel-a@example.test",
             periodStartUtc,
             periodEndUtc,
             "Área A",
             false,
+            LocalEstacionamentoEvento.ADefinir,
             null,
             actorUserId,
             DateTime.UtcNow);
         var eventTwo = new EventoAcesso(
             $"Evento B {suffix}",
             "Responsável de Teste",
+            "+55 81 99999-0000",
             periodStartUtc,
             periodEndUtc,
             "Área B",
             false,
+            LocalEstacionamentoEvento.Externo,
             null,
             actorUserId,
             DateTime.UtcNow);

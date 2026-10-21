@@ -54,6 +54,24 @@ public sealed class InstitutionalVehicleCatalogServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ShouldRejectNumericOnlyPlate()
+    {
+        var store = new FakeStore();
+        var service = new InstitutionalVehicleCatalogService(
+            store,
+            new FixedTimeProvider(FixedNow));
+
+        var result = await service.CreateAsync(
+            new(Plate: "777777", Identification: null),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(CreateInstitutionalVehicleStatus.Invalid, result.Status);
+        Assert.Contains("plate", result.Errors.Keys);
+        Assert.Equal(0, store.CreateCalls);
+    }
+
+    [Fact]
     public async Task UpdateAsync_ShouldValidateBeforeCallingStore()
     {
         var store = new FakeStore();

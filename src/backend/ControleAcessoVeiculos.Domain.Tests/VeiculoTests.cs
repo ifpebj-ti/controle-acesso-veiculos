@@ -44,6 +44,35 @@ public class VeiculoTests
     }
 
     [Theory]
+    [InlineData("777777")]
+    [InlineData("AB12345")]
+    [InlineData("ABC12D3")]
+    [InlineData("ABC@1234")]
+    [InlineData("ABÇ1234")]
+    public void Constructor_ShouldRejectUnsupportedBrazilianPlate(string plate)
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new Veiculo(plate, "Automóvel", null, false));
+    }
+
+    [Theory]
+    [InlineData("abc", "ABC")]
+    [InlineData("abc-1d", "ABC1D")]
+    [InlineData(" ABC 12 ", "ABC12")]
+    public void PlateFilter_ShouldRemainPartial(string input, string expected)
+    {
+        Assert.Equal(expected, Veiculo.NormalizarFiltroPlaca(input));
+    }
+
+    [Theory]
+    [InlineData("ABC12345")]
+    [InlineData("ABC@1")]
+    public void PlateFilter_ShouldRejectInvalidSearchInput(string input)
+    {
+        Assert.Throws<ArgumentException>(() => Veiculo.NormalizarFiltroPlaca(input));
+    }
+
+    [Theory]
     [InlineData(" patrimônio 0001 ", "PATRIMÔNIO 0001")]
     [InlineData("van-02", "VAN-02")]
     public void Constructor_ShouldNormalizeAlternativeIdentification(

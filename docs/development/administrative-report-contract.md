@@ -71,11 +71,12 @@ chamadas de rede nem recebe dados do relatório; a licença Community foi escolh
 por se tratar de projeto acadêmico e aberto. Qualquer atualização de versão ou
 mudança de finalidade exige nova revisão de licença e segurança.
 
-Como a autenticação cotidiana passará a usar Google OIDC (#448), este incremento
-ainda não fecha o critério de confirmação reforçada para contas Google. A solução
-final deverá aceitar reautenticação OIDC para essas contas e manter senha somente
-para a conta administrativa local de emergência. Nenhuma das opções reutilizará
-o endpoint de login nem enviará segredo em URL, log ou auditoria.
+Os perfis operacionais usam Google OIDC, mas não possuem autorização para estes
+relatórios. O perfil Administrador permanece local e confirma cada exportação
+com sua própria senha vigente. Essa separação elimina a antiga dependência de
+reautenticação Google para este contrato sem criar um quinto perfil ou uma conta
+“mestre”. A confirmação não reutiliza o endpoint de login e não envia segredo em
+URL, log ou auditoria.
 
 DOCX não compõe o recorte por ser um formato editável. CSV também permanece fora
 do escopo inicial; poderá ser avaliado em issue própria se houver necessidade

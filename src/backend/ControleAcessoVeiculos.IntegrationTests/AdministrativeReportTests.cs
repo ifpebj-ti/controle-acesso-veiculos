@@ -186,7 +186,7 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
                 "OUTRO",
                 sensitiveDocument);
             var vehicle = new Veiculo(
-                $"R{Guid.NewGuid():N}"[..7],
+                TestPlate.From(Guid.NewGuid().ToString("N")),
                 "Automóvel",
                 null,
                 false);
