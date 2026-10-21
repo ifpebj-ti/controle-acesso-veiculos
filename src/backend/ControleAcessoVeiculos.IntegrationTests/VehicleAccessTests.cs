@@ -17,6 +17,25 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 public sealed class VehicleAccessTests(ApiFactory factory)
 {
     [Fact]
+    public async Task EntryRejectsNumericOnlyPlate()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+
+        var response = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = "Condutor de teste",
+            plate = "777777",
+            objective = "Visita",
+            categoryName = AccessCategoryNames.Visitor
+        }, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task OperationalUserCanRegisterListAndCloseVehicleAccess()
     {
         const string password = "Test-only-password-123!";
@@ -128,7 +147,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
         {
             driverName = $"Condutor {suffix}",
-            plate = suffix[..7],
+            plate = TestPlate.From(suffix),
             objective = "Entrega",
             categoryName = AccessCategoryNames.Delivery
         }, cancellationToken: TestContext.Current.CancellationToken);
@@ -163,7 +182,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
         var suffix = Guid.NewGuid().ToString("N");
-        var plate = suffix[..7].ToUpperInvariant();
+        var plate = TestPlate.From(suffix);
 
         await InstallRejectingAuditTriggerAsync();
 
@@ -200,7 +219,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
         {
             driverName = $"Condutor {suffix}",
-            plate = suffix[..7],
+            plate = TestPlate.From(suffix),
             objective = "Visita",
             categoryName = AccessCategoryNames.Visitor
         }, cancellationToken: TestContext.Current.CancellationToken);
@@ -250,7 +269,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
             correctorProfile,
             password);
         var suffix = Guid.NewGuid().ToString("N");
-        var plate = suffix[..7].ToUpperInvariant();
+        var plate = TestPlate.From(suffix);
         var driverName = $"Condutor {suffix}";
         using var creatorClient = factory.CreateClient();
         await AuthenticateClientAsync(creatorClient, creatorEmail, password);
@@ -363,7 +382,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
         {
             driverName = $"Condutor {suffix}",
-            plate = suffix[..7],
+            plate = TestPlate.From(suffix),
             objective = "Visita técnica",
             categoryName = AccessCategoryNames.Visitor
         }, cancellationToken: TestContext.Current.CancellationToken);
@@ -410,7 +429,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
         {
             driverName = $"Condutor {suffix}",
-            plate = suffix[..7],
+            plate = TestPlate.From(suffix),
             objective = "Visita original",
             categoryName = AccessCategoryNames.Visitor,
             observation = "Observação original"
@@ -508,7 +527,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email, password);
         var suffix = Guid.NewGuid().ToString("N");
-        var plate = suffix[..7].ToUpperInvariant();
+        var plate = TestPlate.From(suffix);
         var driverName = $"Condutor Histórico {suffix}";
         var accessIds = new List<int>();
 
@@ -559,6 +578,15 @@ public sealed class VehicleAccessTests(ApiFactory factory)
             Assert.Equal("Automóvel", item.VehicleType);
         });
 
+        var prefix = plate[..3].ToLowerInvariant();
+        var prefixResult = await client.GetFromJsonAsync<AccessHistoryResponse>(
+            $"/access-records/history?plate={prefix}&from={from}&to={to}",
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(prefixResult);
+        Assert.Equal(3, prefixResult.TotalCount);
+        Assert.All(prefixResult.Items, item =>
+            Assert.StartsWith(plate[..3], item.Plate, StringComparison.Ordinal));
+
         var closed = await client.GetFromJsonAsync<AccessHistoryResponse>($"/access-records/history?plate={formattedPlate}&status=encerrado" +
             $"&from={from}&to={to}&page=2&pageSize=1", cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(closed);
@@ -596,7 +624,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
         {
             driverName = $"Condutor {suffix}",
-            plate = suffix[..7],
+            plate = TestPlate.From(suffix),
             objective = "Visita técnica",
             categoryName = AccessCategoryNames.Visitor,
             vehicleType = "Van"
@@ -686,7 +714,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
         {
             driverName = $"Condutor {suffix}",
-            plate = suffix[..7],
+            plate = TestPlate.From(suffix),
             objective = "Entrega",
             categoryName = AccessCategoryNames.Delivery
         }, cancellationToken: TestContext.Current.CancellationToken);
@@ -731,7 +759,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
         {
             driverName = $"Condutor {suffix}",
-            plate = suffix[..7],
+            plate = TestPlate.From(suffix),
             objective = "Visita técnica",
             categoryName = AccessCategoryNames.Visitor
         }, cancellationToken: TestContext.Current.CancellationToken);

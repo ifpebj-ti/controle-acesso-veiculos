@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { useConfirmation } from "../components/ui/confirmationContext";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
@@ -236,7 +237,7 @@ export function FleetPage() {
         action={
           canManageFleet ? (
             <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-text hover:bg-primary-hover focus:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-wait disabled:bg-disabled-surface disabled:text-disabled-text disabled:opacity-100"
               disabled={pendingAction !== null}
               onClick={() => openForm({ mode: "create" })}
               type="button"
@@ -262,19 +263,14 @@ export function FleetPage() {
       />
 
       {notice && (
-        <div
-          className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
-          role="status"
-        >
-          <p>{notice}</p>
-          <button
-            className="shrink-0 rounded-md font-bold underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
-            onClick={() => setNotice(null)}
-            type="button"
-          >
-            Fechar
-          </button>
-        </div>
+        <ActionFeedback
+          className="mt-6"
+          floating
+          focusOnChange
+          message={notice}
+          onDismiss={() => setNotice(null)}
+          tone="success"
+        />
       )}
 
       {errorMessage && status !== "loading" && (
@@ -297,29 +293,20 @@ export function FleetPage() {
       )}
 
       {formState && status === "ready" && (
-        <>
-          {formError && (
-            <div
-              className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-              role="alert"
-            >
-              {formError}
-            </div>
-          )}
-          <InstitutionalVehicleForm
-            busy={pendingAction !== null}
-            key={
-              formState.mode === "create"
-                ? "create"
-                : `edit-${formState.vehicle.id}`
-            }
-            mode={formState.mode}
-            onCancel={() => setFormState(null)}
-            onSubmit={saveVehicle}
-            serverErrors={serverErrors}
-            vehicle={formState.mode === "edit" ? formState.vehicle : undefined}
-          />
-        </>
+        <InstitutionalVehicleForm
+          busy={pendingAction !== null}
+          formError={formError}
+          key={
+            formState.mode === "create"
+              ? "create"
+              : `edit-${formState.vehicle.id}`
+          }
+          mode={formState.mode}
+          onCancel={() => setFormState(null)}
+          onSubmit={saveVehicle}
+          serverErrors={serverErrors}
+          vehicle={formState.mode === "edit" ? formState.vehicle : undefined}
+        />
       )}
 
       <InstitutionalVehicleCatalog

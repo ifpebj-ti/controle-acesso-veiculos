@@ -148,8 +148,8 @@ describe("OpenAccessPage", () => {
 
     const table = await screen.findByTestId("open-access-table");
     const cards = screen.getByTestId("open-access-cards");
-    expect(cards).toHaveClass("md:grid-cols-2", "xl:hidden");
-    expect(table).toHaveClass("xl:block");
+    expect(cards).toHaveClass("md:grid-cols-2", "2xl:hidden");
+    expect(table).toHaveClass("2xl:block");
     expect(
       within(table).getByRole("columnheader", { name: "Placa" }),
     ).toBeInTheDocument();
@@ -495,11 +495,19 @@ describe("OpenAccessPage", () => {
       updatedById: 5,
     });
 
-    expect(
+    const exceptionalFeedback = (
       await screen.findByText(
         "Saída do veículo DEM1A23 regularizada com sucesso.",
-      ),
-    ).toBeInTheDocument();
+      )
+    ).closest('[role="status"]');
+    expect(exceptionalFeedback).toHaveClass(
+      "fixed",
+      "inset-x-4",
+      "md:left-auto",
+      "md:max-w-xl",
+    );
+    expect(exceptionalFeedback).toHaveAttribute("aria-live", "polite");
+    await waitFor(() => expect(exceptionalFeedback).toHaveFocus());
     expect(screen.queryByText("DEM1A23")).not.toBeInTheDocument();
     expect(listOpenAccessRecords).toHaveBeenCalledTimes(2);
     expect(
@@ -541,15 +549,20 @@ describe("OpenAccessPage", () => {
       updatedById: 5,
     });
 
-    expect(
+    const normalFeedback = (
       await screen.findByText(
         "Saída do veículo DEM1A23 registrada com sucesso.",
-      ),
-    ).toBeInTheDocument();
-    await waitFor(() => expect(listOpenAccessRecords).toHaveBeenCalledTimes(2));
-    await waitFor(() =>
-      expect(screen.getByLabelText("Buscar acesso aberto")).toHaveFocus(),
+      )
+    ).closest('[role="status"]');
+    expect(normalFeedback).toHaveClass(
+      "fixed",
+      "inset-x-4",
+      "md:left-auto",
+      "md:max-w-xl",
     );
+    expect(normalFeedback).toHaveAttribute("aria-live", "polite");
+    await waitFor(() => expect(listOpenAccessRecords).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(normalFeedback).toHaveFocus());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -584,9 +597,11 @@ describe("OpenAccessPage", () => {
     await user.click(await waitFor(() => exitButton()));
     await user.click(screen.getByRole("button", { name: "Confirmar saída" }));
 
-    expect(
-      await screen.findByText("Falha de rede fictícia."),
-    ).toBeInTheDocument();
+    const failure = await screen.findByText("Falha de rede fictícia.");
+    expect(failure.closest('[role="alert"]')).toHaveAttribute(
+      "aria-live",
+      "assertive",
+    );
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(within(mobileList()).getByText("DEM1A23")).toBeInTheDocument();
     expect(closeAccessRecord).toHaveBeenCalledTimes(1);

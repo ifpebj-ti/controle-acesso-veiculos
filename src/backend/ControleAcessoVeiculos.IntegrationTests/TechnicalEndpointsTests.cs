@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControleAcessoVeiculos.Application.EventAuthorizations;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -25,6 +26,34 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
         Assert.NotNull(body);
         Assert.Equal("Healthy", body.Status);
         Assert.NotEqual(default, body.Timestamp);
+    }
+
+    [Theory]
+    [InlineData("/auth/google/start")]
+    [InlineData("/auth/google/complete")]
+    public async Task DisabledGoogleAuthenticationIsNotExposed(string endpoint)
+    {
+        var response = await _client.GetAsync(
+            endpoint,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+    }
+
+    [Fact]
+    public async Task AuthenticationProvidersReflectDisabledGoogleConfiguration()
+    {
+        var response = await _client.GetAsync(
+            "/auth/providers",
+            TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<AuthenticationProvidersResponse>(
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        Assert.NotNull(body);
+        Assert.False(body.GoogleEnabled);
     }
 
     [Theory]
@@ -171,6 +200,79 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
         }
 
         Assert.NotEqual(0, operationCount);
+    }
+
+    [Fact]
+    public async Task DevelopmentOpenApiPublishesEventAuthorizationContracts()
+    {
+        using var developmentFactory = factory.WithWebHostBuilder(builder =>
+            builder.UseEnvironment("Development"));
+        using var client = developmentFactory.CreateClient();
+
+        var documentJson = await client.GetStringAsync(
+            "/openapi/v1.json",
+            TestContext.Current.CancellationToken);
+        using var document = JsonDocument.Parse(documentJson);
+        var root = document.RootElement;
+        var paths = root.GetProperty("paths");
+        var schemas = root.GetProperty("components").GetProperty("schemas");
+
+        Assert.True(schemas.TryGetProperty(nameof(PagedEventAuthorizations), out _));
+        Assert.True(schemas.TryGetProperty(nameof(EventAuthorizationRecord), out _));
+        Assert.True(schemas.TryGetProperty(nameof(EventVehicleRuleRecord), out _));
+
+        Assert.Equal(
+            ["200", "400", "401", "403"],
+            ResponseCodes(paths, "/event-authorizations", "get"));
+        Assert.Equal(
+            ["201", "400", "401", "403", "409"],
+            ResponseCodes(paths, "/event-authorizations", "post"));
+        Assert.Equal(
+            ["200", "400", "401", "403", "404", "409"],
+            ResponseCodes(paths, "/event-authorizations/{id}", "put"));
+        Assert.Equal(
+            ["204", "400", "401", "403", "404", "409"],
+            ResponseCodes(paths, "/event-authorizations/{id}", "delete"));
+    }
+
+    private static string[] ResponseCodes(
+        JsonElement paths,
+        string path,
+        string method) =>
+        paths.GetProperty(path)
+            .GetProperty(method)
+            .GetProperty("responses")
+            .EnumerateObject()
+            .Select(response => response.Name)
+            .Order()
+            .ToArray();
+
+    [Fact]
+    public async Task DevelopmentOpenApiDistinguishesCompletePlatesFromSearchFilters()
+    {
+        using var developmentFactory = factory.WithWebHostBuilder(builder =>
+            builder.UseEnvironment("Development"));
+        using var client = developmentFactory.CreateClient();
+
+        var documentJson = await client.GetStringAsync(
+            "/openapi/v1.json",
+            TestContext.Current.CancellationToken);
+        using var document = JsonDocument.Parse(documentJson);
+        var paths = document.RootElement.GetProperty("paths");
+        var completeDescription = paths.GetProperty("/access-records/entries")
+            .GetProperty("post")
+            .GetProperty("description")
+            .GetString();
+        var filterDescription = paths.GetProperty("/access-records/history")
+            .GetProperty("get")
+            .GetProperty("description")
+            .GetString();
+
+        Assert.Contains("LLLNNNN", completeDescription, StringComparison.Ordinal);
+        Assert.Contains("LLLNLNN", completeDescription, StringComparison.Ordinal);
+        Assert.Contains("não comprova", completeDescription, StringComparison.Ordinal);
+        Assert.Contains("somente para pesquisa", filterDescription, StringComparison.Ordinal);
+        Assert.DoesNotContain("comprova emissão", filterDescription, StringComparison.Ordinal);
     }
 
     [Fact]

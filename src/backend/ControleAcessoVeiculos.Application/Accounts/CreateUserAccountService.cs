@@ -2,6 +2,7 @@ using System.Net.Mail;
 using ControleAcessoVeiculos.Application.Authentication;
 using ControleAcessoVeiculos.Application.Authorization;
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 
 namespace ControleAcessoVeiculos.Application.Accounts;
 
@@ -10,6 +11,7 @@ public sealed class CreateUserAccountService(
     IPasswordHashService passwordHashService,
     ITemporaryCredentialGenerator temporaryCredentialGenerator,
     TemporaryCredentialPolicy temporaryCredentialPolicy,
+    AuthenticationMethodPolicy authenticationMethodPolicy,
     TimeProvider timeProvider)
 {
     public Task<CreateUserAccountResult> CreateAsync(
@@ -53,18 +55,28 @@ public sealed class CreateUserAccountService(
         var normalizedEmail = Usuario.NormalizarEmail(command.Email);
         var isAdministrativeCreation =
             audit.Origin == AccountCreationOrigin.Administration;
-        var generatedCredential = isAdministrativeCreation
+        var authenticationMethod =
+            authenticationMethodPolicy.OperationalGoogleOnly &&
+            command.ProfileName != ProfileNames.Administrator
+                ? MetodoAutenticacao.Google
+                : MetodoAutenticacao.Local;
+        var generatedCredential = isAdministrativeCreation &&
+            authenticationMethod == MetodoAutenticacao.Local
             ? temporaryCredentialGenerator.Create()
             : null;
-        var password = generatedCredential ?? command.Password!;
-        var temporaryCredentialExpiresAtUtc = isAdministrativeCreation
+        var password = generatedCredential ?? command.Password;
+        var passwordHash = authenticationMethod == MetodoAutenticacao.Local
+            ? passwordHashService.Hash(password!)
+            : null;
+        var temporaryCredentialExpiresAtUtc = generatedCredential is not null
             ? audit.OccurredAtUtc.Add(temporaryCredentialPolicy.Lifetime)
             : (DateTime?)null;
         var createdAccount = await userAccountStore.TryCreateAsync(
             command.Name.Trim(),
             normalizedEmail,
-            passwordHashService.Hash(password),
+            passwordHash,
             command.ProfileName,
+            authenticationMethod,
             temporaryCredentialExpiresAtUtc,
             audit,
             cancellationToken);
@@ -77,6 +89,7 @@ public sealed class CreateUserAccountService(
                 createdAccount.UserId,
                 createdAccount.Email,
                 createdAccount.ProfileName,
+                createdAccount.AuthenticationMethod,
                 generatedCredential,
                 temporaryCredentialExpiresAtUtc);
     }
@@ -112,6 +125,13 @@ public sealed class CreateUserAccountService(
              command.Password.Length is < 12 or > 128))
         {
             errors["password"] = ["A senha deve possuir entre 12 e 128 caracteres."];
+        }
+
+        if (origin == AccountCreationOrigin.Bootstrap &&
+            command.ProfileName != ProfileNames.Administrator)
+        {
+            errors["profileName"] =
+                ["O bootstrap cria exclusivamente a conta Administrador local."];
         }
 
         if (!ProfileNames.Supported.Contains(command.ProfileName))

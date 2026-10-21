@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { Button } from "../../../components/ui/Button";
 import { SelectField } from "../../../components/ui/SelectField";
 import { TextArea } from "../../../components/ui/TextField";
@@ -249,15 +250,6 @@ export function AccessCorrectionDialog({
           auditoria.
         </p>
 
-        {requestError && (
-          <div
-            className="mt-4 rounded-xl border border-danger-border bg-danger-surface p-4 text-sm text-danger-text"
-            role="alert"
-          >
-            {requestError}
-          </div>
-        )}
-
         <form className="mt-6 space-y-5" onSubmit={handleSubmit(submit)}>
           <div>
             <label
@@ -379,6 +371,8 @@ export function AccessCorrectionDialog({
               message={errors.justification?.message}
             />
           </div>
+
+          <ActionFeedback message={requestError} tone="error" />
 
           <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
             <Button

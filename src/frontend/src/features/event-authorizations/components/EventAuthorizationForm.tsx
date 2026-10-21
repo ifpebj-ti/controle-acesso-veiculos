@@ -1,9 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { Button } from "../../../components/ui/Button";
 import { Icon, type IconName } from "../../../components/ui/Icon";
+import { SelectField } from "../../../components/ui/SelectField";
+import { eventParkingLocationOptions } from "../model/parkingLocations";
 import {
   eventAuthorizationFormSchema,
   type EventAuthorizationFormValues,
@@ -21,6 +24,7 @@ const fieldClass =
 interface EventAuthorizationFormProps {
   busy: boolean;
   event: EventAuthorization | null;
+  formError?: string | null;
   onCancel: () => void;
   onSubmit: (input: EventAuthorizationInput) => Promise<void>;
   serverErrors: EventAuthorizationServerErrors;
@@ -42,7 +46,9 @@ function defaultValues(
       name: "",
       notes: "",
       overnightAllowed: false,
+      parkingLocation: "ADefinir",
       responsible: "",
+      responsibleContact: "",
       startsAtLocal: "",
       vehicleRules: [
         { mode: "quota", plate: "", quantity: 1, vehicleType: "" },
@@ -55,7 +61,9 @@ function defaultValues(
     name: event.name,
     notes: event.notes ?? "",
     overnightAllowed: event.overnightAllowed,
+    parkingLocation: event.parkingLocation,
     responsible: event.responsible,
+    responsibleContact: event.responsibleContact ?? "",
     startsAtLocal: toLocalInput(event.startsAtUtc),
     vehicleRules: event.vehicleRules.map((rule) => ({
       mode: rule.plate ? "plate" : "quota",
@@ -77,6 +85,7 @@ function ErrorMessage({ id, message }: { id: string; message?: string }) {
 export function EventAuthorizationForm({
   busy,
   event,
+  formError,
   onCancel,
   onSubmit,
   serverErrors,
@@ -107,7 +116,9 @@ export function EventAuthorizationForm({
       name: values.name.trim(),
       notes: values.notes.trim() || null,
       overnightAllowed: values.overnightAllowed,
+      parkingLocation: values.parkingLocation,
       responsible: values.responsible.trim(),
+      responsibleContact: values.responsibleContact.trim(),
       startsAtUtc: new Date(values.startsAtLocal).toISOString(),
       vehicleRules: values.vehicleRules.map((rule) => ({
         plate: rule.mode === "plate" ? rule.plate.trim() : null,
@@ -119,6 +130,7 @@ export function EventAuthorizationForm({
 
   const simpleFields: Array<{
     icon: IconName;
+    hint?: string;
     id: string;
     key: "name" | "responsible" | "area";
     label: string;
@@ -127,6 +139,7 @@ export function EventAuthorizationForm({
   }> = [
     {
       icon: "calendar",
+      hint: "Use o nome oficial ou mais conhecido do evento.",
       id: "event-name",
       key: "name",
       label: "Nome do evento",
@@ -135,6 +148,7 @@ export function EventAuthorizationForm({
     },
     {
       icon: "user",
+      hint: "Informe a pessoa ou o setor responsável pelo evento.",
       id: "event-responsible",
       key: "responsible",
       label: "Responsável",
@@ -150,6 +164,43 @@ export function EventAuthorizationForm({
       placeholder: "Ex.: Auditório, quadra ou Bloco A",
     },
   ];
+
+  function renderSimpleField(field: (typeof simpleFields)[number]) {
+    const message = errorFor(field.key, errors[field.key]?.message);
+    const errorId = `${field.id}-error`;
+    const hintId = `${field.id}-hint`;
+    const describedBy = [field.hint ? hintId : null, message ? errorId : null]
+      .filter(Boolean)
+      .join(" ");
+
+    return (
+      <div key={field.key}>
+        <label
+          className="flex items-center gap-2 text-sm font-semibold text-ink"
+          htmlFor={field.id}
+        >
+          <Icon className="text-primary" name={field.icon} size={17} />
+          {field.label}
+        </label>
+        <input
+          aria-describedby={describedBy || undefined}
+          aria-invalid={Boolean(message)}
+          className={fieldClass}
+          disabled={disabled}
+          id={field.id}
+          maxLength={field.maxLength}
+          placeholder={field.placeholder}
+          {...register(field.key)}
+        />
+        {field.hint ? (
+          <p className="mt-1.5 text-xs text-ink-soft" id={hintId}>
+            {field.hint}
+          </p>
+        ) : null}
+        <ErrorMessage id={errorId} message={message} />
+      </div>
+    );
+  }
 
   return (
     <section
@@ -178,33 +229,98 @@ export function EventAuthorizationForm({
         noValidate
         onSubmit={handleSubmit(submit)}
       >
-        <div className="grid gap-5 md:grid-cols-3">
-          {simpleFields.map((field) => {
-            const message = errorFor(field.key, errors[field.key]?.message);
-            const errorId = `${field.id}-error`;
-            return (
-              <div key={field.key}>
-                <label
-                  className="flex items-center gap-2 text-sm font-semibold text-ink"
-                  htmlFor={field.id}
-                >
-                  <Icon className="text-primary" name={field.icon} size={17} />
-                  {field.label}
-                </label>
-                <input
-                  aria-describedby={message ? errorId : undefined}
-                  aria-invalid={Boolean(message)}
-                  className={fieldClass}
-                  disabled={disabled}
-                  id={field.id}
-                  maxLength={field.maxLength}
-                  placeholder={field.placeholder}
-                  {...register(field.key)}
-                />
-                <ErrorMessage id={errorId} message={message} />
-              </div>
-            );
-          })}
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {simpleFields.slice(0, 2).map(renderSimpleField)}
+          <div>
+            <label
+              className="flex items-center gap-2 text-sm font-semibold text-ink"
+              htmlFor="event-responsible-contact"
+            >
+              <Icon className="text-primary" name="mail" size={17} />
+              Contato do responsável
+            </label>
+            {(() => {
+              const message = errorFor(
+                "responsibleContact",
+                errors.responsibleContact?.message,
+              );
+              return (
+                <>
+                  <input
+                    aria-describedby={
+                      message
+                        ? "event-responsible-contact-hint event-responsible-contact-error"
+                        : "event-responsible-contact-hint"
+                    }
+                    aria-invalid={Boolean(message)}
+                    autoCapitalize="none"
+                    className={fieldClass}
+                    disabled={disabled}
+                    id="event-responsible-contact"
+                    maxLength={254}
+                    placeholder="E-mail ou telefone"
+                    {...register("responsibleContact")}
+                  />
+                  <p
+                    className="mt-1.5 text-xs text-ink-soft"
+                    id="event-responsible-contact-hint"
+                  >
+                    Informe um e-mail ou telefone para contato durante o evento.
+                  </p>
+                  <ErrorMessage
+                    id="event-responsible-contact-error"
+                    message={message}
+                  />
+                </>
+              );
+            })()}
+          </div>
+          {simpleFields.slice(2).map(renderSimpleField)}
+          <div>
+            <label
+              className="flex items-center gap-2 text-sm font-semibold text-ink"
+              htmlFor="event-parking-location"
+            >
+              <Icon className="text-primary" name="car" size={17} />
+              Estacionamento
+            </label>
+            {(() => {
+              const message = errorFor(
+                "parkingLocation",
+                errors.parkingLocation?.message,
+              );
+              return (
+                <>
+                  <Controller
+                    control={control}
+                    name="parkingLocation"
+                    render={({ field }) => (
+                      <SelectField
+                        aria-describedby={
+                          message
+                            ? "event-parking-hint event-parking-location-error"
+                            : "event-parking-hint"
+                        }
+                        aria-invalid={Boolean(message)}
+                        className={fieldClass}
+                        disabled={disabled}
+                        id="event-parking-location"
+                        name={field.name}
+                        onBlur={field.onBlur}
+                        onValueChange={field.onChange}
+                        options={eventParkingLocationOptions}
+                        value={field.value}
+                      />
+                    )}
+                  />
+                  <ErrorMessage
+                    id="event-parking-location-error"
+                    message={message}
+                  />
+                </>
+              );
+            })()}
+          </div>
           <div>
             <label
               className="flex items-center gap-2 text-sm font-semibold text-ink"
@@ -278,7 +394,7 @@ export function EventAuthorizationForm({
             />
             <span
               aria-hidden="true"
-              className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-border transition peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-primary/25 peer-disabled:opacity-60 after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:after:translate-x-5"
+              className="relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-border transition peer-checked:bg-primary peer-focus-visible:ring-3 peer-focus-visible:ring-focus peer-disabled:opacity-60 after:absolute after:left-1 after:top-1 after:size-4 after:rounded-full after:bg-surface-raised after:shadow-sm after:transition-transform peer-checked:after:translate-x-5"
             />
             <span>
               <strong className="block font-bold">Permitir pernoite</strong>
@@ -293,6 +409,17 @@ export function EventAuthorizationForm({
           >
             <Icon className="shrink-0 text-primary" name="clock" size={16} />
             Informe o início e o fim usando a data e a hora locais do campus.
+          </p>
+          <p
+            className="flex items-start gap-2 rounded-xl border border-warning-border bg-warning-surface px-3 py-2 text-xs leading-5 text-warning-text md:col-span-2 xl:col-span-3"
+            id="event-parking-hint"
+          >
+            <Icon className="mt-0.5 shrink-0" name="car" size={16} />
+            <span>
+              O local de estacionamento orienta a operação, mas não libera a
+              entrada automaticamente. A portaria ainda deve conferir e
+              registrar cada acesso.
+            </span>
           </p>
         </div>
 
@@ -333,6 +460,7 @@ export function EventAuthorizationForm({
             );
           })()}
         </div>
+        <ActionFeedback message={formError} tone="error" />
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
           <Button disabled={disabled} onClick={onCancel} variant="secondary">
             Fechar formulário

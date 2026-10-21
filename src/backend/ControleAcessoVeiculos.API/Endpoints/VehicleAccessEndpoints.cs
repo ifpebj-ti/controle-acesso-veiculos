@@ -14,7 +14,8 @@ public static class VehicleAccessEndpoints
         group.MapPost("/entries", RegisterEntryAsync)
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterVehicleEntry")
-            .WithSummary("Registra a entrada de um veículo");
+            .WithSummary("Registra a entrada de um veículo")
+            .WithDescription(VehiclePlateOpenApi.CompletePlate);
         group.MapGet("/open", ListOpenAsync)
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("ListOpenVehicleAccesses")
@@ -22,7 +23,8 @@ public static class VehicleAccessEndpoints
         group.MapGet("/entry-candidates", SearchEntryCandidatesAsync)
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("SearchAccessEntryCandidates")
-            .WithSummary("Pesquisa pessoas e veículos para preencher uma entrada");
+            .WithSummary("Pesquisa pessoas e veículos para preencher uma entrada")
+            .WithDescription(VehiclePlateOpenApi.PartialPlateFilter);
         group.MapPost("/{accessRecordId:int}/exit", RegisterExitAsync)
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterVehicleExit")
@@ -34,7 +36,8 @@ public static class VehicleAccessEndpoints
         group.MapGet("/history", SearchHistoryAsync)
             .RequireAuthorization(AuthorizationPolicies.ReviewAccessRecords)
             .WithName("SearchVehicleAccessHistory")
-            .WithSummary("Consulta o histórico de acessos de veículos");
+            .WithSummary("Consulta o histórico de acessos de veículos")
+            .WithDescription(VehiclePlateOpenApi.PartialPlateFilter);
         group.MapPut("/{accessRecordId:int}/correction", CorrectAsync)
             .RequireAuthorization(AuthorizationPolicies.CorrectAccessRecords)
             .WithName("CorrectVehicleAccess")

@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 
+import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import {
   institutionalDriverFormSchema,
   type InstitutionalDriverFormValues,
@@ -9,12 +10,13 @@ import {
 import type { InstitutionalDriverInput } from "../types";
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-ink/20 bg-cream/55 px-4 text-ink outline-none transition placeholder:text-ink-soft focus:border-brand-dark focus:bg-white focus:ring-3 focus:ring-brand/20";
+  "mt-2 min-h-12 w-full rounded-xl border border-border bg-surface px-4 text-text outline-none transition placeholder:text-text-muted focus:border-primary focus:bg-surface-raised focus:ring-3 focus:ring-focus";
 
 export type InstitutionalDriverField = keyof InstitutionalDriverFormValues;
 
 interface InstitutionalDriverFormProps {
   busy: boolean;
+  formError?: string | null;
   onCancel: () => void;
   onSubmit: (input: InstitutionalDriverInput) => Promise<void>;
   serverErrors: Partial<Record<InstitutionalDriverField, string>>;
@@ -31,6 +33,7 @@ function optionalValue(value: string) {
 
 export function InstitutionalDriverForm({
   busy,
+  formError,
   onCancel,
   onSubmit,
   serverErrors,
@@ -72,7 +75,7 @@ export function InstitutionalDriverForm({
   return (
     <section
       aria-labelledby="driver-form-title"
-      className="mt-6 overflow-hidden rounded-[2rem] border border-brand-dark/15 bg-white shadow-[0_14px_40px_rgba(1,36,40,0.07)]"
+      className="mt-6 overflow-hidden rounded-[2rem] border border-border bg-surface shadow-[0_14px_40px_var(--ui-shadow)]"
     >
       <div className="border-b border-ink/8 bg-brand-soft/30 px-5 py-5 sm:px-7">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
@@ -161,6 +164,11 @@ export function InstitutionalDriverForm({
           {fieldError("documentNumber")}
         </div>
 
+        <ActionFeedback
+          className="sm:col-span-2 lg:col-span-3"
+          message={formError}
+          tone="error"
+        />
         <div className="flex flex-col-reverse gap-3 border-t border-ink/10 pt-5 sm:col-span-2 sm:flex-row sm:justify-end lg:col-span-3">
           <button
             className="min-h-12 rounded-xl border border-ink/20 px-5 font-bold text-ink hover:bg-cream focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/25 disabled:cursor-wait disabled:opacity-60"
@@ -171,7 +179,7 @@ export function InstitutionalDriverForm({
             Cancelar
           </button>
           <button
-            className="min-h-12 rounded-xl bg-brand-dark px-7 font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
+            className="min-h-12 rounded-xl bg-primary px-7 font-bold text-primary-text hover:bg-primary-hover focus:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-wait disabled:bg-disabled-surface disabled:text-disabled-text disabled:opacity-100"
             disabled={disabled}
             type="submit"
           >

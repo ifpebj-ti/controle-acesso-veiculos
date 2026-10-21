@@ -30,6 +30,28 @@ describe("UserAccountCatalog", () => {
     vi.useRealTimers();
   });
 
+  it("keeps cards until the catalog has enough width for every column", () => {
+    render(
+      <UserAccountCatalog
+        currentUserId={1}
+        onPageChange={vi.fn()}
+        onResetCredential={vi.fn()}
+        onToggle={vi.fn()}
+        page={page}
+        pendingAction={null}
+        status="ready"
+      />,
+    );
+
+    const table = screen.getByRole("table", {
+      name: "Contas de acesso do sistema",
+    });
+    expect(table.parentElement).toHaveClass("overflow-x-auto", "2xl:block");
+    expect(document.querySelector(".account-catalog-grid")).toHaveClass(
+      "2xl:hidden",
+    );
+  });
+
   it("updates an expiring credential without reloading the catalog", () => {
     vi.useFakeTimers();
     vi.setSystemTime("2030-06-10T11:29:00Z");

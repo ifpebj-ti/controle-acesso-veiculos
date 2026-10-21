@@ -29,6 +29,7 @@ vi.mock("./session/humanActivity", async (importOriginal) => {
 });
 
 import { AppLayout } from "../../components/layout/AppLayout";
+import { AppearanceProvider } from "../appearance";
 import { LoginPage } from "../../pages/LoginPage";
 import { PasswordChangePage } from "../../pages/PasswordChangePage";
 import { ProfileRoute } from "../../routes/ProfileRoute";
@@ -108,30 +109,35 @@ function renderRestrictedApplication(
   initialEntry: string | { pathname: string; state?: unknown } = "/login",
 ) {
   return render(
-    <SessionProvider>
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <Routes>
-          <Route element={<RouteTransitionManager />}>
-            <Route element={<LoginPage />} path="/login" />
-            <Route element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
-                <Route element={<ProfileRoute />}>
-                  <Route
-                    element={<h1>Painel operacional fictício</h1>}
-                    path="/visao-geral"
-                  />
-                  <Route
-                    element={<h1>Operação fictícia</h1>}
-                    path="/acessos/novo"
-                  />
-                  <Route element={<PasswordChangePage />} path="/conta/senha" />
+    <AppearanceProvider>
+      <SessionProvider>
+        <MemoryRouter initialEntries={[initialEntry]}>
+          <Routes>
+            <Route element={<RouteTransitionManager />}>
+              <Route element={<LoginPage />} path="/login" />
+              <Route element={<ProtectedRoute />}>
+                <Route element={<AppLayout />}>
+                  <Route element={<ProfileRoute />}>
+                    <Route
+                      element={<h1>Painel operacional fictício</h1>}
+                      path="/visao-geral"
+                    />
+                    <Route
+                      element={<h1>Operação fictícia</h1>}
+                      path="/acessos/novo"
+                    />
+                    <Route
+                      element={<PasswordChangePage />}
+                      path="/conta/senha"
+                    />
+                  </Route>
                 </Route>
               </Route>
             </Route>
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </SessionProvider>,
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>
+    </AppearanceProvider>,
   );
 }
 
@@ -171,21 +177,23 @@ function renderAuthenticationFlow(
   strictMode = false,
 ) {
   const application = (
-    <SessionProvider>
-      <MemoryRouter initialEntries={[initialEntry]}>
-        <Routes>
-          <Route element={<LoginPage />} path="/login" />
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppFrame />}>
-              <Route element={<SessionIdentity />} path="/visao-geral" />
-              <Route element={<ProfileRoute />}>
-                <Route element={<p>Administração</p>} path="/administracao" />
+    <AppearanceProvider>
+      <SessionProvider>
+        <MemoryRouter initialEntries={[initialEntry]}>
+          <Routes>
+            <Route element={<LoginPage />} path="/login" />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppFrame />}>
+                <Route element={<SessionIdentity />} path="/visao-geral" />
+                <Route element={<ProfileRoute />}>
+                  <Route element={<p>Administração</p>} path="/administracao" />
+                </Route>
               </Route>
             </Route>
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </SessionProvider>
+          </Routes>
+        </MemoryRouter>
+      </SessionProvider>
+    </AppearanceProvider>
   );
   return render(
     strictMode ? <StrictMode>{application}</StrictMode> : application,

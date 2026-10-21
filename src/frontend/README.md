@@ -4,15 +4,24 @@ Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jard
 
 ## Fundação visual
 
-O frontend possui um contrato inicial de tokens semânticos para estrutura,
-texto, ações, foco e estados. O tema claro continua visualmente equivalente ao
-atual; valores escuros estão apenas preparados e não são ativados nesta etapa.
+O frontend possui um contrato de tokens semânticos para estrutura, texto,
+ações, foco e estados. Os temas Claro, Escuro e Automático usam o mesmo contrato e
+preservam a hierarquia visual aprovada nas telas.
 A matriz de contraste, as combinações permitidas e o inventário de migração
 estão em [`docs/development/frontend-design-tokens.md`](../../docs/development/frontend-design-tokens.md).
 
-Os aliases visuais anteriores permanecem temporariamente para evitar uma troca
-global insegura. Componentes serão migrados de forma incremental nas Issues
-#403–#406, e o controle Claro/Escuro/Sistema pertence à Issue #407.
+Os aliases visuais anteriores permanecem temporariamente para compatibilidade,
+mas superfícies e ações migradas consomem tokens que respondem aos três modos.
+A preferência não sensível é limitada a `light`, `dark` ou `system` e usa a
+chave versionada `ifpe.vehicle-access.appearance.v1` no `localStorage`. Nenhum
+token, e-mail, perfil, credencial ou outro dado da sessão é incluído nesse
+registro.
+
+Um script externo de mesma origem é carregado no `<head>` antes do módulo React
+para aplicar a preferência antes da primeira pintura, sem exigir `unsafe-inline`
+na CSP. Preferência ausente, corrompida ou armazenamento indisponível usa
+`Automático` com fallback claro seguro; quando `Automático` está ativo, mudanças em
+`prefers-color-scheme` são acompanhadas sem substituir a escolha persistida.
 
 O primeiro incremento migra seletores, cabeçalhos, estados, badges e confirmação
 para tokens semânticos, com bases reutilizáveis de botão, campo e cartão.
@@ -167,6 +176,11 @@ Autorizações de eventos usam `GET`, `POST`, `PUT` e `DELETE` em
 `/event-authorizations`. Os quatro perfis autenticados consultam; somente o
 Administrador cria, edita e cancela. A visibilidade das ações na interface reduz
 ações enganosas, mas não substitui a política de autorização aplicada pela API.
+A criação e a edição registram o contato operacional do responsável e uma
+opção fechada de estacionamento: A definir, Interno ou Externo. Porteiro e
+Vigilante consultam essas informações para orientar o atendimento; o local de
+estacionamento não libera a entrada automaticamente, que continua exigindo
+conferência e registro individual.
 A interface separa a vigência da autorização, a quantidade prevista nas regras,
 as entradas já consumidas e a quantidade restante. Placa específica representa
 exatamente um veículo; cota por tipo pode representar de 1 a 1000 veículos.

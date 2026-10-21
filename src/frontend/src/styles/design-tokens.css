@@ -1,4 +1,6 @@
 :root {
+  color-scheme: light;
+
   /* Institutional and neutral palette. Components must consume semantic tokens. */
   --palette-ifpe-green-500: #369833;
   --palette-ifpe-green-700: #236d2a;
@@ -18,6 +20,8 @@
   --ui-text: var(--palette-ifpe-teal-900);
   --ui-text-muted: var(--palette-ifpe-teal-700);
   --ui-text-inverse: var(--palette-white);
+  --ui-visual-text: var(--palette-white);
+  --ui-brand-surface: var(--palette-white);
   --ui-border: #667f7c;
   --ui-border-strong: var(--palette-ifpe-teal-700);
   --ui-primary: var(--palette-ifpe-green-700);
@@ -47,10 +51,11 @@
 }
 
 /*
- * Prepared for the future theme controller. No production code sets this
- * attribute yet, so the current light appearance remains unchanged.
+ * Activated by the appearance bootstrap and controller from Issue #407.
  */
 :root[data-theme="dark"] {
+  color-scheme: dark;
+
   --ui-background: #0b1c1e;
   --ui-surface: #12282b;
   --ui-surface-raised: #193236;
@@ -59,6 +64,8 @@
   --ui-text: #f5f7f0;
   --ui-text-muted: #c1cfca;
   --ui-text-inverse: #0b1c1e;
+  --ui-visual-text: var(--palette-white);
+  --ui-brand-surface: #dce6d8;
   --ui-border: #78918c;
   --ui-border-strong: #b8cac5;
   --ui-primary: #7bcb72;

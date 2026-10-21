@@ -250,6 +250,15 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
             Assert.Equal(catalog.DriverId, item.DriverId);
         });
 
+        var prefix = catalog.Plate[..3].ToLowerInvariant();
+        var prefixResult = await client.GetFromJsonAsync<InstitutionalHistoryResponse>(
+            $"/institutional-vehicle-usages/history?plate={prefix}&from={from}&to={to}",
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(prefixResult);
+        Assert.Equal(3, prefixResult.TotalCount);
+        Assert.All(prefixResult.Items, item =>
+            Assert.StartsWith(catalog.Plate[..3], item.Plate, StringComparison.Ordinal));
+
         var secondPage = await client.GetFromJsonAsync<InstitutionalHistoryResponse>($"/institutional-vehicle-usages/history?vehicleIdentification=" +
             $"{Uri.EscapeDataString(catalog.VehicleIdentification.ToLowerInvariant())}" +
             $"&from={from}&to={to}&page=2&pageSize=2", cancellationToken: TestContext.Current.CancellationToken);
@@ -415,7 +424,7 @@ public sealed class InstitutionalVehicleUsageTests(ApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
         var suffix = Guid.NewGuid().ToString("N");
-        var plate = $"IF{suffix[..5]}".ToUpperInvariant();
+        var plate = TestPlate.From(suffix);
         var driverName = $"Motorista {suffix}";
         var vehicle = new Veiculo(
             plate,

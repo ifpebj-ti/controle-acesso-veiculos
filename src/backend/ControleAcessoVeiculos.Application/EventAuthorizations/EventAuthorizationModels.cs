@@ -1,3 +1,5 @@
+using ControleAcessoVeiculos.Domain.Enums;
+
 namespace ControleAcessoVeiculos.Application.EventAuthorizations;
 
 public sealed record EventVehicleRuleInput(
@@ -8,20 +10,24 @@ public sealed record EventVehicleRuleInput(
 public sealed record CreateEventAuthorizationCommand(
     string? Name,
     string? Responsible,
+    string? ResponsibleContact,
     DateTimeOffset StartsAtUtc,
     DateTimeOffset EndsAtUtc,
     string? Area,
     bool OvernightAllowed,
+    string? ParkingLocation,
     IReadOnlyList<EventVehicleRuleInput>? VehicleRules,
     string? Notes = null);
 
 public sealed record UpdateEventAuthorizationCommand(
     string? Name,
     string? Responsible,
+    string? ResponsibleContact,
     DateTimeOffset StartsAtUtc,
     DateTimeOffset EndsAtUtc,
     string? Area,
     bool OvernightAllowed,
+    string? ParkingLocation,
     IReadOnlyList<EventVehicleRuleInput>? VehicleRules,
     string? Notes = null);
 
@@ -33,10 +39,12 @@ public sealed record EventVehicleRuleData(
 public sealed record EventAuthorizationData(
     string Name,
     string Responsible,
+    string ResponsibleContact,
     DateTime StartsAtUtc,
     DateTime EndsAtUtc,
     string Area,
     bool OvernightAllowed,
+    LocalEstacionamentoEvento ParkingLocation,
     string? Notes,
     IReadOnlyList<EventVehicleRuleData> VehicleRules);
 
@@ -52,10 +60,12 @@ public sealed record EventAuthorizationRecord(
     int Id,
     string Name,
     string Responsible,
+    string? ResponsibleContact,
     DateTime StartsAtUtc,
     DateTime EndsAtUtc,
     string Area,
     bool OvernightAllowed,
+    string ParkingLocation,
     string? Notes,
     bool Active,
     int CreatedById,

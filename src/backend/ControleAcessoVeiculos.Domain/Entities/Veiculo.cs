@@ -56,14 +56,36 @@ public class Veiculo
 
     public static string NormalizarPlaca(string placa)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(placa);
+        var placaNormalizada = NormalizarCaracteresPlaca(placa);
+        var formatoAntigo =
+            placaNormalizada.Length == 7 &&
+            placaNormalizada[..3].All(IsAsciiLetter) &&
+            placaNormalizada[3..].All(IsAsciiDigit);
+        var formatoMercosul =
+            placaNormalizada.Length == 7 &&
+            placaNormalizada[..3].All(IsAsciiLetter) &&
+            IsAsciiDigit(placaNormalizada[3]) &&
+            IsAsciiLetter(placaNormalizada[4]) &&
+            placaNormalizada[5..].All(IsAsciiDigit);
 
-        var placaNormalizada = string.Concat(
-            placa.Where(char.IsLetterOrDigit)).ToUpperInvariant();
-
-        if (string.IsNullOrWhiteSpace(placaNormalizada))
+        if (!formatoAntigo && !formatoMercosul)
         {
-            throw new ArgumentException("A placa deve conter letras ou números.", nameof(placa));
+            throw new ArgumentException(
+                "A placa deve seguir o formato ABC-1234 ou ABC1D23.",
+                nameof(placa));
+        }
+
+        return placaNormalizada;
+    }
+
+    public static string NormalizarFiltroPlaca(string placa)
+    {
+        var placaNormalizada = NormalizarCaracteresPlaca(placa);
+        if (placaNormalizada.Length > 7)
+        {
+            throw new ArgumentException(
+                "O filtro de placa deve possuir até 7 caracteres.",
+                nameof(placa));
         }
 
         return placaNormalizada;
@@ -165,4 +187,36 @@ public class Veiculo
             throw new ArgumentOutOfRangeException(nameof(dataAlteracao));
         }
     }
+
+    private static string NormalizarCaracteresPlaca(string placa)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(placa);
+
+        if (placa.Any(character =>
+                !IsAsciiLetter(character) &&
+                !IsAsciiDigit(character) &&
+                character != '-' &&
+                !char.IsWhiteSpace(character)))
+        {
+            throw new ArgumentException(
+                "A placa pode conter apenas letras, números, espaços ou hífen.",
+                nameof(placa));
+        }
+
+        var placaNormalizada = string.Concat(
+            placa.Where(character => character != '-' && !char.IsWhiteSpace(character)))
+            .ToUpperInvariant();
+        if (placaNormalizada.Length == 0)
+        {
+            throw new ArgumentException("A placa deve conter letras ou números.", nameof(placa));
+        }
+
+        return placaNormalizada;
+    }
+
+    private static bool IsAsciiLetter(char character) =>
+        character is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
+
+    private static bool IsAsciiDigit(char character) =>
+        character is >= '0' and <= '9';
 }

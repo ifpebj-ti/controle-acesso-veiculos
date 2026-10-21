@@ -24,12 +24,17 @@ using ControleAcessoVeiculos.Infrastructure.InstitutionalDrivers;
 using ControleAcessoVeiculos.Infrastructure.EventAuthorizations;
 using ControleAcessoVeiculos.Infrastructure.OperationalSummaries;
 using System.Globalization;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Diagnostics;
 using System.Text;
 
@@ -95,6 +100,15 @@ builder.Services.Configure<AuthenticationSessionOptions>(
     builder.Configuration.GetSection(AuthenticationSessionOptions.SectionName));
 builder.Services.AddSingleton(sessionPolicy);
 
+var googleOidcOptions = builder.Configuration
+    .GetSection(GoogleOidcOptions.SectionName)
+    .Get<GoogleOidcOptions>() ?? new GoogleOidcOptions();
+googleOidcOptions.Validate();
+builder.Services.Configure<GoogleOidcOptions>(
+    builder.Configuration.GetSection(GoogleOidcOptions.SectionName));
+builder.Services.AddSingleton(
+    new AuthenticationMethodPolicy(googleOidcOptions.Enabled));
+
 var temporaryCredentialOptions = builder.Configuration
     .GetSection(TemporaryCredentialOptions.SectionName)
     .Get<TemporaryCredentialOptions>() ?? new TemporaryCredentialOptions();
@@ -123,7 +137,7 @@ catch (InvalidTimeZoneException exception)
         exception);
 }
 
-builder.Services
+var authenticationBuilder = builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -178,6 +192,73 @@ builder.Services
             }
         };
     });
+
+if (googleOidcOptions.Enabled)
+{
+    authenticationBuilder
+        .AddCookie(GoogleOidcOptions.ExternalCookieScheme, options =>
+        {
+            options.Cookie.Name = "cav_google_external";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.IsEssential = true;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ||
+                builder.Environment.IsEnvironment("LocalContainer") ||
+                builder.Environment.IsEnvironment("Testing")
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
+            options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+            options.SlidingExpiration = false;
+        })
+        .AddOpenIdConnect(GoogleOidcOptions.Scheme, options =>
+        {
+            options.Authority = "https://accounts.google.com";
+            options.ClientId = googleOidcOptions.ClientId;
+            options.ClientSecret = googleOidcOptions.ClientSecret;
+            options.CallbackPath = googleOidcOptions.CallbackPath;
+            options.ResponseType = OpenIdConnectResponseType.Code;
+            options.UsePkce = true;
+            options.SaveTokens = false;
+            options.MapInboundClaims = false;
+            options.SignInScheme = GoogleOidcOptions.ExternalCookieScheme;
+            options.Scope.Clear();
+            options.Scope.Add("openid");
+            options.Scope.Add("email");
+            options.Scope.Add("profile");
+            options.TokenValidationParameters.NameClaimType = "email";
+            options.Events = new OpenIdConnectEvents
+            {
+                OnTokenValidated = context =>
+                {
+                    var subject = context.Principal?.FindFirstValue("sub");
+                    var email = context.Principal?.FindFirstValue("email");
+                    var emailVerified = string.Equals(
+                        context.Principal?.FindFirstValue("email_verified"),
+                        bool.TrueString,
+                        StringComparison.OrdinalIgnoreCase);
+
+                    if (string.IsNullOrWhiteSpace(subject) ||
+                        string.IsNullOrWhiteSpace(email) ||
+                        !emailVerified)
+                    {
+                        context.Fail("The Google identity is incomplete or unverified.");
+                    }
+
+                    return Task.CompletedTask;
+                },
+                OnRemoteFailure = async context =>
+                {
+                    context.HandleResponse();
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    context.Response.Headers.CacheControl = "no-store";
+                    await context.Response.WriteAsJsonAsync(new
+                    {
+                        Message = "NÃ£o foi possÃ­vel concluir a autenticaÃ§Ã£o pelo Google."
+                    });
+                }
+            };
+        });
+}
 
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
@@ -245,6 +326,7 @@ builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
 builder.Services.AddScoped<IAuthenticationSessionStore, AuthenticationSessionStore>();
 builder.Services.AddScoped<IAuthenticatedPasswordChangeStore, AuthenticatedPasswordChangeStore>();
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
+builder.Services.AddScoped<IAccountProfileStore, UserAccountStore>();
 builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
 builder.Services.AddScoped<IInstitutionalVehicleCatalogStore, InstitutionalVehicleCatalogStore>();
@@ -258,11 +340,13 @@ builder.Services.AddSingleton<ITemporaryCredentialGenerator,
     CryptographicTemporaryCredentialGenerator>();
 builder.Services.AddScoped<AuthenticationSessionCookie>();
 builder.Services.AddScoped<LoginService>();
+builder.Services.AddScoped<GoogleAuthenticationService>();
 builder.Services.AddScoped<AuthenticationSessionService>();
 builder.Services.AddScoped<AuthenticatedPasswordChangeService>();
 builder.Services.AddScoped<CreateUserAccountService>();
 builder.Services.AddScoped<AdministrativeCredentialResetService>();
 builder.Services.AddScoped<UserAccountLifecycleService>();
+builder.Services.AddScoped<ChangeAccountProfileService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
@@ -369,6 +453,112 @@ app.MapEventAuthorizationEndpoints();
 app.MapUserAccountEndpoints();
 app.MapAuditTrailEndpoints();
 app.MapOperationalSummaryEndpoints();
+
+app.MapGet("/auth/providers", (HttpContext httpContext) =>
+{
+    SetAuthenticationResponseHeaders(httpContext.Response);
+    return Results.Ok(new AuthenticationProvidersResponse(
+        GoogleEnabled: googleOidcOptions.Enabled));
+})
+.AllowAnonymous()
+.WithTags("Authentication")
+.WithName("GetAuthenticationProviders")
+.WithSummary("Informa os provedores de autenticação habilitados")
+.Produces<AuthenticationProvidersResponse>(StatusCodes.Status200OK);
+
+app.MapGet("/auth/google/start", (HttpContext httpContext) =>
+{
+    SetAuthenticationResponseHeaders(httpContext.Response);
+    if (!googleOidcOptions.Enabled)
+    {
+        return Results.NotFound(new
+        {
+            Message = "A autenticaÃ§Ã£o pelo Google nÃ£o estÃ¡ habilitada."
+        });
+    }
+
+    var properties = new AuthenticationProperties
+    {
+        RedirectUri = "/auth/google/complete"
+    };
+    return Results.Challenge(properties, [GoogleOidcOptions.Scheme]);
+})
+.AllowAnonymous()
+.RequireRateLimiting(ApiRateLimiting.LoginPolicy)
+.WithTags("Authentication")
+.WithName("StartGoogleAuthentication")
+.WithSummary("Inicia a autenticaÃ§Ã£o Google de uma conta previamente autorizada")
+.Produces(StatusCodes.Status302Found)
+.Produces(StatusCodes.Status404NotFound)
+.Produces(StatusCodes.Status429TooManyRequests);
+
+app.MapGet("/auth/google/complete", async (
+    GoogleAuthenticationService googleAuthenticationService,
+    AuthenticationSessionCookie sessionCookie,
+    HttpContext httpContext,
+    CancellationToken cancellationToken) =>
+{
+    SetAuthenticationResponseHeaders(httpContext.Response);
+    if (!googleOidcOptions.Enabled)
+    {
+        return Results.NotFound();
+    }
+
+    var externalAuthentication = await httpContext.AuthenticateAsync(
+        GoogleOidcOptions.ExternalCookieScheme);
+    if (!externalAuthentication.Succeeded || externalAuthentication.Principal is null)
+    {
+        await httpContext.SignOutAsync(GoogleOidcOptions.ExternalCookieScheme);
+        return Results.Redirect(
+            $"{googleOidcOptions.FrontendCompletionPath}?status=denied");
+    }
+
+    try
+    {
+        var principal = externalAuthentication.Principal;
+        var subject = principal.FindFirstValue("sub");
+        var email = principal.FindFirstValue("email");
+        var emailVerified = string.Equals(
+            principal.FindFirstValue("email_verified"),
+            bool.TrueString,
+            StringComparison.OrdinalIgnoreCase);
+        var result = await googleAuthenticationService.AuthenticateAsync(
+            subject,
+            email,
+            emailVerified,
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return Results.Redirect(
+                $"{googleOidcOptions.FrontendCompletionPath}?status=denied");
+        }
+
+        sessionCookie.Append(
+            httpContext.Response,
+            result.RefreshToken!,
+            result.SessionExpiresAtUtc!.Value);
+        SetSessionDeadlineResponseHeaders(
+            httpContext.Response,
+            result.SessionObservedAtUtc!.Value,
+            result.SessionInactivityExpiresAtUtc!.Value,
+            result.SessionExpiresAtUtc.Value);
+        return Results.Redirect(
+            $"{googleOidcOptions.FrontendCompletionPath}?status=success");
+    }
+    finally
+    {
+        await httpContext.SignOutAsync(GoogleOidcOptions.ExternalCookieScheme);
+    }
+})
+.AllowAnonymous()
+.RequireRateLimiting(ApiRateLimiting.LoginPolicy)
+.WithTags("Authentication")
+.WithName("CompleteGoogleAuthentication")
+.WithSummary("Conclui o vÃ­nculo Google e cria a sessÃ£o local protegida")
+.Produces(StatusCodes.Status302Found)
+.Produces(StatusCodes.Status404NotFound)
+.Produces(StatusCodes.Status429TooManyRequests);
 
 app.MapPost("/auth/login", async (
     LoginRequest request,
@@ -666,3 +856,4 @@ public sealed record LoginUserResponse(
     bool RequiresPasswordChange);
 public sealed record LoginErrorResponse(string Message);
 public sealed record CsrfTokenResponse(string RequestToken);
+public sealed record AuthenticationProvidersResponse(bool GoogleEnabled);

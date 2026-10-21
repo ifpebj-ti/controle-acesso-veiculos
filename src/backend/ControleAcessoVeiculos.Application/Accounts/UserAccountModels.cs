@@ -1,5 +1,7 @@
 namespace ControleAcessoVeiculos.Application.Accounts;
 
+using ControleAcessoVeiculos.Domain.Enums;
+
 public sealed record SearchUserAccountsCommand(
     string? Search = null,
     bool? Active = null,
@@ -22,7 +24,9 @@ public sealed record UserAccountRecord(
     DateTime? UpdatedAtUtc,
     DateTime? LockedUntilUtc,
     bool RequiresPasswordChange,
-    DateTime? TemporaryCredentialExpiresAtUtc);
+    DateTime? TemporaryCredentialExpiresAtUtc,
+    MetodoAutenticacao AuthenticationMethod,
+    bool ExternalIdentityLinked);
 
 public sealed record PagedUserAccountResult(
     IReadOnlyList<UserAccountRecord> Items,

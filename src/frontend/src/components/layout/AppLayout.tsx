@@ -5,6 +5,7 @@ import {
   profileLabels,
   useAuthenticatedSession,
 } from "../../features/authentication";
+import { AppearanceSelector } from "../../features/appearance";
 import { getProfileNavigation } from "../../routes/routeMetadata";
 import { Brand } from "../ui/Brand";
 import { Button } from "../ui/Button";
@@ -166,7 +167,9 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
         </ul>
       </nav>
 
-      <div className="mt-8 border-t border-border pt-4">
+      <AppearanceSelector className="mt-8" />
+
+      <div className="mt-4 border-t border-border pt-4">
         <NavLink
           className={({ isActive }) =>
             `sidebar-primary-item flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left font-semibold ${
@@ -296,7 +299,7 @@ function StandardAppLayout() {
         >
           <Icon name="menu" />
         </Button>
-        <span className="text-sm font-bold text-ink">Controle de Acesso</span>
+        <span className="text-sm font-bold text-text">Controle de Acesso</span>
         <span aria-hidden="true" className="size-12 shrink-0" />
       </header>
 
@@ -368,17 +371,20 @@ function MandatoryPasswordChangeLayout() {
   return (
     <div className="min-h-svh bg-background text-text">
       <header className="border-b border-border bg-surface px-4 py-4 sm:px-6">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4">
           <Brand className="min-w-0 max-w-[17rem]" />
-          <Button
-            className="shrink-0"
-            variant="secondary"
-            onClick={handleLogout}
-            type="button"
-          >
-            <Icon name="log-out" size={19} />
-            Sair
-          </Button>
+          <div className="flex w-full flex-wrap items-end justify-end gap-3 sm:w-auto sm:flex-nowrap">
+            <AppearanceSelector className="w-full sm:w-72" />
+            <Button
+              className="shrink-0"
+              variant="secondary"
+              onClick={handleLogout}
+              type="button"
+            >
+              <Icon name="log-out" size={19} />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 

@@ -1,4 +1,5 @@
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
 import { MetricCard, type MetricCardTone } from "../components/ui/MetricCard";
@@ -32,7 +33,7 @@ export function EventsPage() {
         action={
           canManage ? (
             <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-dark px-5 text-sm font-bold text-white hover:bg-ink focus:outline-none focus-visible:ring-3 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-wait disabled:bg-brand-soft disabled:text-ink disabled:opacity-100"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-text hover:bg-primary-hover focus:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-wait disabled:bg-disabled-surface disabled:text-disabled-text disabled:opacity-100"
               disabled={events.pendingAction !== null}
               onClick={() => events.openForm()}
               type="button"
@@ -58,19 +59,14 @@ export function EventsPage() {
       />
 
       {events.notice && (
-        <div
-          className="mt-6 flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
-          role="status"
-        >
-          <p>{events.notice}</p>
-          <button
-            className="shrink-0 rounded-md font-bold underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
-            onClick={() => events.setNotice(null)}
-            type="button"
-          >
-            Fechar
-          </button>
-        </div>
+        <ActionFeedback
+          className="mt-6"
+          floating
+          focusOnChange
+          message={events.notice}
+          onDismiss={() => events.setNotice(null)}
+          tone="success"
+        />
       )}
 
       {events.errorMessage && events.status !== "loading" && (
@@ -93,23 +89,14 @@ export function EventsPage() {
       )}
 
       {canManage && events.formOpen && (
-        <>
-          {events.formError && (
-            <div
-              className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"
-              role="alert"
-            >
-              {events.formError}
-            </div>
-          )}
-          <EventAuthorizationForm
-            busy={events.pendingAction !== null}
-            event={events.selectedEvent}
-            onCancel={events.closeForm}
-            onSubmit={events.saveEvent}
-            serverErrors={events.serverErrors}
-          />
-        </>
+        <EventAuthorizationForm
+          busy={events.pendingAction !== null}
+          event={events.selectedEvent}
+          formError={events.formError}
+          onCancel={events.closeForm}
+          onSubmit={events.saveEvent}
+          serverErrors={events.serverErrors}
+        />
       )}
 
       <EventAuthorizationSummary page={events.page} status={events.status} />

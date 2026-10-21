@@ -6,6 +6,11 @@ public interface IAuthenticationUserStore
         string normalizedEmail,
         CancellationToken cancellationToken);
 
+    Task<GoogleAuthenticationLookup> FindForGoogleAuthenticationAsync(
+        string subject,
+        string normalizedEmail,
+        CancellationToken cancellationToken);
+
     Task<bool> IsAuthenticationStateValidAsync(
         int userId,
         int credentialVersion,
@@ -20,7 +25,13 @@ public sealed record AuthenticationAudit(
     int UserId,
     AuthenticationAuditOutcome Outcome,
     DateTime OccurredAtUtc,
-    DateTime? LockedUntilUtc = null);
+    DateTime? LockedUntilUtc = null,
+    string? Provider = null,
+    bool IdentityLinked = false);
+
+public sealed record GoogleAuthenticationLookup(
+    AuthenticationUser? SubjectMatch,
+    AuthenticationUser? EmailMatch);
 
 public enum AuthenticationAuditOutcome
 {

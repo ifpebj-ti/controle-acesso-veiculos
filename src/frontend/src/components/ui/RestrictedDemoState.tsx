@@ -8,8 +8,8 @@ interface RestrictedDemoStateProps {
 
 export function RestrictedDemoState({ message }: RestrictedDemoStateProps) {
   return (
-    <section className="mx-auto mt-16 max-w-2xl rounded-3xl border border-ink/10 bg-white p-8 text-center shadow-[0_12px_36px_rgba(1,36,40,0.06)]">
-      <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-soft/65 text-ink">
+    <section className="mx-auto mt-16 max-w-2xl rounded-3xl border border-border bg-surface p-8 text-center shadow-[0_12px_36px_var(--ui-shadow)]">
+      <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-surface-subtle text-text">
         <Icon name="shield" size={27} />
       </span>
       <h1 className="mt-5 font-display text-3xl text-ink">Acesso negado</h1>
@@ -19,7 +19,7 @@ export function RestrictedDemoState({ message }: RestrictedDemoStateProps) {
         permissão.
       </p>
       <Link
-        className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-ink px-5 font-bold text-white focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/40"
+        className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 font-bold text-primary-text focus:outline-none focus-visible:ring-3 focus-visible:ring-focus"
         to="/visao-geral"
       >
         Voltar à visão geral

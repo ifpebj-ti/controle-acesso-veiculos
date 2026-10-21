@@ -155,7 +155,7 @@ export function AccessHistoryResults({
         />
       ) : (
         <>
-          <div className="grid gap-3 md:grid-cols-2 xl:hidden">
+          <div className="grid gap-3 md:grid-cols-2 2xl:hidden">
             {records.map((record) => (
               <article
                 className="history-record-card rounded-xl border border-border bg-surface-subtle p-4"
@@ -236,7 +236,7 @@ export function AccessHistoryResults({
             ))}
           </div>
 
-          <div className="history-table-shell hidden overflow-x-auto xl:block">
+          <div className="history-table-shell hidden overflow-x-auto 2xl:block">
             <table className="w-full min-w-[72rem] border-collapse text-left text-sm">
               <caption className="sr-only">
                 Histórico de acessos retornado pela API
@@ -315,7 +315,7 @@ export function AccessHistoryResults({
                       <StatusBadge {...closureStatus(record)} />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex min-w-[15rem] justify-end gap-2">
+                      <div className="flex min-w-[10.5rem] flex-col items-stretch gap-2">
                         <Button
                           aria-label={`Ver detalhes do registro ${record.plate} de ${record.driverName}`}
                           className="history-action-button whitespace-nowrap text-xs"

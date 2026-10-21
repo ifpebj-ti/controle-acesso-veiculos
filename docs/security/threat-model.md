@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 3.5
+**Versão:** 3.6
 
-**Data de referência:** 29 de setembro de 2026
+**Data de referência:** 18 de outubro de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218, #220, #227, #251 e #258
+**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218, #220, #227, #251, #258 e #448
 
 ## Objetivo e limites
 
@@ -51,7 +51,7 @@ O arquivo
 [`controle-acesso-veiculos-threat-model.json`](controle-acesso-veiculos-threat-model.json)
 é a representação visual versionada deste documento para OWASP Threat Dragon
 2.x. Ele contém o fluxo principal, a cadeia de entrega, as fronteiras de
-confiança e as ameaças `TM-01` a `TM-23` associadas aos elementos relevantes.
+confiança e as ameaças `TM-01` a `TM-27` associadas aos elementos relevantes.
 
 O JSON não substitui esta fonte textual: probabilidades, impactos, riscos
 residuais e decisões institucionais continuam detalhados aqui. Mudanças de
@@ -96,6 +96,7 @@ A classificação orienta prioridade, mas não substitui decisão institucional.
 - administrador autorizado;
 - equipe de desenvolvimento e operação;
 - GitHub Actions e serviços de dependências;
+- Google como provedor externo de identidade;
 - pessoa externa sem autenticação;
 - usuário autenticado mal-intencionado;
 - atacante com acesso à rede, dispositivo ou credencial;
@@ -114,9 +115,12 @@ flowchart LR
     Backup[(Backup local verificável)]
     GitHub[GitHub e Actions]
     Registry[GitHub Container Registry]
+    Google[Google OpenID Connect]
     Oci[OCI futura]
 
     User --> Browser
+    Browser -->|B9 Authorization Code + PKCE| Google
+    Google -->|B9 callback OIDC| Api
     Browser -->|B1 HTTP/HTTPS| Frontend
     Frontend -->|B2 API HTTP/HTTPS| Api
     Api -->|B3 Npgsql| Db
@@ -141,6 +145,7 @@ flowchart LR
 | B6        | Repositório para runner e registry        | CI valida Pull Requests e `main` sem publicação; uma tag de release revisada reconstrói, analisa e publica imagens no GHCR e registra proveniência e SBOM por digest no GitHub Artifact Attestations com permissão mínima                     |
 | B7        | Registry para infraestrutura OCI          | Não implementado                                                                                                                                                                                                                              |
 | B8        | API para collector OTLP                   | Exportação opt-in implementada; endpoint e infraestrutura externa pendentes                                                                                                                                                                   |
+| B9        | Navegador/API para Google OIDC            | Code Flow com PKCE, `state`, `nonce`, callback fixo, e-mail verificado e vínculo por `sub`; credenciais, HTTPS real e homologação ainda pendentes — #448                                                                                       |
 
 Todo dado vindo do navegador atravessa uma fronteira não confiável. Validação no
 frontend melhora usabilidade, mas não é controle de segurança suficiente.
@@ -174,6 +179,8 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-23 | Tampering / Information disclosure | Consulta de recorrentes enumera pessoas ou cliente adultera os identificadores e textos do vínculo selecionado     |   2 |   3 |     6 | Política operacional, termo entre 3 e 80 caracteres, limite fixo de 10 resultados, rate limiting global por usuário, resposta sem documento/e-mail/histórico e revalidação canônica do par no servidor — #213                                                                                                           | Mitigado no backend; calibração com uso real e integração do frontend permanecem pendentes                                                                                                                                        |
 | TM-24 | Spoofing / Information disclosure  | Tablet compartilhado permanece autenticado sem operador e permite uso da sessão por outra pessoa                   |   3 |   3 |     9 | Inatividade de 15 minutos, duração absoluta de 12 horas, referência e prazos emitidos pelo servidor, logout explícito, coordenação entre abas e renovação condicionada a atividade humana — #268                                                                                                                        | Política e contrato do servidor implementados; integração do frontend e validação no tablet da portaria pendentes                                                                                                                 |
 | TM-25 | Tampering / Denial of service       | Perda, divergência ou exposição do key ring invalida tokens antifalsificação ou expõe material protegido            |   2 |   3 |     6 | Key ring durável compartilhado, `ApplicationName` estável, XML protegido por certificado X.509 externo, falha fechada de configuração e ensaio de substituição — #355                                                                                   | Mitigado no Compose e na API; provisionamento definitivo em OCI Vault/File Storage e exercício operacional permanecem pendentes                                                                                                   |
+| TM-26 | Spoofing / Elevation of privilege   | Uma conta Google é vinculada ao usuário local errado ou recebe perfil apenas por possuir e-mail válido              |   2 |   3 |     6 | Pré-autorização local exata, `email_verified`, vínculo único pelo `sub`, conflito fechado, perfil exclusivamente local, método explícito por conta, separação entre Google operacional e login local administrativo — #448 e #469                      | Controles de domínio e persistência implementados; gestão completa pelo Administrador e homologação com o provedor real permanecem pendentes                                                                                       |
+| TM-27 | Spoofing / Tampering / Disclosure   | Callback OIDC sofre replay/CSRF, open redirect ou expõe código, token e segredo no navegador, URL ou log             |   2 |   3 |     6 | Authorization Code + PKCE, `state`, `nonce`, caminhos locais fixos, cookie externo curto, `SaveTokens=false`, callback no backend e ausência de tokens na URL/storage/auditoria — #448                                                                 | Base técnica implementada e desabilitada por padrão; callback HTTPS real, credenciais externas, teste de replay e integração do frontend permanecem pendentes                                                                      |
 
 ## Controles existentes verificados
 
@@ -198,11 +205,15 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 - rotas do frontend exigem sessão e apresentam acesso negado para perfil
   incompatível, sem substituir a autorização do backend;
 - hash de senha com salt e derivação, bloqueio temporário e resposta uniforme de login;
+- vínculo Google único por `sub`, e-mail verificado usado apenas no primeiro
+  vínculo com conta pré-autorizada, conflito fechado e desativação do login por
+  senha após a associação;
 - troca autenticada exige a senha atual, incrementa uma versão verificada em cada
   JWT, revoga sessões e audita a operação na mesma transação, sem copiar credenciais;
 - login bem-sucedido e bloqueio temporário auditados atomicamente sem credenciais, token, e-mail ou IP, com emissão de token impedida quando a auditoria falha;
 - consulta de contas paginada e restrita a Administrador, sem exposição de hash;
 - desativação e reativação auditadas atomicamente, com auto-desativação proibida e serialização das mudanças para preservar ao menos um Administrador ativo;
+- troca de perfil restrita ao Administrador, com justificativa, auditoria transacional, revogação das sessões, autoalteração proibida e preservação de ao menos um Administrador ativo; a transição também força método Google nos três perfis operacionais e método local no Administrador;
 - conta ou perfil inativo rejeitado na validação de toda requisição com JWT, inclusive para token emitido anteriormente;
 - criação administrativa e bootstrap auditados atomicamente, distinguindo ator autenticado de origem de sistema sem duplicar dados da conta;
 - consulta da trilha restrita a Administrador por política dedicada, com filtros, paginação, janela máxima e distinção entre ator humano e sistema;
