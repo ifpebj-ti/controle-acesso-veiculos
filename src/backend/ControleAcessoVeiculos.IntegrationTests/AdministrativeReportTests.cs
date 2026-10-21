@@ -148,6 +148,41 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task PdfExportRejectsAValidPasswordWhileAdministratorIsLocked()
+    {
+        var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var administrator = await dbContext.Usuarios.SingleAsync(
+                user => user.Id == administratorId,
+                TestContext.Current.CancellationToken);
+            administrator.RegistrarTentativaFalha(
+                DateTime.UtcNow,
+                limiteTentativas: 1,
+                TimeSpan.FromMinutes(5));
+            await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var response = await client.PostAsJsonAsync(
+            "/reports/vehicle-movements/pdf",
+            new
+            {
+                from = "2001-01-01",
+                to = "2001-01-02",
+                currentPassword = Password
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.NotEqual("application/pdf", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
     public async Task InvalidReportPeriodReturnsValidationProblemWithoutAudit()
     {
         var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);

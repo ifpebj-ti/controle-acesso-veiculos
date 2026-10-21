@@ -111,6 +111,28 @@ public sealed class RateLimitingTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task AdministrativeReportExportUsesDedicatedAuthenticatedLimit()
+    {
+        using var limitedFactory = CreateLimitedFactory(
+            globalPermitLimit: 100,
+            loginPermitLimit: 100,
+            passwordChangePermitLimit: 2);
+        var token = await CreateUserAndIssueTokenAsync(limitedFactory);
+        using var client = CreateAuthenticatedClient(limitedFactory, token);
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var response = await SendInvalidReportExportAsync(client);
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        var rejected = await SendInvalidReportExportAsync(client);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+        Assert.NotNull(rejected.Headers.RetryAfter?.Delta);
+    }
+
+    [Fact]
     public void InvalidLimitsShouldFailDuringStartup()
     {
         using var invalidFactory = factory.WithWebHostBuilder(builder =>
@@ -159,6 +181,15 @@ public sealed class RateLimitingTests(ApiFactory factory)
         {
             currentPassword = "Wrong-test-password-123!",
             newPassword = "New-test-password-456!"
+        });
+
+    private static async Task<HttpResponseMessage> SendInvalidReportExportAsync(
+        HttpClient client) =>
+        await client.PostAsJsonAsync("/reports/vehicle-movements/pdf", new
+        {
+            from = "2001-01-01",
+            to = "2001-01-02",
+            currentPassword = "Wrong-test-password-123!"
         });
 
     private static async Task<string> CreateUserAndIssueTokenAsync(
