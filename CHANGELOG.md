@@ -18,6 +18,10 @@ from its first published release.
   preauthorized accounts by stable subject, rotates local credential state and
   creates the existing protected application session without exposing provider
   tokens to the browser.
+- The frontend discovers whether Google authentication is enabled, starts the
+  backend-mediated redirect as its primary sign-in action, restores the local
+  session after the callback, and keeps local credentials behind an explicit
+  Administrator-only access action.
 
 - Semantic frontend design tokens and a documented WCAG 2.2 contrast matrix
   for the future light, dark, and system appearance foundation.
