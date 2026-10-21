@@ -313,7 +313,9 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
         if (criteria.Plate is not null)
         {
             accessRecords = accessRecords.Where(item => dbContext.Veiculos.Any(vehicle =>
-                vehicle.Id == item.VeiculoId && vehicle.Placa == criteria.Plate));
+                vehicle.Id == item.VeiculoId &&
+                vehicle.Placa != null &&
+                vehicle.Placa.StartsWith(criteria.Plate)));
         }
 
         if (criteria.DriverName is not null)

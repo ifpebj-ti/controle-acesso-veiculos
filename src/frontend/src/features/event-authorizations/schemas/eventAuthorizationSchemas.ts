@@ -17,10 +17,12 @@ export const eventAuthorizationSchema = z.object({
   id: z.number().int().positive(),
   name: z.string().trim().min(1).max(200),
   responsible: z.string().trim().min(1).max(200),
+  responsibleContact: z.string().trim().min(1).max(254).nullable(),
   startsAtUtc: validDate,
   endsAtUtc: validDate,
   area: z.string().trim().min(1).max(200),
   overnightAllowed: z.boolean(),
+  parkingLocation: z.enum(["ADefinir", "Interno", "Externo"]),
   notes: z.string().max(1000).nullable(),
   active: z.boolean(),
   createdById: z.number().int().positive(),
@@ -53,6 +55,20 @@ const eventVehicleRuleFormSchema = z.object({
   plate: z.string().trim().max(10, "A placa deve possuir até 10 caracteres."),
 });
 
+function isValidResponsibleContact(value: string) {
+  const contact = value.trim();
+  // The server remains authoritative for full MailAddress parsing. Accepting
+  // the e-mail channel here avoids introducing a conflicting browser rule.
+  if (contact.includes("@")) return true;
+
+  const digitCount = [...contact].filter((character) =>
+    /\p{Nd}/u.test(character),
+  ).length;
+  return (
+    digitCount >= 8 && digitCount <= 15 && /^[\p{Nd}+\-(). ]+$/u.test(contact)
+  );
+}
+
 export const eventAuthorizationFormSchema = z
   .object({
     name: z
@@ -65,6 +81,15 @@ export const eventAuthorizationFormSchema = z
       .trim()
       .min(1, "Informe a pessoa ou setor responsável.")
       .max(200, "O responsável deve possuir até 200 caracteres."),
+    responsibleContact: z
+      .string()
+      .trim()
+      .min(1, "Informe o contato do responsável.")
+      .max(254, "O contato deve possuir até 254 caracteres.")
+      .refine(
+        isValidResponsibleContact,
+        "Informe um e-mail válido ou telefone com 8 a 15 dígitos.",
+      ),
     startsAtLocal: z.string().min(1, "Informe o início do evento."),
     endsAtLocal: z.string().min(1, "Informe o fim do evento."),
     area: z
@@ -73,6 +98,9 @@ export const eventAuthorizationFormSchema = z
       .min(1, "Informe o local ou a área.")
       .max(200, "O local deve possuir até 200 caracteres."),
     overnightAllowed: z.boolean(),
+    parkingLocation: z.enum(["ADefinir", "Interno", "Externo"], {
+      message: "Selecione onde os veículos devem estacionar.",
+    }),
     notes: z
       .string()
       .trim()

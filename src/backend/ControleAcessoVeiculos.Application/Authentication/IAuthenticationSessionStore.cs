@@ -14,6 +14,10 @@ public interface IAuthenticationSessionStore
         Guid familyId,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<SessaoAutenticacao>> FindForUserForUpdateAsync(
+        int userId,
+        CancellationToken cancellationToken);
+
     Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<CancellationToken, Task<TResult>> operation,
         CancellationToken cancellationToken);

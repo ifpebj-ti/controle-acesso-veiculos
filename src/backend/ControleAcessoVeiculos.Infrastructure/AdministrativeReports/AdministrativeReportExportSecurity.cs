@@ -32,7 +32,7 @@ public sealed class AdministrativeReportExportSecurity(
             .SingleOrDefaultAsync(cancellationToken);
 
         if (actor is null ||
-            !actor.User.PodeAutenticar(timeProvider.GetUtcNow().UtcDateTime) ||
+            !actor.User.PodeAutenticarComSenha(timeProvider.GetUtcNow().UtcDateTime) ||
             !string.Equals(
                 actor.ProfileName,
                 ProfileNames.Administrator,
@@ -42,7 +42,7 @@ public sealed class AdministrativeReportExportSecurity(
             return AdministrativeReportExportConfirmation.Unauthorized();
         }
 
-        var verification = passwordHashService.Verify(actor.User.SenhaHash, password);
+        var verification = passwordHashService.Verify(actor.User.SenhaHash!, password);
         return verification == PasswordHashVerificationResult.Failed
             ? AdministrativeReportExportConfirmation.Unauthorized()
             : AdministrativeReportExportConfirmation.Success(actor.Nome);

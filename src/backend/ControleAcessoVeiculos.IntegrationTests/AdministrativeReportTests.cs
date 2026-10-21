@@ -148,6 +148,41 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task PdfExportRejectsAValidPasswordWhileAdministratorIsLocked()
+    {
+        var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var administrator = await dbContext.Usuarios.SingleAsync(
+                user => user.Id == administratorId,
+                TestContext.Current.CancellationToken);
+            administrator.RegistrarTentativaFalha(
+                DateTime.UtcNow,
+                limiteTentativas: 1,
+                TimeSpan.FromMinutes(5));
+            await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var response = await client.PostAsJsonAsync(
+            "/reports/vehicle-movements/pdf",
+            new
+            {
+                from = "2001-01-01",
+                to = "2001-01-02",
+                currentPassword = Password
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.NotEqual("application/pdf", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
     public async Task InvalidReportPeriodReturnsValidationProblemWithoutAudit()
     {
         var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
@@ -186,7 +221,7 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
                 "OUTRO",
                 sensitiveDocument);
             var vehicle = new Veiculo(
-                $"R{Guid.NewGuid():N}"[..7],
+                TestPlate.From(Guid.NewGuid().ToString("N")),
                 "Automóvel",
                 null,
                 false);
@@ -236,11 +271,13 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
             var category = new CategoriaAcesso($"Categoria {Guid.NewGuid():N}");
             dbContext.AddRange(driver, vehicle, category);
             await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+            // Keep this intentionally open record after historical summary fixtures so
+            // the shared integration database cannot change their carry-over totals.
             dbContext.RegistrosAcesso.Add(new RegistroAcesso(
                 vehicle.Id,
                 driver.Id,
                 category.Id,
-                new DateTime(2003, 6, 10, 12, 0, 0, DateTimeKind.Utc),
+                new DateTime(2098, 6, 10, 12, 0, 0, DateTimeKind.Utc),
                 "Serviço autorizado",
                 administratorId));
             await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -249,7 +286,7 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email);
         var response = await client.GetAsync(
-            "/reports/vehicle-movements?from=2003-06-10&to=2003-06-10",
+            "/reports/vehicle-movements?from=2098-06-10&to=2098-06-10",
             TestContext.Current.CancellationToken);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(
             TestContext.Current.CancellationToken));

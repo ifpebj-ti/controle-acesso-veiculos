@@ -499,10 +499,12 @@ if ($null -eq $event) {
     -AccessToken $accessToken -Body @{
       name = $eventName
       responsible = "Coordenacao Academica Fict${iAcute}cia"
+      responsibleContact = "eventos.demo@example.test"
       startsAtUtc = [DateTime]::UtcNow.AddHours(-1).ToString('O')
       endsAtUtc = [DateTime]::UtcNow.AddDays(7).ToString('O')
       area = "Patio de demonstra${cCedilla}${aTilde}o"
       overnightAllowed = $true
+      parkingLocation = "Interno"
       vehicleRules = @(
         @{ vehicleType = "Autom${oAcute}vel"; quantity = 1; plate = 'DMO3C01' },
         @{ vehicleType = 'Van'; quantity = 2 }

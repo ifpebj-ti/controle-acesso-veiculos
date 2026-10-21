@@ -18,11 +18,13 @@ public static class InstitutionalVehicleCatalogEndpoints
         group.MapPost(string.Empty, CreateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageInstitutionalVehicleCatalog)
             .WithName("CreateInstitutionalVehicle")
-            .WithSummary("Cadastra um veículo institucional");
+            .WithSummary("Cadastra um veículo institucional")
+            .WithDescription(VehiclePlateOpenApi.OptionalCompletePlate);
         group.MapPut("/{id:int}", UpdateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageInstitutionalVehicleCatalog)
             .WithName("UpdateInstitutionalVehicle")
-            .WithSummary("Atualiza um veículo institucional");
+            .WithSummary("Atualiza um veículo institucional")
+            .WithDescription(VehiclePlateOpenApi.OptionalCompletePlate);
         group.MapDelete("/{id:int}", DeactivateAsync)
             .RequireAuthorization(AuthorizationPolicies.ManageInstitutionalVehicleCatalog)
             .WithName("DeactivateInstitutionalVehicle")

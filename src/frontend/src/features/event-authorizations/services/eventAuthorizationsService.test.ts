@@ -22,7 +22,9 @@ const event = {
   name: "Evento Fictício",
   notes: null,
   overnightAllowed: false,
+  parkingLocation: "Interno" as const,
   responsible: "Setor Fictício",
+  responsibleContact: "eventos@example.test",
   startsAtUtc: "2030-05-10T12:00:00Z",
   updatedAtUtc: null,
   updatedById: null,
@@ -44,7 +46,9 @@ const input = {
   name: event.name,
   notes: null,
   overnightAllowed: false,
+  parkingLocation: event.parkingLocation,
   responsible: event.responsible,
+  responsibleContact: event.responsibleContact,
   startsAtUtc: event.startsAtUtc,
   vehicleRules: [{ plate: null, quantity: 3, vehicleType: "Automóvel" }],
 };
@@ -133,6 +137,38 @@ describe("eventAuthorizationsService", () => {
     ).rejects.toMatchObject({ name: "EventAuthorizationsContractError" });
     await expect(createEventAuthorization(input)).rejects.toMatchObject({
       name: "EventAuthorizationsContractError",
+    });
+  });
+
+  it("accepts the documented defaults returned for a legacy event", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        items: [
+          {
+            ...event,
+            parkingLocation: "ADefinir",
+            responsibleContact: null,
+          },
+        ],
+        page: 1,
+        pageSize: 10,
+        totalCount: 1,
+        totalPages: 1,
+      },
+    });
+
+    const result = await searchEventAuthorizations({
+      active: "true",
+      fromUtc: "",
+      name: "",
+      page: 1,
+      pageSize: 10,
+      toUtc: "",
+    });
+
+    expect(result.items[0]).toMatchObject({
+      parkingLocation: "ADefinir",
+      responsibleContact: null,
     });
   });
 });

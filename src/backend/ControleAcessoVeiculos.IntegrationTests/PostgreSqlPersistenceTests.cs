@@ -29,6 +29,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains("20260830202007_AddEventAuthorizationCatalog", migrations);
         Assert.Contains("20260830204741_LinkEventAuthorizationsToAccessRecords", migrations);
         Assert.Contains("20260913185634_AddSecureAuthenticationSessions", migrations);
+        Assert.Contains("20261015023225_AddEventContactAndParking", migrations);
 
         await dbContext.Database.OpenConnectionAsync(cancellationToken: TestContext.Current.CancellationToken);
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
@@ -79,6 +80,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         }
 
         Assert.Contains("ck_eventos_acesso_periodo", constraints);
+        Assert.Contains("ck_eventos_acesso_local_estacionamento", constraints);
         Assert.Contains("ck_autorizacoes_veiculos_eventos_quantidade", constraints);
         Assert.Contains("ux_autorizacoes_veiculos_eventos_evento_placa", constraints);
         Assert.Contains(
@@ -205,7 +207,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         var pessoa = new Pessoa($"Pessoa {suffix}");
         var veiculo = new Veiculo(
-            $"T{suffix[..7]}",
+            TestPlate.From(suffix),
             "Teste",
             null,
             false);

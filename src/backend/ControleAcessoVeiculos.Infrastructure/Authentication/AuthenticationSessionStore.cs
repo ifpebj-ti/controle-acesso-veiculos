@@ -66,6 +66,18 @@ public sealed class AuthenticationSessionStore(
                 """)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<SessaoAutenticacao>> FindForUserForUpdateAsync(
+        int userId,
+        CancellationToken cancellationToken) =>
+        await dbContext.SessoesAutenticacao
+            .FromSqlInterpolated($"""
+                SELECT *
+                FROM dbo.sessoes_autenticacao
+                WHERE usuario_id = {userId}
+                FOR UPDATE
+                """)
+            .ToListAsync(cancellationToken);
+
     public async Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<CancellationToken, Task<TResult>> operation,
         CancellationToken cancellationToken)

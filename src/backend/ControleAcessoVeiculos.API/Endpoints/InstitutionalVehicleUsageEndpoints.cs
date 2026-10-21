@@ -26,7 +26,8 @@ public static class InstitutionalVehicleUsageEndpoints
         group.MapGet("/history", SearchHistoryAsync)
             .RequireAuthorization(AuthorizationPolicies.ReviewTransportationRecords)
             .WithName("SearchInstitutionalVehicleUsageHistory")
-            .WithSummary("Consulta o histórico de utilizações institucionais");
+            .WithSummary("Consulta o histórico de utilizações institucionais")
+            .WithDescription(VehiclePlateOpenApi.PartialPlateFilter);
 
         return endpoints;
     }

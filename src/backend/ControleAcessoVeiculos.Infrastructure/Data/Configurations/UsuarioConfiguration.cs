@@ -1,4 +1,5 @@
 using ControleAcessoVeiculos.Domain.Entities;
+using ControleAcessoVeiculos.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -27,7 +28,13 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
         builder.Property(usuario => usuario.SenhaHash)
             .HasColumnName("senha_hash")
             .HasColumnType("character varying(255)")
-            .HasMaxLength(255)
+            .HasMaxLength(255);
+
+        builder.Property(usuario => usuario.MetodoAutenticacao)
+            .HasColumnName("metodo_autenticacao")
+            .HasColumnType("character varying(16)")
+            .HasMaxLength(16)
+            .HasConversion<string>()
             .IsRequired();
 
         builder.Property(usuario => usuario.PessoaId)
@@ -86,6 +93,15 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
             .HasColumnName("credencial_temporaria_utilizada_em")
             .HasColumnType("timestamp with time zone");
 
+        builder.Property(usuario => usuario.GoogleSubject)
+            .HasColumnName("google_subject")
+            .HasColumnType("character varying(255)")
+            .HasMaxLength(255);
+
+        builder.Property(usuario => usuario.GoogleVinculadoEm)
+            .HasColumnName("google_vinculado_em")
+            .HasColumnType("timestamp with time zone");
+
         builder.ToTable(table => table.HasCheckConstraint(
             "ck_usuarios_credencial_temporaria",
             "(troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NOT NULL AND " +
@@ -93,6 +109,14 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
             "credencial_temporaria_utilizada_em < credencial_temporaria_expira_em)) OR " +
             "(NOT troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NULL AND " +
             "credencial_temporaria_utilizada_em IS NULL)"));
+
+        builder.ToTable(table => table.HasCheckConstraint(
+            "ck_usuarios_vinculo_google",
+            "(metodo_autenticacao = 'Local' AND senha_hash IS NOT NULL AND " +
+            "google_subject IS NULL AND google_vinculado_em IS NULL) OR " +
+            "(metodo_autenticacao = 'Google' AND senha_hash IS NULL AND " +
+            "((google_subject IS NULL AND google_vinculado_em IS NULL) OR " +
+            "(google_subject IS NOT NULL AND google_vinculado_em IS NOT NULL)))"));
 
         builder.HasIndex(usuario => usuario.Email)
             .IsUnique()
@@ -107,6 +131,11 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
 
         builder.HasIndex(usuario => usuario.Ativo)
             .HasDatabaseName("ix_usuarios_ativo");
+
+        builder.HasIndex(usuario => usuario.GoogleSubject)
+            .IsUnique()
+            .HasFilter("google_subject IS NOT NULL")
+            .HasDatabaseName("ux_usuarios_google_subject");
 
         builder.HasOne<Pessoa>()
             .WithMany()

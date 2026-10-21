@@ -27,7 +27,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var name = $"Jardim Digital {suffix}";
         var responsible = $"Coordenação {suffix}";
-        var plate = $"EV{suffix[..5]}";
+        var plate = TestPlate.From(suffix);
         var startsAtUtc = DateTimeOffset.UtcNow.AddDays(1);
         var endsAtUtc = startsAtUtc.AddDays(2);
 
@@ -39,6 +39,8 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         Assert.NotNull(created);
         Assert.Equal(plate.ToUpperInvariant(), created.VehicleRules[0].Plate);
         Assert.Equal(3, created.VehicleRules[1].Quantity);
+        Assert.Equal("eventos@example.test", created.ResponsibleContact);
+        Assert.Equal("Interno", created.ParkingLocation);
         Assert.Equal(managerId, created.CreatedById);
 
         using var doorman = factory.CreateClient();
@@ -90,6 +92,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
             }).Where(value => value is not null));
         Assert.DoesNotContain(name, auditContent, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(responsible, auditContent, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("eventos@example.test", auditContent, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(plate, auditContent, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -157,6 +160,17 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
             vehicleRules = Array.Empty<object>()
         }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, administratorInvalid.StatusCode);
+
+        var invalidPlate = await administrator.PostAsJsonAsync(
+            "/event-authorizations",
+            Request(
+                "Evento com placa inválida",
+                "Responsável de teste",
+                "777777",
+                DateTimeOffset.UtcNow.AddDays(1),
+                DateTimeOffset.UtcNow.AddDays(2)),
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidPlate.StatusCode);
     }
 
     [Fact]
@@ -177,7 +191,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
             var response = await client.PostAsJsonAsync("/event-authorizations", Request(
                     name,
                     "Responsável de teste",
-                    $"RB{suffix[..5]}",
+                    TestPlate.From(suffix),
                     DateTimeOffset.UtcNow.AddDays(1),
                     DateTimeOffset.UtcNow.AddDays(2)), cancellationToken: TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
@@ -202,10 +216,12 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         {
             name,
             responsible,
+            responsibleContact = "eventos@example.test",
             startsAtUtc,
             endsAtUtc,
             area = "Pátio central",
             overnightAllowed = true,
+            parkingLocation = "Interno",
             notes = "Observação operacional",
             vehicleRules = new object[]
             {
@@ -297,10 +313,12 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         int Id,
         string Name,
         string Responsible,
+        string? ResponsibleContact,
         DateTime StartsAtUtc,
         DateTime EndsAtUtc,
         string Area,
         bool OvernightAllowed,
+        string ParkingLocation,
         string? Notes,
         bool Active,
         int CreatedById,
