@@ -399,10 +399,14 @@ describe("NewAccessPage", () => {
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("REC1A23");
 
     await user.click(alternateOption);
-    expect(
-      screen.queryByText(/REC1A23 · Condutor recorrente/),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText(/ALT4B56 · Outra pessoa recorrente/)).toBeVisible();
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/REC1A23 · Condutor recorrente/),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText(/ALT4B56 · Outra pessoa recorrente/),
+      ).toBeVisible();
+    });
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("ALT4B56");
     expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
       alternateCandidate.driverName,
