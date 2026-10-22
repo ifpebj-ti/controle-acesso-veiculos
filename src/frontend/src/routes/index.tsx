@@ -51,6 +51,10 @@ const loadPasswordChangePage = () =>
   import("../pages/PasswordChangePage").then(({ PasswordChangePage }) => ({
     Component: PasswordChangePage,
   }));
+const loadReportsPage = () =>
+  import("../pages/ReportsPage").then(({ ReportsPage }) => ({
+    Component: ReportsPage,
+  }));
 
 export const router = createBrowserRouter([
   {
@@ -89,6 +93,7 @@ export const router = createBrowserRouter([
                   },
                   { path: "/eventos", lazy: loadEventsPage },
                   { path: "/administracao", lazy: loadAdminPage },
+                  { path: "/relatorios", lazy: loadReportsPage },
                 ],
               },
             ],
