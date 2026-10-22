@@ -25,6 +25,13 @@ resource "oci_load_balancer_load_balancer" "edge" {
     minimum_bandwidth_in_mbps = var.load_balancer_minimum_bandwidth_mbps
     maximum_bandwidth_in_mbps = var.load_balancer_maximum_bandwidth_mbps
   }
+
+  lifecycle {
+    precondition {
+      condition     = var.load_balancer_maximum_bandwidth_mbps >= var.load_balancer_minimum_bandwidth_mbps
+      error_message = "The maximum Load Balancer bandwidth must be at least the minimum bandwidth."
+    }
+  }
 }
 
 resource "oci_load_balancer_backend_set" "application" {

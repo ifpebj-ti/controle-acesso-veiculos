@@ -4,6 +4,13 @@ resource "oci_core_vcn" "homologation" {
   display_name   = "${var.resource_prefix}-vcn"
   dns_label      = "cavhml"
   freeform_tags  = var.freeform_tags
+
+  lifecycle {
+    precondition {
+      condition     = var.application_subnet_cidr != var.public_subnet_cidr
+      error_message = "application_subnet_cidr must be different from public_subnet_cidr."
+    }
+  }
 }
 
 resource "oci_core_internet_gateway" "homologation" {
