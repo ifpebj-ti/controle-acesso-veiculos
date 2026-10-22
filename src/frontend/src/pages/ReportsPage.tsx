@@ -91,10 +91,9 @@ function AdministratorReports() {
       <aside className="mt-6 rounded-2xl border border-warning-border bg-warning-surface p-5 text-sm leading-6 text-text-muted">
         <h2 className="font-bold text-text">Confirmação da exportação</h2>
         <p className="mt-1">
-          A senha é enviada somente na tentativa de exportação e apagada do
-          formulário logo em seguida. A confirmação por Google ainda depende da
-          evolução do backend; nenhuma reautenticação Google é simulada nesta
-          tela.
+          A exportação é exclusiva do Administrador e exige a confirmação da
+          senha administrativa atual. A senha é enviada somente nesta tentativa
+          e apagada do formulário em seguida.
         </p>
       </aside>
 
