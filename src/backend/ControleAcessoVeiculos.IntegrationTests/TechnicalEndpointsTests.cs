@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControleAcessoVeiculos.Application.AdministrativeReports;
+using ControleAcessoVeiculos.Application.EventAuthorizations;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -200,6 +202,84 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
 
         Assert.NotEqual(0, operationCount);
     }
+
+    [Fact]
+    public async Task DevelopmentOpenApiPublishesEventAuthorizationContracts()
+    {
+        using var developmentFactory = factory.WithWebHostBuilder(builder =>
+            builder.UseEnvironment("Development"));
+        using var client = developmentFactory.CreateClient();
+
+        var documentJson = await client.GetStringAsync(
+            "/openapi/v1.json",
+            TestContext.Current.CancellationToken);
+        using var document = JsonDocument.Parse(documentJson);
+        var root = document.RootElement;
+        var paths = root.GetProperty("paths");
+        var schemas = root.GetProperty("components").GetProperty("schemas");
+
+        Assert.True(schemas.TryGetProperty(nameof(PagedEventAuthorizations), out _));
+        Assert.True(schemas.TryGetProperty(nameof(EventAuthorizationRecord), out _));
+        Assert.True(schemas.TryGetProperty(nameof(EventVehicleRuleRecord), out _));
+
+        Assert.Equal(
+            ["200", "400", "401", "403"],
+            ResponseCodes(paths, "/event-authorizations", "get"));
+        Assert.Equal(
+            ["201", "400", "401", "403", "409"],
+            ResponseCodes(paths, "/event-authorizations", "post"));
+        Assert.Equal(
+            ["200", "400", "401", "403", "404", "409"],
+            ResponseCodes(paths, "/event-authorizations/{id}", "put"));
+        Assert.Equal(
+            ["204", "400", "401", "403", "404", "409"],
+            ResponseCodes(paths, "/event-authorizations/{id}", "delete"));
+    }
+
+    [Fact]
+    public async Task DevelopmentOpenApiPublishesAdministrativeReportContracts()
+    {
+        using var developmentFactory = factory.WithWebHostBuilder(builder =>
+            builder.UseEnvironment("Development"));
+        using var client = developmentFactory.CreateClient();
+
+        var documentJson = await client.GetStringAsync(
+            "/openapi/v1.json",
+            TestContext.Current.CancellationToken);
+        using var document = JsonDocument.Parse(documentJson);
+        var root = document.RootElement;
+        var paths = root.GetProperty("paths");
+        var schemas = root.GetProperty("components").GetProperty("schemas");
+
+        Assert.True(schemas.TryGetProperty(nameof(VehicleMovementReportItem), out _));
+        Assert.True(schemas.TryGetProperty(nameof(InstitutionalFleetReportItem), out _));
+        Assert.True(schemas.TryGetProperty(nameof(ReportActor), out _));
+
+        Assert.Equal(
+            ["200", "400", "401", "403"],
+            ResponseCodes(paths, "/reports/vehicle-movements", "get"));
+        Assert.Equal(
+            ["200", "400", "401", "403"],
+            ResponseCodes(paths, "/reports/institutional-fleet", "get"));
+        Assert.Equal(
+            ["200", "400", "401", "403", "429", "503"],
+            ResponseCodes(paths, "/reports/vehicle-movements/pdf", "post"));
+        Assert.Equal(
+            ["200", "400", "401", "403", "429", "503"],
+            ResponseCodes(paths, "/reports/institutional-fleet/pdf", "post"));
+    }
+
+    private static string[] ResponseCodes(
+        JsonElement paths,
+        string path,
+        string method) =>
+        paths.GetProperty(path)
+            .GetProperty(method)
+            .GetProperty("responses")
+            .EnumerateObject()
+            .Select(response => response.Name)
+            .Order()
+            .ToArray();
 
     [Fact]
     public async Task DevelopmentOpenApiDistinguishesCompletePlatesFromSearchFilters()

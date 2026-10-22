@@ -1,7 +1,7 @@
 # ADR 0005 — Google OIDC com autorização local e acesso de emergência
 
 - **Estado:** aceita para implementação; credenciais e homologação pendentes
-- **Data:** 14 de outubro de 2026
+- **Data:** 14 de outubro de 2026; revisada em 20 de outubro de 2026
 - **Rastreabilidade:** Issues #448, #449 e #441
 
 ## Contexto
@@ -26,7 +26,7 @@ Adotar OpenID Connect Authorization Code Flow, iniciado e concluído no backend:
    `nonce`, `email_verified` e o `sub` estável;
 4. a API localiza uma conta ativa previamente autorizada;
 5. no primeiro vínculo, e somente nele, uma conta previamente cadastrada pode
-   associar o e-mail Google verificado que o Administrador mestre autorizou ao
+   associar o e-mail Google verificado que o Administrador autorizou ao
    `sub` do Google;
 6. depois do vínculo, o `sub` é a identidade externa canônica; mudança de e-mail
    não transfere a conta;
@@ -42,7 +42,7 @@ Parâmetros de retorno fornecidos pelo navegador não decidirão o destino do
 redirecionamento.
 
 Uma conta Google válida não recebe acesso automaticamente, seja ela pessoal ou
-institucional. O Administrador mestre cadastra previamente o endereço exato e
+institucional. O Administrador cadastra previamente o endereço exato e
 atribui o perfil antes do primeiro login. Não haverá restrição por domínio. O
 parâmetro `hd` do Google não será usado como autorização nem como requisito de
 acesso.
@@ -56,41 +56,42 @@ gravados em `localStorage`/`sessionStorage`.
 
 Cada conta terá método explícito de autenticação:
 
-- `Google`: exige provedor e `sub`, não possui senha local utilizável;
-- `LocalEmergency`: possui hash local e é restrita a Administrador mestre;
-- estado transitório `GooglePendingLink`: conta pré-provisionada ainda sem
-  `sub`, incapaz de autenticar localmente.
+- `Google`: usado por Porteiro, Vigilante e Setor de Transporte, não possui
+  senha local utilizável;
+- `Local`: usado somente pelo perfil Administrador e possui hash local;
+- uma conta `Google` ainda sem `sub` representa o estado transitório de vínculo
+  pendente e não pode autenticar localmente.
 
 O par provedor/`sub` será único. Alterar método, desvincular identidade ou
 promover conta de emergência exige operação administrativa sensível, motivo,
 auditoria e revogação das sessões existentes.
 
-Devem existir ao menos duas contas de emergência sob custódias institucionais
-distintas. Elas não serão compartilhadas, exibidas como opção principal nem
-usadas no cotidiano. O procedimento de uso, guarda, teste e rotação será
-documentado; indisponibilidade do Google não concede acesso a outras contas.
+Devem existir ao menos duas contas Administrador locais e individuais, sob
+custódias institucionais distintas, para evitar ponto único de falha. Elas não
+serão compartilhadas nem exibidas como opção principal. O procedimento de uso,
+guarda, teste e rotação será documentado; indisponibilidade do Google não
+concede acesso local aos perfis operacionais.
 
-## Administrador mestre
+## Administrador único
 
-Administrador mestre é uma capacidade local de governança, não um atributo do
-Google. Ele pode provisionar contas, atribuir ou revogar perfis e administrar o
-método de autenticação. A implementação deve:
+Não existe um segundo tipo de Administrador nem uma capacidade de “mestre”. O
+perfil Administrador já existente é a autoridade local de governança e o único
+que pode provisionar contas, atribuir ou revogar perfis e administrar o método
+de autenticação. A implementação deve:
 
-- impedir remoção, rebaixamento ou desativação do último mestre ativo;
-- impedir autoelevação e exigir confirmação reforçada para privilégios;
+- impedir remoção, rebaixamento ou desativação do último Administrador ativo;
+- impedir autoelevação e exigir confirmação reforçada para mudanças de perfil;
 - revogar sessões quando perfil ou método mudar;
 - auditar estado anterior, novo estado, ator, motivo e data sem copiar tokens;
 - separar gestão de identidade da operação cotidiana da portaria.
 
 ## Confirmação reforçada
 
-Operações sensíveis, como exportar relatório, exigem prova recente adequada ao
-método da conta:
-
-- conta `Google`: nova autenticação OIDC, solicitando seleção/consentimento
-  conforme suportado e conferindo `auth_time`/instante da prova;
-- conta `LocalEmergency`: senha atual validada em endpoint dedicado, com limite
-  de tentativas e resposta genérica.
+Operações exclusivas do Administrador, como exportar relatório, exigem prova
+recente da senha local em endpoint dedicado, com limite de tentativas e resposta
+genérica. Se uma operação sensível for futuramente concedida a um perfil Google,
+ela deverá usar nova autenticação OIDC e validar o instante da prova, sem
+reintroduzir senha local para esse perfil.
 
 A prova gera autorização curta, vinculada a usuário, sessão, finalidade e uso
 único. Não será reutilizado `POST /auth/login` e o frontend não escolherá qual
@@ -114,9 +115,10 @@ Authentication__Google__FrontendCompletionPath
 ```
 
 Habilitar o provedor sem configuração completa deve impedir o startup. O deploy
-deve primeiro aplicar a migration, provisionar segredos, testar contas de
-emergência, habilitar OIDC em homologação e somente então desativar login local
-das contas cotidianas. Não haverá conversão em massa irreversível.
+deve primeiro aplicar a migration, provisionar segredos, testar as contas
+Administrador locais, pré-autorizar os operadores, habilitar OIDC em homologação
+e somente então encerrar o modo local legado. Não haverá conversão em massa
+irreversível.
 
 ## Alternativas rejeitadas
 
@@ -130,7 +132,8 @@ das contas cotidianas. Não haverá conversão em massa irreversível.
   a configuração externa não governada pelo sistema.
 - **Manter senha para todos como fallback:** preserva duas superfícies de ataque
   e torna impossível saber qual método deve governar a conta.
-- **Uma única conta mestre:** cria ponto único de falha operacional.
+- **Uma única conta Administrador:** cria ponto único de falha operacional;
+  por isso o perfil é único, mas deve possuir ao menos dois titulares individuais.
 
 ## Consequências
 

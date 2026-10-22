@@ -66,10 +66,10 @@ public sealed class CreateUserAccountServiceTests
     }
 
     [Fact]
-    public async Task AdministrativeCreationGeneratesExpiringTemporaryCredential()
+    public async Task OperationalCreationPreauthorizesGoogleWithoutLocalCredential()
     {
         var store = new FakeUserAccountStore();
-        var service = CreateService(store);
+        var service = CreateService(store, operationalGoogleOnly: true);
 
         var result = await service.CreateAsync(new CreateUserAccountCommand(
             "Novo Operador",
@@ -78,23 +78,24 @@ public sealed class CreateUserAccountServiceTests
             ProfileNames.Doorman), actorUserId: 7, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(CreateUserAccountStatus.Success, result.Status);
-        Assert.Equal("Generated-temporary-credential-123!", result.TemporaryCredential);
-        Assert.Equal(FixedNow.UtcDateTime.AddMinutes(30),
-            result.TemporaryCredentialExpiresAtUtc);
+        Assert.Null(result.TemporaryCredential);
+        Assert.Null(result.TemporaryCredentialExpiresAtUtc);
+        Assert.Null(store.CapturedPasswordHash);
+        Assert.Null(store.CapturedTemporaryCredentialExpiresAtUtc);
         Assert.Equal(
-            "HASH::Generated-temporary-credential-123!",
-            store.CapturedPasswordHash);
-        Assert.Equal(
-            FixedNow.UtcDateTime.AddMinutes(30),
-            store.CapturedTemporaryCredentialExpiresAtUtc);
+            ControleAcessoVeiculos.Domain.Enums.MetodoAutenticacao.Google,
+            store.CapturedAuthenticationMethod);
     }
 
-    private static CreateUserAccountService CreateService(FakeUserAccountStore store) =>
+    private static CreateUserAccountService CreateService(
+        FakeUserAccountStore store,
+        bool operationalGoogleOnly = false) =>
         new(
             store,
             new FakePasswordHashService(),
             new FakeTemporaryCredentialGenerator(),
             new TemporaryCredentialPolicy(TimeSpan.FromMinutes(30)),
+            new AuthenticationMethodPolicy(operationalGoogleOnly),
             new FixedTimeProvider(FixedNow));
 
     private sealed class FakeUserAccountStore : IUserAccountStore
@@ -103,6 +104,9 @@ public sealed class CreateUserAccountServiceTests
         public string? CapturedPasswordHash { get; private set; }
         public AccountCreationAudit? CapturedAudit { get; private set; }
         public DateTime? CapturedTemporaryCredentialExpiresAtUtc { get; private set; }
+        public ControleAcessoVeiculos.Domain.Enums.MetodoAutenticacao
+            CapturedAuthenticationMethod
+        { get; private set; }
 
         public Task<bool> HasAnyUserAsync(CancellationToken cancellationToken) =>
             Task.FromResult(false);
@@ -110,8 +114,9 @@ public sealed class CreateUserAccountServiceTests
         public Task<CreatedUserAccount?> TryCreateAsync(
             string name,
             string normalizedEmail,
-            string passwordHash,
+            string? passwordHash,
             string profileName,
+            ControleAcessoVeiculos.Domain.Enums.MetodoAutenticacao authenticationMethod,
             DateTime? temporaryCredentialExpiresAtUtc,
             AccountCreationAudit audit,
             CancellationToken cancellationToken)
@@ -120,8 +125,13 @@ public sealed class CreateUserAccountServiceTests
             CapturedPasswordHash = passwordHash;
             CapturedAudit = audit;
             CapturedTemporaryCredentialExpiresAtUtc = temporaryCredentialExpiresAtUtc;
+            CapturedAuthenticationMethod = authenticationMethod;
             return Task.FromResult<CreatedUserAccount?>(
-                new CreatedUserAccount(1, normalizedEmail, profileName));
+                new CreatedUserAccount(
+                    1,
+                    normalizedEmail,
+                    profileName,
+                    authenticationMethod));
         }
 
         public Task<PagedUserAccountResult> SearchAsync(

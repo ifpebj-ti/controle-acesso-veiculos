@@ -18,7 +18,7 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("dbo")
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -208,6 +208,11 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("atualizado_por_id");
 
+                    b.Property<string>("ContatoResponsavel")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("contato_responsavel");
+
                     b.Property<int>("CriadoPorId")
                         .HasColumnType("integer")
                         .HasColumnName("criado_por_id");
@@ -233,6 +238,14 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("local_area");
+
+                    b.Property<string>("LocalEstacionamento")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("ADefinir")
+                        .HasColumnName("local_estacionamento");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -272,6 +285,8 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
 
                     b.ToTable("eventos_acesso", "dbo", t =>
                         {
+                            t.HasCheckConstraint("ck_eventos_acesso_local_estacionamento", "local_estacionamento IN ('ADefinir', 'Interno', 'Externo')");
+
                             t.HasCheckConstraint("ck_eventos_acesso_periodo", "fim > inicio");
                         });
                 });
@@ -707,7 +722,7 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
 
                     b.ToTable("sessoes_autenticacao", "dbo", t =>
                         {
-                            t.HasCheckConstraint("ck_sessoes_autenticacao_motivo_revogacao", "motivo_revogacao IS NULL OR motivo_revogacao IN ('Rotacao', 'Logout', 'Expiracao', 'ContaDesativada', 'ReutilizacaoDetectada', 'SenhaAlterada', 'RedefinicaoAdministrativa')");
+                            t.HasCheckConstraint("ck_sessoes_autenticacao_motivo_revogacao", "motivo_revogacao IS NULL OR motivo_revogacao IN ('Rotacao', 'Logout', 'Expiracao', 'ContaDesativada', 'ReutilizacaoDetectada', 'SenhaAlterada', 'RedefinicaoAdministrativa', 'MetodoAutenticacaoAlterado')");
 
                             t.HasCheckConstraint("ck_sessoes_autenticacao_periodo", "expira_em > criada_em");
 
@@ -875,6 +890,12 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("google_vinculado_em");
 
+                    b.Property<string>("MetodoAutenticacao")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("metodo_autenticacao");
+
                     b.Property<int>("PerfilId")
                         .HasColumnType("integer")
                         .HasColumnName("perfil_id");
@@ -884,7 +905,6 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasColumnName("pessoa_id");
 
                     b.Property<string>("SenhaHash")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("senha_hash");
@@ -933,7 +953,7 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_usuarios_credencial_temporaria", "(troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NOT NULL AND (credencial_temporaria_utilizada_em IS NULL OR credencial_temporaria_utilizada_em < credencial_temporaria_expira_em)) OR (NOT troca_senha_obrigatoria AND credencial_temporaria_expira_em IS NULL AND credencial_temporaria_utilizada_em IS NULL)");
 
-                            t.HasCheckConstraint("ck_usuarios_vinculo_google", "(google_subject IS NULL AND google_vinculado_em IS NULL) OR (google_subject IS NOT NULL AND google_vinculado_em IS NOT NULL)");
+                            t.HasCheckConstraint("ck_usuarios_vinculo_google", "(metodo_autenticacao = 'Local' AND senha_hash IS NOT NULL AND google_subject IS NULL AND google_vinculado_em IS NULL) OR (metodo_autenticacao = 'Google' AND senha_hash IS NULL AND ((google_subject IS NULL AND google_vinculado_em IS NULL) OR (google_subject IS NOT NULL AND google_vinculado_em IS NOT NULL)))");
                         });
                 });
 

@@ -1,0 +1,59 @@
+name: CI - OCI homologation infrastructure
+
+on:
+  push:
+    paths:
+      - ".github/workflows/ci-oci-homologation.yml"
+      - "infrastructure/oci/homologation/**"
+  pull_request:
+    paths:
+      - ".github/workflows/ci-oci-homologation.yml"
+      - "infrastructure/oci/homologation/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oci-homologation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialize providers without a backend
+        run: >-
+          docker run --rm
+          --volume "${{ github.workspace }}:/workspace"
+          --workdir /workspace/infrastructure/oci/homologation/terraform
+          hashicorp/terraform@sha256:6bbb82d575aa7bd4f0a2c6e3a0838ab9590426c08a71d7a2783643f01004d356
+          init -backend=false -input=false -lockfile=readonly
+
+      - name: Check Terraform formatting
+        run: >-
+          docker run --rm
+          --volume "${{ github.workspace }}:/workspace"
+          --workdir /workspace/infrastructure/oci/homologation/terraform
+          hashicorp/terraform@sha256:6bbb82d575aa7bd4f0a2c6e3a0838ab9590426c08a71d7a2783643f01004d356
+          fmt -check -diff -recursive
+
+      - name: Validate Terraform configuration
+        run: >-
+          docker run --rm
+          --volume "${{ github.workspace }}:/workspace"
+          --workdir /workspace/infrastructure/oci/homologation/terraform
+          hashicorp/terraform@sha256:6bbb82d575aa7bd4f0a2c6e3a0838ab9590426c08a71d7a2783643f01004d356
+          validate
+
+      - name: Validate private Caddy edge
+        run: >-
+          docker run --rm
+          --env LOAD_BALANCER_SUBNET_CIDR=10.42.0.0/24
+          --volume "${{ github.workspace }}/infrastructure/oci/homologation/edge/Caddyfile.example:/etc/caddy/Caddyfile:ro"
+          caddy@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+          caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile

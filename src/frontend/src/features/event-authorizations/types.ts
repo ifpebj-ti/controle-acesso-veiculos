@@ -7,14 +7,18 @@ export interface EventVehicleRule {
   remainingQuantity: number;
 }
 
+export type EventParkingLocation = "ADefinir" | "Interno" | "Externo";
+
 export interface EventAuthorization {
   id: number;
   name: string;
   responsible: string;
+  responsibleContact: string | null;
   startsAtUtc: string;
   endsAtUtc: string;
   area: string;
   overnightAllowed: boolean;
+  parkingLocation: EventParkingLocation;
   notes: string | null;
   active: boolean;
   createdById: number;
@@ -41,10 +45,12 @@ export interface EventVehicleRuleInput {
 export interface EventAuthorizationInput {
   name: string;
   responsible: string;
+  responsibleContact: string;
   startsAtUtc: string;
   endsAtUtc: string;
   area: string;
   overnightAllowed: boolean;
+  parkingLocation: EventParkingLocation;
   vehicleRules: EventVehicleRuleInput[];
   notes: string | null;
 }

@@ -268,10 +268,12 @@ Content-Type: application/json
 {
   "name": "Evento Fictício de Homologação",
   "responsible": "Coordenação Fictícia",
+  "responsibleContact": "eventos.homologacao@example.test",
   "startsAtUtc": "{{EventStartsAtUtc}}",
   "endsAtUtc": "{{EventEndsAtUtc}}",
   "area": "Área de demonstração",
   "overnightAllowed": true,
+  "parkingLocation": "Interno",
   "vehicleRules": [
     {
       "vehicleType": "Automóvel",
@@ -301,10 +303,12 @@ Content-Type: application/json
 {
   "name": "Evento Não Autorizado",
   "responsible": "Teste negativo",
+  "responsibleContact": "+55 81 99999-0000",
   "startsAtUtc": "{{EventStartsAtUtc}}",
   "endsAtUtc": "{{EventEndsAtUtc}}",
   "area": "Área de teste",
   "overnightAllowed": false,
+  "parkingLocation": "ADefinir",
   "vehicleRules": [
     {
       "vehicleType": "Automóvel",
@@ -322,10 +326,12 @@ Content-Type: application/json
 {
   "name": "Evento Não Autorizado pelo Transporte",
   "responsible": "Teste negativo",
+  "responsibleContact": "+55 81 99999-0000",
   "startsAtUtc": "{{EventStartsAtUtc}}",
   "endsAtUtc": "{{EventEndsAtUtc}}",
   "area": "Área de teste",
   "overnightAllowed": false,
+  "parkingLocation": "Externo",
   "vehicleRules": [
     {
       "vehicleType": "Automóvel",

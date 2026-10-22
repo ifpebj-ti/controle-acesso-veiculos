@@ -176,6 +176,11 @@ Autorizações de eventos usam `GET`, `POST`, `PUT` e `DELETE` em
 `/event-authorizations`. Os quatro perfis autenticados consultam; somente o
 Administrador cria, edita e cancela. A visibilidade das ações na interface reduz
 ações enganosas, mas não substitui a política de autorização aplicada pela API.
+A criação e a edição registram o contato operacional do responsável e uma
+opção fechada de estacionamento: A definir, Interno ou Externo. Porteiro e
+Vigilante consultam essas informações para orientar o atendimento; o local de
+estacionamento não libera a entrada automaticamente, que continua exigindo
+conferência e registro individual.
 A interface separa a vigência da autorização, a quantidade prevista nas regras,
 as entradas já consumidas e a quantidade restante. Placa específica representa
 exatamente um veículo; cota por tipo pode representar de 1 a 1000 veículos.
@@ -429,6 +434,7 @@ src/
 ├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── features/
 │   ├── access-records/ # Contratos, validação e serviços do fluxo geral.
+│   ├── administrative-reports/ # Contratos e serviços dos relatórios administrativos.
 │   ├── audit-trail/ # Consulta administrativa e segura da trilha de auditoria.
 │   ├── authentication/ # Formulário, service, sessão e tipos de autenticação.
 │   ├── event-authorizations/ # Consulta e manutenção de autorizações de eventos.
@@ -462,6 +468,9 @@ src/
 
 ## Limites atuais
 
+- a exportação de relatórios confirma a senha apenas para a conta administrativa
+  local; a confirmação de contas Google depende do contrato de reautenticação
+  OIDC e não é simulada pelo frontend;
 - a troca obrigatória no primeiro acesso depende da integração coordenada com o
   contrato de credencial temporária do backend no PR #259;
 - recuperação autônoma de senha sem sessão;
