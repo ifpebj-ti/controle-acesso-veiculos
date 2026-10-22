@@ -457,6 +457,7 @@ src/
 ├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── features/
 │   ├── access-records/ # Contratos, validação e serviços do fluxo geral.
+│   ├── administrative-reports/ # Contratos e serviços dos relatórios administrativos.
 │   ├── audit-trail/ # Consulta administrativa e segura da trilha de auditoria.
 │   ├── authentication/ # Formulário, service, sessão e tipos de autenticação.
 │   ├── event-authorizations/ # Consulta e manutenção de autorizações de eventos.
@@ -490,6 +491,9 @@ src/
 
 ## Limites atuais
 
+- a exportação de relatórios confirma a senha apenas para a conta administrativa
+  local; a confirmação de contas Google depende do contrato de reautenticação
+  OIDC e não é simulada pelo frontend;
 - a troca obrigatória no primeiro acesso depende da integração coordenada com o
   contrato de credencial temporária do backend no PR #259;
 - recuperação autônoma de senha sem sessão;
