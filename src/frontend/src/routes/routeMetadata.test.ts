@@ -120,7 +120,10 @@ describe("profile route and navigation metadata", () => {
         to: undefined,
       },
       {
-        items: [{ label: "Usuários e permissões", to: "/administracao" }],
+        items: [
+          { label: "Usuários e permissões", to: "/administracao" },
+          { label: "Relatórios", to: "/relatorios" },
+        ],
         label: "Gestão técnica",
         to: undefined,
       },
@@ -146,6 +149,7 @@ describe("profile route and navigation metadata", () => {
         "/eventos": true,
         "/frota": true,
         "/motoristas-institucionais": true,
+        "/relatorios": true,
         "/utilizacoes-institucionais": true,
         "/visao-geral": true,
       },
@@ -158,6 +162,7 @@ describe("profile route and navigation metadata", () => {
         "/eventos": true,
         "/frota": true,
         "/motoristas-institucionais": true,
+        "/relatorios": false,
         "/utilizacoes-institucionais": true,
         "/visao-geral": true,
       },
@@ -170,6 +175,7 @@ describe("profile route and navigation metadata", () => {
         "/eventos": true,
         "/frota": true,
         "/motoristas-institucionais": true,
+        "/relatorios": false,
         "/utilizacoes-institucionais": true,
         "/visao-geral": true,
       },
@@ -182,6 +188,7 @@ describe("profile route and navigation metadata", () => {
         "/eventos": true,
         "/frota": true,
         "/motoristas-institucionais": true,
+        "/relatorios": false,
         "/utilizacoes-institucionais": true,
         "/visao-geral": true,
       },
@@ -226,6 +233,9 @@ describe("profile route and navigation metadata", () => {
     expect(
       profileHasCapability("Administrador", "manage-event-authorizations"),
     ).toBe(true);
+    expect(
+      profileHasCapability("Administrador", "review-administrative-reports"),
+    ).toBe(true);
     for (const profileName of [
       "Porteiro",
       "Vigilante",
@@ -248,6 +258,9 @@ describe("profile route and navigation metadata", () => {
     ] as const) {
       expect(
         profileHasCapability(profileName, "manage-event-authorizations"),
+      ).toBe(false);
+      expect(
+        profileHasCapability(profileName, "review-administrative-reports"),
       ).toBe(false);
     }
   });

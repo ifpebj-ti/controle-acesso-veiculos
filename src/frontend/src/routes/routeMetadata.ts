@@ -20,7 +20,8 @@ export type ProtectedRoutePath =
   | "/frota"
   | "/motoristas-institucionais"
   | "/eventos"
-  | "/administracao";
+  | "/administracao"
+  | "/relatorios";
 
 type NavigationSectionId =
   | "overview"
@@ -201,6 +202,15 @@ export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
     },
     title: "Administração",
   },
+  "/relatorios": {
+    allowedProfiles: ["Administrador"],
+    navigation: {
+      icon: "clipboard",
+      label: "Relatórios",
+      placements: [{ profiles: ["Administrador"], section: "technical" }],
+    },
+    title: "Relatórios",
+  },
 };
 
 export type ProfileCapability =
@@ -211,6 +221,7 @@ export type ProfileCapability =
   | "manage-institutional-catalogs"
   | "operate-general-access"
   | "operate-institutional-fleet"
+  | "review-administrative-reports"
   | "review-institutional-fleet";
 
 const profileCapabilities: Readonly<
@@ -224,6 +235,7 @@ const profileCapabilities: Readonly<
     "manage-institutional-catalogs",
     "operate-general-access",
     "operate-institutional-fleet",
+    "review-administrative-reports",
     "review-institutional-fleet",
   ],
   Porteiro: [
