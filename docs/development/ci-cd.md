@@ -173,7 +173,7 @@ ordem faz da versão semântica a última referência legível publicada. As
 atestações ficam no serviço GitHub Artifact Attestations e não criam versões OCI
 `sha256-...` no GHCR.
 
-Por exemplo, a tag Git `v0.3.0` publicará `0.3.0` para backend e frontend. O
+Por exemplo, a tag Git `v0.4.0` publicará `0.4.0` para backend e frontend. O
 workflow recusa mover uma versão existente para outro digest, não cria `latest`
 e não atualiza `main`. Um push comum na `main` valida o candidato, mas não altera
 os packages principais.
@@ -186,8 +186,8 @@ manifesto e permitem auditoria por arquitetura; consumidores normais devem usar
 Exemplo de download dos dois componentes associados à release atual:
 
 ```bash
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.3.0
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.3.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.4.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.4.0
 ```
 
 Para fixar exatamente o conteúdo, use o digest com `@`, e não como se fosse uma
