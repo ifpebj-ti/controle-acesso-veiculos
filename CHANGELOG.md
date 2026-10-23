@@ -63,6 +63,9 @@ from its first published release.
 
 ### Security
 
+- The pinned unprivileged Nginx frontend runtime image was refreshed to the
+  patched multi-platform manifest after fixable high-severity findings in the
+  previous Alpine package set.
 - ASP.NET Core Data Protection keys persist across API container replacement,
   use a shared application discriminator, and are encrypted with an external
   X.509 certificate mounted separately from its password.
