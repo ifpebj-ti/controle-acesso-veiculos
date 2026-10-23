@@ -8,6 +8,8 @@ from its first published release.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-22
+
 ### Added
 
 - Administrator-only vehicle-movement and institutional-fleet report queries
@@ -67,6 +69,11 @@ from its first published release.
 
 ### Security
 
+- The OCI WAF body-inspection limit now matches the regional 8 KiB API maximum
+  and rejects oversized request bodies instead of allowing partial inspection.
+- The pinned unprivileged Nginx frontend runtime image was refreshed to the
+  patched multi-platform manifest after fixable high-severity findings in the
+  previous Alpine package set.
 - ASP.NET Core Data Protection keys persist across API container replacement,
   use a shared application discriminator, and are encrypted with an external
   X.509 certificate mounted separately from its password.
@@ -191,6 +198,7 @@ Changes merged before this changelog was introduced remain traceable through the
 Git history, Pull Requests, Issues, and project Wiki. They must not be
 retroactively presented as a published release without an evidence-based review.
 
-[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.2.0

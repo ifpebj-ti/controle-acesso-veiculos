@@ -55,8 +55,8 @@ variable "application_subnet_cidr" {
   default     = "10.42.20.0/24"
 
   validation {
-    condition     = can(cidrhost(var.application_subnet_cidr, 1)) && var.application_subnet_cidr != var.public_subnet_cidr
-    error_message = "application_subnet_cidr must be a valid IPv4 CIDR different from public_subnet_cidr."
+    condition     = can(cidrhost(var.application_subnet_cidr, 1))
+    error_message = "application_subnet_cidr must be a valid IPv4 CIDR."
   }
 }
 
@@ -88,8 +88,8 @@ variable "load_balancer_maximum_bandwidth_mbps" {
   default     = 10
 
   validation {
-    condition     = var.load_balancer_maximum_bandwidth_mbps >= var.load_balancer_minimum_bandwidth_mbps && var.load_balancer_maximum_bandwidth_mbps <= 100
-    error_message = "The maximum Load Balancer bandwidth must be at least the minimum and no more than 100 Mbps for this pilot."
+    condition     = var.load_balancer_maximum_bandwidth_mbps >= 10 && var.load_balancer_maximum_bandwidth_mbps <= 100
+    error_message = "The maximum Load Balancer bandwidth must be between 10 and 100 Mbps for this pilot."
   }
 }
 
