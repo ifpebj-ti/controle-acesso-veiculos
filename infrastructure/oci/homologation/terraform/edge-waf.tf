@@ -116,7 +116,9 @@ resource "oci_waf_web_app_firewall_policy" "homologation" {
   }
 
   request_protection {
-    body_inspection_size_limit_in_bytes             = 1048576
+    # OCI currently accepts at most 8 KiB for regional WAF body inspection.
+    # Requests exceeding the inspected prefix are rejected instead of bypassing protection.
+    body_inspection_size_limit_in_bytes             = 8192
     body_inspection_size_limit_exceeded_action_name = "block-protection"
 
     rules {
