@@ -25,6 +25,13 @@ resource "oci_load_balancer_load_balancer" "edge" {
     minimum_bandwidth_in_mbps = var.load_balancer_minimum_bandwidth_mbps
     maximum_bandwidth_in_mbps = var.load_balancer_maximum_bandwidth_mbps
   }
+
+  lifecycle {
+    precondition {
+      condition     = var.load_balancer_maximum_bandwidth_mbps >= var.load_balancer_minimum_bandwidth_mbps
+      error_message = "The maximum Load Balancer bandwidth must be at least the minimum bandwidth."
+    }
+  }
 }
 
 resource "oci_load_balancer_backend_set" "application" {
@@ -109,7 +116,9 @@ resource "oci_waf_web_app_firewall_policy" "homologation" {
   }
 
   request_protection {
-    body_inspection_size_limit_in_bytes             = 1048576
+    # OCI currently accepts at most 8 KiB for regional WAF body inspection.
+    # Requests exceeding the inspected prefix are rejected instead of bypassing protection.
+    body_inspection_size_limit_in_bytes             = 8192
     body_inspection_size_limit_exceeded_action_name = "block-protection"
 
     rules {
