@@ -65,6 +65,8 @@ from its first published release.
 
 ### Security
 
+- The OCI WAF body-inspection limit now matches the regional 8 KiB API maximum
+  and rejects oversized request bodies instead of allowing partial inspection.
 - The pinned unprivileged Nginx frontend runtime image was refreshed to the
   patched multi-platform manifest after fixable high-severity findings in the
   previous Alpine package set.
