@@ -21,7 +21,9 @@ custo e da confirmação explícita do responsável pela conta.
 - OCI Flexible Load Balancer fixado no piso e teto de 10 Mbps, com TLS encerrado por
   certificado do OCI Certificates service;
 - OCI WAF regional associado ao Load Balancer, com proteção colaborativa gerenciada
-  contra XSS e SQL injection e limite inicial das rotas de autenticação;
+  contra XSS e SQL injection, inspeção dos primeiros 8 KiB do corpo e bloqueio de
+  requisições que ultrapassem esse limite, além do limite inicial das rotas de
+  autenticação;
 - uma VM flexível, por padrão Arm com 1 OCPU, 6 GiB e boot volume de 50 GiB;
 - OCI Bastion com origem administrativa restrita e sessões máximas de 30 minutos;
 - Ubuntu 24.04 com IMDS legado desabilitado, criptografia de trânsito do volume,
@@ -145,6 +147,8 @@ confirme:
   para evitar recriação silenciosa;
 - disponibilidade do shape Arm só é comprovada pelo plano/aplicação na região;
 - limites e regras WAF são valores iniciais e exigem observação de falsos positivos;
+  a API regional aceita no máximo 8 KiB de inspeção do corpo, portanto conteúdos
+  maiores são bloqueados em vez de seguirem parcialmente inspecionados;
 - alta disponibilidade, banco gerenciado e dados reais permanecem fora de escopo.
 
 ## Referências
