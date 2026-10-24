@@ -96,13 +96,18 @@ describe("LoginPage accessibility", () => {
       "order-2",
       "lg:order-1",
     );
-    expect(container.querySelector(".login-visual-divider")).toHaveAttribute(
-      "preserveAspectRatio",
-      "none",
+    const dividers = container.querySelectorAll(".login-visual-divider");
+
+    expect(dividers).toHaveLength(2);
+    expect(dividers[0]).toHaveClass("login-visual-divider--desktop");
+    expect(dividers[1]).toHaveClass("login-visual-divider--mobile");
+    dividers.forEach((divider) => {
+      expect(divider).toHaveAttribute("aria-hidden", "true");
+      expect(divider).toHaveAttribute("preserveAspectRatio", "none");
+    });
+    expect(container.querySelectorAll(".login-visual-road-line")).toHaveLength(
+      2,
     );
-    expect(
-      container.querySelector(".login-visual-road-line"),
-    ).toBeInTheDocument();
   });
 
   it("preserves the semantic structure and keyboard focus order", async () => {
