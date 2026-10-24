@@ -39,8 +39,12 @@ migração das páginas operacionais e administrativas continuam nas etapas segu
 
 ## Estado atual
 
-A versão atual integra autenticação e sessão em memória ao endpoint
-`POST /auth/login`. O fluxo geral de veículos também consome a API para registrar
+A versão atual consulta `GET /auth/providers` sem usar uma variável de build
+como fonte de verdade. Quando a API habilita o Google, a ação principal navega
+completamente para `/auth/google/start`; Porteiro, Vigilante e Setor de
+Transporte concluem o fluxo no backend. O formulário de e-mail e senha permanece
+fechado até a ação explícita “Acesso administrativo” e é exclusivo do perfil
+Administrador. O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
 o catálogo de motoristas lista, autoriza e desativa autorizações pela API. A
@@ -56,8 +60,12 @@ mesma tela também consulta a trilha de auditoria em uma área separada.
 
 Fluxo sugerido para validação local:
 
-1. iniciar a API e acessar `/login` com uma conta individual local;
-2. confirmar que e-mail e perfil exibidos vieram da resposta da API;
+1. iniciar a API e acessar `/login`; com Google desabilitado, confirmar que a
+   ação principal não é apresentada e abrir explicitamente “Acesso
+   administrativo” para usar uma conta local fictícia do perfil Administrador;
+2. em um ambiente HTTPS com OAuth configurado, confirmar que “Continuar com
+   Google” faz uma navegação completa e que e-mail e perfil exibidos depois do
+   retorno vieram exclusivamente da sessão local restaurada pela API;
 3. como Porteiro ou Vigilante, registrar entradas consecutivas em
    `/acessos/novo` e confirmar que a ação de continuidade reinicia o formulário
    com foco na placa; conferir também a associação opcional com uma autorização
@@ -68,6 +76,21 @@ Fluxo sugerido para validação local:
 6. como Administrador, manter as autorizações de eventos, filtrar o histórico,
    gerenciar contas fictícias e consultar a trilha de auditoria em
    `/administracao`.
+
+O retorno Google contém somente `status=success` ou `status=denied`. O frontend
+remove esse parâmetro depois de consumi-lo. Em `success`, obtém um token CSRF e
+restaura a sessão local pelo endpoint de renovação já existente; em `denied` ou
+quando não existe sessão válida, apresenta uma mensagem genérica. O navegador
+não recebe, interpreta nem armazena token Google, authorization code, segredo
+ou perfil. A única persistência relacionada à autenticação continua sendo o
+metadado temporal não sensível usado para coordenar a inatividade; access token
+fica somente em memória e o refresh token permanece em cookie `HttpOnly`.
+
+Falha ao consultar os provedores não habilita o Google nem abre automaticamente
+o formulário administrativo. O usuário pode repetir a descoberta ou escolher
+explicitamente o acesso administrativo, mas a API continua sendo a autoridade
+para aceitar o método da conta e para definir o perfil. A validação completa do
+Google permanece dependente de HTTPS, domínio e cliente OAuth reais.
 
 Porteiro e Vigilante possuem a mesma navegação operacional. O Setor de Transporte
 mantém os catálogos da frota e consulta eventos na área de supervisão. O

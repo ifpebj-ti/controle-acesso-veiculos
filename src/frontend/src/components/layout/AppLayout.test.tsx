@@ -24,6 +24,7 @@ function renderLayout(
           expiresAtUtc: "2026-09-03T23:59:59.000Z",
           login: vi.fn(),
           logout,
+          restoreExternalSession: vi.fn(),
           sessionEndReason: null,
           sessionNotice,
           status: "authenticated",
@@ -62,6 +63,7 @@ function renderNavigableLayout() {
           expiresAtUtc: "2026-09-03T23:59:59.000Z",
           login: vi.fn(),
           logout: vi.fn(),
+          restoreExternalSession: vi.fn(),
           sessionEndReason: null,
           status: "authenticated",
           user: {

@@ -86,10 +86,10 @@ restauração do key ring está registrado na
 [ADR 0003](../architecture/decisions/0003-protected-data-protection-key-ring.md).
 
 A integração Google ainda não é declarada homologada: faltam credenciais OAuth
-separadas por ambiente, callback HTTPS real, gestão administrativa da pré-autorização,
-integração da tela e testes observados. Enquanto `Authentication:Google:Enabled`
+separadas por ambiente, callback HTTPS real, gestão administrativa da pré-autorização
+e testes observados com o provedor. Enquanto `Authentication:Google:Enabled`
 for `false`, os endpoints de início e conclusão respondem como indisponíveis e o
-comportamento atual não é alterado.
+frontend não apresenta a ação Google.
 
 O procedimento planejado para indisponibilidade do provedor, uso individual de
 contas de emergência, retorno ao serviço e preservação de evidências está no
@@ -98,11 +98,19 @@ Ele só se torna executável depois da implementação e homologação da Issue 
 
 ## Integração do frontend
 
-A Issue #117 aplica essa decisão no frontend React. O formulário usa e-mail e
-senha porque esse é o contrato vigente de `POST /auth/login`; a preferência
-visual anterior por nome de usuário não altera silenciosamente a API. A resposta
-é validada antes de criar a sessão, e somente `id`, e-mail, perfil e expiração
-compõem a identidade local.
+A Issue #461 integra a decisão no frontend React. A tela consulta
+`GET /auth/providers` sem cache e só apresenta “Continuar com Google” quando a
+resposta validada informa `googleEnabled: true`. O início usa navegação completa
+para `/auth/google/start`, sem `fetch`, popup ou SDK Google. O formulário de
+e-mail e senha só aparece depois da ação “Acesso administrativo” e permanece
+exclusivo do perfil Administrador; o backend continua impondo o método aceito.
+
+No retorno `/login?status=success`, o frontend remove o parâmetro e restaura a
+sessão local pelo ciclo CSRF e refresh existente. `status=denied`, descoberta
+indisponível e retorno sem sessão válida produzem mensagens genéricas e
+acessíveis. Nenhum parâmetro concede perfil, e-mail e domínio não são usados
+para inferir autorização. A homologação real desse fluxo ainda depende de HTTPS,
+domínio e cliente OAuth configurados fora do repositório.
 
 O access token fica em uma variável de módulo e no contexto React apenas durante
 a aba aberta. Ele é anexado pelo interceptor do Axios, nunca é colocado em URL,

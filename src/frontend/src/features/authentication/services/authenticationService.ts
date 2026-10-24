@@ -1,10 +1,17 @@
 import { api } from "../../../services/api";
 import { loginResponseSchema, loginSchema } from "../schemas/loginSchema";
-import type { AuthenticatedSession, LoginCredentials } from "../types";
+import type {
+  AuthenticatedSession,
+  AuthenticationProviders,
+  LoginCredentials,
+} from "../types";
 import { z } from "zod";
 
 const csrfResponseSchema = z
   .object({ requestToken: z.string().min(1) })
+  .strict();
+const authenticationProvidersSchema = z
+  .object({ googleEnabled: z.boolean() })
   .strict();
 
 const sessionRequestConfig = {
@@ -31,6 +38,29 @@ export async function authenticate(
     sessionRequestConfig,
   );
   return parseAuthenticatedSession(response.data, response.headers);
+}
+
+export async function getAuthenticationProviders(): Promise<AuthenticationProviders> {
+  const response = await api.get<unknown>("/auth/providers", {
+    ...sessionRequestConfig,
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+  });
+  const parsedResponse = authenticationProvidersSchema.safeParse(response.data);
+
+  if (!parsedResponse.success) {
+    throw new AuthenticationContractError();
+  }
+
+  return parsedResponse.data;
+}
+
+export function startGoogleAuthentication(
+  navigate: (url: string) => void = (url) => window.location.assign(url),
+) {
+  navigate(api.getUri({ url: "/auth/google/start" }));
 }
 
 export async function refreshAuthentication(): Promise<AuthenticatedSession> {

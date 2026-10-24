@@ -202,6 +202,9 @@ function renderAuthenticationFlow(
 
 async function submitCredentials() {
   const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", { name: "Acesso administrativo" }),
+  );
   await user.type(
     await screen.findByLabelText("E-mail:"),
     "operator@example.test",
@@ -224,9 +227,14 @@ beforeEach(() => {
       ),
     },
   });
-  vi.spyOn(api, "get").mockRejectedValue({
-    isAxiosError: true,
-    response: { status: 401 },
+  vi.spyOn(api, "get").mockImplementation(async (url) => {
+    if (url === "/auth/providers") {
+      return { data: { googleEnabled: true } };
+    }
+    return Promise.reject({
+      isAxiosError: true,
+      response: { status: 401 },
+    });
   });
 });
 
@@ -306,6 +314,36 @@ describe("authentication flow", () => {
     expect(post.mock.calls.some(([url]) => url === "/auth/refresh")).toBe(
       false,
     );
+  });
+
+  it("restores a Google callback session without preexisting browser continuity", async () => {
+    vi.mocked(api.get).mockImplementation(async (url) => {
+      if (url === "/auth/providers") {
+        return { data: { googleEnabled: true } };
+      }
+      if (url === "/auth/csrf") {
+        return { data: { requestToken: "google-callback-csrf-token" } };
+      }
+      return Promise.reject(new Error("unexpected request"));
+    });
+    const post = vi
+      .spyOn(api, "post")
+      .mockResolvedValue(responseFor("Vigilante"));
+
+    renderAuthenticationFlow("/login?status=success");
+
+    expect(
+      await screen.findByText("operator@example.test — Vigilante"),
+    ).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith("/auth/refresh", null, {
+      headers: { "X-CSRF-TOKEN": "google-callback-csrf-token" },
+      skipSessionRefresh: true,
+    });
+    expect(post.mock.calls.some(([url]) => url === "/auth/login")).toBe(false);
+    expect(window.sessionStorage).toHaveLength(0);
+    const continuity = window.localStorage.getItem(sessionContinuityStorageKey);
+    expect(continuity).not.toBeNull();
+    expect(continuity).not.toMatch(/token|email|profile|password|user/i);
   });
 
   it("does not request refresh with expired continuity metadata", async () => {
@@ -602,6 +640,9 @@ describe("authentication flow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Senha alterada com segurança. Entre novamente usando a nova senha.",
     );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Acesso administrativo" }),
+    );
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-describedby",
       "login-status-message",
@@ -623,6 +664,9 @@ describe("authentication flow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.",
     );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Acesso administrativo" }),
+    );
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-describedby",
       "login-status-message",
@@ -641,6 +685,9 @@ describe("authentication flow", () => {
       vi.spyOn(api, "post").mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -680,6 +727,9 @@ describe("authentication flow", () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
       });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
+      );
       const email = screen.getByLabelText("E-mail:");
       fireEvent.change(email, {
         target: { value: "operator@example.test" },
@@ -723,6 +773,9 @@ describe("authentication flow", () => {
         .mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -786,6 +839,9 @@ describe("authentication flow", () => {
       );
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -850,6 +906,9 @@ describe("authentication flow", () => {
         .mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -922,6 +981,9 @@ describe("authentication flow", () => {
         );
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -994,6 +1056,9 @@ describe("authentication flow", () => {
 
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -1017,8 +1082,13 @@ describe("authentication flow", () => {
         await vi.advanceTimersByTimeAsync(15 * 60_000);
       });
 
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+      expect(
+        screen.getByText(
+          "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+        ),
+      ).toHaveAttribute("role", "alert");
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
       );
       expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
         "aria-describedby",
@@ -1060,6 +1130,9 @@ describe("authentication flow", () => {
 
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Acesso administrativo" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -1084,9 +1157,11 @@ describe("authentication flow", () => {
       refreshResponse.resolve(responseFor("Vigilante", 15 * 60_000));
       await act(async () => vi.advanceTimersByTimeAsync(0));
 
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Sua sessão terminou por inatividade. Entre novamente para continuar.",
-      );
+      expect(
+        screen.getByText(
+          "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+        ),
+      ).toHaveAttribute("role", "alert");
       expect(
         screen.queryByText("operator@example.test — Vigilante"),
       ).not.toBeInTheDocument();
