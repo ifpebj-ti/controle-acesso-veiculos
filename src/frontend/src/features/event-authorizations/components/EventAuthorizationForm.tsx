@@ -6,6 +6,7 @@ import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { Button } from "../../../components/ui/Button";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import { SelectField } from "../../../components/ui/SelectField";
+import { normalizeVehiclePlate } from "../../vehicle-plates/vehiclePlate";
 import { eventParkingLocationOptions } from "../model/parkingLocations";
 import {
   eventAuthorizationFormSchema,
@@ -99,6 +100,8 @@ export function EventAuthorizationForm({
     setValue,
   } = useForm<EventAuthorizationFormValues>({
     defaultValues: defaultValues(event),
+    mode: "onBlur",
+    reValidateMode: "onChange",
     resolver: zodResolver(eventAuthorizationFormSchema),
   });
   const disabled = busy || isSubmitting;
@@ -121,7 +124,7 @@ export function EventAuthorizationForm({
       responsibleContact: values.responsibleContact.trim(),
       startsAtUtc: new Date(values.startsAtLocal).toISOString(),
       vehicleRules: values.vehicleRules.map((rule) => ({
-        plate: rule.mode === "plate" ? rule.plate.trim() : null,
+        plate: rule.mode === "plate" ? normalizeVehiclePlate(rule.plate) : null,
         quantity: rule.mode === "plate" ? 1 : rule.quantity,
         vehicleType: rule.vehicleType.trim(),
       })),
