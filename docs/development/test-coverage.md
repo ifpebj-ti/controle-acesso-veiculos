@@ -88,17 +88,18 @@ testes unitários diretos. Isso cobre rotação, reutilização de token, inativ
 credencial expirada, perfil inativo, logout, confirmação de exportação, falhas de PDF
 e inicialização segura sem representar 100% do backend inteiro.
 
-Na suíte de Domain, 21 cenários adicionais elevaram o total de 78 para 99 testes e a
-cobertura do assembly de 85,23% para 90,11% de linhas e de 74,71% para 77,35% de
+Na suíte de Domain, 45 cenários adicionais elevaram o total de 78 para 123 testes e a
+cobertura do assembly de 85,23% para 93,63% de linhas e de 74,71% para 90,59% de
 ramificações. O incremento verifica invariantes de categorias, perfis, vínculo entre
-pessoa e veículo e ciclo de vida da sessão; ramificações ainda permanecem abaixo do
-limiar final e continuam visíveis como trabalho pendente.
+pessoa e veículo, ciclo de vida da sessão, autenticação local/Google e eventos. Os
+caminhos negativos cobrem limites, autoria, períodos, bloqueio, credencial temporária
+e transição de método de autenticação, sem alterar o código de produção.
 
 A CI mede `Domain` e `Application` novamente em diretórios isolados e bloqueia
-regressões abaixo de 90% de linhas. Enquanto as ramificações ainda evoluem até a meta
-final, os pisos reproduzidos de 77% no Domain e 83% na Application também não podem
-diminuir. O verificador exige exatamente um relatório e o assembly esperado, evitando
-aprovação acidental com artefato ausente ou pertencente a outra suíte.
+regressões abaixo de 90% de linhas. O Domain também possui piso definitivo de 90% de
+ramificações; enquanto a Application evolui até essa meta, seu piso reproduzido de 83%
+não pode diminuir. O verificador exige exatamente um relatório e o assembly esperado,
+evitando aprovação acidental com artefato ausente ou pertencente a outra suíte.
 
 ## Evidência na CI
 

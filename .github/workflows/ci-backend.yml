@@ -97,7 +97,7 @@ jobs:
             -ReportDirectory artifacts/coverage-gate/domain `
             -PackageName ControleAcessoVeiculos.Domain `
             -MinimumLineCoverage 90 `
-            -MinimumBranchCoverage 77
+            -MinimumBranchCoverage 90
 
           ./infrastructure/ci/Assert-CoberturaThreshold.ps1 `
             -ReportDirectory artifacts/coverage-gate/application `
