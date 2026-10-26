@@ -14,6 +14,7 @@ Esta pasta contém a fonte versionada dos documentos de segurança do projeto.
 - [ADR 0003 — key ring persistente e protegido](../architecture/decisions/0003-protected-data-protection-key-ring.md)
 - [ADR 0004 — topologia segura e econômica da homologação na OCI](../architecture/decisions/0004-oci-homologation-topology.md)
 - [ADR 0005 — Google OIDC com autorização local e acesso de emergência](../architecture/decisions/0005-google-oidc-and-emergency-access.md)
+- [ADR 0006 — borda de homologação protegida pelo OCI WAF](../architecture/decisions/0006-oci-waf-protected-homologation-edge.md)
 
 A Wiki apresenta cópias de leitura e contexto acadêmico, mas mudanças nestes
 documentos devem passar por Issue, branch, revisão e Pull Request.
@@ -45,8 +46,9 @@ Antes da apresentação, confira se o relatório contém:
 - 1 ator, 6 processos, 4 depósitos, 10 fluxos e 5 fronteiras;
 - as ameaças `TM-01` a `TM-27` sem duplicidade;
 - distinção entre controles mitigados e riscos ainda abertos;
-- desenho de backup na OCI como decisão aprovada, mas provisionamento, HTTPS,
-  observabilidade operada e homologação como pendências, não funcionalidades prontas.
+- homologação técnica OCI como implantada com origem privada, Load Balancer e WAF,
+  sem confundi-la com produção; DNS e certificado confiável, backup externo,
+  observabilidade operada e homologação institucional continuam pendentes.
 
 Não inclua credenciais, endereços internos, dados pessoais, capturas de produção
 ou segredos no modelo ou no PDF exportado.

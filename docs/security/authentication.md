@@ -164,11 +164,12 @@ de desenvolvimento, e somente nele, os cookies não usam `Secure` porque a stack
 qualquer outro ambiente exige cookie `Secure` e HTTPS. `LocalContainer` não deve
 ser usado em implantação institucional.
 
-As chaves antifalsificação do container local são efêmeras: reiniciar a API
-invalida o par CSRF, e o frontend deve buscá-lo novamente. Antes de múltiplas
-réplicas ou produção, o operador precisa configurar um key ring compartilhado,
-persistente, criptografado e acessível apenas à aplicação. Essa dependência faz
-parte da infraestrutura definitiva, não deve ser simulada por chave versionada.
+O Compose local persiste o key ring em volume e protege os XMLs com o certificado
+X.509 gerado fora do Git por `New-DataProtectionCertificate.ps1`. Recriar somente
+o container não deve perder as chaves; remover o volume, o PFX ou sua senha
+invalida o material protegido e exige recuperação controlada. Múltiplas réplicas
+ou produção precisam de armazenamento durável compartilhado e secret manager
+aprovados. Essa dependência não deve ser simulada por chave versionada.
 
 Os limites de login são configuráveis por `RateLimiting__LoginPermitLimit` e
 `RateLimiting__LoginWindowSeconds`. Alterações para produção devem considerar

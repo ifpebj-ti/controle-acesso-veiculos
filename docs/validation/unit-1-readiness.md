@@ -3,9 +3,9 @@
 ## Objetivo
 
 Este documento relaciona o marco acadêmico da Unidade 1 às evidências
-versionadas do projeto. A fotografia foi atualizada em **29 de setembro de 2026**
-após a publicação da release técnica `v0.4.0` e deve ser conferida novamente
-antes da apresentação.
+versionadas do projeto. A fotografia foi atualizada em **25 de outubro de 2026**
+após a publicação da release técnica `v0.4.0` e a implantação da homologação
+técnica na OCI. Ela deve ser conferida novamente antes da apresentação.
 
 As classificações usadas são:
 
@@ -29,7 +29,7 @@ As classificações usadas são:
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | Modelagem de ameaças                                    | [Modelo STRIDE](../security/threat-model.md), [arquivo do OWASP Threat Dragon](../security/controle-acesso-veiculos-threat-model.json) e [visão na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Modelagem-de-Amea%C3%A7as) | Ampliado com riscos, controles, responsáveis e risco residual                              |
 | Guia de boas práticas de desenvolvimento seguro         | [Guia versionado](../security/secure-development-guide.md) e [guia na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Guia-de-Boas-Praticas-de-Desenvolvimento-Seguro)                                                        | Atendido                                                                                   |
-| Zero vulnerabilidades críticas aferidas pelo Dependabot | [Dependabot](https://github.com/ifpebj-ti/controle-acesso-veiculos/security/dependabot) e [Dependency Review](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/dependency-review.yml)                                   | Atendido na verificação de 29/09/2026: nenhum alerta aberto; isso não significa risco zero |
+| Zero vulnerabilidades críticas aferidas pelo Dependabot | [Dependabot](https://github.com/ifpebj-ti/controle-acesso-veiculos/security/dependabot) e [Dependency Review](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/dependency-review.yml)                                   | Atendido na evidência registrada em 29/09/2026; o inventário deve ser revisto no portal antes da apresentação |
 
 Controles adicionais incluem CodeQL, Trivy para imagens, SBOM SPDX,
 proveniência assinada, segredos detectados pelo GitHub e baseline passiva do
@@ -45,8 +45,8 @@ representa liberação para produção.
 
 | Entrega exigida                           | Evidência                                                                                                                                                                                                                                                                                            | Estado                                                                                                          |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Aplicação conteinerizada                  | [Dockerfiles e arquivos Compose](../../infrastructure/docker)                                                                                                                                                                                                                                        | Atendido para desenvolvimento e demonstração                                                                    |
-| Guia de execução, configuração e operação | [README](../../README.md), [deploy versionado](../operations/versioned-container-deployment.md), [banco](../../infrastructure/database/README.md) e [guia na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Guia-de-Execucao-Configuracao-Deploy-e-Operacao)                       | Ampliado; operação institucional ainda pendente                                                                 |
+| Aplicação conteinerizada                  | [Dockerfiles e arquivos Compose](../../infrastructure/docker)                                                                                                                                                                                                                                        | Ampliado com execução local e homologação técnica usando imagens versionadas                                     |
+| Guia de execução, configuração e operação | [README](../../README.md), [deploy versionado](../operations/versioned-container-deployment.md), [banco](../../infrastructure/database/README.md) e [guia na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Guia-de-Execucao-Configuracao-Deploy-e-Operacao)                       | Ampliado; operação institucional e produção continuam pendentes                                                  |
 | Início da esteira CI/CD                   | [CI backend](../../.github/workflows/ci-backend.yml), [CI frontend](../../.github/workflows/ci-frontend.yml), [containers](../../.github/workflows/ci-containers.yml), [recuperação](../../.github/workflows/ci-database-recovery.yml) e [dados fictícios](../../.github/workflows/ci-demo-data.yml) | Ampliado com lint, build, testes, cobertura, scan, registry, AMD64/ARM64, smoke test, DAST, SBOM e proveniência |
 
 ## Distribuição versionada solicitada pelo professor
@@ -71,14 +71,14 @@ executado.
 
 ## Evidência quantitativa da baseline
 
-| Item na `main`             | Evidência em 29/09/2026                            |
-| -------------------------- | -------------------------------------------------- |
-| Testes de backend          | 254 aprovados, incluindo integração com PostgreSQL |
-| Testes de frontend         | 432 aprovados em 44 arquivos                       |
-| Migrations EF Core         | 16 migrations versionadas                          |
-| Alertas Dependabot abertos | 0                                                  |
-| Alertas CodeQL abertos     | 0                                                  |
-| Release técnica            | `v0.4.0`                                           |
+| Item na `main`             | Evidência em 25/10/2026                              |
+| -------------------------- | ---------------------------------------------------- |
+| Testes de backend          | 347 aprovados na CI, incluindo integração PostgreSQL |
+| Testes de frontend         | 553 aprovados em 53 arquivos na CI                   |
+| Migrations EF Core         | 16 migrations versionadas                            |
+| Checks de segurança        | Dependency Review e CodeQL aprovados no SHA observado |
+| Release técnica            | `v0.4.0`                                             |
+| Homologação OCI            | VM privada, Load Balancer, WAF, Bastion e stack saudáveis |
 
 Os números são evidências datadas, não metas fixas. A fonte vigente para
 cada execução é o [GitHub Actions](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions).
@@ -90,9 +90,11 @@ estão atendidos**, e a esteira de segurança e distribuição supera o mínimo
 solicitado.
 
 Essa conclusão acadêmica não equivale a afirmar que o sistema está pronto para
-produção. Permanecem fora desse aceite: infraestrutura institucional, HTTPS,
-gestão externa de segredos, monitoramento operado, backup externo, retenção,
-contingência e homologação final dos fluxos no dispositivo de destino.
+produção. A infraestrutura técnica de homologação existe, mas permanecem fora
+desse aceite: DNS e certificado público confiável, gestão definitiva de segredos,
+monitoramento operado, backup externo e restauração exercitada, aplicação do
+descarte por retenção, contingência e homologação final dos fluxos no dispositivo
+de destino.
 
 ## Roteiro curto de demonstração
 

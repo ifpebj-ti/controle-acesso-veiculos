@@ -20,9 +20,10 @@ IFPE — Campus Belo Jardim.
 
 > [!IMPORTANT]
 > O MVP técnico está integrado e pode ser demonstrado com dados fictícios. Ele
-> ainda não está autorizado para operação institucional: homologação formal,
-> HTTPS, gestão de segredos, monitoramento, backup protegido e implantação na OCI
-> permanecem pendentes.
+> possui uma homologação técnica na OCI com borda HTTPS, WAF e origem privada,
+> mas ainda não está autorizado para operação institucional. Certificado público
+> confiável e DNS, gestão definitiva de segredos, monitoramento operado, backup
+> protegido, exercício de recuperação e homologação formal permanecem pendentes.
 
 ## Visão geral
 
@@ -165,8 +166,8 @@ docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.4.0
 ```
 
 As duas tags foram verificadas como manifestos para `linux/amd64` e
-`linux/arm64`. Elas representam a release de 29 de setembro de 2026, não o estado
-mais recente da branch `main`.
+`linux/arm64`. Elas representam a release publicada em 23 de outubro de 2026 UTC
+(22 de outubro no fuso do projeto), não o estado mais recente da branch `main`.
 
 | Componente | Digest verificado da release `0.4.0`                                      |
 | ---------- | ------------------------------------------------------------------------- |
@@ -360,9 +361,9 @@ controle-acesso-veiculos/
   rotação, revogação e CSRF;
 - imagens são analisadas com Trivy e publicadas com SBOM e proveniência;
 - ZAP executa baseline passiva contra uma stack descartável;
-- backup local com checksum e a configuração reproduzível da OCI são ensaios
-  técnicos; o backup protegido só existirá após provisionamento e restauração
-  isolada comprovados na tenancy institucional.
+- a homologação técnica na OCI mantém a VM privada atrás de Load Balancer e WAF;
+  isso não substitui domínio e certificado confiáveis, observabilidade operada,
+  backup protegido nem o exercício de restauração na tenancy.
 
 Leia a [central de segurança](docs/security/README.md), a
 [modelagem de ameaças](docs/security/threat-model.md) e o
@@ -374,6 +375,7 @@ Leia a [central de segurança](docs/security/README.md), a
 | ------------------------------------------------------------------------------- | --------------------------------------------------- |
 | [Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki)              | visão completa, requisitos, arc42, produto e status |
 | [Prontidão da Unidade 1](docs/validation/unit-1-readiness.md)                   | requisito acadêmico ligado à evidência              |
+| [Preparação da Unidade 2](docs/validation/unit-2-readiness.md)                  | matriz de entregas, evidências e pendências         |
 | [Homologação integrada](docs/validation/backend-mvp-homologation.md)            | roteiro dos quatro perfis                           |
 | [Piloto operacional acompanhado](docs/validation/guided-operational-pilot.md)   | fases, gates, observação e resposta a ocorrências   |
 | [CI/CD e containers](docs/development/ci-cd.md)                                 | workflows, tags, scans, SBOM e proveniência         |
