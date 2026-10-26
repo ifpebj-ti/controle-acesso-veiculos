@@ -88,6 +88,12 @@ testes unitários diretos. Isso cobre rotação, reutilização de token, inativ
 credencial expirada, perfil inativo, logout, confirmação de exportação, falhas de PDF
 e inicialização segura sem representar 100% do backend inteiro.
 
+Na suíte de Domain, 21 cenários adicionais elevaram o total de 78 para 99 testes e a
+cobertura do assembly de 85,23% para 90,11% de linhas e de 74,71% para 77,35% de
+ramificações. O incremento verifica invariantes de categorias, perfis, vínculo entre
+pessoa e veículo e ciclo de vida da sessão; ramificações ainda permanecem abaixo do
+limiar final e continuam visíveis como trabalho pendente.
+
 ## Evidência na CI
 
 As esteiras de backend e frontend publicam relatórios por 14 dias. Os artefatos
