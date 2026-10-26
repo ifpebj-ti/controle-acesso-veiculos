@@ -12,24 +12,35 @@ um ambiente institucional de produção aprovado. Antes de uso real ainda são
 obrigatórios servidor administrado, DNS, terminação HTTPS, gestão externa de
 segredos, firewall, backup protegido, monitoramento e autorização institucional.
 
+## Estado observado na homologação
+
+Em 25 de outubro de 2026, a homologação técnica executava frontend, API e
+PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF. A
+promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
+uma nova release revisada seja publicada e `DEPLOYMENT_VERSION` seja alterada.
+
+O endpoint ainda usa certificado temporário sem hostname público confiável. Esse
+ensaio não representa produção nem substitui DNS, backup, observabilidade e
+homologação institucional.
+
 ## Release disponível
 
-A release técnica atual é `v0.3.0`. As duas imagens foram verificadas como
+A release técnica atual é `v0.4.0`. As duas imagens foram verificadas como
 manifestos para `linux/amd64` e `linux/arm64`:
 
 ```bash
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.3.0
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.3.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.4.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.4.0
 ```
 
 Os manifests verificados são, respectivamente,
-`sha256:5c620d3c6609144c8cc0f53c1505dd3c2414d206aa29d69f96b6ab64b24d31b0`
-e `sha256:cd9ed896b47327a6ca71f191284e71988411ffc608b3d1e634d1a9df01b8ddc1`.
+`sha256:c14ec8fe6b6c6719755924ec687b69dabbc486bdeb25d3d1cf3d87558a808c48`
+e `sha256:c39240dcff6ad9d9db157118099dc7b18ece0dcfabf59420f1838408c50ee620`.
 
 O GHCR armazena as imagens da aplicação, enquanto proveniência e SBOM assinados
 permanecem no serviço GitHub Artifact Attestations. Para fixar conteúdo por
 digest, use `imagem@sha256:<digest>`; para implantar a release revisada, use
-`imagem:0.3.0`. Nunca mova uma versão publicada para outro digest: mudanças
+`imagem:0.4.0`. Nunca mova uma versão publicada para outro digest: mudanças
 posteriores exigem uma nova release conforme Semantic Versioning.
 
 Os packages principais são canais de release. Pushes comuns na `main` executam
@@ -70,7 +81,7 @@ Copy-Item .env.production.example .env.production
 
 Defina no arquivo local:
 
-- `DEPLOYMENT_VERSION`: a mesma release para frontend e backend, como `0.3.0`;
+- `DEPLOYMENT_VERSION`: a mesma release para frontend e backend, como `0.4.0`;
 - `ALLOWED_HOSTS`: o domínio público esperado pela API e `localhost`, usado
   somente pela verificação de saúde interna;
 - credenciais próprias do PostgreSQL; prefira senha aleatória hexadecimal ou

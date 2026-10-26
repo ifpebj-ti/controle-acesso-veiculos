@@ -117,10 +117,12 @@ describe("ReportsPage", () => {
   it("shows real authorship and keeps internal identification distinct from plate", async () => {
     const { container } = renderPage();
 
-    expect(await screen.findByText("Pessoa Fictícia")).toBeInTheDocument();
-    expect(screen.getByText("Não informada")).toBeInTheDocument();
-    expect(screen.getByText("INTERNO-01")).toBeInTheDocument();
-    expect(screen.getByText(/Porteiro Fictício/)).toBeInTheDocument();
+    expect(
+      (await screen.findAllByText("Pessoa Fictícia")).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Não informada").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("INTERNO-01").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Porteiro Fictício/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Fuso: America\/Recife/)).toBeInTheDocument();
     await expectNoSeriousAccessibilityViolations(container);
   });
@@ -145,7 +147,7 @@ describe("ReportsPage", () => {
   it("validates the 31-day limit locally and preserves the filters", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText("Pessoa Fictícia");
+    await screen.findAllByText("Pessoa Fictícia");
     const dates = screen.getAllByDisplayValue(/^\d{4}-\d{2}-\d{2}$/);
     await user.clear(dates[0]);
     await user.type(dates[0], "2026-01-01");
@@ -160,10 +162,32 @@ describe("ReportsPage", () => {
     expect(dates[0]).toHaveValue("2026-01-01");
   });
 
+  it("clears optional filters and restores the default period", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText("Pessoa Fictícia");
+
+    const plate = screen.getByLabelText("Placa");
+    const dates = screen.getAllByDisplayValue(/^\d{4}-\d{2}-\d{2}$/);
+    await user.type(plate, "PMA");
+    await user.clear(dates[0]);
+    await user.type(dates[0], "2026-01-01");
+    await user.click(screen.getByRole("button", { name: "Limpar filtros" }));
+
+    await waitFor(() =>
+      expect(searchVehicleMovementReport).toHaveBeenCalledTimes(2),
+    );
+    expect(plate).toHaveValue("");
+    expect(dates[0]).not.toHaveValue("2026-01-01");
+    expect(searchVehicleMovementReport).toHaveBeenLastCalledWith(
+      expect.objectContaining({ plate: "", status: "", page: 1 }),
+    );
+  });
+
   it("uses the public fleet status and presents an empty successful response", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText("Pessoa Fictícia");
+    await screen.findAllByText("Pessoa Fictícia");
     await user.click(
       screen.getByRole("button", { name: "Frota institucional" }),
     );
@@ -188,7 +212,7 @@ describe("ReportsPage", () => {
     );
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText("Pessoa Fictícia");
+    await screen.findAllByText("Pessoa Fictícia");
     await user.click(screen.getByRole("button", { name: "Exportar PDF" }));
     const dialog = screen.getByRole("dialog", { name: "Confirmar exportação" });
     const input = within(dialog).getByLabelText("Senha atual");
@@ -217,7 +241,7 @@ describe("ReportsPage", () => {
     });
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText("Pessoa Fictícia");
+    await screen.findAllByText("Pessoa Fictícia");
     await user.click(screen.getByRole("button", { name: "Exportar PDF" }));
     const dialog = screen.getByRole("dialog", {
       name: "Confirmar exportação",
@@ -244,7 +268,7 @@ describe("ReportsPage", () => {
   it("contains keyboard focus, closes with Escape and returns focus", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText("Pessoa Fictícia");
+    await screen.findAllByText("Pessoa Fictícia");
     const trigger = screen.getByRole("button", { name: "Exportar PDF" });
     await user.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "Confirmar exportação" });
@@ -310,7 +334,7 @@ describe("ReportsPage", () => {
     });
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText("Pessoa Fictícia");
+    await screen.findAllByText("Pessoa Fictícia");
     await user.click(screen.getByRole("button", { name: "Exportar PDF" }));
     const dialog = screen.getByRole("dialog", {
       name: "Confirmar exportação",

@@ -2,14 +2,18 @@
 
 ## Estado
 
-Esta configuração prepara a base das Issues #382 e #468 para execução pelo **OCI
-Resource Manager**. Ela ainda não contém a aplicação, senhas, certificado, chave
-JWT, banco com dados ou DNS. O certificado já validado é apenas referenciado pelo
-OCID informado no Resource Manager; sua chave privada não entra no Terraform. O
-primeiro `apply` deve ocorrer somente depois da revisão do plano, da estimativa de
-custo e da confirmação explícita do responsável pela conta.
+Esta configuração representa a base das Issues #382 e #468 executada pelo **OCI
+Resource Manager**. Em 25 de outubro de 2026, ela sustentava a homologação técnica
+com VM privada, Load Balancer, WAF e Bastion; a aplicação `v0.4.0` foi instalada
+por um procedimento operacional separado. Senhas, chave JWT, banco com dados e
+chaves privadas não entram no Terraform.
 
-## Recursos planejados
+O ambiente ainda usa certificado temporário e não possui DNS público aprovado.
+Backup externo, observabilidade operada e piloto institucional também permanecem
+pendentes. Novos `apply` devem ocorrer somente depois da revisão do plano, da
+estimativa de custo e da confirmação explícita do responsável pela conta.
+
+## Recursos representados
 
 - compartimento exclusivo com tags de custo e operação;
 - orçamento mensal padrão de 25 unidades na moeda da conta, alinhado à referência
@@ -33,8 +37,8 @@ custo e da confirmação explícita do responsável pela conta.
 
 O `cloud-init` não contém segredos, domínio, token, chave SSH ou credencial. A VM
 não recebe IP público e aceita a porta interna `8088` somente da subnet do Load
-Balancer. A aplicação, o DNS e as credenciais permanecem etapas posteriores e
-controladas.
+Balancer. A aplicação e as credenciais são instaladas em etapa posterior e
+controlada; o DNS e o certificado público confiável permanecem pendentes.
 
 ## Gate financeiro
 
