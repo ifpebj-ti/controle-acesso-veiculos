@@ -79,14 +79,16 @@ pois as suítes medem conjuntos sobrepostos em processos diferentes.
 | Integração | API              | 82,81% |       60,96% |
 | Integração | Infrastructure   | 97,52% |       94,37% |
 
-Após o primeiro incremento de segurança da Issue #499, a suíte de Application passou
-de 90 para 127 testes e elevou a cobertura do assembly `Application` para 90,32% de
-linhas e 83,09% de ramificações. O serviço de renovação e encerramento de sessão, as
+Após os incrementos de segurança da Issue #499, a suíte de Application passou de 90
+para 140 testes e elevou a cobertura do assembly `Application` para 91,85% de linhas
+e 86,30% de ramificações. O serviço de renovação e encerramento de sessão, as
 políticas de sessão e credencial temporária, a geração de relatórios administrativos
 e o bootstrap do primeiro administrador atingiram 100% de linhas e ramificações em
 testes unitários diretos. Isso cobre rotação, reutilização de token, inatividade,
 credencial expirada, perfil inativo, logout, confirmação de exportação, falhas de PDF
-e inicialização segura sem representar 100% do backend inteiro.
+e inicialização segura sem representar 100% do backend inteiro. Os testes de eventos
+também cobrem busca e paginação inválidas, limites de campos e regras, normalização e
+mapeamento dos resultados de criação, atualização e cancelamento.
 
 Na suíte de Domain, 45 cenários adicionais elevaram o total de 78 para 123 testes e a
 cobertura do assembly de 85,23% para 93,63% de linhas e de 74,71% para 90,59% de
@@ -97,7 +99,7 @@ e transição de método de autenticação, sem alterar o código de produção.
 
 A CI mede `Domain` e `Application` novamente em diretórios isolados e bloqueia
 regressões abaixo de 90% de linhas. O Domain também possui piso definitivo de 90% de
-ramificações; enquanto a Application evolui até essa meta, seu piso reproduzido de 83%
+ramificações; enquanto a Application evolui até essa meta, seu piso reproduzido de 86%
 não pode diminuir. O verificador exige exatamente um relatório e o assembly esperado,
 evitando aprovação acidental com artefato ausente ou pertencente a outra suíte.
 
