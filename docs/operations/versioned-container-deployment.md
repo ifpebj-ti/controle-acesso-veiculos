@@ -12,6 +12,17 @@ um ambiente institucional de produção aprovado. Antes de uso real ainda são
 obrigatórios servidor administrado, DNS, terminação HTTPS, gestão externa de
 segredos, firewall, backup protegido, monitoramento e autorização institucional.
 
+## Estado observado na homologação
+
+Em 25 de outubro de 2026, a homologação técnica executava frontend, API e
+PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF. A
+promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
+uma nova release revisada seja publicada e `DEPLOYMENT_VERSION` seja alterada.
+
+O endpoint ainda usa certificado temporário sem hostname público confiável. Esse
+ensaio não representa produção nem substitui DNS, backup, observabilidade e
+homologação institucional.
+
 ## Release disponível
 
 A release técnica atual é `v0.4.0`. As duas imagens foram verificadas como
