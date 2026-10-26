@@ -52,3 +52,15 @@ output "deployment_summary" {
     bastion_ttl                     = 1800
   }
 }
+
+output "observability_summary" {
+  description = "Sanitized observability plan. Resource identifiers and ingestion credentials are intentionally omitted."
+  value = {
+    enabled                       = var.enable_observability
+    log_retention_days            = var.observability_log_retention_days
+    cpu_alarm_percent             = var.observability_cpu_alarm_threshold
+    memory_alarm_percent          = var.observability_memory_alarm_threshold
+    alert_subscription_configured = nonsensitive(var.observability_alert_endpoint != "")
+    apm_free_tier                 = var.enable_observability
+  }
+}

@@ -141,6 +141,26 @@ confirme:
 8. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
 9. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
 
+## Observabilidade opcional
+
+A fundação aprovada na ADR 0007 permanece desabilitada por padrão. Para incluí-la
+no plano, defina `enable_observability = true` somente no OCI Resource Manager ou em
+um `terraform.tfvars` local ignorado. O plano cria:
+
+- tópico de Notifications e assinatura de e-mail pendente de confirmação;
+- alarmes de CPU e memória, habilitados apenas quando houver destinatário;
+- grupo e log customizado com retenção inicial de 30 dias;
+- coleta dos arquivos JSON de stdout do Docker pelo Oracle Cloud Agent;
+- domínio gratuito do OCI APM, sem versionar chave ou endpoint privado.
+
+O endereço de alerta é dado operacional e não deve entrar em commit. Depois do
+`apply`, o titular precisa confirmar a assinatura recebida por e-mail. A chave
+privada de ingestão do APM deve ser obtida por operador autorizado e armazenada no
+mecanismo de segredos da implantação; ela não é output do Terraform.
+
+Antes de habilitar a exportação OTLP na API, valide o plano, a franquia aplicável e
+o procedimento em [`Observabilidade da API`](../../../../docs/operations/observability.md).
+
 ## Limites conhecidos
 
 - uma única VM é ponto único de falha aceito para o piloto;
