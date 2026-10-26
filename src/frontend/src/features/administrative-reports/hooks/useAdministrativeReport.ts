@@ -79,6 +79,14 @@ export function useAdministrativeReport() {
     return true;
   }
 
+  function clearFilters() {
+    const initial = createInitialReportFilters();
+    prepareRequest();
+    setDraft(initial);
+    setApplied(initial);
+    setValidationMessage(null);
+  }
+
   function goToPage(nextPage: number) {
     prepareRequest();
     setApplied((current) => ({ ...current, page: nextPage }));
@@ -92,6 +100,7 @@ export function useAdministrativeReport() {
   return {
     applied,
     applyFilters,
+    clearFilters,
     changeKind,
     draft,
     errorMessage,

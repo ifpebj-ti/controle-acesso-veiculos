@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
+import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { Button } from "../components/ui/Button";
 import { ContentState } from "../components/ui/ContentState";
 import { Icon } from "../components/ui/Icon";
@@ -49,7 +50,7 @@ function AdministratorReports() {
             <Icon name="clipboard" size={18} /> Exportar PDF
           </Button>
         }
-        description="Consulte registros reais por período e exporte uma cópia identificada pela API."
+        description="Consulte as movimentações por período e exporte uma cópia em PDF."
         eyebrow="Administração"
         title="Relatórios"
         variant="prominent"
@@ -58,44 +59,25 @@ function AdministratorReports() {
       <ReportKindSelector kind={report.kind} onChange={report.changeKind} />
 
       {exportNotice && (
-        <div
-          aria-atomic="true"
-          className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-success-border bg-success-surface p-4 text-sm text-success-text"
-          role="status"
-        >
-          <p>{exportNotice}</p>
-          <button
-            className="min-h-10 font-bold underline underline-offset-4"
-            onClick={() => setExportNotice(null)}
-            type="button"
-          >
-            Fechar
-          </button>
-        </div>
+        <ActionFeedback
+          className="mt-5"
+          floating
+          focusOnChange
+          message={exportNotice}
+          onDismiss={() => setExportNotice(null)}
+          tone="success"
+        />
       )}
 
       <ReportFilters
         draft={report.draft}
         kind={report.kind}
         onChange={report.setDraft}
+        onClear={report.clearFilters}
         onSubmit={report.applyFilters}
         validationMessage={report.validationMessage}
       />
-      <p className="mt-4 text-sm text-text-muted">
-        Período aplicado: <strong>{report.applied.from}</strong> a{" "}
-        <strong>{report.applied.to}</strong>, inclusive. Máximo de 31 dias.
-      </p>
-
       <ReportContent report={report} />
-
-      <aside className="mt-6 rounded-2xl border border-warning-border bg-warning-surface p-5 text-sm leading-6 text-text-muted">
-        <h2 className="font-bold text-text">Confirmação da exportação</h2>
-        <p className="mt-1">
-          A exportação é exclusiva do Administrador e exige a confirmação da
-          senha administrativa atual. A senha é enviada somente nesta tentativa
-          e apagada do formulário em seguida.
-        </p>
-      </aside>
 
       {exportOpen && (
         <ReportExportDialog
@@ -120,7 +102,7 @@ function ReportContent({
   if (report.status === "loading") {
     return (
       <ContentState
-        className="mt-5"
+        className="mt-5 rounded-2xl border border-border bg-surface p-5 sm:p-6"
         title="Carregando relatório"
         variant="loading"
       />
@@ -134,7 +116,7 @@ function ReportContent({
             Tentar novamente
           </Button>
         }
-        className="mt-5"
+        className="mt-5 rounded-2xl border border-border bg-surface p-5 sm:p-6"
         description="Os filtros e o período foram preservados."
         title={report.errorMessage ?? "O relatório está indisponível agora."}
         variant="error"
@@ -145,8 +127,8 @@ function ReportContent({
     return (
       <>
         <ContentState
-          className="mt-5"
-          description="Altere o período ou os filtros para realizar outra consulta."
+          className="mt-5 rounded-2xl border border-border bg-surface p-5 sm:p-6"
+          description={`Nenhum registro entre ${report.applied.from} e ${report.applied.to}. Altere o período ou os filtros para realizar outra consulta.`}
           icon="search"
           title="Nenhum registro encontrado"
           variant="empty"
@@ -158,10 +140,11 @@ function ReportContent({
     );
   }
   return (
-    <>
-      <ReportResults kind={report.kind} page={report.page} />
-      <ReportPagination onPageChange={report.goToPage} page={report.page} />
-    </>
+    <ReportResults
+      kind={report.kind}
+      onPageChange={report.goToPage}
+      page={report.page}
+    />
   );
 }
 
@@ -173,42 +156,55 @@ function ReportKindSelector({
   onChange: (kind: AdministrativeReportKind) => void;
 }) {
   return (
-    <div
+    <nav
       aria-label="Tipo de relatório"
-      className="mt-6 grid gap-2 rounded-2xl border border-border bg-surface p-2 sm:grid-cols-2"
-      role="group"
+      className="admin-area-tabs mt-6 flex flex-wrap gap-1 rounded-xl border border-border bg-surface p-1"
     >
       <ReportKindButton
         active={kind === "movements"}
+        description="Entradas, saídas, categorias e responsáveis pelos registros."
+        icon="history"
         label="Movimentações gerais"
         onClick={() => onChange("movements")}
       />
       <ReportKindButton
         active={kind === "fleet"}
+        description="Saídas, retornos, itinerários e quilometragem da frota."
+        icon="truck"
         label="Frota institucional"
         onClick={() => onChange("fleet")}
       />
-    </div>
+    </nav>
   );
 }
 
 function ReportKindButton({
   active,
+  description,
+  icon,
   label,
   onClick,
 }: {
   active: boolean;
+  description: string;
+  icon: "history" | "truck";
   label: string;
   onClick: () => void;
 }) {
   return (
     <button
+      aria-describedby={`report-kind-${icon}-description`}
+      aria-label={label}
       aria-pressed={active}
-      className={`min-h-12 rounded-xl px-4 text-sm font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-focus ${active ? "bg-primary text-primary-text" : "text-text hover:bg-surface-subtle"}`}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-5 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${active ? "bg-primary text-primary-text shadow-sm" : "text-primary hover:bg-primary/5"}`}
       onClick={onClick}
       type="button"
     >
+      <Icon name={icon} size={17} />
       {label}
+      <span className="sr-only" id={`report-kind-${icon}-description`}>
+        {description}
+      </span>
     </button>
   );
 }
