@@ -375,6 +375,7 @@ Leia a [central de segurança](docs/security/README.md), a
 | ------------------------------------------------------------------------------- | --------------------------------------------------- |
 | [Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki)              | visão completa, requisitos, arc42, produto e status |
 | [Prontidão da Unidade 1](docs/validation/unit-1-readiness.md)                   | requisito acadêmico ligado à evidência              |
+| [Preparação da Unidade 2](docs/validation/unit-2-readiness.md)                  | matriz de entregas, evidências e pendências         |
 | [Homologação integrada](docs/validation/backend-mvp-homologation.md)            | roteiro dos quatro perfis                           |
 | [Piloto operacional acompanhado](docs/validation/guided-operational-pilot.md)   | fases, gates, observação e resposta a ocorrências   |
 | [CI/CD e containers](docs/development/ci-cd.md)                                 | workflows, tags, scans, SBOM e proveniência         |

@@ -1,0 +1,80 @@
+# Preparação para a Unidade 2
+
+## Objetivo e critério
+
+Esta matriz relaciona as entregas obrigatórias da Unidade 2, conforme o documento
+acadêmico recebido em 23 de outubro de 2026, às evidências atuais do projeto. A
+fotografia foi feita em **25 de outubro de 2026** e deve ser atualizada a cada
+entrega relevante.
+
+As classificações são:
+
+- **Atendido:** existe evidência verificável suficiente para o item;
+- **Parcial:** existe base implementada, mas falta um critério obrigatório;
+- **Pendente:** a evidência obrigatória ainda não existe;
+- **Validação externa:** depende do portal, da infraestrutura ou de uma pessoa
+  autorizada e não pode ser inferida somente pelo código.
+
+Itens repetidos no checklist oficial, como release, tag e changelog, são contados
+uma única vez nesta estimativa para evitar percentual artificialmente elevado.
+
+## Engenharia de Software
+
+| Entrega | Evidência atual | Estado | Próxima comprovação |
+| --- | --- | --- | --- |
+| Estratégia de testes | [Wiki — Estratégia de Testes](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Estrategia-de-Testes), [CI/CD](../development/ci-cd.md) e suítes automatizadas | Parcial | eliminar trechos históricos contraditórios, registrar a meta oficial de 90% por risco e publicar a medição |
+| Manual de uso | [Wiki — Manual de Uso](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Manual-de-Uso) | Parcial | revisar após login Google, nome oficial, relatórios e validação final dos quatro perfis |
+| Ligação story → PR → testes → pipeline → demo | Issues, PRs, commits `Refs/Closes`, checks e registros semanais | Atendido | manter a rastreabilidade nas próximas entregas e anexar evidência da demonstração quando solicitada |
+| Maintainability e Reliability acima de Good | CodeQL e checks de qualidade estão ativos | Pendente / validação externa | resolver os avisos atuais e conferir os dois indicadores no portal GitHub Security and quality |
+| Tags, releases e changelog | [`v0.4.0`](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0), imagens semânticas e [`CHANGELOG.md`](../../CHANGELOG.md) | Atendido | criar nova release somente após fechar o incremento que irá para a homologação |
+
+## Segurança
+
+| Entrega | Evidência atual | Estado | Próxima comprovação |
+| --- | --- | --- | --- |
+| Cobertura mínima de 90% nos componentes e fluxos críticos | backend coleta Cobertura na CI; frontend possui ampla suíte funcional | Pendente | medir backend e frontend, definir o recorte crítico, aplicar limiar verificável e documentar exclusões justificadas |
+| Zero bugs críticos | builds, testes, lint e CodeQL da `main` estão verdes no SHA observado | Parcial / validação externa | conferir a classificação vigente no portal de qualidade e registrar evidência datada |
+| Zero vulnerabilidades altas e críticas no Dependabot | Dependency Review, Trivy e CodeQL integram as esteiras | Parcial / validação externa | revisar o inventário do Dependabot com acesso autorizado e tratar qualquer alerta aberto com correção disponível |
+| SSL válido, domínio e proxy reverso | Load Balancer HTTPS, WAF e Caddy funcionam na homologação técnica | Parcial | configurar hostname, DNS e certificado publicamente confiável; remover a advertência do navegador |
+| Guia de Segurança e Privacidade | [central de segurança](../security/README.md), [guia seguro](../security/secure-development-guide.md), [STRIDE](../security/threat-model.md) e documentação de retenção | Atendido | sincronizar a Wiki após os merges e anexar a validação de LGPD aplicável ao piloto |
+
+## Infraestrutura e operação
+
+| Entrega | Evidência atual | Estado | Próxima comprovação |
+| --- | --- | --- | --- |
+| VM IaaS em nuvem pública | VM privada provisionada na OCI | Atendido | manter custo, acesso e configuração sob revisão |
+| Aplicação conteinerizada na VM | frontend, API e PostgreSQL `v0.4.0` saudáveis | Atendido | promover uma nova versão somente por release revisada |
+| Nome de domínio com resolução funcional | ainda não existe hostname público aprovado | Pendente | escolher hostname temporário ou institucional, criar DNS e validar resolução |
+| Plataforma de gerenciamento de contêineres | não provisionada | Pendente | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação |
+| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não | Parcial | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas |
+| Teste de carga com k6 e análise de gargalos | não existe script ou execução versionada | Pendente | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias |
+| Software implantado, acessível e utilizável | stack responde pela borda OCI, mas o certificado temporário gera advertência e o piloto não começou | Parcial | concluir domínio/certificado, dados fictícios e roteiro; executar piloto acompanhado |
+
+## Estimativa auditável
+
+Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
+
+- `1` quando atendido;
+- `0,5` quando parcial;
+- `0` quando pendente.
+
+Na fotografia de 25/10/2026 existem **5 itens atendidos, 7 parciais e 5
+pendentes**, resultando em **8,5 / 17 = 50%**. A incerteza estimada é de **±5
+pontos percentuais**, principalmente porque os indicadores do portal, a cobertura
+real e as validações humanas ainda precisam ser aferidos.
+
+Esse percentual mede o marco acadêmico da Unidade 2, não o volume de código nem a
+prontidão para produção.
+
+## Ordem recomendada
+
+1. configurar domínio e certificado confiável para liberar testes sem advertência;
+2. medir cobertura real e criar um plano objetivo para atingir 90% nos fluxos
+   críticos;
+3. corrigir e comprovar Maintainability, Reliability e inventário de
+   vulnerabilidades;
+4. implantar a plataforma de gerenciamento com acesso restrito;
+5. implantar observabilidade mínima com métricas, logs e traces;
+6. executar k6, analisar gargalos e registrar melhorias;
+7. atualizar o manual, ensaiar os quatro perfis e conduzir o piloto acompanhado;
+8. revisar documentação, Wiki e changelog e publicar a próxima release candidata.
