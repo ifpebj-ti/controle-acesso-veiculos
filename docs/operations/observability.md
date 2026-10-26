@@ -2,12 +2,21 @@
 
 **Rastreabilidade:** Issue #102
 
+**Decisão em avaliação:**
+[ADR 0007 — observabilidade gerenciada pela OCI no piloto](../architecture/decisions/0007-oci-native-pilot-observability.md),
+vinculada à Issue #500.
+
 ## Estado
 
 A API possui uma base vendor-neutral de observabilidade com OpenTelemetry. A
 instrumentação e a exportação OTLP ficam desabilitadas por padrão e não são um
 ambiente de monitoramento completo. Collector, armazenamento, painéis, alertas,
 retenção e plantão ainda dependem da infraestrutura de homologação e produção.
+
+A proposta atual prioriza OCI Monitoring, Logging, APM e Notifications para evitar
+que um backend de telemetria concorra com a aplicação e o PostgreSQL na VM de 1 OCPU
+e 6 GiB. Ela ainda não está provisionada nem aprovada: custo do APM, retenção,
+amostragem, destinatários e procedimento de resposta permanecem pendentes.
 
 Foram habilitados, quando configurados:
 
@@ -88,13 +97,13 @@ A instrumentação automática não substitui a revisão de telemetria. Neste re
 
 Os sinais iniciais para discussão em homologação são:
 
-| Sinal | Uso esperado | Decisão pendente |
-|---|---|---|
-| readiness indisponível | detectar perda de acesso ao PostgreSQL | janela, severidade e responsável |
-| proporção de HTTP 5xx | detectar falha da API | limite, período e exceções |
-| duração por rota normalizada | detectar degradação sem expor valores da URL | percentil e objetivo por fluxo |
-| saturação de CPU, memória e GC | dimensionar a API | limites e capacidade da infraestrutura |
-| ausência de telemetria | detectar API, collector ou exportação indisponível | tolerância e canal de escalonamento |
+| Sinal                          | Uso esperado                                       | Decisão pendente                       |
+| ------------------------------ | -------------------------------------------------- | -------------------------------------- |
+| readiness indisponível         | detectar perda de acesso ao PostgreSQL             | janela, severidade e responsável       |
+| proporção de HTTP 5xx          | detectar falha da API                              | limite, período e exceções             |
+| duração por rota normalizada   | detectar degradação sem expor valores da URL       | percentil e objetivo por fluxo         |
+| saturação de CPU, memória e GC | dimensionar a API                                  | limites e capacidade da infraestrutura |
+| ausência de telemetria         | detectar API, collector ou exportação indisponível | tolerância e canal de escalonamento    |
 
 Nenhum valor de SLO ou alerta deve ser tratado como compromisso institucional
 antes de medir carga real e definir horário de suporte, destinatários e processo
