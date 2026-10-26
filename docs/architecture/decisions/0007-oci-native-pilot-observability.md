@@ -1,6 +1,6 @@
 # ADR 0007 — Observabilidade gerenciada pela OCI no piloto
 
-- **Status:** proposta; depende de aprovação de custo e operação na Issue #500
+- **Status:** aceita como direção técnica; provisionamento condicionado ao plano e ao custo
 - **Data:** 26/10/2026
 - **Decisores:** equipe de desenvolvimento, orientadores e responsável operacional
 - **Rastreabilidade:** Issue #500
@@ -65,7 +65,8 @@ retenção e amostragem.
 - nível, timestamp, serviço, ambiente, `traceId`, `correlationId` e evento técnico;
 - sem corpo de requisição, token, cookie, senha, query string, e-mail, nome, placa ou
   connection string;
-- retenção inicial proposta de 14 dias, sujeita à medição de volume e aceite.
+- retenção inicial de 30 dias, o menor intervalo aceito pelo OCI Logging, sujeita à
+  medição de volume e custo.
 
 ### Traces
 

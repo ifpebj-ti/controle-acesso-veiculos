@@ -13,10 +13,11 @@ instrumentação e a exportação OTLP ficam desabilitadas por padrão e não s�
 ambiente de monitoramento completo. Collector, armazenamento, painéis, alertas,
 retenção e plantão ainda dependem da infraestrutura de homologação e produção.
 
-A proposta atual prioriza OCI Monitoring, Logging, APM e Notifications para evitar
+A direção técnica aprovada prioriza OCI Monitoring, Logging, APM e Notifications para evitar
 que um backend de telemetria concorra com a aplicação e o PostgreSQL na VM de 1 OCPU
-e 6 GiB. Ela ainda não está provisionada nem aprovada: custo do APM, retenção,
-amostragem, destinatários e procedimento de resposta permanecem pendentes.
+e 6 GiB. Ela ainda não está provisionada: plano do Terraform, confirmação da
+assinatura de alertas, ingestão OTLP, amostragem e procedimento de resposta precisam
+ser validados antes da operação.
 
 Foram habilitados, quando configurados:
 
