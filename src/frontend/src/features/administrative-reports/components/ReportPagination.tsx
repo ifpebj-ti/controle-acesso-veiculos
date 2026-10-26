@@ -13,7 +13,7 @@ export function ReportPagination({
   return (
     <nav
       aria-label="Paginação do relatório"
-      className="mt-5 flex flex-wrap items-center justify-between gap-3"
+      className="institutional-catalog__footer flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4 sm:px-6"
     >
       <p className="text-sm text-text-muted">
         Página {page.page} de {page.totalPages} · {page.totalCount} registro(s)
