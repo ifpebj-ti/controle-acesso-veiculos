@@ -32,7 +32,7 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 
 | Entrega | Evidência atual | Estado | Próxima comprovação |
 | --- | --- | --- | --- |
-| Cobertura mínima de 90% nos componentes e fluxos críticos | backend coleta Cobertura na CI; frontend possui ampla suíte funcional | Pendente | medir backend e frontend, definir o recorte crítico, aplicar limiar verificável e documentar exclusões justificadas |
+| Cobertura mínima de 90% nos componentes e fluxos críticos | backend coleta Cobertura na CI; frontend possui ampla suíte funcional | Pendente — [#499](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/499) | medir backend e frontend, definir o recorte crítico, aplicar limiar verificável e documentar exclusões justificadas |
 | Zero bugs críticos | builds, testes, lint e CodeQL da `main` estão verdes no SHA observado | Parcial / validação externa | conferir a classificação vigente no portal de qualidade e registrar evidência datada |
 | Zero vulnerabilidades altas e críticas no Dependabot | Dependency Review, Trivy e CodeQL integram as esteiras | Parcial / validação externa | revisar o inventário do Dependabot com acesso autorizado e tratar qualquer alerta aberto com correção disponível |
 | SSL válido, domínio e proxy reverso | Load Balancer HTTPS, WAF e Caddy funcionam na homologação técnica | Parcial | configurar hostname, DNS e certificado publicamente confiável; remover a advertência do navegador |
@@ -45,9 +45,9 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 | VM IaaS em nuvem pública | VM privada provisionada na OCI | Atendido | manter custo, acesso e configuração sob revisão |
 | Aplicação conteinerizada na VM | frontend, API e PostgreSQL `v0.4.0` saudáveis | Atendido | promover uma nova versão somente por release revisada |
 | Nome de domínio com resolução funcional | ainda não existe hostname público aprovado | Pendente | escolher hostname temporário ou institucional, criar DNS e validar resolução |
-| Plataforma de gerenciamento de contêineres | não provisionada | Pendente | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação |
-| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não | Parcial | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas |
-| Teste de carga com k6 e análise de gargalos | não existe script ou execução versionada | Pendente | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias |
+| Plataforma de gerenciamento de contêineres | não provisionada | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação |
+| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500) | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas |
+| Teste de carga com k6 e análise de gargalos | não existe script ou execução versionada | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias |
 | Software implantado, acessível e utilizável | stack responde pela borda OCI, mas o certificado temporário gera advertência e o piloto não começou | Parcial | concluir domínio/certificado, dados fictícios e roteiro; executar piloto acompanhado |
 
 ## Estimativa auditável
