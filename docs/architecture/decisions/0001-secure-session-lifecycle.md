@@ -40,8 +40,11 @@ essa correspondência de caminho.
 
 O ambiente `LocalContainer` permite cookies sem `Secure` apenas para o Compose
 HTTP em loopback. Produção exige HTTPS e um key ring do ASP.NET Core Data
-Protection persistente, criptografado e compartilhado entre réplicas. A stack
-local usa chaves efêmeras e, após reinício, o cliente obtém um novo par CSRF.
+Protection persistente, criptografado e compartilhado entre réplicas.
+
+> **Evolução posterior:** a ADR 0003 substituiu o key ring efêmero do Compose por
+> volume durável e XML protegido com certificado X.509. O modo HTTP local continua
+> restrito ao loopback, mas reiniciar apenas o container não deve perder as chaves.
 
 ## Contrato para o frontend
 

@@ -2,7 +2,7 @@
   "summary": {
     "title": "Controle de Acesso de Veículos — IFPE Campus Belo Jardim",
     "owner": "Equipe Controle de Acesso de Veículos",
-    "description": "Modelo STRIDE do MVP. Representa o ambiente local validado, a cadeia de entrega e a implantação institucional futura. A fonte detalhada e os níveis de risco estão em docs/security/threat-model.md.",
+    "description": "Modelo STRIDE do MVP. Representa o ambiente local validado, a cadeia de entrega e a homologação técnica na OCI. A fonte detalhada e os níveis de risco estão em docs/security/threat-model.md.",
     "id": 0
   },
   "detail": {
@@ -392,17 +392,17 @@
           {
             "position": { "x": 1550, "y": 90 },
             "size": { "width": 220, "height": 120 },
-            "attrs": { "text": { "text": "OCI futura" }, "body": { "stroke": "#777777", "strokeWidth": 1, "strokeDasharray": "5 5" } },
+            "attrs": { "text": { "text": "Homologação OCI" }, "body": { "stroke": "#777777", "strokeWidth": 1, "strokeDasharray": "5 5" } },
             "shape": "process",
             "id": "00000000-0000-4000-8000-000000000010",
             "zIndex": 10,
             "data": {
-              "name": "OCI futura",
-              "description": "Ambiente institucional planejado. O desenho de backup na OCI foi aprovado, mas topologia, HTTPS, segredos, observabilidade e operação ainda não foram provisionados nem exercitados.",
+              "name": "Homologação OCI",
+              "description": "Ambiente técnico com Load Balancer HTTPS, WAF, Bastion, VM privada e stack versionada. Certificado confiável, DNS, backup externo, observabilidade e piloto institucional permanecem pendentes.",
               "type": "tm.Process",
               "isTrustBoundary": false,
-              "outOfScope": true,
-              "reasonOutOfScope": "Implantação institucional ainda não definida.",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
               "hasOpenThreats": false,
               "threats": []
             }
@@ -648,10 +648,10 @@
             "zIndex": 20,
             "connector": "smooth",
             "id": "20000000-0000-4000-8000-000000000008",
-            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Promoção futura" } } }],
+            "labels": [{ "position": 0.5, "attrs": { "label": { "text": "Deploy versionado" } } }],
             "source": { "cell": "00000000-0000-4000-8000-000000000009" },
             "target": { "cell": "00000000-0000-4000-8000-000000000010" },
-            "data": { "type": "tm.Flow", "name": "Deploy futuro", "description": "Fluxo planejado; política de admissão e ambiente institucional ainda não definidos.", "protocol": "HTTPS/OCI", "isEncrypted": true, "isPublicNetwork": true, "isTrustBoundary": false, "outOfScope": true, "reasonOutOfScope": "Implantação institucional futura.", "hasOpenThreats": false, "threats": [] }
+            "data": { "type": "tm.Flow", "name": "Deploy versionado", "description": "Promoção manual de uma release revisada do GHCR para a homologação técnica; política automática de admissão e produção institucional não estão definidas.", "protocol": "HTTPS/OCI", "isEncrypted": true, "isPublicNetwork": true, "isTrustBoundary": false, "outOfScope": false, "reasonOutOfScope": "", "hasOpenThreats": false, "threats": [] }
           },
           {
             "shape": "trust-boundary-curve",

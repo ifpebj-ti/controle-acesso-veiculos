@@ -2,11 +2,13 @@
 
 ## Estado e limite
 
-Estes arquivos preparam a borda interna definida na ADR 0004 e nas Issues #437 e
-#468.
-Eles **não comprovam** que exista VM, domínio, certificado ou ambiente OCI
-implantado. Não execute esta configuração antes de concluir os gates da Issue
-#382: autorização, custo, DNS, rede, responsáveis e revisão do plano.
+Estes arquivos definem a borda interna descrita na ADR 0006 e nas Issues #437 e
+#468. Em 25 de outubro de 2026, a topologia foi implantada na homologação técnica:
+VM privada, Load Balancer, WAF e Caddy encaminham tráfego para a stack `v0.4.0`.
+
+O certificado atual é temporário e não confiável para testadores, e ainda não
+existe DNS público aprovado. Portanto, o ambiente comprova a integração técnica,
+mas não está autorizado para produção ou operação com dados reais.
 
 O OCI Flexible Load Balancer encerra TLS e aplica o OCI WAF. A VM não possui IP
 público. O Caddy executa como serviço do host privado, recebe HTTP apenas do NSG

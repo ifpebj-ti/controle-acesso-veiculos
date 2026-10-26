@@ -1,6 +1,6 @@
 # ADR 0006 — Borda de homologação protegida pelo OCI WAF
 
-- **Status:** Proposta; depende de plano, custo, certificado e homologação
+- **Status:** Aceita e implementada na homologação técnica; validação operacional pendente
 - **Data:** 20 de outubro de 2026
 - **Issues:** #382 e #468
 - **Substitui:** ADR 0004
@@ -43,6 +43,22 @@ Adotar a topologia:
 - nenhum cabeçalho de origem é confiado se a requisição não vier do Load Balancer;
 - logs, métricas e falsos positivos devem ser revisados antes do piloto e após cada
   mudança de regra.
+
+## Estado de implementação em 25 de outubro de 2026
+
+- VM privada, Load Balancer, OCI WAF, OCI Bastion, rede e orçamento foram
+  provisionados pela configuração versionada;
+- frontend, API e PostgreSQL executam a release `v0.4.0` e responderam aos health
+  checks da homologação técnica;
+- requisições fictícias com padrões de SQL injection e XSS foram bloqueadas pelo
+  WAF, enquanto a requisição normal de autenticação alcançou a aplicação;
+- o certificado atual é temporário e não confiável para uso por testadores, e não
+  existe DNS público aprovado;
+- logs operacionais, calibração de falsos positivos, backup externo, restauração,
+  rollback e piloto acompanhado ainda precisam ser exercitados.
+
+Esse estado comprova a topologia técnica, não autorização para produção nem
+homologação institucional.
 
 ## Implantação gradual
 
