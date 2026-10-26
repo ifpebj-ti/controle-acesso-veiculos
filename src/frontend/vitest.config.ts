@@ -14,6 +14,12 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json-summary", "cobertura"],
       reportsDirectory: "coverage",
+      thresholds: {
+        branches: 79,
+        functions: 90,
+        lines: 90,
+        statements: 87,
+      },
     },
     environment: "jsdom",
     restoreMocks: true,
