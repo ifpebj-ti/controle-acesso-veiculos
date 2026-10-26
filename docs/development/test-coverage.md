@@ -35,6 +35,20 @@ Linha de base local de 26/10/2026, com 554 testes:
 | Funções      |      951 | 1.073 |     88,63% |
 | Ramificações |    2.486 | 3.120 |     79,67% |
 
+Após o primeiro incremento da Issue #499, 567 testes elevaram o resultado para:
+
+| Métrica      | Cobertos | Total | Percentual |
+| ------------ | -------: | ----: | ---------: |
+| Linhas       |    3.482 | 3.843 |     90,60% |
+| Instruções   |    3.645 | 4.164 |     87,53% |
+| Funções      |      975 | 1.073 |     90,86% |
+| Ramificações |    2.494 | 3.120 |     79,93% |
+
+A CI aplica um piso global de 90% para linhas e funções, 87% para instruções e 79%
+para ramificações. Esses valores impedem regressão imediata sem declarar que todas as
+métricas já atingiram a meta final. Os pisos devem subir junto com testes novos; não
+devem ser reduzidos para acomodar uma mudança.
+
 ## Backend
 
 Execute na raiz do repositório, com o Docker disponível para a suíte de integração:
@@ -80,7 +94,7 @@ com cópias navegáveis do código não são anexados.
 3. Acrescentar testes de comportamento e integração para decisões ainda não
    exercitadas; não substituir cenários reais por mocks somente para elevar cobertura.
 4. Repetir e registrar a medição após cada incremento.
-5. Quando cada métrica aprovada alcançar 90%, configurar a CI para rejeitar regressão.
+5. Elevar progressivamente os pisos da CI até que cada métrica aprovada alcance 90%.
 
 Migrations, código gerado e pontos de inicialização podem ser avaliados separadamente,
 mas toda exclusão precisa de justificativa técnica registrada. Não é permitido reduzir
