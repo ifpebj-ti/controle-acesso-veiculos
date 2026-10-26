@@ -94,6 +94,12 @@ ramificações. O incremento verifica invariantes de categorias, perfis, víncul
 pessoa e veículo e ciclo de vida da sessão; ramificações ainda permanecem abaixo do
 limiar final e continuam visíveis como trabalho pendente.
 
+A CI mede `Domain` e `Application` novamente em diretórios isolados e bloqueia
+regressões abaixo de 90% de linhas. Enquanto as ramificações ainda evoluem até a meta
+final, os pisos reproduzidos de 77% no Domain e 83% na Application também não podem
+diminuir. O verificador exige exatamente um relatório e o assembly esperado, evitando
+aprovação acidental com artefato ausente ou pertencente a outra suíte.
+
 ## Evidência na CI
 
 As esteiras de backend e frontend publicam relatórios por 14 dias. Os artefatos
