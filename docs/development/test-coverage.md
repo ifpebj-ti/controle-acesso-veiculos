@@ -79,6 +79,15 @@ pois as suítes medem conjuntos sobrepostos em processos diferentes.
 | Integração | API              | 82,81% |       60,96% |
 | Integração | Infrastructure   | 97,52% |       94,37% |
 
+Após o primeiro incremento de segurança da Issue #499, a suíte de Application passou
+de 90 para 127 testes e elevou a cobertura do assembly `Application` para 90,32% de
+linhas e 83,09% de ramificações. O serviço de renovação e encerramento de sessão, as
+políticas de sessão e credencial temporária, a geração de relatórios administrativos
+e o bootstrap do primeiro administrador atingiram 100% de linhas e ramificações em
+testes unitários diretos. Isso cobre rotação, reutilização de token, inatividade,
+credencial expirada, perfil inativo, logout, confirmação de exportação, falhas de PDF
+e inicialização segura sem representar 100% do backend inteiro.
+
 ## Evidência na CI
 
 As esteiras de backend e frontend publicam relatórios por 14 dias. Os artefatos
