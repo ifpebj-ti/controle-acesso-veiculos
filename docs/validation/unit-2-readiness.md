@@ -34,7 +34,7 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Cobertura mínima de 90% nos componentes e fluxos críticos | a [Issue #499](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/499) e o PR #507 registram medição reproduzível, testes adicionais e gates progressivos     | Parcial                     | concluir 90% no recorte aprovado; trabalho aberto ou draft não é contado como entrega incorporada                            |
 | Zero bugs críticos                                        | builds, testes, lint e CodeQL da `main` estão verdes no SHA observado                                                                                                   | Parcial / validação externa | conferir a classificação vigente no portal de qualidade e registrar evidência datada                                         |
-| Zero vulnerabilidades altas e críticas no Dependabot      | Dependency Review, Trivy e CodeQL integram as esteiras                                                                                                                  | Parcial / validação externa | revisar o inventário do Dependabot com acesso autorizado e tratar qualquer alerta aberto com correção disponível             |
+| Zero vulnerabilidades altas e críticas no Dependabot      | consulta autenticada ao portal em 26/10/2026 registrou zero alertas abertos no Dependabot; Dependency Review, Trivy e CodeQL permanecem ativos                          | Atendido na fotografia      | repetir a consulta antes da entrega; ausência de alerta conhecido não significa risco zero                                   |
 | SSL válido, domínio e proxy reverso                       | DNS, certificado público confiável, Load Balancer HTTPS, WAF e Caddy foram validados em 26/10/2026                                                                      | Atendido                    | automatizar renovação, alerta e rollback pela [Issue #509](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/509) |
 | Guia de Segurança e Privacidade                           | [central de segurança](../security/README.md), [guia seguro](../security/secure-development-guide.md), [STRIDE](../security/threat-model.md) e documentação de retenção | Atendido                    | sincronizar a Wiki após os merges e anexar a validação de LGPD aplicável ao piloto                                           |
 
@@ -58,8 +58,8 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na fotografia de 26/10/2026 existem **7 itens atendidos, 7 parciais e 3
-pendentes**, resultando em **10,5 / 17 = 61,8%**. A incerteza estimada é de **±5
+Na fotografia de 26/10/2026 existem **8 itens atendidos, 6 parciais e 3
+pendentes**, resultando em **11 / 17 = 64,7%**. A incerteza estimada é de **±5
 pontos percentuais**, principalmente porque os indicadores do portal, a cobertura
 real e as validações humanas ainda precisam ser aferidos.
 
