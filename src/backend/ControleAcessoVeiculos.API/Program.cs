@@ -43,6 +43,7 @@ using System.Text;
 using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddRuntimeSecretFiles();
 
 QuestPDF.Settings.License = LicenseType.Community;
 

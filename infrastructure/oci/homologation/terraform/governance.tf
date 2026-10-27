@@ -31,3 +31,19 @@ resource "oci_budget_alert_rule" "homologation" {
   recipients     = var.budget_alert_recipients
   freeform_tags  = var.freeform_tags
 }
+
+resource "oci_identity_dynamic_group" "application_instance_agent" {
+  compartment_id = var.tenancy_ocid
+  name           = replace("${var.resource_prefix}_instance_agent", "-", "_")
+  description    = "Least-privilege identity for the homologation compute instance agent."
+  matching_rule  = "instance.id = '${oci_core_instance.application.id}'"
+}
+
+resource "oci_identity_policy" "application_instance_agent" {
+  compartment_id = var.tenancy_ocid
+  name           = "${var.resource_prefix}-instance-agent-policy"
+  description    = "Allows only the homologation instance to consume its Run Command executions."
+  statements = [
+    "Allow dynamic-group id ${oci_identity_dynamic_group.application_instance_agent.id} to use instance-agent-command-execution-family in compartment id ${oci_identity_compartment.homologation.id} where request.instance.id = target.instance.id"
+  ]
+}
