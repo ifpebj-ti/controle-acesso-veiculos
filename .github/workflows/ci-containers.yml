@@ -182,11 +182,24 @@ jobs:
             -passout "pass:${data_protection_password}"
           printf '%s' "${data_protection_password}" \
             > infrastructure/docker/secrets/data-protection-password.txt
+          printf '%s' "${postgres_password}" \
+            > infrastructure/docker/secrets/postgresql-password.txt
+          printf '%s' \
+            "Host=postgresql;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${postgres_password};GSS Encryption Mode=Disable" \
+            > infrastructure/docker/secrets/database-connection.txt
+          printf '%s' "${jwt_signing_key}" \
+            > infrastructure/docker/secrets/jwt-signing-key.txt
           chmod 0444 \
             infrastructure/docker/secrets/data-protection.pfx \
-            infrastructure/docker/secrets/data-protection-password.txt
+            infrastructure/docker/secrets/data-protection-password.txt \
+            infrastructure/docker/secrets/postgresql-password.txt \
+            infrastructure/docker/secrets/database-connection.txt \
+            infrastructure/docker/secrets/jwt-signing-key.txt
           echo "POSTGRES_PASSWORD=${postgres_password}" >> "${GITHUB_ENV}"
           echo "JWT_SIGNING_KEY=${jwt_signing_key}" >> "${GITHUB_ENV}"
+          echo "POSTGRES_PASSWORD_FILE=./secrets/postgresql-password.txt" >> "${GITHUB_ENV}"
+          echo "DATABASE_CONNECTION_FILE=./secrets/database-connection.txt" >> "${GITHUB_ENV}"
+          echo "JWT_SIGNING_KEY_FILE=./secrets/jwt-signing-key.txt" >> "${GITHUB_ENV}"
           echo "DATA_PROTECTION_CERTIFICATE_FILE=./secrets/data-protection.pfx" >> "${GITHUB_ENV}"
           echo "DATA_PROTECTION_CERTIFICATE_PASSWORD_FILE=./secrets/data-protection-password.txt" >> "${GITHUB_ENV}"
           echo "DATA_PROTECTION_KEY_RING_VOLUME=cav-smoke-data-protection-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "${GITHUB_ENV}"
@@ -220,6 +233,12 @@ jobs:
             )
             and (.services.backend.ports == null)
             and (.services.postgresql.ports == null)
+            and (.services.backend.environment.Authentication__Jwt__SigningKey == null)
+            and (.services.backend.environment.ConnectionStrings__DefaultConnection == null)
+            and (.services.backend.environment.Authentication__Jwt__SigningKeyFile == "/run/secrets/jwt-signing-key")
+            and (.services.backend.environment.ConnectionStrings__DefaultConnectionFile == "/run/secrets/database-connection")
+            and (.services.postgresql.environment.POSTGRES_PASSWORD == null)
+            and (.services.postgresql.environment.POSTGRES_PASSWORD_FILE == "/run/secrets/postgresql-password")
           ' <<< "$(docker compose --file docker-compose.production.yml config --format json)" \
             > /dev/null
 
