@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  isValidVehiclePlate,
+  vehiclePlateFormatError,
+} from "../../vehicle-plates/vehiclePlate";
 import { generalAccessCategories } from "../model/accessCategories";
 import { exceptionalClosureReasons } from "../model/exceptionalClosure";
 import {
@@ -69,8 +73,7 @@ export const accessEntryFormSchema = z
       .string()
       .trim()
       .min(1, "Informe a placa do veículo.")
-      .max(10, "A placa deve possuir até 10 caracteres.")
-      .regex(/[\p{L}\p{N}]/u, "A placa deve conter letras ou números."),
+      .refine(isValidVehiclePlate, vehiclePlateFormatError),
     driverName: z
       .string()
       .trim()
