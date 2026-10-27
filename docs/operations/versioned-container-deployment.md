@@ -84,17 +84,37 @@ Defina no arquivo local:
 - `DEPLOYMENT_VERSION`: a mesma release para frontend e backend, como `0.4.0`;
 - `ALLOWED_HOSTS`: o domínio público esperado pela API e `localhost`, usado
   somente pela verificação de saúde interna;
-- credenciais próprias do PostgreSQL; prefira senha aleatória hexadecimal ou
-  base64url, sem delimitadores de connection string;
-- uma chave JWT aleatória com pelo menos 32 bytes;
+- caminhos absolutos para três arquivos protegidos: senha do PostgreSQL,
+  connection string do backend e chave JWT;
 - certificado PFX de Data Protection fornecido pelo secret manager, sua senha e o
   nome de um volume externo compartilhado pelas réplicas;
 - endereço e porta de loopback que o proxy HTTPS acessará.
 
-O `.env.production` é ignorado pelo Git. Ele ainda é apenas uma alternativa de
-implantação simples: no ambiente definitivo, prefira um secret manager ou
-Docker Secrets, restrinja a leitura ao operador e nunca envie seu conteúdo por
-issue, Pull Request, chat ou log.
+O `.env.production` é ignorado pelo Git e contém somente caminhos e configuração
+não secreta. O Compose monta os arquivos como secrets somente leitura, evitando
+que os valores apareçam nas variáveis retornadas por `docker inspect`. Essa
+proteção local não substitui um secret manager: restrinja os arquivos ao
+operador e nunca envie seu conteúdo por issue, Pull Request, chat ou log.
+
+Prepare os arquivos fora do repositório. A senha usada na connection string deve
+ser exatamente a mesma do arquivo do PostgreSQL; prefira base64url ou hexadecimal
+aleatório para não introduzir delimitadores na connection string:
+
+```text
+# postgresql-password.txt
+VALOR_ALEATORIO
+
+# database-connection.txt (uma única linha)
+Host=postgresql;Port=5432;Database=controle_acesso;Username=controle_acesso_app;Password=VALOR_ALEATORIO;GSS Encryption Mode=Disable
+
+# jwt-signing-key.txt (ao menos 32 bytes aleatórios)
+CHAVE_ALEATORIA
+```
+
+No Linux, aplique `chmod 600` e mantenha o diretório inacessível para outros
+usuários. O backend falha no startup quando um caminho é relativo, o arquivo não
+existe, está vazio, excede 16 KiB ou quando valor direto e arquivo são fornecidos
+ao mesmo tempo. O conteúdo nunca integra a mensagem de erro.
 
 Crie o volume externo antes da primeira implantação. Em um host único ele pode
 ser um volume Docker; em topologia distribuída deve apontar para armazenamento
