@@ -4,7 +4,7 @@
 
 Esta matriz relaciona as entregas obrigatórias da Unidade 2, conforme o documento
 acadêmico recebido em 23 de outubro de 2026, às evidências atuais do projeto. A
-fotografia foi feita em **25 de outubro de 2026** e deve ser atualizada a cada
+fotografia foi atualizada em **26 de outubro de 2026** e deve ser revisada a cada
 entrega relevante.
 
 As classificações são:
@@ -20,35 +20,35 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 
 ## Engenharia de Software
 
-| Entrega | Evidência atual | Estado | Próxima comprovação |
-| --- | --- | --- | --- |
-| Estratégia de testes | [Wiki — Estratégia de Testes](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Estrategia-de-Testes), [CI/CD](../development/ci-cd.md) e suítes automatizadas | Parcial | eliminar trechos históricos contraditórios, registrar a meta oficial de 90% por risco e publicar a medição |
-| Manual de uso | [Wiki — Manual de Uso](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Manual-de-Uso) | Parcial | revisar após login Google, nome oficial, relatórios e validação final dos quatro perfis |
-| Ligação story → PR → testes → pipeline → demo | Issues, PRs, commits `Refs/Closes`, checks e registros semanais | Atendido | manter a rastreabilidade nas próximas entregas e anexar evidência da demonstração quando solicitada |
-| Maintainability e Reliability acima de Good | CodeQL e checks de qualidade estão ativos | Pendente / validação externa | resolver os avisos atuais e conferir os dois indicadores no portal GitHub Security and quality |
-| Tags, releases e changelog | [`v0.4.0`](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0), imagens semânticas e [`CHANGELOG.md`](../../CHANGELOG.md) | Atendido | criar nova release somente após fechar o incremento que irá para a homologação |
+| Entrega                                       | Evidência atual                                                                                                                                                         | Estado                       | Próxima comprovação                                                                                        |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Estratégia de testes                          | [Wiki — Estratégia de Testes](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Estrategia-de-Testes), [CI/CD](../development/ci-cd.md) e suítes automatizadas | Parcial                      | eliminar trechos históricos contraditórios, registrar a meta oficial de 90% por risco e publicar a medição |
+| Manual de uso                                 | [Wiki — Manual de Uso](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Manual-de-Uso)                                                                        | Parcial                      | revisar após login Google, nome oficial, relatórios e validação final dos quatro perfis                    |
+| Ligação story → PR → testes → pipeline → demo | Issues, PRs, commits `Refs/Closes`, checks e registros semanais                                                                                                         | Atendido                     | manter a rastreabilidade nas próximas entregas e anexar evidência da demonstração quando solicitada        |
+| Maintainability e Reliability acima de Good   | CodeQL e checks de qualidade estão ativos                                                                                                                               | Pendente / validação externa | resolver os avisos atuais e conferir os dois indicadores no portal GitHub Security and quality             |
+| Tags, releases e changelog                    | [`v0.4.0`](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0), imagens semânticas e [`CHANGELOG.md`](../../CHANGELOG.md)                        | Atendido                     | criar nova release somente após fechar o incremento que irá para a homologação                             |
 
 ## Segurança
 
-| Entrega | Evidência atual | Estado | Próxima comprovação |
-| --- | --- | --- | --- |
-| Cobertura mínima de 90% nos componentes e fluxos críticos | backend coleta Cobertura na CI; frontend possui ampla suíte funcional | Pendente — [#499](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/499) | medir backend e frontend, definir o recorte crítico, aplicar limiar verificável e documentar exclusões justificadas |
-| Zero bugs críticos | builds, testes, lint e CodeQL da `main` estão verdes no SHA observado | Parcial / validação externa | conferir a classificação vigente no portal de qualidade e registrar evidência datada |
-| Zero vulnerabilidades altas e críticas no Dependabot | Dependency Review, Trivy e CodeQL integram as esteiras | Parcial / validação externa | revisar o inventário do Dependabot com acesso autorizado e tratar qualquer alerta aberto com correção disponível |
-| SSL válido, domínio e proxy reverso | Load Balancer HTTPS, WAF e Caddy funcionam na homologação técnica | Parcial | configurar hostname, DNS e certificado publicamente confiável; remover a advertência do navegador |
-| Guia de Segurança e Privacidade | [central de segurança](../security/README.md), [guia seguro](../security/secure-development-guide.md), [STRIDE](../security/threat-model.md) e documentação de retenção | Atendido | sincronizar a Wiki após os merges e anexar a validação de LGPD aplicável ao piloto |
+| Entrega                                                   | Evidência atual                                                                                                                                                         | Estado                      | Próxima comprovação                                                                                                          |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Cobertura mínima de 90% nos componentes e fluxos críticos | a [Issue #499](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/499) e o PR #507 registram medição reproduzível, testes adicionais e gates progressivos     | Parcial                     | concluir 90% no recorte aprovado; trabalho aberto ou draft não é contado como entrega incorporada                            |
+| Zero bugs críticos                                        | builds, testes, lint e CodeQL da `main` estão verdes no SHA observado                                                                                                   | Parcial / validação externa | conferir a classificação vigente no portal de qualidade e registrar evidência datada                                         |
+| Zero vulnerabilidades altas e críticas no Dependabot      | consulta autenticada ao portal em 26/10/2026 registrou zero alertas abertos no Dependabot; Dependency Review, Trivy e CodeQL permanecem ativos                          | Atendido na fotografia      | repetir a consulta antes da entrega; ausência de alerta conhecido não significa risco zero                                   |
+| SSL válido, domínio e proxy reverso                       | DNS, certificado público confiável, Load Balancer HTTPS, WAF e Caddy foram validados em 26/10/2026                                                                      | Atendido                    | automatizar renovação, alerta e rollback pela [Issue #509](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/509) |
+| Guia de Segurança e Privacidade                           | [central de segurança](../security/README.md), [guia seguro](../security/secure-development-guide.md), [STRIDE](../security/threat-model.md) e documentação de retenção | Atendido                    | sincronizar a Wiki após os merges e anexar a validação de LGPD aplicável ao piloto                                           |
 
 ## Infraestrutura e operação
 
-| Entrega | Evidência atual | Estado | Próxima comprovação |
-| --- | --- | --- | --- |
-| VM IaaS em nuvem pública | VM privada provisionada na OCI | Atendido | manter custo, acesso e configuração sob revisão |
-| Aplicação conteinerizada na VM | frontend, API e PostgreSQL `v0.4.0` saudáveis | Atendido | promover uma nova versão somente por release revisada |
-| Nome de domínio com resolução funcional | ainda não existe hostname público aprovado | Pendente | escolher hostname temporário ou institucional, criar DNS e validar resolução |
-| Plataforma de gerenciamento de contêineres | não provisionada | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação |
-| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500) | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas |
-| Teste de carga com k6 e análise de gargalos | não existe script ou execução versionada | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias |
-| Software implantado, acessível e utilizável | stack responde pela borda OCI, mas o certificado temporário gera advertência e o piloto não começou | Parcial | concluir domínio/certificado, dados fictícios e roteiro; executar piloto acompanhado |
+| Entrega                                     | Evidência atual                                                                               | Estado                                                                              | Próxima comprovação                                                                                     |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| VM IaaS em nuvem pública                    | VM privada provisionada na OCI                                                                | Atendido                                                                            | manter custo, acesso e configuração sob revisão                                                         |
+| Aplicação conteinerizada na VM              | frontend, API e PostgreSQL `v0.4.0` saudáveis                                                 | Atendido                                                                            | promover uma nova versão somente por release revisada                                                   |
+| Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado          |
+| Plataforma de gerenciamento de contêineres  | não provisionada                                                                              | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação           |
+| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não       | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas        |
+| Teste de carga com k6 e análise de gargalos | não existe script ou execução versionada                                                      | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias        |
+| Software implantado, acessível e utilizável | stack responde pela borda OCI com HTTPS confiável, mas o piloto acompanhado ainda não começou | Parcial                                                                             | promover uma release revisada, preparar contas fictícias e executar o roteiro com os perfis autorizados |
 
 ## Estimativa auditável
 
@@ -58,8 +58,8 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na fotografia de 25/10/2026 existem **5 itens atendidos, 7 parciais e 5
-pendentes**, resultando em **8,5 / 17 = 50%**. A incerteza estimada é de **±5
+Na fotografia de 26/10/2026 existem **8 itens atendidos, 6 parciais e 3
+pendentes**, resultando em **11 / 17 = 64,7%**. A incerteza estimada é de **±5
 pontos percentuais**, principalmente porque os indicadores do portal, a cobertura
 real e as validações humanas ainda precisam ser aferidos.
 
@@ -68,9 +68,8 @@ prontidão para produção.
 
 ## Ordem recomendada
 
-1. configurar domínio e certificado confiável para liberar testes sem advertência;
-2. medir cobertura real e criar um plano objetivo para atingir 90% nos fluxos
-   críticos;
+1. automatizar a renovação e a recuperação do certificado confiável;
+2. concluir 90% de cobertura no recorte crítico e incorporar os gates revisados;
 3. corrigir e comprovar Maintainability, Reliability e inventário de
    vulnerabilidades;
 4. implantar a plataforma de gerenciamento com acesso restrito;
