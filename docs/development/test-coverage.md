@@ -80,15 +80,17 @@ pois as suítes medem conjuntos sobrepostos em processos diferentes.
 | Integração | Infrastructure   | 97,52% |       94,37% |
 
 Após os incrementos de segurança da Issue #499, a suíte de Application passou de 90
-para 140 testes e elevou a cobertura do assembly `Application` para 91,85% de linhas
-e 86,30% de ramificações. O serviço de renovação e encerramento de sessão, as
+para 157 testes e elevou a cobertura do assembly `Application` para 93,42% de linhas
+e 90,25% de ramificações. O serviço de renovação e encerramento de sessão, as
 políticas de sessão e credencial temporária, a geração de relatórios administrativos
 e o bootstrap do primeiro administrador atingiram 100% de linhas e ramificações em
 testes unitários diretos. Isso cobre rotação, reutilização de token, inatividade,
 credencial expirada, perfil inativo, logout, confirmação de exportação, falhas de PDF
 e inicialização segura sem representar 100% do backend inteiro. Os testes de eventos
 também cobrem busca e paginação inválidas, limites de campos e regras, normalização e
-mapeamento dos resultados de criação, atualização e cancelamento.
+mapeamento dos resultados de criação, atualização e cancelamento. O registro de
+acessos cobre ainda conflitos de evento/candidato, campos opcionais, filtros e
+correções; o login cobre conta ausente/inativa, bloqueio, rehash e auditoria.
 
 Na suíte de Domain, 45 cenários adicionais elevaram o total de 78 para 123 testes e a
 cobertura do assembly de 85,23% para 93,63% de linhas e de 74,71% para 90,59% de
@@ -98,10 +100,9 @@ caminhos negativos cobrem limites, autoria, períodos, bloqueio, credencial temp
 e transição de método de autenticação, sem alterar o código de produção.
 
 A CI mede `Domain` e `Application` novamente em diretórios isolados e bloqueia
-regressões abaixo de 90% de linhas. O Domain também possui piso definitivo de 90% de
-ramificações; enquanto a Application evolui até essa meta, seu piso reproduzido de 86%
-não pode diminuir. O verificador exige exatamente um relatório e o assembly esperado,
-evitando aprovação acidental com artefato ausente ou pertencente a outra suíte.
+regressões abaixo de 90% tanto em linhas quanto em ramificações. O verificador exige
+exatamente um relatório e o assembly esperado, evitando aprovação acidental com
+artefato ausente ou pertencente a outra suíte.
 
 ## Evidência na CI
 

@@ -103,7 +103,7 @@ jobs:
             -ReportDirectory artifacts/coverage-gate/application `
             -PackageName ControleAcessoVeiculos.Application `
             -MinimumLineCoverage 90 `
-            -MinimumBranchCoverage 86
+            -MinimumBranchCoverage 90
 
       - name: Upload test results and coverage
         if: always()
