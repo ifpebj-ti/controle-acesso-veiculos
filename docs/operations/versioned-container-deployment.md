@@ -188,6 +188,21 @@ na API indica divergência entre o hostname publicado e `ALLOWED_HOSTS`; corrija
 a lista explícita e recrie somente o backend. Não use `AllowedHosts=*` como
 atalho, pois isso remove uma defesa contra cabeçalhos `Host` forjados.
 
+Um operador autorizado pode executar a alteração transacional pela sessão
+temporária do OCI Bastion, sem imprimir o arquivo de ambiente:
+
+```bash
+sudo infrastructure/oci/homologation/scripts/Update-AllowedHosts.sh \
+  --deployment-directory /opt/controle-acesso-veiculos/infrastructure/docker \
+  --hostname dat.ernandescosta.me
+```
+
+O script aceita somente hostname DNS minúsculo e explícito, exige exatamente
+uma entrada `ALLOWED_HOSTS`, valida o modelo do Compose e recria apenas o
+backend. Se a validação ou a substituição falhar, restaura o arquivo anterior e
+tenta recolocar o backend conhecido. O operador ainda deve executar os testes
+públicos de readiness, login e renovação de sessão antes de encerrar a mudança.
+
 Depois de substituir o backend, obtenha um token antifalsificação, substitua a
 instância e valide o mesmo par em uma operação protegida. HTTP 400 nesse ensaio
 indica `ApplicationName`, volume ou certificado divergente entre réplicas.

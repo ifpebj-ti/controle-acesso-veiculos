@@ -137,12 +137,14 @@ confirme:
 1. aguarde o `cloud-init` encerrar e registre somente o resultado sanitizado;
 2. confirme Cloud Agent, monitoring, firewall, Docker e atualizações automáticas;
 3. confirme que a VM não possui IP público e crie uma sessão temporária do Bastion;
-4. instale e valide a borda privada descrita em `../edge`;
-5. configure DNS com o IP do Load Balancer exibido como output sensível;
-6. prepare segredos e execute o Compose versionado sem build no host;
-7. habilite backup protegido antes de preservar qualquer dado;
-8. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
-9. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
+4. use o usuário administrativo individual da sessão; o usuário isolado do Run
+   Command não deve receber acesso genérico ao Docker ou aos arquivos de segredo;
+5. instale e valide a borda privada descrita em `../edge`;
+6. configure DNS com o IP do Load Balancer exibido como output sensível;
+7. prepare segredos e execute o Compose versionado sem build no host;
+8. habilite backup protegido antes de preservar qualquer dado;
+9. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
+10. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
 
 ## Limites conhecidos
 
