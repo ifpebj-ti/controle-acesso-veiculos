@@ -142,7 +142,7 @@ function validateConfiguration() {
     throw new Error("K6_ACCESS_TOKEN is required and must never be committed.");
   }
 
-  const parsed = new URL(apiBaseUrl);
+  const parsed = parseTarget(apiBaseUrl);
   const isLocal = ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname);
 
   if (!isLocal && parsed.protocol !== "https:") {
@@ -154,15 +154,34 @@ function validateConfiguration() {
       "Set K6_TARGET_APPROVED=yes only after the target and test window are authorized.",
     );
   }
-
-  if (parsed.username || parsed.password || parsed.search || parsed.hash) {
-    throw new Error(
-      "The target URL cannot contain credentials, query, or fragment.",
-    );
-  }
 }
 
 function redactTarget(target) {
-  const parsed = new URL(target);
+  const parsed = parseTarget(target);
   return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+}
+
+function parseTarget(target) {
+  const match =
+    /^(https?):\/\/(\[[0-9a-fA-F:]+\]|[A-Za-z0-9.-]+)(?::([0-9]{1,5}))?(\/[^\s?#]*)?$/.exec(
+      target,
+    );
+
+  if (!match) {
+    throw new Error(
+      "K6_API_BASE_URL must be an HTTP(S) origin/path without credentials, query, or fragment.",
+    );
+  }
+
+  const [, scheme, hostname, port, pathname = ""] = match;
+  if (port && Number(port) > 65535) {
+    throw new Error("K6_API_BASE_URL contains an invalid port.");
+  }
+
+  return {
+    protocol: `${scheme}:`,
+    hostname: hostname.replace(/^\[|\]$/g, "").toLowerCase(),
+    host: port ? `${hostname}:${port}` : hostname,
+    pathname,
+  };
 }

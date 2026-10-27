@@ -40,3 +40,34 @@ jobs:
           --volume "${PWD}/infrastructure/load-testing/k6:/scripts:ro"
           "${K6_IMAGE}"
           inspect --include-system-env-vars /scripts/baseline.js
+
+      - name: Reject unsafe targets without executing requests
+        env:
+          K6_IMAGE: grafana/k6:2.3.0@sha256:2dd4756ec6e14e62778916e1eb850108e4b499304c02df56760fa0bdb0fba0b8
+        shell: bash
+        run: |
+          inspect_target() {
+            docker run --rm \
+              --env "K6_API_BASE_URL=$1" \
+              --env K6_ACCESS_TOKEN=fictitious-ci-inspection-token \
+              --env K6_PROFILE=low \
+              --env "K6_TARGET_APPROVED=${2:-no}" \
+              --volume "${PWD}/infrastructure/load-testing/k6:/scripts:ro" \
+              "${K6_IMAGE}" \
+              inspect --include-system-env-vars /scripts/baseline.js
+          }
+
+          if inspect_target 'http://example.test/api' yes; then
+            echo 'A remote HTTP target was accepted.' >&2
+            exit 1
+          fi
+
+          if inspect_target 'https://example.test/api' no; then
+            echo 'An unapproved remote target was accepted.' >&2
+            exit 1
+          fi
+
+          if inspect_target 'https://user:password@example.test/api?unsafe=true' yes; then
+            echo 'A target containing credentials or a query was accepted.' >&2
+            exit 1
+          fi
