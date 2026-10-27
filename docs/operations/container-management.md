@@ -28,8 +28,8 @@ do Docker. O TLS interno do painel protege o salto local, mas a barreira de rede
 ## Checklist anterior à implantação
 
 - [ ] ADR aprovado pelos responsáveis de infraestrutura e segurança;
-- [ ] Issue #516 concluída ou risco de inspeção de segredos explicitamente
-      aceito apenas para administradores já autorizados;
+- [x] Issue #516 concluída pelo PR #518: segredos de longa duração não aparecem
+      no ambiente inspecionável dos contêineres e a rotação foi ensaiada;
 - [ ] versão LTS, digest, arquiteturas, SBOM e scanner registrados;
 - [ ] volume e memória disponíveis medidos;
 - [ ] regra OCI confirma ausência de ingresso para `9443`, `9000` e `8000`;

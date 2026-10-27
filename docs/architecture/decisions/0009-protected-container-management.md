@@ -3,7 +3,7 @@
 - Estado: proposto
 - Data: 2026-10-26
 - Issue: #501
-- Dependência de segurança: #516
+- Dependência de segurança: #516, concluída pelo PR #518 em 27/10/2026
 
 ## Contexto
 
@@ -49,10 +49,12 @@ desenvolvedores responsáveis pela infraestrutura, nas seguintes condições:
   não passa a ser fonte de verdade nem autorização para editar manifests;
 - atualização, rollback e backup seguem um runbook revisado.
 
-O primeiro deploy não concede acesso a operadores comuns. Contas não
-administrativas e controles por recurso só podem ser habilitados depois que a
-Issue #516 retirar segredos de longa duração do ambiente inspecionável dos
-contêineres e um teste confirmar a separação pretendida.
+O primeiro deploy não concede acesso a operadores comuns. A Issue #516 retirou
+os segredos de longa duração do ambiente inspecionável dos contêineres e o PR
+#518 comprovou essa separação com stack descartável, `docker inspect`, logs,
+rotação e rollback. Isso satisfaz a dependência prévia, mas não reduz o poder do
+socket Docker: contas adicionais e controles por recurso continuam bloqueados
+até validação específica da interface e aprovação dos responsáveis.
 
 ## Controles obrigatórios antes do aceite
 
@@ -81,8 +83,8 @@ contêineres e um teste confirmar a separação pretendida.
 - comprometimento do Portainer ou de uma conta administrativa pode controlar o
   Docker e, por consequência, a VM;
 - Portainer CE não possui o RBAC operacional detalhado da edição Business;
-- informações exibidas pelo Docker podem incluir configuração sensível até a
-  conclusão da Issue #516;
+- a interface ainda pode revelar configuração não secreta, caminhos de mounts,
+  nomes internos, logs operacionais e metadados úteis a um atacante;
 - o volume do Portainer passa a exigir backup, atualização e restauração;
 - a console aumenta consumo e manutenção de uma VM acadêmica pequena.
 
