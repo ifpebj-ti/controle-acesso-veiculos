@@ -19,9 +19,10 @@ PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF.
 promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
 uma nova release revisada seja publicada e `DEPLOYMENT_VERSION` seja alterada.
 
-O endpoint ainda usa certificado temporário sem hostname público confiável. Esse
-ensaio não representa produção nem substitui DNS, backup, observabilidade e
-homologação institucional.
+O endpoint `dat.ernandescosta.me` usa certificado público confiável e termina o
+TLS no Load Balancer. A renovação automática do certificado, o backup protegido,
+a observabilidade operada e a homologação institucional continuam pendentes;
+portanto, o ambiente permanece classificado como homologação, não produção.
 
 ## Release disponível
 
@@ -96,6 +97,13 @@ que os valores apareçam nas variáveis retornadas por `docker inspect`. Essa
 proteção local não substitui um secret manager: restrinja os arquivos ao
 operador e nunca envie seu conteúdo por issue, Pull Request, chat ou log.
 
+Em 27 de outubro de 2026, uma stack descartável construída a partir do PR da
+Issue #516 comprovou que backend e PostgreSQL iniciam lendo esses arquivos, que
+os valores não aparecem em `docker inspect` nem nos logs e que a recriação do
+backend aceita rotação e rollback da chave JWT. O ensaio usou somente valores
+aleatórios efêmeros, removeu contêineres, redes, volumes e arquivos ao terminar e
+não acessou a homologação.
+
 Prepare os arquivos fora do repositório. A senha usada na connection string deve
 ser exatamente a mesma do arquivo do PostgreSQL; prefira base64url ou hexadecimal
 aleatório para não introduzir delimitadores na connection string:
@@ -135,6 +143,28 @@ de escopo mínimo `read:packages`. Não armazene o token em arquivo do projeto:
 ```bash
 gh auth token | docker login ghcr.io --username SEU_USUARIO --password-stdin
 ```
+
+## Rotação dos segredos de execução
+
+Faça uma rotação por vez, em janela autorizada. Preserve temporariamente a versão
+anterior em armazenamento protegido para rollback e nunca imprima o conteúdo:
+
+1. gere o novo valor por fonte criptograficamente segura;
+2. grave-o em um arquivo novo com proprietário e modo restritos;
+3. quando for a senha do banco, atualize primeiro a credencial no PostgreSQL e a
+   connection string correspondente de forma coordenada;
+4. altere somente o caminho local aplicável no `.env.production`;
+5. valide `docker compose config --quiet` e recrie apenas o serviço consumidor;
+6. confirme readiness, login, renovação de sessão e ausência do valor em
+   `docker inspect` e logs;
+7. após a janela de observação, descarte a versão anterior pelo procedimento
+   aprovado.
+
+Se a validação falhar, restaure o caminho anterior, recrie somente o serviço
+afetado e repita os testes. A rotação da chave JWT encerra a validade dos access
+tokens existentes. A troca do certificado de Data Protection ou do key ring tem
+impacto adicional em antifalsificação e deve seguir a ADR 0003, não este fluxo
+simples.
 
 ## Implantação
 
