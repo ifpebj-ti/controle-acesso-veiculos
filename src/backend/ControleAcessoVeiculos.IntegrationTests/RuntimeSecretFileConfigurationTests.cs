@@ -144,6 +144,83 @@ public sealed class RuntimeSecretFileConfigurationTests
         Assert.Throws<InvalidOperationException>(configuration.AddRuntimeSecretFiles);
     }
 
+    [Fact]
+    public void AddRuntimeSecretFiles_RejectsWritableOrExecutableUnixPermissions()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using var files = new TemporarySecretFiles();
+        var path = files.Create(new string('j', 48));
+        File.SetUnixFileMode(
+            path,
+            UnixFileMode.UserRead |
+            UnixFileMode.UserWrite |
+            UnixFileMode.GroupWrite);
+        var configuration = CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["Authentication:Jwt:SigningKeyFile"] = path
+        });
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            configuration.AddRuntimeSecretFiles);
+
+        Assert.Contains("permissões inseguras", exception.Message);
+        Assert.DoesNotContain(new string('j', 48), exception.Message);
+    }
+
+    [Fact]
+    public void AddRuntimeSecretFiles_AcceptsReadOnlyDockerSecretMode()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using var files = new TemporarySecretFiles();
+        var value = new string('j', 48);
+        var path = files.Create(value);
+        File.SetUnixFileMode(
+            path,
+            UnixFileMode.UserRead |
+            UnixFileMode.GroupRead |
+            UnixFileMode.OtherRead);
+        var configuration = CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["Authentication:Jwt:SigningKeyFile"] = path
+        });
+
+        configuration.AddRuntimeSecretFiles();
+
+        Assert.Equal(value, configuration["Authentication:Jwt:SigningKey"]);
+    }
+
+    [Fact]
+    public void AddRuntimeSecretFiles_RejectsSymbolicLinks()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using var files = new TemporarySecretFiles();
+        var value = new string('g', 48);
+        var target = files.Create(value);
+        var link = files.CreateSymbolicLink(target);
+        var configuration = CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["Authentication:Google:ClientSecretFile"] = link
+        });
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            configuration.AddRuntimeSecretFiles);
+
+        Assert.Contains("link simbólico", exception.Message);
+        Assert.DoesNotContain(value, exception.Message);
+    }
+
     private static ConfigurationManager CreateConfiguration(
         IDictionary<string, string?> values)
     {
@@ -161,6 +238,16 @@ public sealed class RuntimeSecretFileConfigurationTests
             var path = Path.Combine(Path.GetTempPath(), $"cav-secret-{Guid.NewGuid():N}");
             File.WriteAllText(path, content);
             _paths.Add(path);
+            return path;
+        }
+
+        public string CreateSymbolicLink(string target)
+        {
+            var path = Path.Combine(
+                Path.GetTempPath(),
+                $"cav-secret-link-{Guid.NewGuid():N}");
+            File.CreateSymbolicLink(path, target);
+            _paths.Insert(0, path);
             return path;
         }
 

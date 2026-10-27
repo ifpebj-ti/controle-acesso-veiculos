@@ -71,6 +71,8 @@ public static class RuntimeSecretFileConfiguration
                     $"O arquivo configurado em {fileKey} está ausente, vazio ou excede o limite permitido.");
             }
 
+            ValidateFileMetadata(file, fileKey);
+
             value = File.ReadAllText(file.FullName).TrimEnd('\r', '\n');
         }
         catch (InvalidOperationException)
@@ -93,5 +95,34 @@ public static class RuntimeSecretFileConfiguration
         }
 
         secretValues[valueKey] = value;
+    }
+
+    private static void ValidateFileMetadata(FileInfo file, string fileKey)
+    {
+        if (file.LinkTarget is not null ||
+            file.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            throw new InvalidOperationException(
+                $"O arquivo configurado em {fileKey} não pode ser um link simbólico.");
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var mode = File.GetUnixFileMode(file.FullName);
+        const UnixFileMode forbiddenPermissions =
+            UnixFileMode.GroupWrite |
+            UnixFileMode.OtherWrite |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherExecute;
+
+        if ((mode & forbiddenPermissions) != 0)
+        {
+            throw new InvalidOperationException(
+                $"O arquivo configurado em {fileKey} possui permissões inseguras.");
+        }
     }
 }
