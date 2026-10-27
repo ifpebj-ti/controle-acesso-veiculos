@@ -287,7 +287,8 @@ describe("NewAccessPage", () => {
     );
     await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
     const plate = screen.getByLabelText(/Placa do veículo/);
-    await user.type(plate, "9");
+    await user.clear(plate);
+    await user.type(plate, "REC1A24");
     expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue("");
     expect(screen.getByLabelText(/Tipo do veículo/)).toHaveTextContent(
       "Não informado",
@@ -311,7 +312,7 @@ describe("NewAccessPage", () => {
     expect(registerAccessEntry).toHaveBeenCalledWith(
       expect.objectContaining({
         driverName: "Nova pessoa fictícia",
-        plate: "REC1A239",
+        plate: "REC1A24",
         vehicleType: undefined,
       }),
     );
@@ -398,10 +399,14 @@ describe("NewAccessPage", () => {
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("REC1A23");
 
     await user.click(alternateOption);
-    expect(
-      screen.queryByText(/REC1A23 · Condutor recorrente/),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText(/ALT4B56 · Outra pessoa recorrente/)).toBeVisible();
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/REC1A23 · Condutor recorrente/),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText(/ALT4B56 · Outra pessoa recorrente/),
+      ).toBeVisible();
+    });
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("ALT4B56");
     expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
       alternateCandidate.driverName,
@@ -455,7 +460,7 @@ describe("NewAccessPage", () => {
     await user.keyboard("{Enter}");
 
     expect(registerAccessEntry).not.toHaveBeenCalled();
-    expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("DEM-1A23");
+    expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("DEM1A23");
   });
 
   it("preserves a selected candidate after a submission conflict", async () => {
@@ -540,7 +545,7 @@ describe("NewAccessPage", () => {
         driverName: "Pessoa fictícia",
         objective: "Atendimento em setor",
         observation: undefined,
-        plate: "DEM-1A23",
+        plate: "DEM1A23",
         vehicleType: undefined,
       }),
     );
@@ -849,7 +854,7 @@ describe("NewAccessPage", () => {
     expect(
       screen.queryByText(/formulário está pronto/),
     ).not.toBeInTheDocument();
-    expect(plateField).toHaveValue("TST-2B34");
+    expect(plateField).toHaveValue("TST2B34");
     expect(driverField).toHaveValue("Outra pessoa fictícia");
     expect(objectiveField).toHaveValue("Segundo atendimento");
   });
@@ -900,7 +905,7 @@ describe("NewAccessPage", () => {
       );
 
       expect(await screen.findByRole("alert")).toHaveTextContent(message);
-      expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("EVT-1A23");
+      expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("EVT1A23");
       expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
         "Pessoa fictícia",
       );
@@ -1025,10 +1030,40 @@ describe("NewAccessPage", () => {
     ).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveAttribute(
       "aria-describedby",
-      "plate-error",
+      "plate-format-hint plate-error",
     );
     expect(document.getElementById("plate-error")).toHaveTextContent(
       "Informe a placa do veículo.",
+    );
+    expect(registerAccessEntry).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid plate locally and preserves the access form", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const plate = screen.getByLabelText(/Placa do veículo/);
+    await user.type(plate, "777777");
+    await user.type(
+      screen.getByLabelText(/Nome do condutor/),
+      "Pessoa fictícia",
+    );
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "Informe uma placa no formato ABC-1234 ou ABC1D23.",
+      ),
+    ).toBeInTheDocument();
+    expect(plate).toHaveValue("777777");
+    expect(plate).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
+      "Pessoa fictícia",
     );
     expect(registerAccessEntry).not.toHaveBeenCalled();
   });
@@ -1116,7 +1151,7 @@ describe("NewAccessPage", () => {
       driverName: "Pessoa fictícia",
       objective: "Visita técnica fictícia",
       observation: undefined,
-      plate: "CUS-1A23",
+      plate: "CUS1A23",
       vehicleType: "Triciclo fictício",
     });
   });

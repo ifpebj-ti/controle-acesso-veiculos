@@ -9,6 +9,10 @@ import {
 
 import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
+import {
+  formatVehiclePlateInput,
+  vehiclePlateFormatHint,
+} from "../../vehicle-plates/vehiclePlate";
 import type { EventAuthorizationFormValues } from "../schemas/eventAuthorizationSchemas";
 import type { EventAuthorizationServerErrors } from "../types";
 
@@ -229,6 +233,7 @@ export function EventVehicleRulesFields({
                   </label>
                   <input
                     aria-describedby={describedBy(
+                      `event-rule-${index}-plate-hint`,
                       plateMessage && `event-rule-${index}-plate-error`,
                       broadServerError && broadErrorId,
                     )}
@@ -236,10 +241,20 @@ export function EventVehicleRulesFields({
                     className={fieldClass}
                     disabled={disabled || mode === "quota"}
                     id={`event-rule-${index}-plate`}
-                    maxLength={10}
                     placeholder="Ex.: ABC1D23"
+                    onInput={(event) => {
+                      event.currentTarget.value = formatVehiclePlateInput(
+                        event.currentTarget.value,
+                      );
+                    }}
                     {...register(`vehicleRules.${index}.plate`)}
                   />
+                  <p
+                    className="mt-1.5 text-xs text-ink-soft"
+                    id={`event-rule-${index}-plate-hint`}
+                  >
+                    {vehiclePlateFormatHint}
+                  </p>
                   <ErrorMessage
                     id={`event-rule-${index}-plate-error`}
                     message={plateMessage}

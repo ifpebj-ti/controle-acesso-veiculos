@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  isValidVehiclePlate,
+  vehiclePlateFormatError,
+} from "../../vehicle-plates/vehiclePlate";
+
 const optionalText = (maximum: number, message: string) =>
   z.string().trim().max(maximum, message);
 
@@ -21,7 +26,7 @@ export const institutionalVehicleListSchema = z.array(
 
 export const institutionalVehicleFormSchema = z
   .object({
-    plate: optionalText(10, "A placa deve possuir até 10 caracteres."),
+    plate: z.string().trim(),
     identification: optionalText(
       100,
       "A identificação deve possuir até 100 caracteres.",
@@ -44,10 +49,10 @@ export const institutionalVehicleFormSchema = z
       });
     }
 
-    if (values.plate && !/[\p{L}\p{N}]/u.test(values.plate)) {
+    if (values.plate && !isValidVehiclePlate(values.plate)) {
       context.addIssue({
         code: "custom",
-        message: "A placa deve conter letras ou números.",
+        message: vehiclePlateFormatError,
         path: ["plate"],
       });
     }
