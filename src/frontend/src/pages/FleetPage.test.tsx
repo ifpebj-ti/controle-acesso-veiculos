@@ -114,6 +114,7 @@ describe("FleetPage", () => {
     await screen.findByText("DEM1A23");
 
     await user.click(screen.getByRole("button", { name: "Novo veículo" }));
+    await user.type(screen.getByLabelText("Placa"), "dem 1a23");
     await user.type(
       screen.getByLabelText("Identificação institucional"),
       "VEICULO 05",
@@ -126,7 +127,7 @@ describe("FleetPage", () => {
         color: null,
         identification: "VEICULO 05",
         model: null,
-        plate: null,
+        plate: "DEM1A23",
         vehicleType: null,
         year: null,
       }),
@@ -134,6 +135,37 @@ describe("FleetPage", () => {
     expect(
       await screen.findByText("Veículo institucional cadastrado com sucesso."),
     ).toBeInTheDocument();
+  });
+
+  it("rejects an invalid plate locally and preserves the filled form", async () => {
+    const user = userEvent.setup();
+    renderPage("SetorTransporte");
+    await screen.findByText("DEM1A23");
+
+    await user.click(screen.getByRole("button", { name: "Novo veículo" }));
+    const plate = screen.getByLabelText("Placa");
+    await user.type(plate, "777777");
+    await user.type(
+      screen.getByLabelText("Identificação institucional"),
+      "VEICULO 05",
+    );
+    await user.click(screen.getByRole("button", { name: "Cadastrar veículo" }));
+
+    expect(
+      await screen.findByText(
+        "Informe uma placa no formato ABC-1234 ou ABC1D23.",
+      ),
+    ).toBeInTheDocument();
+    expect(plate).toHaveValue("777777");
+    expect(plate).toHaveAttribute("aria-invalid", "true");
+    expect(plate).toHaveAttribute(
+      "aria-describedby",
+      "fleet-plate-hint fleet-plate-error",
+    );
+    expect(screen.getByLabelText("Identificação institucional")).toHaveValue(
+      "VEICULO 05",
+    );
+    expect(createInstitutionalVehicle).not.toHaveBeenCalled();
   });
 
   it("summarizes the active catalog with real vehicle data", async () => {
