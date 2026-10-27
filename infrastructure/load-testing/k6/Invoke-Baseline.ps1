@@ -54,6 +54,7 @@ try {
 
     $scriptDirectory = (Resolve-Path $PSScriptRoot).Path
     $resultsPath = $resultDirectory.Path
+    $k6Image = 'grafana/k6:2.3.0@sha256:2dd4756ec6e14e62778916e1eb850108e4b499304c02df56760fa0bdb0fba0b8'
 
     docker run --rm `
         -e K6_API_BASE_URL `
@@ -62,7 +63,7 @@ try {
         -e K6_TARGET_APPROVED `
         -v "${scriptDirectory}:/scripts:ro" `
         -v "${resultsPath}:/results" `
-        grafana/k6:2.3.0 run /scripts/baseline.js
+        $k6Image run /scripts/baseline.js
 
     if ($LASTEXITCODE -ne 0) {
         throw "O k6 encerrou com código $LASTEXITCODE. Consulte o resumo sem publicar credenciais."
