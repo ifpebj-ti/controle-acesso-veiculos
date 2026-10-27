@@ -135,13 +135,23 @@ do recurso, e indisponibilidade não gera confirmação falsa de login.
 
 ## Configuração
 
-Os valores públicos de emissor, audiência e validade ficam em `appsettings.json`. A chave de assinatura é obrigatória, deve possuir pelo menos 32 caracteres e deve ser fornecida por secret manager ou variável de ambiente:
+Os valores públicos de emissor, audiência e validade ficam em `appsettings.json`.
+A chave de assinatura é obrigatória e deve possuir pelo menos 32 caracteres. Em
+produção, forneça um caminho absoluto para o arquivo protegido:
 
 ```text
-Authentication__Jwt__SigningKey
+Authentication__Jwt__SigningKeyFile=/run/secrets/jwt-signing-key
 ```
 
-Nunca versionar a chave real. Ambientes diferentes devem usar chaves diferentes. Uma troca de chave invalida os tokens emitidos anteriormente.
+O valor direto `Authentication__Jwt__SigningKey` permanece compatível com testes
+e desenvolvimento local, mas a API rejeita a configuração ambígua dos dois
+mecanismos. O mesmo carregador aceita
+`ConnectionStrings__DefaultConnectionFile` e
+`Authentication__Google__ClientSecretFile`. Arquivos ausentes, vazios, relativos
+ou acima de 16 KiB fazem o startup falhar sem incluir o conteúdo na mensagem.
+
+Nunca versionar a chave real. Ambientes diferentes devem usar chaves diferentes.
+Uma troca de chave invalida os tokens emitidos anteriormente.
 
 O ciclo de sessão aceita as configurações públicas abaixo:
 
