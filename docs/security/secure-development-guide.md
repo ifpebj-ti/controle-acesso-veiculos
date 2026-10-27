@@ -34,8 +34,12 @@ devem ser validados pelos responsáveis competentes.
 
 - nunca versionar `.env`, senha, token, chave ou connection string real;
 - usar valores obviamente fictícios em exemplos;
-- fornecer segredos por configuração do ambiente ou serviço apropriado;
+- fornecer segredos por arquivo protegido ou serviço apropriado em ambientes
+  compartilhados; variável de ambiente permanece apenas como compatibilidade
+  local quando o valor não fica disponível para ferramentas de operação;
 - não usar `ARG` ou `ENV` de Docker para incorporar segredo no build;
+- não manter chave, senha ou connection string de longa duração no ambiente de
+  um contêiner que possa ser inspecionado;
 - não imprimir configuração completa em logs;
 - rotacionar imediatamente qualquer segredo exposto e analisar o histórico;
 - separar credenciais de aplicação, migration e administração em produção.

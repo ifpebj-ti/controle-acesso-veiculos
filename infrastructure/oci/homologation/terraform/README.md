@@ -30,6 +30,8 @@ estimativa de custo e da confirmação explícita do responsável pela conta.
   autenticação;
 - uma VM flexível, por padrão Arm com 1 OCPU, 6 GiB e boot volume de 50 GiB;
 - OCI Bastion com origem administrativa restrita e sessões máximas de 30 minutos;
+- Dynamic Group limitada à VM de homologação e política IAM de menor
+  privilégio para ela consumir somente suas próprias execuções do Run Command;
 - Ubuntu 24.04 com IMDS legado desabilitado, criptografia de trânsito do volume,
   Docker, atualizações automáticas, firewall do host e diretórios protegidos.
 
@@ -132,14 +134,17 @@ confirme:
 ## Depois da criação
 
 1. aguarde o `cloud-init` encerrar e registre somente o resultado sanitizado;
-2. confirme Cloud Agent, monitoring, firewall, Docker e atualizações automáticas;
-3. confirme que a VM não possui IP público e crie uma sessão temporária do Bastion;
-4. instale e valide a borda privada descrita em `../edge`;
-5. configure DNS com o IP do Load Balancer exibido como output sensível;
-6. prepare segredos e execute o Compose versionado sem build no host;
-7. habilite backup protegido antes de preservar qualquer dado;
-8. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
-9. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
+2. aguarde a propagação da Dynamic Group e da política IAM; a Oracle informa
+   que uma instância adicionada depois da criação pode levar até 30 minutos
+   para começar a consultar comandos;
+3. confirme Cloud Agent, Run Command, monitoring, firewall, Docker e atualizações automáticas;
+4. confirme que a VM não possui IP público e crie uma sessão temporária do Bastion;
+5. instale e valide a borda privada descrita em `../edge`;
+6. configure DNS com o IP do Load Balancer exibido como output sensível;
+7. prepare segredos e execute o Compose versionado sem build no host;
+8. habilite backup protegido antes de preservar qualquer dado;
+9. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
+10. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
 
 ## Limites conhecidos
 
@@ -154,6 +159,9 @@ confirme:
   a API regional aceita no máximo 8 KiB de inspeção do corpo, portanto conteúdos
   maiores são bloqueados em vez de seguirem parcialmente inspecionados;
 - alta disponibilidade, banco gerenciado e dados reais permanecem fora de escopo.
+- Dynamic Groups e políticas IAM podem levar até 30 minutos para serem
+  reconhecidas pela instância; um comando em `ACCEPTED` nesse intervalo não prova
+  falha do host e não deve motivar abertura de SSH público.
 
 ## Referências
 
@@ -162,6 +170,8 @@ confirme:
 - [Borda HTTPS](../edge/README.md)
 - [OCI Resource Manager](https://docs.oracle.com/en-us/iaas/Content/ResourceManager/home.htm)
 - [OCI Terraform Provider](https://docs.oracle.com/en-us/iaas/tools/terraform-provider-oci/latest/)
+- [OCI Run Command](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/runningcommands.htm)
+- [OCI Dynamic Groups](https://docs.oracle.com/en-us/iaas/Content/Identity/Tasks/managingdynamicgroups.htm)
 - [OCI WAF com Flexible Load Balancer](https://docs.oracle.com/en/learn/oci-waf-flex-lbaas/)
 - [Capacidades de proteção do OCI WAF](https://docs.oracle.com/en-us/iaas/Content/WAF/Protections/protections_management.htm)
 - [Lista de preços da Oracle Brasil](https://www.oracle.com/br/cloud/price-list/)
