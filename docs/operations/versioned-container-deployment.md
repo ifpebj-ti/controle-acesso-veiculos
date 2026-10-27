@@ -19,9 +19,11 @@ PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF.
 promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
 uma nova release revisada seja publicada e `DEPLOYMENT_VERSION` seja alterada.
 
-O endpoint ainda usa certificado temporário sem hostname público confiável. Esse
-ensaio não representa produção nem substitui DNS, backup, observabilidade e
-homologação institucional.
+O hostname temporário `dat.ernandescosta.me` resolve para a borda protegida e usa
+certificado público confiável com HSTS. Ele não é o domínio institucional
+definitivo. A renovação automática do certificado, o backup protegido, a
+observabilidade operada e a homologação institucional continuam pendentes;
+portanto, o ambiente permanece classificado como homologação, não produção.
 
 ## Release disponível
 
@@ -82,8 +84,8 @@ Copy-Item .env.production.example .env.production
 Defina no arquivo local:
 
 - `DEPLOYMENT_VERSION`: a mesma release para frontend e backend, como `0.4.0`;
-- `ALLOWED_HOSTS`: o domínio público esperado pela API e `localhost`, usado
-  somente pela verificação de saúde interna;
+- `ALLOWED_HOSTS`: a lista explícita do domínio público esperado pela API e
+  `localhost`, usado somente pela verificação de saúde interna. Não use `*`;
 - credenciais próprias do PostgreSQL; prefira senha aleatória hexadecimal ou
   base64url, sem delimitadores de connection string;
 - uma chave JWT aleatória com pelo menos 32 bytes;
@@ -167,6 +169,24 @@ docker compose \
 
 O resultado esperado é PostgreSQL, backend e frontend saudáveis. A validação
 funcional deve usar o domínio HTTPS, não a porta HTTP de loopback.
+
+Antes de liberar o ambiente aos testadores, confirme que a interface e a API
+aceitam o mesmo hostname público:
+
+```bash
+curl --fail --show-error --silent \
+  --output /dev/null \
+  --write-out '%{http_code}\n' \
+  "https://${APP_HOSTNAME}/login"
+
+curl --fail --show-error --silent \
+  "https://${APP_HOSTNAME}/api/health/ready"
+```
+
+As duas chamadas devem responder HTTP 200. Uma resposta `400 Invalid Hostname`
+na API indica divergência entre o hostname publicado e `ALLOWED_HOSTS`; corrija
+a lista explícita e recrie somente o backend. Não use `AllowedHosts=*` como
+atalho, pois isso remove uma defesa contra cabeçalhos `Host` forjados.
 
 Depois de substituir o backend, obtenha um token antifalsificação, substitua a
 instância e valide o mesmo par em uma operação protegida. HTTP 400 nesse ensaio

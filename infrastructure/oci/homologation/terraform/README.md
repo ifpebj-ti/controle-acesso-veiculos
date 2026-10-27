@@ -8,10 +8,12 @@ com VM privada, Load Balancer, WAF e Bastion; a aplicação `v0.4.0` foi instala
 por um procedimento operacional separado. Senhas, chave JWT, banco com dados e
 chaves privadas não entram no Terraform.
 
-O ambiente ainda usa certificado temporário e não possui DNS público aprovado.
-Backup externo, observabilidade operada e piloto institucional também permanecem
-pendentes. Novos `apply` devem ocorrer somente depois da revisão do plano, da
-estimativa de custo e da confirmação explícita do responsável pela conta.
+O hostname temporário `dat.ernandescosta.me` e o certificado público confiável
+foram ativados fora do Terraform, por procedimento operacional separado. A
+renovação automática, o backup externo, a observabilidade operada e o piloto
+institucional ainda permanecem pendentes. Novos `apply` devem ocorrer somente
+depois da revisão do plano, da estimativa de custo e da confirmação explícita do
+responsável pela conta.
 
 ## Recursos representados
 
@@ -36,7 +38,8 @@ estimativa de custo e da confirmação explícita do responsável pela conta.
 O `cloud-init` não contém segredos, domínio, token, chave SSH ou credencial. A VM
 não recebe IP público e aceita a porta interna `8088` somente da subnet do Load
 Balancer. A aplicação e as credenciais são instaladas em etapa posterior e
-controlada; o DNS e o certificado público confiável permanecem pendentes.
+controlada; o DNS temporário e o certificado público confiável foram ativados
+por esse procedimento separado e não integram o estado do Terraform.
 
 ## Gate financeiro
 
