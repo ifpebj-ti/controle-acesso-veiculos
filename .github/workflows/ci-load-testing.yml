@@ -39,4 +39,4 @@ jobs:
           --env K6_PROFILE=low
           --volume "${PWD}/infrastructure/load-testing/k6:/scripts:ro"
           "${K6_IMAGE}"
-          inspect /scripts/baseline.js
+          inspect --include-system-env-vars /scripts/baseline.js
