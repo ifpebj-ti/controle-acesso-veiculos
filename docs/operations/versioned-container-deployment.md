@@ -30,9 +30,11 @@ PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF.
 promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
 uma nova release revisada seja publicada e `DEPLOYMENT_VERSION` seja alterada.
 
-O endpoint `dat.ernandescosta.me` usa certificado público confiável e termina o
-TLS no Load Balancer. A renovação automática do certificado, o backup protegido,
-a observabilidade operada e a homologação institucional continuam pendentes;
+O hostname temporário `dat.ernandescosta.me` resolve para a borda protegida e usa
+certificado público confiável; o TLS termina no Load Balancer e HSTS é entregue
+pela borda. Ele não é o domínio institucional definitivo. A renovação automática
+do certificado, o backup protegido, a observabilidade operada e a homologação
+institucional continuam pendentes;
 portanto, o ambiente permanece classificado como homologação, não produção.
 
 ## Release disponível
@@ -94,8 +96,8 @@ Copy-Item .env.production.example .env.production
 Defina no arquivo local:
 
 - `DEPLOYMENT_VERSION`: a mesma release para frontend e backend, como `0.4.0`;
-- `ALLOWED_HOSTS`: o domínio público esperado pela API e `localhost`, usado
-  somente pela verificação de saúde interna;
+- `ALLOWED_HOSTS`: a lista explícita do domínio público esperado pela API e
+  `localhost`, usado somente pela verificação de saúde interna. Não use `*`;
 - caminhos absolutos para três arquivos protegidos: senha do PostgreSQL,
   connection string do backend e chave JWT;
 - certificado PFX de Data Protection fornecido pelo secret manager, sua senha e o
@@ -228,6 +230,46 @@ docker compose \
 
 O resultado esperado é PostgreSQL, backend e frontend saudáveis. A validação
 funcional deve usar o domínio HTTPS, não a porta HTTP de loopback.
+
+Antes de liberar o ambiente aos testadores, confirme que a interface e a API
+aceitam o mesmo hostname público:
+
+```bash
+curl --fail --show-error --silent \
+  --output /dev/null \
+  --write-out '%{http_code}\n' \
+  "https://${APP_HOSTNAME}/login"
+
+curl --fail --show-error --silent \
+  "https://${APP_HOSTNAME}/api/health/ready"
+```
+
+As duas chamadas devem responder HTTP 200. Uma resposta `400 Invalid Hostname`
+na API indica divergência entre o hostname publicado e `ALLOWED_HOSTS`; corrija
+a lista explícita e recrie somente o backend. Não use `AllowedHosts=*` como
+atalho, pois isso remove uma defesa contra cabeçalhos `Host` forjados.
+
+Um operador autorizado pode executar a alteração transacional pela sessão
+temporária do OCI Bastion, sem imprimir o arquivo de ambiente:
+
+```bash
+sudo infrastructure/oci/homologation/scripts/Update-AllowedHosts.sh \
+  --deployment-directory /opt/controle-acesso-veiculos \
+  --environment-file /etc/controle-acesso-veiculos/.env.production \
+  --project-name cav-hml \
+  --hostname dat.ernandescosta.me
+```
+
+O script aceita somente hostname DNS minúsculo e explícito, exige exatamente
+uma entrada `ALLOWED_HOSTS` no arquivo protegido informado por caminho absoluto,
+exige o nome explícito do projeto Compose existente, valida o modelo e recria
+apenas o backend desse projeto. Informar o projeto evita criar redes, volumes ou
+contêineres paralelos por diferença no diretório de execução. O arquivo de
+ambiente fica separado dos artefatos implantados e não deve ser movido, ligado
+simbolicamente ou impresso. Se a validação ou a substituição falhar, o script
+restaura o arquivo anterior e tenta recolocar o backend conhecido. O operador
+ainda deve executar os testes públicos de readiness, login e renovação de sessão
+antes de encerrar a mudança.
 
 Depois de substituir o backend, obtenha um token antifalsificação, substitua a
 instância e valide o mesmo par em uma operação protegida. HTTP 400 nesse ensaio
