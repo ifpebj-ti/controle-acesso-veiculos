@@ -35,14 +35,15 @@ Linha de base local de 26/10/2026, com 554 testes:
 | Funções      |      951 | 1.073 |     88,63% |
 | Ramificações |    2.486 | 3.120 |     79,67% |
 
-Após o primeiro incremento da Issue #499, 567 testes elevaram o resultado para:
+Após os incrementos da Issue #499 e a sincronização com a `main` em 28/10/2026,
+585 testes elevaram o resultado para:
 
 | Métrica      | Cobertos | Total | Percentual |
 | ------------ | -------: | ----: | ---------: |
-| Linhas       |    3.482 | 3.843 |     90,60% |
-| Instruções   |    3.645 | 4.164 |     87,53% |
-| Funções      |      975 | 1.073 |     90,86% |
-| Ramificações |    2.494 | 3.120 |     79,93% |
+| Linhas       |    3.501 | 3.858 |     90,74% |
+| Instruções   |    3.665 | 4.180 |     87,67% |
+| Funções      |      982 | 1.079 |     91,01% |
+| Ramificações |    2.509 | 3.130 |     80,15% |
 
 A CI aplica um piso global de 90% para linhas e funções, 87% para instruções e 79%
 para ramificações. Esses valores impedem regressão imediata sem declarar que todas as
