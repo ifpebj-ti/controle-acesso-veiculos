@@ -115,6 +115,71 @@ public sealed class SessaoAutenticacaoTests
             MotivoRevogacaoSessao.Rotacao));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void NovaSessaoExigeUsuarioPositivo(int userId)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SessaoAutenticacao(
+            userId,
+            Guid.NewGuid(),
+            "token-hash",
+            Now,
+            Now.AddHours(1)));
+    }
+
+    [Fact]
+    public void NovaSessaoExigeFamiliaValida()
+    {
+        Assert.Throws<ArgumentException>(() => new SessaoAutenticacao(
+            1,
+            Guid.Empty,
+            "token-hash",
+            Now,
+            Now.AddHours(1)));
+    }
+
+    [Fact]
+    public void NovaSessaoExigeExpiracaoPosteriorACriacao()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SessaoAutenticacao(
+            1,
+            Guid.NewGuid(),
+            "token-hash",
+            Now,
+            Now));
+    }
+
+    [Fact]
+    public void RenovacaoExigeLimiteDeInatividadePositivo()
+    {
+        var session = CreateSession();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            session.PodeSerRenovada(Now, TimeSpan.Zero));
+    }
+
+    [Fact]
+    public void RotacaoExigeHashSucessor()
+    {
+        var session = CreateSession();
+
+        Assert.Throws<ArgumentException>(() => session.Rotacionar(
+            " ",
+            Now.AddMinutes(1),
+            TimeSpan.FromMinutes(15)));
+    }
+
+    [Fact]
+    public void RevogacaoExigeMotivoConhecido()
+    {
+        var session = CreateSession();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => session.Revogar(
+            Now.AddMinutes(1),
+            (MotivoRevogacaoSessao)999));
+    }
+
     private static SessaoAutenticacao CreateSession(
         TimeSpan? absoluteLifetime = null) =>
         new(

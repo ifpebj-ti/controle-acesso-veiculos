@@ -128,6 +128,162 @@ public sealed class EventAuthorizationServiceTests
         Assert.True(store.LastCriteria.Active);
     }
 
+    [Theory]
+    [InlineData(-1, 25)]
+    [InlineData(10001, 25)]
+    [InlineData(1, 0)]
+    [InlineData(1, 101)]
+    public async Task SearchAsync_ShouldRejectInvalidPagination(int page, int pageSize)
+    {
+        var store = new FakeStore();
+        var service = CreateService(store);
+
+        var result = await service.SearchAsync(
+            new SearchEventAuthorizationsCommand(Page: page, PageSize: pageSize),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Invalid, result.Status);
+        Assert.Null(store.LastCriteria);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ShouldRejectInvalidPeriodAndLongName()
+    {
+        var store = new FakeStore();
+        var service = CreateService(store);
+
+        var result = await service.SearchAsync(
+            new SearchEventAuthorizationsCommand(
+                FromUtc: FixedNow.AddDays(367),
+                ToUtc: FixedNow,
+                Name: new string('N', 201)),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Invalid, result.Status);
+        Assert.Contains("period", result.Errors.Keys);
+        Assert.Contains("name", result.Errors.Keys);
+        Assert.Null(store.LastCriteria);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ShouldNormalizeExplicitCriteria()
+    {
+        var store = new FakeStore();
+        var service = CreateService(store);
+        var from = FixedNow.AddDays(-1);
+        var to = FixedNow.AddDays(1);
+
+        var result = await service.SearchAsync(
+            new SearchEventAuthorizationsCommand(
+                FromUtc: from,
+                ToUtc: to,
+                Name: "  Jardim Digital  ",
+                Active: false,
+                Page: 2,
+                PageSize: 10),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Success, result.Status);
+        Assert.Equal("Jardim Digital", store.LastCriteria!.Name);
+        Assert.False(store.LastCriteria.Active);
+        Assert.Equal(2, store.LastCriteria.Page);
+        Assert.Equal(10, store.LastCriteria.PageSize);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShouldRejectOversizedFieldsAndInvalidRuleBounds()
+    {
+        var store = new FakeStore();
+        var service = CreateService(store);
+        var command = ValidCommand([
+            new(new string('V', 51), 1),
+            new("Automóvel", 0),
+            new("Van", 1001)
+        ]) with
+        {
+            Name = new string('N', 201),
+            Responsible = new string('R', 201),
+            ResponsibleContact = new string('C', 255),
+            Area = new string('A', 201),
+            Notes = new string('O', 1001)
+        };
+
+        var result = await service.CreateAsync(
+            command,
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Invalid, result.Status);
+        Assert.Contains("name", result.Errors.Keys);
+        Assert.Contains("responsible", result.Errors.Keys);
+        Assert.Contains("responsibleContact", result.Errors.Keys);
+        Assert.Contains("area", result.Errors.Keys);
+        Assert.Contains("notes", result.Errors.Keys);
+        Assert.Contains("vehicleRules[0]", result.Errors.Keys);
+        Assert.Contains("vehicleRules[1]", result.Errors.Keys);
+        Assert.Contains("vehicleRules[2]", result.Errors.Keys);
+        Assert.Equal(0, store.CreateCalls);
+    }
+
+    [Theory]
+    [InlineData(EventAuthorizationStoreStatus.Success, EventAuthorizationOperationStatus.Success)]
+    [InlineData(EventAuthorizationStoreStatus.NotFound, EventAuthorizationOperationStatus.NotFound)]
+    [InlineData(EventAuthorizationStoreStatus.Conflict, EventAuthorizationOperationStatus.Conflict)]
+    public async Task UpdateAsync_ShouldMapStoreStatus(
+        EventAuthorizationStoreStatus storeStatus,
+        EventAuthorizationOperationStatus expectedStatus)
+    {
+        var store = new FakeStore { NextStoreStatus = storeStatus };
+        var service = CreateService(store);
+
+        var result = await service.UpdateAsync(
+            10,
+            new UpdateEventAuthorizationCommand(
+                "Evento",
+                "Responsável",
+                "responsavel@example.test",
+                FixedNow.AddDays(1),
+                FixedNow.AddDays(2),
+                "Campus",
+                false,
+                "Externo",
+                [new("Automóvel", 1)],
+                null),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedStatus, result.Status);
+        Assert.Equal(1, store.UpdateCalls);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ShouldRejectNonPositiveId()
+    {
+        var store = new FakeStore();
+        var service = CreateService(store);
+        var command = ValidCommand([new("Automóvel", 1)]);
+
+        var result = await service.UpdateAsync(
+            0,
+            new UpdateEventAuthorizationCommand(
+                command.Name,
+                command.Responsible,
+                command.ResponsibleContact,
+                command.StartsAtUtc,
+                command.EndsAtUtc,
+                command.Area,
+                command.OvernightAllowed,
+                command.ParkingLocation,
+                command.VehicleRules,
+                command.Notes),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Invalid, result.Status);
+        Assert.Contains("eventId", result.Errors.Keys);
+        Assert.Equal(0, store.UpdateCalls);
+    }
+
     [Fact]
     public async Task CancelAsync_ShouldValidateIdAndUseActor()
     {
@@ -141,6 +297,24 @@ public sealed class EventAuthorizationServiceTests
         Assert.Equal(EventAuthorizationOperationStatus.Success, success.Status);
         Assert.Equal(1, store.CancelCalls);
         Assert.Equal(7, store.LastActorUserId);
+    }
+
+    [Theory]
+    [InlineData(EventAuthorizationStoreStatus.NotFound, EventAuthorizationOperationStatus.NotFound)]
+    [InlineData(EventAuthorizationStoreStatus.Conflict, EventAuthorizationOperationStatus.Conflict)]
+    public async Task CancelAsync_ShouldMapNonSuccessStatus(
+        EventAuthorizationStoreStatus storeStatus,
+        EventAuthorizationOperationStatus expectedStatus)
+    {
+        var store = new FakeStore { NextStoreStatus = storeStatus };
+        var service = CreateService(store);
+
+        var result = await service.CancelAsync(
+            10,
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedStatus, result.Status);
     }
 
     private static EventAuthorizationService CreateService(FakeStore store) =>
@@ -168,7 +342,10 @@ public sealed class EventAuthorizationServiceTests
     private sealed class FakeStore : IEventAuthorizationStore
     {
         public int CreateCalls { get; private set; }
+        public int UpdateCalls { get; private set; }
         public int CancelCalls { get; private set; }
+        public EventAuthorizationStoreStatus NextStoreStatus { get; init; } =
+            EventAuthorizationStoreStatus.Success;
         public int LastActorUserId { get; private set; }
         public DateTime LastOccurredAtUtc { get; private set; }
         public EventAuthorizationData? LastData { get; private set; }
@@ -185,7 +362,7 @@ public sealed class EventAuthorizationServiceTests
             LastActorUserId = actorUserId;
             LastOccurredAtUtc = occurredAtUtc;
             return Task.FromResult(new EventAuthorizationStoreResult(
-                EventAuthorizationStoreStatus.Success,
+                NextStoreStatus,
                 Map(data, actorUserId, occurredAtUtc)));
         }
 
@@ -202,10 +379,16 @@ public sealed class EventAuthorizationServiceTests
             EventAuthorizationData data,
             int actorUserId,
             DateTime occurredAtUtc,
-            CancellationToken cancellationToken) =>
-            Task.FromResult(new EventAuthorizationStoreResult(
-                EventAuthorizationStoreStatus.Success,
+            CancellationToken cancellationToken)
+        {
+            UpdateCalls++;
+            LastData = data;
+            LastActorUserId = actorUserId;
+            LastOccurredAtUtc = occurredAtUtc;
+            return Task.FromResult(new EventAuthorizationStoreResult(
+                NextStoreStatus,
                 Map(data, actorUserId, occurredAtUtc) with { Id = eventId }));
+        }
 
         public Task<EventAuthorizationStoreStatus> TryCancelAsync(
             int eventId,
@@ -216,7 +399,7 @@ public sealed class EventAuthorizationServiceTests
             CancelCalls++;
             LastActorUserId = actorUserId;
             LastOccurredAtUtc = occurredAtUtc;
-            return Task.FromResult(EventAuthorizationStoreStatus.Success);
+            return Task.FromResult(NextStoreStatus);
         }
 
         private static EventAuthorizationRecord Map(

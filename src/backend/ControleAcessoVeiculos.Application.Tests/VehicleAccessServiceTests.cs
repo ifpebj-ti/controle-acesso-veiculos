@@ -103,6 +103,103 @@ public sealed class VehicleAccessServiceTests
         Assert.Equal(0, store.RegisterCalls);
     }
 
+    [Theory]
+    [InlineData(VehicleAccessStoreRegistrationStatus.EventNotFound)]
+    [InlineData(VehicleAccessStoreRegistrationStatus.EventInactive)]
+    [InlineData(VehicleAccessStoreRegistrationStatus.EventOutsideWindow)]
+    [InlineData(VehicleAccessStoreRegistrationStatus.EventVehicleNotAuthorized)]
+    [InlineData(VehicleAccessStoreRegistrationStatus.EventQuotaExceeded)]
+    [InlineData(VehicleAccessStoreRegistrationStatus.CandidateUnavailable)]
+    [InlineData(VehicleAccessStoreRegistrationStatus.Conflict)]
+    public async Task RegisterEntryAsync_ShouldMapStoreConflicts(
+        VehicleAccessStoreRegistrationStatus storeStatus)
+    {
+        var store = new FakeVehicleAccessStore
+        {
+            NextRegistrationStatus = storeStatus
+        };
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.RegisterEntryAsync(
+            new("Condutor", "ABC1D23", "Visita", AccessCategoryNames.Visitor),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(RegisterVehicleEntryStatus.Conflict, result.Status);
+        Assert.Equal(1, store.RegisterCalls);
+        Assert.NotEmpty(result.Errors);
+    }
+
+    [Fact]
+    public async Task RegisterEntryAsync_ShouldNormalizeAllOptionalDataAndCandidate()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.RegisterEntryAsync(
+            new(
+                "Condutor",
+                "ABC1234",
+                "Serviço",
+                AccessCategoryNames.ServiceProvider,
+                VehicleType: "  Automóvel  ",
+                Brand: "  Marca  ",
+                Model: "  Modelo  ",
+                Color: "  Verde  ",
+                Year: FixedNow.Year,
+                Observation: "  Observação  ",
+                VehicleId: 10,
+                PersonId: 20),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(RegisterVehicleEntryStatus.Success, result.Status);
+        Assert.Equal("Automóvel", store.LastEntry!.VehicleType);
+        Assert.Equal("Marca", store.LastEntry.Brand);
+        Assert.Equal("Modelo", store.LastEntry.Model);
+        Assert.Equal("Verde", store.LastEntry.Color);
+        Assert.Equal("Observação", store.LastEntry.Observation);
+        Assert.Equal(10, store.LastEntry.VehicleId);
+        Assert.Equal(20, store.LastEntry.PersonId);
+    }
+
+    [Fact]
+    public async Task RegisterEntryAsync_ShouldRejectInvalidOptionalLimits()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.RegisterEntryAsync(
+            new(
+                "Condutor",
+                "ABC1234",
+                "Visita",
+                AccessCategoryNames.Visitor,
+                DocumentType: new string('T', 11),
+                DocumentNumber: null,
+                VehicleType: new string('V', 51),
+                Brand: new string('B', 81),
+                Model: new string('M', 101),
+                Color: new string('C', 41),
+                Year: FixedNow.Year + 2,
+                Observation: new string('O', 1001),
+                VehicleId: 0,
+                PersonId: 0),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(RegisterVehicleEntryStatus.Invalid, result.Status);
+        Assert.Contains("document", result.Errors.Keys);
+        Assert.Contains("vehicleType", result.Errors.Keys);
+        Assert.Contains("brand", result.Errors.Keys);
+        Assert.Contains("model", result.Errors.Keys);
+        Assert.Contains("color", result.Errors.Keys);
+        Assert.Contains("year", result.Errors.Keys);
+        Assert.Contains("observation", result.Errors.Keys);
+        Assert.Contains("candidate", result.Errors.Keys);
+        Assert.Equal(0, store.RegisterCalls);
+    }
+
     [Fact]
     public async Task SearchEntryCandidatesAsync_ShouldNormalizeAndLimitSearch()
     {
@@ -133,6 +230,28 @@ public sealed class VehicleAccessServiceTests
         Assert.Equal(SearchAccessEntryCandidatesStatus.Invalid, result.Status);
         Assert.Contains("query", result.Errors.Keys);
         Assert.Null(store.LastCandidateSearchCriteria);
+    }
+
+    [Fact]
+    public async Task SearchEntryCandidatesAsync_ShouldHandleNullLongAndNonPlateQueries()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var nullResult = await service.SearchEntryCandidatesAsync(
+            new(null!),
+            TestContext.Current.CancellationToken);
+        var longResult = await service.SearchEntryCandidatesAsync(
+            new(new string('Q', 81)),
+            TestContext.Current.CancellationToken);
+        var textResult = await service.SearchEntryCandidatesAsync(
+            new("Condutor de Teste"),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(SearchAccessEntryCandidatesStatus.Invalid, nullResult.Status);
+        Assert.Equal(SearchAccessEntryCandidatesStatus.Invalid, longResult.Status);
+        Assert.Equal(SearchAccessEntryCandidatesStatus.Success, textResult.Status);
+        Assert.Equal(string.Empty, store.LastCandidateSearchCriteria!.PlatePrefix);
     }
 
     [Fact]
@@ -203,6 +322,27 @@ public sealed class VehicleAccessServiceTests
     }
 
     [Fact]
+    public async Task SearchHistoryAsync_ShouldPreserveEmptyOptionalFiltersAndExplicitPeriod()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+        var from = FixedNow.AddDays(-5);
+        var to = FixedNow.AddDays(-1);
+
+        var result = await service.SearchHistoryAsync(
+            new(From: from, To: to, Plate: " ", DriverName: " "),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(SearchVehicleAccessesStatus.Success, result.Status);
+        Assert.Null(store.LastSearchCriteria!.Plate);
+        Assert.Null(store.LastSearchCriteria.DriverName);
+        Assert.Null(store.LastSearchCriteria.CategoryName);
+        Assert.Null(store.LastSearchCriteria.Status);
+        Assert.Equal(from.UtcDateTime, store.LastSearchCriteria.FromUtc);
+        Assert.Equal(to.UtcDateTime, store.LastSearchCriteria.ToUtc);
+    }
+
+    [Fact]
     public async Task CorrectAsync_ShouldValidateBeforeCallingStore()
     {
         var store = new FakeVehicleAccessStore();
@@ -244,6 +384,30 @@ public sealed class VehicleAccessServiceTests
             store.LastCorrection.Justification);
         Assert.Equal(7, store.LastCorrectionActorUserId);
         Assert.Equal(FixedNow.UtcDateTime, store.LastCorrectedAtUtc);
+    }
+
+    [Theory]
+    [InlineData(VehicleAccessCorrectionStoreStatus.NotFound, CorrectVehicleAccessStatus.NotFound)]
+    [InlineData(VehicleAccessCorrectionStoreStatus.Conflict, CorrectVehicleAccessStatus.Conflict)]
+    public async Task CorrectAsync_ShouldMapNonSuccessStoreStatus(
+        VehicleAccessCorrectionStoreStatus storeStatus,
+        CorrectVehicleAccessStatus expectedStatus)
+    {
+        var store = new FakeVehicleAccessStore { NextCorrectionStatus = storeStatus };
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+
+        var result = await service.CorrectAsync(
+            5,
+            new("Objetivo atualizado", AccessCategoryNames.Visitor, null,
+                "Justificativa operacional válida."),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedStatus, result.Status);
+        Assert.Equal(1, store.CorrectionCalls);
+        Assert.Equal(
+            storeStatus == VehicleAccessCorrectionStoreStatus.Conflict,
+            result.Errors.ContainsKey("accessRecord"));
     }
 
     [Fact]
@@ -296,6 +460,8 @@ public sealed class VehicleAccessServiceTests
     private sealed class FakeVehicleAccessStore : IVehicleAccessStore
     {
         public int RegisterCalls { get; private set; }
+        public VehicleAccessStoreRegistrationStatus NextRegistrationStatus { get; init; } =
+            VehicleAccessStoreRegistrationStatus.Success;
         public VehicleEntryData? LastEntry { get; private set; }
         public int LastActorUserId { get; private set; }
         public DateTime LastEntryAtUtc { get; private set; }
@@ -306,6 +472,8 @@ public sealed class VehicleAccessServiceTests
             private set;
         }
         public int CorrectionCalls { get; private set; }
+        public VehicleAccessCorrectionStoreStatus NextCorrectionStatus { get; init; } =
+            VehicleAccessCorrectionStoreStatus.Success;
         public int LastCorrectedAccessRecordId { get; private set; }
         public VehicleAccessCorrectionData? LastCorrection { get; private set; }
         public int LastCorrectionActorUserId { get; private set; }
@@ -327,8 +495,9 @@ public sealed class VehicleAccessServiceTests
             LastEntryAtUtc = entryAtUtc;
 
             return Task.FromResult(new VehicleAccessStoreRegistration(
-                VehicleAccessStoreRegistrationStatus.Success,
-                new VehicleAccessRecord(
+                NextRegistrationStatus,
+                NextRegistrationStatus == VehicleAccessStoreRegistrationStatus.Success
+                    ? new VehicleAccessRecord(
                     1,
                     2,
                     entry.Plate,
@@ -341,7 +510,8 @@ public sealed class VehicleAccessServiceTests
                     "Aberto",
                     actorUserId,
                     null,
-                    entry.Observation)));
+                    entry.Observation)
+                    : null));
         }
 
         public Task<IReadOnlyList<VehicleAccessRecord>> ListOpenAsync(
@@ -379,8 +549,9 @@ public sealed class VehicleAccessServiceTests
             LastCorrectedAtUtc = correctedAtUtc;
 
             return Task.FromResult(new VehicleAccessCorrectionStoreResult(
-                VehicleAccessCorrectionStoreStatus.Success,
-                new VehicleAccessRecord(
+                NextCorrectionStatus,
+                NextCorrectionStatus == VehicleAccessCorrectionStoreStatus.Success
+                    ? new VehicleAccessRecord(
                     accessRecordId,
                     2,
                     "ABC1D23",
@@ -393,7 +564,8 @@ public sealed class VehicleAccessServiceTests
                     "Aberto",
                     4,
                     actorUserId,
-                    correction.Observation)));
+                    correction.Observation)
+                    : null));
         }
 
         public Task<CloseVehicleAccessResult> TryCloseAsync(
