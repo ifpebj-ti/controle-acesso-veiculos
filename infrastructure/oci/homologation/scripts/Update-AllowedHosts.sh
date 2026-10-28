@@ -6,7 +6,8 @@ usage() {
   cat <<'EOF'
 Usage:
   Update-AllowedHosts.sh \
-    --deployment-directory /opt/controle-acesso-veiculos/infrastructure/docker \
+    --deployment-directory /opt/controle-acesso-veiculos \
+    --environment-file /etc/controle-acesso-veiculos/.env.production \
     --hostname dat.example.test
 
 Run this script only as an authorized operator on the application host. It
@@ -17,12 +18,17 @@ EOF
 }
 
 deployment_directory=''
+environment_file=''
 hostname=''
 
 while (($# > 0)); do
   case "$1" in
     --deployment-directory)
       deployment_directory="${2:-}"
+      shift 2
+      ;;
+    --environment-file)
+      environment_file="${2:-}"
       shift 2
       ;;
     --hostname)
@@ -41,13 +47,18 @@ while (($# > 0)); do
   esac
 done
 
-if [[ -z "$deployment_directory" || -z "$hostname" ]]; then
+if [[ -z "$deployment_directory" || -z "$environment_file" || -z "$hostname" ]]; then
   usage >&2
   exit 2
 fi
 
 if [[ "$deployment_directory" != /* ]]; then
   echo 'The deployment directory must be an absolute path.' >&2
+  exit 2
+fi
+
+if [[ "$environment_file" != /* ]]; then
+  echo 'The protected environment file must use an absolute path.' >&2
   exit 2
 fi
 
@@ -65,7 +76,6 @@ for command_name in awk cat cp docker grep mktemp rm; do
   fi
 done
 
-environment_file="$deployment_directory/.env.production"
 compose_file="$deployment_directory/docker-compose.production.yml"
 
 if [[ ! -f "$environment_file" || -L "$environment_file" ]]; then
@@ -85,8 +95,13 @@ if [[ "$allowed_hosts_count" != 1 ]]; then
 fi
 
 umask 077
-backup_file="$(mktemp "$deployment_directory/.env.production.rollback.XXXXXX")"
-replacement_file="$(mktemp "$deployment_directory/.env.production.replacement.XXXXXX")"
+environment_directory="${environment_file%/*}"
+environment_basename="${environment_file##*/}"
+if [[ -z "$environment_directory" ]]; then
+  environment_directory='/'
+fi
+backup_file="$(mktemp "$environment_directory/.${environment_basename}.rollback.XXXXXX")"
+replacement_file="$(mktemp "$environment_directory/.${environment_basename}.replacement.XXXXXX")"
 rollback_required=true
 
 cleanup() {
