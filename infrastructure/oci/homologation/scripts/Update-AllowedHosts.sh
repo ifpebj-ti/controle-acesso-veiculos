@@ -8,6 +8,7 @@ Usage:
   Update-AllowedHosts.sh \
     --deployment-directory /opt/controle-acesso-veiculos \
     --environment-file /etc/controle-acesso-veiculos/.env.production \
+    --project-name cav-hml \
     --hostname dat.example.test
 
 Run this script only as an authorized operator on the application host. It
@@ -19,6 +20,7 @@ EOF
 
 deployment_directory=''
 environment_file=''
+project_name=''
 hostname=''
 
 while (($# > 0)); do
@@ -29,6 +31,10 @@ while (($# > 0)); do
       ;;
     --environment-file)
       environment_file="${2:-}"
+      shift 2
+      ;;
+    --project-name)
+      project_name="${2:-}"
       shift 2
       ;;
     --hostname)
@@ -47,8 +53,18 @@ while (($# > 0)); do
   esac
 done
 
-if [[ -z "$deployment_directory" || -z "$environment_file" || -z "$hostname" ]]; then
+if [[
+  -z "$deployment_directory" ||
+  -z "$environment_file" ||
+  -z "$project_name" ||
+  -z "$hostname"
+]]; then
   usage >&2
+  exit 2
+fi
+
+if [[ ! "$project_name" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
+  echo 'The Compose project name must use lowercase letters, numbers, hyphens or underscores.' >&2
   exit 2
 fi
 
@@ -111,6 +127,7 @@ cleanup() {
   if [[ "$rollback_required" == true && -f "$backup_file" ]]; then
     cp --preserve=mode,ownership,timestamps -- "$backup_file" "$environment_file"
     docker compose \
+      --project-name "$project_name" \
       --env-file "$environment_file" \
       --file "$compose_file" \
       up --detach --no-deps --force-recreate --wait backend >/dev/null 2>&1 ||
@@ -130,11 +147,13 @@ awk -v replacement="ALLOWED_HOSTS=$hostname;localhost" '
 cat -- "$replacement_file" >"$environment_file"
 
 docker compose \
+  --project-name "$project_name" \
   --env-file "$environment_file" \
   --file "$compose_file" \
   config --quiet
 
 docker compose \
+  --project-name "$project_name" \
   --env-file "$environment_file" \
   --file "$compose_file" \
   up --detach --no-deps --force-recreate --wait backend

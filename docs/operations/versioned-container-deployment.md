@@ -245,17 +245,20 @@ temporária do OCI Bastion, sem imprimir o arquivo de ambiente:
 sudo infrastructure/oci/homologation/scripts/Update-AllowedHosts.sh \
   --deployment-directory /opt/controle-acesso-veiculos \
   --environment-file /etc/controle-acesso-veiculos/.env.production \
+  --project-name cav-hml \
   --hostname dat.ernandescosta.me
 ```
 
 O script aceita somente hostname DNS minúsculo e explícito, exige exatamente
 uma entrada `ALLOWED_HOSTS` no arquivo protegido informado por caminho absoluto,
-valida o modelo do Compose e recria apenas o backend. O arquivo de ambiente fica
-separado dos artefatos implantados e não deve ser movido, ligado simbolicamente
-ou impresso. Se a validação ou a substituição falhar, o script restaura o arquivo
-anterior e tenta recolocar o backend conhecido. O operador ainda deve executar
-os testes públicos de readiness, login e renovação de sessão antes de encerrar a
-mudança.
+exige o nome explícito do projeto Compose existente, valida o modelo e recria
+apenas o backend desse projeto. Informar o projeto evita criar redes, volumes ou
+contêineres paralelos por diferença no diretório de execução. O arquivo de
+ambiente fica separado dos artefatos implantados e não deve ser movido, ligado
+simbolicamente ou impresso. Se a validação ou a substituição falhar, o script
+restaura o arquivo anterior e tenta recolocar o backend conhecido. O operador
+ainda deve executar os testes públicos de readiness, login e renovação de sessão
+antes de encerrar a mudança.
 
 Depois de substituir o backend, obtenha um token antifalsificação, substitua a
 instância e valide o mesmo par em uma operação protegida. HTTP 400 nesse ensaio

@@ -39,10 +39,12 @@ export DOCKER_FAILURE_MARKER="$success_fixture/docker.failure"
 PATH="$success_fixture/bin:$PATH" "$subject" \
   --deployment-directory "$success_fixture/deployment" \
   --environment-file "$success_fixture/config/.env.production" \
+  --project-name cav-hml \
   --hostname 'dat.example.test'
 grep -qx 'ALLOWED_HOSTS=dat.example.test;localhost' "$success_fixture/config/.env.production"
 grep -q 'config --quiet' "$DOCKER_CALL_LOG"
 grep -q 'up --detach --no-deps --force-recreate --wait backend' "$DOCKER_CALL_LOG"
+grep -q -- '--project-name cav-hml' "$DOCKER_CALL_LOG"
 
 rollback_fixture="$test_root/rollback"
 create_fixture "$rollback_fixture"
@@ -52,6 +54,7 @@ export FAIL_BACKEND_REPLACEMENT=true
 if PATH="$rollback_fixture/bin:$PATH" "$subject" \
   --deployment-directory "$rollback_fixture/deployment" \
   --environment-file "$rollback_fixture/config/.env.production" \
+  --project-name cav-hml \
   --hostname 'dat.example.test'; then
   echo 'The script accepted a failed backend replacement.' >&2
   exit 1
@@ -66,6 +69,7 @@ export DOCKER_FAILURE_MARKER="$invalid_fixture/docker.failure"
 if PATH="$invalid_fixture/bin:$PATH" "$subject" \
   --deployment-directory "$invalid_fixture/deployment" \
   --environment-file "$invalid_fixture/config/.env.production" \
+  --project-name cav-hml \
   --hostname '*.example.test'; then
   echo 'The script accepted a wildcard hostname.' >&2
   exit 1
@@ -75,12 +79,22 @@ printf 'ALLOWED_HOSTS=duplicate.example.test;localhost\n' >>"$invalid_fixture/co
 if PATH="$invalid_fixture/bin:$PATH" "$subject" \
   --deployment-directory "$invalid_fixture/deployment" \
   --environment-file "$invalid_fixture/config/.env.production" \
+  --project-name cav-hml \
   --hostname 'dat.example.test'; then
   echo 'The script accepted duplicate ALLOWED_HOSTS entries.' >&2
   exit 1
 fi
 
-if find "$test_root" -type f -name '.*.production.*.*' -print -quit | grep -q .; then
+if PATH="$invalid_fixture/bin:$PATH" "$subject" \
+  --deployment-directory "$invalid_fixture/deployment" \
+  --environment-file "$invalid_fixture/config/.env.production" \
+  --project-name '../other-project' \
+  --hostname 'dat.example.test'; then
+  echo 'The script accepted an unsafe Compose project name.' >&2
+  exit 1
+fi
+
+if find "$test_root" -type f -name '.env.production.*.*' -print -quit | grep -q .; then
   echo 'A temporary environment copy was not removed.' >&2
   exit 1
 fi
