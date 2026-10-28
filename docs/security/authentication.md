@@ -2,6 +2,15 @@
 
 ## Estado
 
+### Proxy reverso e origem HTTPS
+
+Na implanta\u00e7\u00e3o versionada, o TLS termina no proxy reverso e o backend permanece
+sem porta publicada, acess\u00edvel apenas pelo proxy na rede privada `edge`. O
+cont\u00eainer da API processa um salto dos cabe\u00e7alhos encaminhados pelo proxy, que
+sobrescreve `X-Forwarded-For` e `X-Forwarded-Proto`. Assim, o ASP.NET Core
+reconhece a origem HTTPS antes de emitir cookies `Secure`; essa confian\u00e7a n\u00e3o
+deve ser habilitada se o backend for exposto diretamente.
+
 A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor, a Issue #251 acrescenta a troca autenticada de senha e a Issue #258 acrescenta credencial temporária, troca obrigatória e redefinição administrativa. A Issue #220 consolida a decisão institucional do MVP: dois Administradores funcionais podem provisionar ou redefinir contas e entregam a credencial temporária diretamente ao titular. A observação do procedimento no ambiente real e a matriz final permanecem na Issue #162.
 
 Em 14/10/2026 foi aceita a substituição do login cotidiano por Google OIDC,
