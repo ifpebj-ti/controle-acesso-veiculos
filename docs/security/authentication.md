@@ -4,6 +4,10 @@
 
 ### Proxy reverso e origem HTTPS
 
+O Nginx aceita somente os valores exatos `http` e `https` recebidos da borda e
+usa o esquema da conex\u00e3o como fallback. Outros valores de
+`X-Forwarded-Proto` n\u00e3o s\u00e3o propagados.
+
 Na implanta\u00e7\u00e3o versionada, o TLS termina no proxy reverso e o backend permanece
 sem porta publicada, acess\u00edvel apenas pelo proxy na rede privada `edge`. O
 cont\u00eainer da API processa um salto dos cabe\u00e7alhos encaminhados pelo proxy, que

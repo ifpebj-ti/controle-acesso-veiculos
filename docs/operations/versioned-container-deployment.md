@@ -2,6 +2,10 @@
 
 ## Objetivo e limite
 
+O Nginx preserva apenas `http` ou `https` quando a borda informa o protocolo e
+usa o esquema da conex\u00e3o como fallback. O Load Balancer/Caddy deve sobrescrever
+esse cabe\u00e7alho; valores arbitr\u00e1rios enviados pelo cliente n\u00e3o s\u00e3o repassados.
+
 O backend n\u00e3o publica porta no host. Apenas o proxy na rede privada `edge` o
 alcan\u00e7a e sobrescreve os cabe\u00e7alhos encaminhados. Por isso, a configura\u00e7\u00e3o de
 produ\u00e7\u00e3o habilita o processamento de `X-Forwarded-For` e
