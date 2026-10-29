@@ -1,0 +1,73 @@
+name: CI - Load testing
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/ci-load-testing.yml"
+      - "infrastructure/load-testing/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ci-load-testing.yml"
+      - "infrastructure/load-testing/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-testing-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-k6-baseline:
+    name: Validate k6 baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Inspect script without executing requests
+        env:
+          K6_IMAGE: grafana/k6:2.3.0@sha256:2dd4756ec6e14e62778916e1eb850108e4b499304c02df56760fa0bdb0fba0b8
+        run: >-
+          docker run --rm
+          --env K6_API_BASE_URL=http://localhost:8080
+          --env K6_ACCESS_TOKEN=fictitious-ci-inspection-token
+          --env K6_PROFILE=low
+          --volume "${PWD}/infrastructure/load-testing/k6:/scripts:ro"
+          "${K6_IMAGE}"
+          inspect --include-system-env-vars /scripts/baseline.js
+
+      - name: Reject unsafe targets without executing requests
+        env:
+          K6_IMAGE: grafana/k6:2.3.0@sha256:2dd4756ec6e14e62778916e1eb850108e4b499304c02df56760fa0bdb0fba0b8
+        shell: bash
+        run: |
+          inspect_target() {
+            docker run --rm \
+              --env "K6_API_BASE_URL=$1" \
+              --env K6_ACCESS_TOKEN=fictitious-ci-inspection-token \
+              --env K6_PROFILE=low \
+              --env "K6_TARGET_APPROVED=${2:-no}" \
+              --volume "${PWD}/infrastructure/load-testing/k6:/scripts:ro" \
+              "${K6_IMAGE}" \
+              inspect --include-system-env-vars /scripts/baseline.js
+          }
+
+          if inspect_target 'http://example.test/api' yes; then
+            echo 'A remote HTTP target was accepted.' >&2
+            exit 1
+          fi
+
+          if inspect_target 'https://example.test/api' no; then
+            echo 'An unapproved remote target was accepted.' >&2
+            exit 1
+          fi
+
+          if inspect_target 'https://user:password@example.test/api?unsafe=true' yes; then
+            echo 'A target containing credentials or a query was accepted.' >&2
+            exit 1
+          fi
