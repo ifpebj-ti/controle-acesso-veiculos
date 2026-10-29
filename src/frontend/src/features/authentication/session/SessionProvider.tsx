@@ -475,6 +475,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [applySession, clearTimers, endSession],
   );
 
+  const restoreExternalSession = useCallback(async () => {
+    sessionGeneration.current += 1;
+    const generation = sessionGeneration.current;
+    clearTimers();
+    setApiAccessToken(null);
+    setState({ ...unauthenticatedState, status: "authenticating" });
+
+    try {
+      const session = await refreshAuthentication();
+      if (generation !== sessionGeneration.current) {
+        throw new Error("Session changed while restoration was in progress.");
+      }
+      applySession(session);
+      return session.user;
+    } catch (error) {
+      if (generation === sessionGeneration.current) {
+        endSession(null, false);
+      }
+      throw error;
+    }
+  }, [applySession, clearTimers, endSession]);
+
   const logout = useCallback(async () => {
     endSession(null, true);
     const logoutGeneration = sessionGeneration.current;
@@ -496,8 +518,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [endSession]);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ ...state, completePasswordChange, login, logout }),
-    [completePasswordChange, login, logout, state],
+    () => ({
+      ...state,
+      completePasswordChange,
+      login,
+      logout,
+      restoreExternalSession,
+    }),
+    [completePasswordChange, login, logout, restoreExternalSession, state],
   );
 
   return (

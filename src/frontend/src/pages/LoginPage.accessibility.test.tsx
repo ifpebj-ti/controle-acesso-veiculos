@@ -4,12 +4,21 @@ import { resolve } from "node:path";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionProvider } from "../features/authentication";
 import { AppearanceProvider } from "../features/appearance";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { api } from "../services/api";
 import { LoginPage } from "./LoginPage";
+
+beforeEach(() => {
+  vi.spyOn(api, "get").mockResolvedValue({
+    data: { googleEnabled: true },
+  });
+});
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("LoginPage accessibility", () => {
   it("does not globally scale the login composition", () => {
@@ -119,6 +128,18 @@ describe("LoginPage accessibility", () => {
       screen.queryByRole("group", { name: "Aparência" }),
     ).not.toBeInTheDocument();
 
+    const google = await screen.findByRole("button", {
+      name: "Continuar com Google",
+    });
+    const administrativeAccess = screen.getByRole("button", {
+      name: "Acesso administrativo",
+    });
+    expect(google.compareDocumentPosition(administrativeAccess)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    await user.click(administrativeAccess);
+
     const email = screen.getByRole("textbox", { name: /e-mail/i });
     const password = screen.getByLabelText("Senha:");
     const submit = screen.getByRole("button", { name: /entrar/i });
@@ -163,6 +184,7 @@ describe("LoginPage accessibility", () => {
   });
 
   it("has no serious automated accessibility violations", async () => {
+    const user = userEvent.setup();
     const { container } = render(
       <AppearanceProvider>
         <SessionProvider>
@@ -173,6 +195,12 @@ describe("LoginPage accessibility", () => {
       </AppearanceProvider>,
     );
 
+    await screen.findByRole("button", { name: "Continuar com Google" });
+    await expectNoSeriousAccessibilityViolations(container);
+
+    await user.click(
+      screen.getByRole("button", { name: "Acesso administrativo" }),
+    );
     await expectNoSeriousAccessibilityViolations(container);
   });
 });

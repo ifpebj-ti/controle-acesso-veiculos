@@ -25,6 +25,7 @@ function renderPage(
         expiresAtUtc: "2030-09-21T23:59:59.000Z",
         login: vi.fn(),
         logout: vi.fn(),
+        restoreExternalSession: vi.fn(),
         sessionEndReason: null,
         sessionNotice: null,
         status: "authenticated",

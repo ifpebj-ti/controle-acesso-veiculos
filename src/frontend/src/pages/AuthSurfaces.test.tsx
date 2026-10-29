@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { SessionLoadingState } from "../components/ui/SessionLoadingState";
@@ -11,6 +11,7 @@ import { AppearanceProvider } from "../features/appearance";
 import { SessionContext } from "../features/authentication/session/SessionContext";
 import type { SessionEndReason } from "../features/authentication";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { api } from "../services/api";
 import { LoginPage } from "./LoginPage";
 import { NotFoundPage } from "./NotFoundPage";
 
@@ -23,6 +24,7 @@ function renderLogin(sessionEndReason: SessionEndReason | null = null) {
           completePasswordChange: vi.fn(),
           login,
           logout: vi.fn(),
+          restoreExternalSession: vi.fn(),
           expiresAtUtc: null,
           sessionEndReason,
           sessionNotice: null,
@@ -36,8 +38,19 @@ function renderLogin(sessionEndReason: SessionEndReason | null = null) {
       </SessionContext.Provider>
     </AppearanceProvider>,
   );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Acesso administrativo" }),
+  );
   return { ...view, login };
 }
+
+beforeEach(() => {
+  vi.spyOn(api, "get").mockResolvedValue({
+    data: { googleEnabled: true },
+  });
+});
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("Modernized authentication surfaces", () => {
   it.each<SessionEndReason>([
@@ -49,13 +62,13 @@ describe("Modernized authentication surfaces", () => {
     "unauthorized",
   ])(
     "keeps the %s message announced and associated with initial focus",
-    (reason) => {
+    async (reason) => {
       renderLogin(reason);
       const message = screen.getByRole("alert");
       const email = screen.getByLabelText("E-mail:");
       expect(message.textContent).not.toBe("");
       expect(email).toHaveAttribute("aria-describedby", message.id);
-      expect(email).toHaveFocus();
+      await waitFor(() => expect(email).toHaveFocus());
       expect(email).toHaveClass("ui-field");
       expect(screen.getByRole("button", { name: "Entrar" })).toHaveClass(
         "ui-button",
