@@ -353,7 +353,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-visual-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-svh lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
+          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden px-7 pb-20 pt-7 text-visual-text sm:min-h-[30rem] sm:px-10 sm:pb-40 sm:pt-10 lg:order-2 lg:min-h-svh lg:px-12 lg:py-12 lg:pl-40">
             <img
               alt=""
               className="login-visual-photo"
@@ -362,7 +362,7 @@ export function LoginPage() {
             <div aria-hidden="true" className="login-visual-photo-overlay" />
             <svg
               aria-hidden="true"
-              className="login-visual-divider"
+              className="login-visual-divider login-visual-divider--desktop"
               focusable="false"
               preserveAspectRatio="none"
               viewBox="0 0 190 1000"
@@ -382,6 +382,30 @@ export function LoginPage() {
               <path
                 className="login-visual-road-line"
                 d="M58 24C6 94 6 166 26 250C49 330 102 380 92 440C80 520 14 605 10 680C8 790 20 900 50 976"
+              />
+            </svg>
+            <svg
+              aria-hidden="true"
+              className="login-visual-divider login-visual-divider--mobile"
+              focusable="false"
+              preserveAspectRatio="none"
+              viewBox="0 0 1000 190"
+            >
+              <path
+                className="login-visual-divider-dark-band"
+                d="M0 45C70 110 150 125 250 102C315 87 380 62 440 71C510 80 585 117 680 130C790 145 900 120 1000 58L1000 190L0 190Z"
+              />
+              <path
+                className="login-visual-divider-light-band"
+                d="M0 78C75 145 155 157 250 128C320 110 378 65 440 74C520 86 600 148 680 160C790 173 910 145 1000 93L1000 190L0 190Z"
+              />
+              <path
+                className="login-visual-divider-surface"
+                d="M0 108C80 175 160 180 250 148C330 125 380 70 440 80C520 92 605 166 680 174C790 183 910 160 1000 120L1000 190L0 190Z"
+              />
+              <path
+                className="login-visual-road-line"
+                d="M24 132C94 184 166 184 250 164C330 141 380 88 440 98C520 110 605 176 680 180C790 182 900 170 976 140"
               />
             </svg>
 

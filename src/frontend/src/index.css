@@ -2057,14 +2057,42 @@ button:disabled {
 }
 
 .login-mobile-brand {
-  padding: 0.75rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--ui-border) 55%, transparent);
-  border-radius: 0.875rem;
-  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
-  box-shadow: 0 0.5rem 1.5rem var(--ui-shadow);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.login-mobile-brand .institutional-brand-lockup,
+:root[data-theme="dark"] .login-mobile-brand .institutional-brand-lockup {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.login-mobile-brand .institutional-brand-lockup img,
+:root[data-theme="dark"] .login-mobile-brand .institutional-brand-lockup img {
+  opacity: 0.96;
+  filter: grayscale(1) brightness(0) invert(1)
+    drop-shadow(0 0.12rem 0.2rem rgb(0 0 0 / 38%));
 }
 
 .login-visual-divider {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.login-visual-divider--mobile {
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: min(19vw, 10rem);
+}
+
+.login-visual-divider--desktop {
   display: none;
 }
 
@@ -2219,15 +2247,16 @@ button:disabled {
 }
 
 @media (min-width: 1024px) {
-  .login-visual-divider {
-    position: absolute;
-    z-index: 3;
+  .login-visual-divider--mobile {
+    display: none;
+  }
+
+  .login-visual-divider--desktop {
     inset-block: 0;
     left: 0;
     display: block;
     width: 10rem;
     height: 100%;
-    pointer-events: none;
   }
 }
 
