@@ -1,5 +1,11 @@
 # Preflight da homologação na OCI
 
+> **Estado em 25/10/2026:** o preflight foi concluído e a topologia de homologação
+> técnica foi provisionada com VM privada, Load Balancer, WAF e Bastion. Este
+> documento permanece como checklist reutilizável para mudanças e recriações. DNS
+> e certificado público confiável, backup e restauração na OCI, observabilidade
+> operada e piloto institucional continuam pendentes.
+
 ## Objetivo e limite
 
 Este runbook prepara a decisão de executar um `terraform plan` para o ambiente de

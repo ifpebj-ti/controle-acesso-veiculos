@@ -2,11 +2,15 @@
 
 ## Estado e limite
 
-Estes arquivos preparam a borda interna definida na ADR 0004 e nas Issues #437 e
-#468.
-Eles **não comprovam** que exista VM, domínio, certificado ou ambiente OCI
-implantado. Não execute esta configuração antes de concluir os gates da Issue
-#382: autorização, custo, DNS, rede, responsáveis e revisão do plano.
+Estes arquivos definem a borda interna descrita na ADR 0006 e nas Issues #437 e
+#468. Em 25 de outubro de 2026, a topologia foi implantada na homologação técnica:
+VM privada, Load Balancer, WAF e Caddy encaminham tráfego para a stack `v0.4.0`.
+
+O hostname temporário `dat.ernandescosta.me` resolve para o Load Balancer e usa
+certificado público confiável com HSTS. Ele permite o piloto controlado, mas não
+é o domínio institucional definitivo e não autoriza produção ou operação com
+dados reais. A renovação automática do certificado permanece pendente na Issue
+#509.
 
 O OCI Flexible Load Balancer encerra TLS e aplica o OCI WAF. A VM não possui IP
 público. O Caddy executa como serviço do host privado, recebe HTTP apenas do NSG
@@ -25,8 +29,8 @@ internas do Compose. A interface administrativa do Caddy fica limitada a
   da subnet do Load Balancer;
 - o upstream é fixo em loopback, impedindo encaminhamento acidental para serviço
   de rede arbitrário;
-- HSTS só deve chegar aos usuários depois que DNS, certificado e HTTPS do Load
-  Balancer forem validados; não teste a aplicação real pelo endereço privado;
+- HSTS chega aos usuários somente pelo hostname HTTPS validado; não teste a
+  aplicação real pelo endereço privado;
 - os logs são estruturados e enviados ao `journald`; eles ainda exigem acesso,
   retenção e exportação definidos para a homologação;
 - a CSP permanece responsabilidade do frontend. A borda acrescenta apenas

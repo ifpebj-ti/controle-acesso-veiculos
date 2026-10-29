@@ -182,11 +182,24 @@ jobs:
             -passout "pass:${data_protection_password}"
           printf '%s' "${data_protection_password}" \
             > infrastructure/docker/secrets/data-protection-password.txt
+          printf '%s' "${postgres_password}" \
+            > infrastructure/docker/secrets/postgresql-password.txt
+          printf '%s' \
+            "Host=postgresql;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${postgres_password};GSS Encryption Mode=Disable" \
+            > infrastructure/docker/secrets/database-connection.txt
+          printf '%s' "${jwt_signing_key}" \
+            > infrastructure/docker/secrets/jwt-signing-key.txt
           chmod 0444 \
             infrastructure/docker/secrets/data-protection.pfx \
-            infrastructure/docker/secrets/data-protection-password.txt
+            infrastructure/docker/secrets/data-protection-password.txt \
+            infrastructure/docker/secrets/postgresql-password.txt \
+            infrastructure/docker/secrets/database-connection.txt \
+            infrastructure/docker/secrets/jwt-signing-key.txt
           echo "POSTGRES_PASSWORD=${postgres_password}" >> "${GITHUB_ENV}"
           echo "JWT_SIGNING_KEY=${jwt_signing_key}" >> "${GITHUB_ENV}"
+          echo "POSTGRES_PASSWORD_FILE=./secrets/postgresql-password.txt" >> "${GITHUB_ENV}"
+          echo "DATABASE_CONNECTION_FILE=./secrets/database-connection.txt" >> "${GITHUB_ENV}"
+          echo "JWT_SIGNING_KEY_FILE=./secrets/jwt-signing-key.txt" >> "${GITHUB_ENV}"
           echo "DATA_PROTECTION_CERTIFICATE_FILE=./secrets/data-protection.pfx" >> "${GITHUB_ENV}"
           echo "DATA_PROTECTION_CERTIFICATE_PASSWORD_FILE=./secrets/data-protection-password.txt" >> "${GITHUB_ENV}"
           echo "DATA_PROTECTION_KEY_RING_VOLUME=cav-smoke-data-protection-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "${GITHUB_ENV}"
@@ -220,6 +233,13 @@ jobs:
             )
             and (.services.backend.ports == null)
             and (.services.postgresql.ports == null)
+            and (.services.backend.environment.ASPNETCORE_FORWARDEDHEADERS_ENABLED == "true")
+            and (.services.backend.environment.Authentication__Jwt__SigningKey == null)
+            and (.services.backend.environment.ConnectionStrings__DefaultConnection == null)
+            and (.services.backend.environment.Authentication__Jwt__SigningKeyFile == "/run/secrets/jwt-signing-key")
+            and (.services.backend.environment.ConnectionStrings__DefaultConnectionFile == "/run/secrets/database-connection")
+            and (.services.postgresql.environment.POSTGRES_PASSWORD == null)
+            and (.services.postgresql.environment.POSTGRES_PASSWORD_FILE == "/run/secrets/postgresql-password")
           ' <<< "$(docker compose --file docker-compose.production.yml config --format json)" \
             > /dev/null
 
@@ -271,6 +291,38 @@ jobs:
             --retry-delay 2 \
             "http://127.0.0.1:${frontend_port}/api/health/ready" \
             | jq --exit-status '.status == "Healthy"'
+
+      - name: Verify Google OIDC callback reverse proxy
+        working-directory: infrastructure/docker
+        shell: bash
+        run: |
+          api_port="$(docker compose port backend 8080 | sed 's/.*://')"
+          frontend_port="$(docker compose port frontend 8080 | sed 's/.*://')"
+          backend_body="${RUNNER_TEMP}/google-callback-backend.txt"
+          frontend_body="${RUNNER_TEMP}/google-callback-frontend.txt"
+
+          backend_status="$(curl \
+            --silent \
+            --show-error \
+            --output "${backend_body}" \
+            --write-out '%{http_code}' \
+            "http://127.0.0.1:${api_port}/signin-google")"
+          frontend_status="$(curl \
+            --silent \
+            --show-error \
+            --output "${frontend_body}" \
+            --write-out '%{http_code}' \
+            "http://127.0.0.1:${frontend_port}/signin-google")"
+
+          if [[ "${frontend_status}" != "${backend_status}" ]]; then
+            echo "The public callback did not preserve the backend status." >&2
+            exit 1
+          fi
+
+          if grep --fixed-strings --quiet '<div id="root"></div>' "${frontend_body}"; then
+            echo "The Google callback was incorrectly handled by the SPA." >&2
+            exit 1
+          fi
 
       - name: Verify Data Protection survives backend replacement
         working-directory: infrastructure/docker
@@ -588,7 +640,7 @@ jobs:
           ' "${sbom_path}" > /dev/null
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -653,7 +705,7 @@ jobs:
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

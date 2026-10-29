@@ -2,6 +2,17 @@
 
 ## Objetivo e limite
 
+O Nginx preserva apenas `http` ou `https` quando a borda informa o protocolo e
+usa o esquema da conex\u00e3o como fallback. O Load Balancer/Caddy deve sobrescrever
+esse cabe\u00e7alho; valores arbitr\u00e1rios enviados pelo cliente n\u00e3o s\u00e3o repassados.
+
+O backend n\u00e3o publica porta no host. Apenas o proxy na rede privada `edge` o
+alcan\u00e7a e sobrescreve os cabe\u00e7alhos encaminhados. Por isso, a configura\u00e7\u00e3o de
+produ\u00e7\u00e3o habilita o processamento de `X-Forwarded-For` e
+`X-Forwarded-Proto`: a API recupera o esquema HTTPS original e pode emitir os
+cookies `Secure` do ciclo de sess\u00e3o. N\u00e3o reutilize essa configura\u00e7\u00e3o com a porta
+do backend exposta diretamente.
+
 O arquivo `infrastructure/docker/docker-compose.production.yml` executa a mesma
 versão publicada do frontend e do backend no GitHub Container Registry (GHCR).
 Ele não contém `build`: o host de destino baixa os artefatos que a CI já
@@ -12,24 +23,38 @@ um ambiente institucional de produção aprovado. Antes de uso real ainda são
 obrigatórios servidor administrado, DNS, terminação HTTPS, gestão externa de
 segredos, firewall, backup protegido, monitoramento e autorização institucional.
 
+## Estado observado na homologação
+
+Em 25 de outubro de 2026, a homologação técnica executava frontend, API e
+PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF. A
+promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
+uma nova release revisada seja publicada e `DEPLOYMENT_VERSION` seja alterada.
+
+O hostname temporário `dat.ernandescosta.me` resolve para a borda protegida e usa
+certificado público confiável; o TLS termina no Load Balancer e HSTS é entregue
+pela borda. Ele não é o domínio institucional definitivo. A renovação automática
+do certificado, o backup protegido, a observabilidade operada e a homologação
+institucional continuam pendentes;
+portanto, o ambiente permanece classificado como homologação, não produção.
+
 ## Release disponível
 
-A release técnica atual é `v0.3.0`. As duas imagens foram verificadas como
+A release técnica atual é `v0.4.0`. As duas imagens foram verificadas como
 manifestos para `linux/amd64` e `linux/arm64`:
 
 ```bash
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.3.0
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.3.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.4.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.4.0
 ```
 
 Os manifests verificados são, respectivamente,
-`sha256:5c620d3c6609144c8cc0f53c1505dd3c2414d206aa29d69f96b6ab64b24d31b0`
-e `sha256:cd9ed896b47327a6ca71f191284e71988411ffc608b3d1e634d1a9df01b8ddc1`.
+`sha256:c14ec8fe6b6c6719755924ec687b69dabbc486bdeb25d3d1cf3d87558a808c48`
+e `sha256:c39240dcff6ad9d9db157118099dc7b18ece0dcfabf59420f1838408c50ee620`.
 
 O GHCR armazena as imagens da aplicação, enquanto proveniência e SBOM assinados
 permanecem no serviço GitHub Artifact Attestations. Para fixar conteúdo por
 digest, use `imagem@sha256:<digest>`; para implantar a release revisada, use
-`imagem:0.3.0`. Nunca mova uma versão publicada para outro digest: mudanças
+`imagem:0.4.0`. Nunca mova uma versão publicada para outro digest: mudanças
 posteriores exigem uma nova release conforme Semantic Versioning.
 
 Os packages principais são canais de release. Pushes comuns na `main` executam
@@ -70,20 +95,47 @@ Copy-Item .env.production.example .env.production
 
 Defina no arquivo local:
 
-- `DEPLOYMENT_VERSION`: a mesma release para frontend e backend, como `0.3.0`;
-- `ALLOWED_HOSTS`: o domínio público esperado pela API e `localhost`, usado
-  somente pela verificação de saúde interna;
-- credenciais próprias do PostgreSQL; prefira senha aleatória hexadecimal ou
-  base64url, sem delimitadores de connection string;
-- uma chave JWT aleatória com pelo menos 32 bytes;
+- `DEPLOYMENT_VERSION`: a mesma release para frontend e backend, como `0.4.0`;
+- `ALLOWED_HOSTS`: a lista explícita do domínio público esperado pela API e
+  `localhost`, usado somente pela verificação de saúde interna. Não use `*`;
+- caminhos absolutos para três arquivos protegidos: senha do PostgreSQL,
+  connection string do backend e chave JWT;
 - certificado PFX de Data Protection fornecido pelo secret manager, sua senha e o
   nome de um volume externo compartilhado pelas réplicas;
 - endereço e porta de loopback que o proxy HTTPS acessará.
 
-O `.env.production` é ignorado pelo Git. Ele ainda é apenas uma alternativa de
-implantação simples: no ambiente definitivo, prefira um secret manager ou
-Docker Secrets, restrinja a leitura ao operador e nunca envie seu conteúdo por
-issue, Pull Request, chat ou log.
+O `.env.production` é ignorado pelo Git e contém somente caminhos e configuração
+não secreta. O Compose monta os arquivos como secrets somente leitura, evitando
+que os valores apareçam nas variáveis retornadas por `docker inspect`. Essa
+proteção local não substitui um secret manager: restrinja os arquivos ao
+operador e nunca envie seu conteúdo por issue, Pull Request, chat ou log.
+
+Em 27 de outubro de 2026, uma stack descartável construída a partir do PR da
+Issue #516 comprovou que backend e PostgreSQL iniciam lendo esses arquivos, que
+os valores não aparecem em `docker inspect` nem nos logs e que a recriação do
+backend aceita rotação e rollback da chave JWT. O ensaio usou somente valores
+aleatórios efêmeros, removeu contêineres, redes, volumes e arquivos ao terminar e
+não acessou a homologação.
+
+Prepare os arquivos fora do repositório. A senha usada na connection string deve
+ser exatamente a mesma do arquivo do PostgreSQL; prefira base64url ou hexadecimal
+aleatório para não introduzir delimitadores na connection string:
+
+```text
+# postgresql-password.txt
+VALOR_ALEATORIO
+
+# database-connection.txt (uma única linha)
+Host=postgresql;Port=5432;Database=controle_acesso;Username=controle_acesso_app;Password=VALOR_ALEATORIO;GSS Encryption Mode=Disable
+
+# jwt-signing-key.txt (ao menos 32 bytes aleatórios)
+CHAVE_ALEATORIA
+```
+
+No Linux, aplique `chmod 600` e mantenha o diretório inacessível para outros
+usuários. O backend falha no startup quando um caminho é relativo, o arquivo não
+existe, está vazio, excede 16 KiB ou quando valor direto e arquivo são fornecidos
+ao mesmo tempo. O conteúdo nunca integra a mensagem de erro.
 
 Crie o volume externo antes da primeira implantação. Em um host único ele pode
 ser um volume Docker; em topologia distribuída deve apontar para armazenamento
@@ -104,6 +156,28 @@ de escopo mínimo `read:packages`. Não armazene o token em arquivo do projeto:
 ```bash
 gh auth token | docker login ghcr.io --username SEU_USUARIO --password-stdin
 ```
+
+## Rotação dos segredos de execução
+
+Faça uma rotação por vez, em janela autorizada. Preserve temporariamente a versão
+anterior em armazenamento protegido para rollback e nunca imprima o conteúdo:
+
+1. gere o novo valor por fonte criptograficamente segura;
+2. grave-o em um arquivo novo com proprietário e modo restritos;
+3. quando for a senha do banco, atualize primeiro a credencial no PostgreSQL e a
+   connection string correspondente de forma coordenada;
+4. altere somente o caminho local aplicável no `.env.production`;
+5. valide `docker compose config --quiet` e recrie apenas o serviço consumidor;
+6. confirme readiness, login, renovação de sessão e ausência do valor em
+   `docker inspect` e logs;
+7. após a janela de observação, descarte a versão anterior pelo procedimento
+   aprovado.
+
+Se a validação falhar, restaure o caminho anterior, recrie somente o serviço
+afetado e repita os testes. A rotação da chave JWT encerra a validade dos access
+tokens existentes. A troca do certificado de Data Protection ou do key ring tem
+impacto adicional em antifalsificação e deve seguir a ADR 0003, não este fluxo
+simples.
 
 ## Implantação
 
@@ -156,6 +230,46 @@ docker compose \
 
 O resultado esperado é PostgreSQL, backend e frontend saudáveis. A validação
 funcional deve usar o domínio HTTPS, não a porta HTTP de loopback.
+
+Antes de liberar o ambiente aos testadores, confirme que a interface e a API
+aceitam o mesmo hostname público:
+
+```bash
+curl --fail --show-error --silent \
+  --output /dev/null \
+  --write-out '%{http_code}\n' \
+  "https://${APP_HOSTNAME}/login"
+
+curl --fail --show-error --silent \
+  "https://${APP_HOSTNAME}/api/health/ready"
+```
+
+As duas chamadas devem responder HTTP 200. Uma resposta `400 Invalid Hostname`
+na API indica divergência entre o hostname publicado e `ALLOWED_HOSTS`; corrija
+a lista explícita e recrie somente o backend. Não use `AllowedHosts=*` como
+atalho, pois isso remove uma defesa contra cabeçalhos `Host` forjados.
+
+Um operador autorizado pode executar a alteração transacional pela sessão
+temporária do OCI Bastion, sem imprimir o arquivo de ambiente:
+
+```bash
+sudo infrastructure/oci/homologation/scripts/Update-AllowedHosts.sh \
+  --deployment-directory /opt/controle-acesso-veiculos \
+  --environment-file /etc/controle-acesso-veiculos/.env.production \
+  --project-name cav-hml \
+  --hostname dat.ernandescosta.me
+```
+
+O script aceita somente hostname DNS minúsculo e explícito, exige exatamente
+uma entrada `ALLOWED_HOSTS` no arquivo protegido informado por caminho absoluto,
+exige o nome explícito do projeto Compose existente, valida o modelo e recria
+apenas o backend desse projeto. Informar o projeto evita criar redes, volumes ou
+contêineres paralelos por diferença no diretório de execução. O arquivo de
+ambiente fica separado dos artefatos implantados e não deve ser movido, ligado
+simbolicamente ou impresso. Se a validação ou a substituição falhar, o script
+restaura o arquivo anterior e tenta recolocar o backend conhecido. O operador
+ainda deve executar os testes públicos de readiness, login e renovação de sessão
+antes de encerrar a mudança.
 
 Depois de substituir o backend, obtenha um token antifalsificação, substitua a
 instância e valide o mesmo par em uma operação protegida. HTTP 400 nesse ensaio
