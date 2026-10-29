@@ -10,7 +10,56 @@ automação ser ensaiada e aprovada, a renovação manual deve ocorrer até
 Este documento descreve o procedimento-alvo. Ele não contém OCIDs, IPs, e-mail de
 conta ACME, chaves, tokens ou PEMs.
 
-## Arquitetura-alvo
+Em 28/10/2026 (verificação de 29/10/2026 às 00:55 UTC), a ferramenta abaixo
+confirmou TLS 1.3, cadeia e hostname válidos, readiness HTTP 200 e 87 dias
+completos restantes. O certificado apresentado expira em 24/01/2027 às 20:55 UTC.
+Essa evidência pontual não comprova renovação automática nem alerta operado.
+
+## Verificação externa disponível
+
+O script `infrastructure/oci/homologation/scripts/check_public_tls.py` executa
+uma consulta somente leitura, sem credencial, com Python 3.11 ou superior e
+biblioteca padrão. A ferramenta valida a cadeia e o hostname com as autoridades
+do sistema, exige TLS 1.2 ou superior, lê a validade do certificado apresentado e
+consulta `/api/health/ready` pela mesma conexão. Redirecionamentos e respostas
+que não declaram `Healthy` são rejeitados. A saída contém somente data, validade,
+protocolo, dias restantes e resultado, sem corpo da resposta ou cookies.
+
+```bash
+python3 -B infrastructure/oci/homologation/scripts/check_public_tls.py \
+  --origin https://host-de-homologacao.example
+```
+
+No Windows, use `python` no lugar de `python3`. Substitua a origem pelo endereço
+HTTPS autorizado, sem caminho, credencial, query string ou fragmento. A porta
+aceita é somente 443. A execução usa timeout de dez segundos por operação de
+rede, sem repetição automática. `SSLKEYLOGFILE` é rejeitado para impedir gravação
+acidental de material de sessão TLS no ambiente do operador.
+
+| Código de saída | Resultado | Ação operacional |
+| --------------- | --------- | ---------------- |
+| 0 | Certificado válido por mais de 30 dias e readiness saudável | Registrar a verificação |
+| 1 | Até 30 dias restantes | Iniciar renovação |
+| 2 | Até 14 dias restantes | Priorizar renovação e acionar responsável |
+| 3 | Até 7 dias restantes | Executar contingência de renovação |
+| 4 | Cadeia/hostname inválido, rede, contrato ou HTTP inesperado | Investigar e escalar; não desabilitar TLS |
+
+Os limiares usam o tempo restante exato; `days_remaining` mostra dias inteiros
+arredondados para baixo. O teste consulta apenas o certificado ativo e a saúde
+pública. Ele não comprova login Google, todos os fluxos funcionais ou a
+capacidade de recuperação. A emissão e a troca do certificado continuam sendo
+as etapas pendentes desta issue. O agendamento e a entrega dos alertas também
+dependem do canal e dos responsáveis definidos para a operação.
+
+Testes offline, sem contato com a homologação:
+
+```bash
+python3 -B -m unittest discover \
+  --start-directory infrastructure/oci/homologation/scripts/tests \
+  --pattern test_public_tls.py --verbose
+```
+
+## Arquitetura-alvo da renovação
 
 ```text
 Namecheap (zona raiz)
