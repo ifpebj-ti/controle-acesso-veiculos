@@ -36,9 +36,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      # O backend nao possui porta publica: somente o proxy da rede edge pode
+      # alcanca-lo e sobrescreve X-Forwarded-For/X-Forwarded-Proto.
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       AllowedHosts: ${ALLOWED_HOSTS:?Defina ALLOWED_HOSTS com o host publico da aplicacao}
-      ConnectionStrings__DefaultConnection: "Host=postgresql;Port=5432;Database=${POSTGRES_DB:?Defina POSTGRES_DB};Username=${POSTGRES_USER:?Defina POSTGRES_USER};Password=${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD};GSS Encryption Mode=Disable"
-      Authentication__Jwt__SigningKey: ${JWT_SIGNING_KEY:?Defina JWT_SIGNING_KEY fora do repositorio}
+      ConnectionStrings__DefaultConnectionFile: /run/secrets/database-connection
+      Authentication__Jwt__SigningKeyFile: /run/secrets/jwt-signing-key
       DataProtection__Enabled: "true"
       DataProtection__ApplicationName: controle-acesso-veiculos
       DataProtection__KeyRingPath: /var/lib/controle-acesso-veiculos/data-protection
@@ -70,6 +73,10 @@ services:
     volumes:
       - data-protection-keys:/var/lib/controle-acesso-veiculos/data-protection
     secrets:
+      - source: database-connection
+        target: database-connection
+      - source: jwt-signing-key
+        target: jwt-signing-key
       - source: data-protection-certificate
         target: data-protection-certificate.pfx
       - source: data-protection-certificate-password
@@ -94,7 +101,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Defina POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER:?Defina POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgresql-password
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -105,6 +112,9 @@ services:
       start_period: 20s
     security_opt:
       - no-new-privileges:true
+    secrets:
+      - source: postgresql-password
+        target: postgresql-password
     restart: unless-stopped
     logging:
       driver: json-file
@@ -128,6 +138,12 @@ volumes:
     external: true
 
 secrets:
+  database-connection:
+    file: ${DATABASE_CONNECTION_FILE:?Defina o arquivo protegido com a connection string}
+  jwt-signing-key:
+    file: ${JWT_SIGNING_KEY_FILE:?Defina o arquivo protegido com a chave JWT}
+  postgresql-password:
+    file: ${POSTGRES_PASSWORD_FILE:?Defina o arquivo protegido com a senha do PostgreSQL}
   data-protection-certificate:
     file: ${DATA_PROTECTION_CERTIFICATE_FILE:?Defina o caminho do certificado fora do repositorio}
   data-protection-certificate-password:

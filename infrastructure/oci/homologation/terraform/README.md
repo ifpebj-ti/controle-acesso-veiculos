@@ -2,14 +2,20 @@
 
 ## Estado
 
-Esta configuração prepara a base das Issues #382 e #468 para execução pelo **OCI
-Resource Manager**. Ela ainda não contém a aplicação, senhas, certificado, chave
-JWT, banco com dados ou DNS. O certificado já validado é apenas referenciado pelo
-OCID informado no Resource Manager; sua chave privada não entra no Terraform. O
-primeiro `apply` deve ocorrer somente depois da revisão do plano, da estimativa de
-custo e da confirmação explícita do responsável pela conta.
+Esta configuração representa a base das Issues #382 e #468 executada pelo **OCI
+Resource Manager**. Em 25 de outubro de 2026, ela sustentava a homologação técnica
+com VM privada, Load Balancer, WAF e Bastion; a aplicação `v0.4.0` foi instalada
+por um procedimento operacional separado. Senhas, chave JWT, banco com dados e
+chaves privadas não entram no Terraform.
 
-## Recursos planejados
+O hostname temporário `dat.ernandescosta.me` e o certificado público confiável
+foram ativados fora do Terraform, por procedimento operacional separado. A
+renovação automática, o backup externo, a observabilidade operada e o piloto
+institucional ainda permanecem pendentes. Novos `apply` devem ocorrer somente
+depois da revisão do plano, da estimativa de custo e da confirmação explícita do
+responsável pela conta.
+
+## Recursos representados
 
 - compartimento exclusivo com tags de custo e operação;
 - orçamento mensal padrão de 25 unidades na moeda da conta, alinhado à referência
@@ -26,13 +32,16 @@ custo e da confirmação explícita do responsável pela conta.
   autenticação;
 - uma VM flexível, por padrão Arm com 1 OCPU, 6 GiB e boot volume de 50 GiB;
 - OCI Bastion com origem administrativa restrita e sessões máximas de 30 minutos;
+- Dynamic Group limitada à VM de homologação e política IAM de menor
+  privilégio para ela consumir somente suas próprias execuções do Run Command;
 - Ubuntu 24.04 com IMDS legado desabilitado, criptografia de trânsito do volume,
   Docker, atualizações automáticas, firewall do host e diretórios protegidos.
 
 O `cloud-init` não contém segredos, domínio, token, chave SSH ou credencial. A VM
 não recebe IP público e aceita a porta interna `8088` somente da subnet do Load
-Balancer. A aplicação, o DNS e as credenciais permanecem etapas posteriores e
-controladas.
+Balancer. A aplicação e as credenciais são instaladas em etapa posterior e
+controlada; o DNS temporário e o certificado público confiável foram ativados
+por esse procedimento separado e não integram o estado do Terraform.
 
 ## Gate financeiro
 
@@ -128,14 +137,19 @@ confirme:
 ## Depois da criação
 
 1. aguarde o `cloud-init` encerrar e registre somente o resultado sanitizado;
-2. confirme Cloud Agent, monitoring, firewall, Docker e atualizações automáticas;
-3. confirme que a VM não possui IP público e crie uma sessão temporária do Bastion;
-4. instale e valide a borda privada descrita em `../edge`;
-5. configure DNS com o IP do Load Balancer exibido como output sensível;
-6. prepare segredos e execute o Compose versionado sem build no host;
-7. habilite backup protegido antes de preservar qualquer dado;
-8. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
-9. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
+2. aguarde a propagação da Dynamic Group e da política IAM; a Oracle informa
+   que uma instância adicionada depois da criação pode levar até 30 minutos
+   para começar a consultar comandos;
+3. confirme Cloud Agent, Run Command, monitoring, firewall, Docker e atualizações automáticas;
+4. confirme que a VM não possui IP público e crie uma sessão temporária do Bastion;
+5. use o usuário administrativo individual da sessão; o usuário isolado do Run
+   Command não deve receber acesso genérico ao Docker ou aos arquivos de segredo;
+6. instale e valide a borda privada descrita em `../edge`;
+7. configure DNS com o IP do Load Balancer exibido como output sensível;
+8. prepare segredos e execute o Compose versionado sem build no host;
+9. habilite backup protegido antes de preservar qualquer dado;
+10. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
+11. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
 
 ## Limites conhecidos
 
@@ -150,6 +164,9 @@ confirme:
   a API regional aceita no máximo 8 KiB de inspeção do corpo, portanto conteúdos
   maiores são bloqueados em vez de seguirem parcialmente inspecionados;
 - alta disponibilidade, banco gerenciado e dados reais permanecem fora de escopo.
+- Dynamic Groups e políticas IAM podem levar até 30 minutos para serem
+  reconhecidas pela instância; um comando em `ACCEPTED` nesse intervalo não prova
+  falha do host e não deve motivar abertura de SSH público.
 
 ## Referências
 
@@ -158,6 +175,8 @@ confirme:
 - [Borda HTTPS](../edge/README.md)
 - [OCI Resource Manager](https://docs.oracle.com/en-us/iaas/Content/ResourceManager/home.htm)
 - [OCI Terraform Provider](https://docs.oracle.com/en-us/iaas/tools/terraform-provider-oci/latest/)
+- [OCI Run Command](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/runningcommands.htm)
+- [OCI Dynamic Groups](https://docs.oracle.com/en-us/iaas/Content/Identity/Tasks/managingdynamicgroups.htm)
 - [OCI WAF com Flexible Load Balancer](https://docs.oracle.com/en/learn/oci-waf-flex-lbaas/)
 - [Capacidades de proteção do OCI WAF](https://docs.oracle.com/en-us/iaas/Content/WAF/Protections/protections_management.htm)
 - [Lista de preços da Oracle Brasil](https://www.oracle.com/br/cloud/price-list/)

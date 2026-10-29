@@ -53,6 +53,8 @@ from its first published release.
 
 ### Changed
 
+- Shared frontend selection menus now close on `Tab` and `Shift+Tab` while
+  preserving the expected forward or backward focus order.
 - Backend plate validation now distinguishes complete Brazilian plates from
   partial search filters, rejects numeric-only values such as `777777`, and
   applies the canonical rule to general access, institutional fleet, and event

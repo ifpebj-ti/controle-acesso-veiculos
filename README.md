@@ -13,16 +13,17 @@ IFPE — Campus Belo Jardim.
 
 [Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki) ·
 [Documentação](#documentação) ·
-[Release atual](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.3.0) ·
+[Release atual](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0) ·
 [Issues](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues)
 
 </div>
 
 > [!IMPORTANT]
 > O MVP técnico está integrado e pode ser demonstrado com dados fictícios. Ele
-> ainda não está autorizado para operação institucional: homologação formal,
-> HTTPS, gestão de segredos, monitoramento, backup protegido e implantação na OCI
-> permanecem pendentes.
+> possui uma homologação técnica na OCI com borda HTTPS, WAF e origem privada,
+> mas ainda não está autorizado para operação institucional. Certificado público
+> confiável e DNS, gestão definitiva de segredos, monitoramento operado, backup
+> protegido, exercício de recuperação e homologação formal permanecem pendentes.
 
 ## Visão geral
 
@@ -156,28 +157,28 @@ docker compose down
 
 ## Imagens versionadas
 
-A release técnica publicada é `v0.3.0`. Os comandos pedidos para consumo humano
+A release técnica publicada é `v0.4.0`. Os comandos pedidos para consumo humano
 e para o Compose de implantação são:
 
 ```bash
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.3.0
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.3.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.4.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.4.0
 ```
 
 As duas tags foram verificadas como manifestos para `linux/amd64` e
-`linux/arm64`. Elas representam a release de 29 de setembro de 2026, não o estado
-mais recente da branch `main`.
+`linux/arm64`. Elas representam a release publicada em 23 de outubro de 2026 UTC
+(22 de outubro no fuso do projeto), não o estado mais recente da branch `main`.
 
-| Componente | Digest verificado da release `0.3.0`                                      |
+| Componente | Digest verificado da release `0.4.0`                                      |
 | ---------- | ------------------------------------------------------------------------- |
-| Backend    | `sha256:5c620d3c6609144c8cc0f53c1505dd3c2414d206aa29d69f96b6ab64b24d31b0` |
-| Frontend   | `sha256:cd9ed896b47327a6ca71f191284e71988411ffc608b3d1e634d1a9df01b8ddc1` |
+| Backend    | `sha256:c14ec8fe6b6c6719755924ec687b69dabbc486bdeb25d3d1cf3d87558a808c48` |
+| Frontend   | `sha256:c39240dcff6ad9d9db157118099dc7b18ece0dcfabf59420f1838408c50ee620` |
 
 ### Qual referência usar
 
 | Referência       | Uso                                 | Exemplo            |
 | ---------------- | ----------------------------------- | ------------------ |
-| versão semântica | implantação de uma release revisada | `:0.3.0`           |
+| versão semântica | implantação de uma release revisada | `:0.4.0`           |
 | commit           | rastreabilidade técnica da CI       | `:sha-<commit>`    |
 | digest           | fixação criptográfica exata         | `@sha256:<digest>` |
 
@@ -224,7 +225,7 @@ partir da primeira release publicada:
 - `MINOR`: funcionalidade compatível adicionada;
 - `PATCH`: correção compatível.
 
-`v0.3.0` e as imagens `0.3.0` são imutáveis por política. Mudanças posteriores
+`v0.4.0` e as imagens `0.4.0` são imutáveis por política. Mudanças posteriores
 ficam em [`Unreleased`](CHANGELOG.md#unreleased) até um Pull Request próprio de
 release revisar o changelog, escolher a versão e criar a tag Git. Releases
 anteriores, incluindo `v0.2.0`, permanecem disponíveis como histórico imutável.
@@ -335,9 +336,9 @@ Containers:
 ```bash
 docker compose -f infrastructure/docker/docker-compose.yml config --quiet
 docker buildx imagetools inspect \
-  ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.3.0
+  ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.4.0
 docker buildx imagetools inspect \
-  ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.3.0
+  ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.4.0
 ```
 
 ## Estrutura do repositório
@@ -360,9 +361,9 @@ controle-acesso-veiculos/
   rotação, revogação e CSRF;
 - imagens são analisadas com Trivy e publicadas com SBOM e proveniência;
 - ZAP executa baseline passiva contra uma stack descartável;
-- backup local com checksum e a configuração reproduzível da OCI são ensaios
-  técnicos; o backup protegido só existirá após provisionamento e restauração
-  isolada comprovados na tenancy institucional.
+- a homologação técnica na OCI mantém a VM privada atrás de Load Balancer e WAF;
+  isso não substitui domínio e certificado confiáveis, observabilidade operada,
+  backup protegido nem o exercício de restauração na tenancy.
 
 Leia a [central de segurança](docs/security/README.md), a
 [modelagem de ameaças](docs/security/threat-model.md) e o
@@ -374,6 +375,7 @@ Leia a [central de segurança](docs/security/README.md), a
 | ------------------------------------------------------------------------------- | --------------------------------------------------- |
 | [Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki)              | visão completa, requisitos, arc42, produto e status |
 | [Prontidão da Unidade 1](docs/validation/unit-1-readiness.md)                   | requisito acadêmico ligado à evidência              |
+| [Preparação da Unidade 2](docs/validation/unit-2-readiness.md)                  | matriz de entregas, evidências e pendências         |
 | [Homologação integrada](docs/validation/backend-mvp-homologation.md)            | roteiro dos quatro perfis                           |
 | [Piloto operacional acompanhado](docs/validation/guided-operational-pilot.md)   | fases, gates, observação e resposta a ocorrências   |
 | [CI/CD e containers](docs/development/ci-cd.md)                                 | workflows, tags, scans, SBOM e proveniência         |

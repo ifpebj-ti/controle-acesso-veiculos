@@ -2,6 +2,19 @@
 
 ## Estado
 
+### Proxy reverso e origem HTTPS
+
+O Nginx aceita somente os valores exatos `http` e `https` recebidos da borda e
+usa o esquema da conex\u00e3o como fallback. Outros valores de
+`X-Forwarded-Proto` n\u00e3o s\u00e3o propagados.
+
+Na implanta\u00e7\u00e3o versionada, o TLS termina no proxy reverso e o backend permanece
+sem porta publicada, acess\u00edvel apenas pelo proxy na rede privada `edge`. O
+cont\u00eainer da API processa um salto dos cabe\u00e7alhos encaminhados pelo proxy, que
+sobrescreve `X-Forwarded-For` e `X-Forwarded-Proto`. Assim, o ASP.NET Core
+reconhece a origem HTTPS antes de emitir cookies `Secure`; essa confian\u00e7a n\u00e3o
+deve ser habilitada se o backend for exposto diretamente.
+
 A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor, a Issue #251 acrescenta a troca autenticada de senha e a Issue #258 acrescenta credencial temporária, troca obrigatória e redefinição administrativa. A Issue #220 consolida a decisão institucional do MVP: dois Administradores funcionais podem provisionar ou redefinir contas e entregam a credencial temporária diretamente ao titular. A observação do procedimento no ambiente real e a matriz final permanecem na Issue #162.
 
 Em 14/10/2026 foi aceita a substituição do login cotidiano por Google OIDC,
@@ -96,6 +109,21 @@ contas de emergência, retorno ao serviço e preservação de evidências está 
 [runbook de contingência de identidade Google](../operations/google-identity-contingency.md).
 Ele só se torna executável depois da implementação e homologação da Issue #449.
 
+### Rotas públicas do Google OIDC
+
+Na topologia conteinerizada, o navegador inicia o fluxo por
+`/api/auth/google/start`. O prefixo `/api` é removido pelo proxy antes de a
+requisição chegar à API. O retorno do provedor usa a rota pública exata
+`/signin-google`, encaminhada diretamente ao mesmo caminho no backend, sem passar
+pelo fallback da SPA. Portanto, o cliente OAuth do ambiente deve cadastrar como
+redirect URI `https://<host-da-aplicação>/signin-google`.
+
+Não configure `/api/signin-google`: isso faria o caminho público divergir do
+`Authentication:Google:CallbackPath` validado pelo middleware. A rota de callback
+não é uma tela, não deve ser aberta manualmente e continua protegida por `state`,
+nonce, cookie de correlação de curta duração e HTTPS. Cada ambiente usa host,
+cliente e segredo próprios.
+
 ## Integração do frontend
 
 A Issue #461 integra a decisão no frontend React. A tela consulta
@@ -143,13 +171,23 @@ do recurso, e indisponibilidade não gera confirmação falsa de login.
 
 ## Configuração
 
-Os valores públicos de emissor, audiência e validade ficam em `appsettings.json`. A chave de assinatura é obrigatória, deve possuir pelo menos 32 caracteres e deve ser fornecida por secret manager ou variável de ambiente:
+Os valores públicos de emissor, audiência e validade ficam em `appsettings.json`.
+A chave de assinatura é obrigatória e deve possuir pelo menos 32 caracteres. Em
+produção, forneça um caminho absoluto para o arquivo protegido:
 
 ```text
-Authentication__Jwt__SigningKey
+Authentication__Jwt__SigningKeyFile=/run/secrets/jwt-signing-key
 ```
 
-Nunca versionar a chave real. Ambientes diferentes devem usar chaves diferentes. Uma troca de chave invalida os tokens emitidos anteriormente.
+O valor direto `Authentication__Jwt__SigningKey` permanece compatível com testes
+e desenvolvimento local, mas a API rejeita a configuração ambígua dos dois
+mecanismos. O mesmo carregador aceita
+`ConnectionStrings__DefaultConnectionFile` e
+`Authentication__Google__ClientSecretFile`. Arquivos ausentes, vazios, relativos
+ou acima de 16 KiB fazem o startup falhar sem incluir o conteúdo na mensagem.
+
+Nunca versionar a chave real. Ambientes diferentes devem usar chaves diferentes.
+Uma troca de chave invalida os tokens emitidos anteriormente.
 
 O ciclo de sessão aceita as configurações públicas abaixo:
 
@@ -172,11 +210,12 @@ de desenvolvimento, e somente nele, os cookies não usam `Secure` porque a stack
 qualquer outro ambiente exige cookie `Secure` e HTTPS. `LocalContainer` não deve
 ser usado em implantação institucional.
 
-As chaves antifalsificação do container local são efêmeras: reiniciar a API
-invalida o par CSRF, e o frontend deve buscá-lo novamente. Antes de múltiplas
-réplicas ou produção, o operador precisa configurar um key ring compartilhado,
-persistente, criptografado e acessível apenas à aplicação. Essa dependência faz
-parte da infraestrutura definitiva, não deve ser simulada por chave versionada.
+O Compose local persiste o key ring em volume e protege os XMLs com o certificado
+X.509 gerado fora do Git por `New-DataProtectionCertificate.ps1`. Recriar somente
+o container não deve perder as chaves; remover o volume, o PFX ou sua senha
+invalida o material protegido e exige recuperação controlada. Múltiplas réplicas
+ou produção precisam de armazenamento durável compartilhado e secret manager
+aprovados. Essa dependência não deve ser simulada por chave versionada.
 
 Os limites de login são configuráveis por `RateLimiting__LoginPermitLimit` e
 `RateLimiting__LoginWindowSeconds`. Alterações para produção devem considerar
