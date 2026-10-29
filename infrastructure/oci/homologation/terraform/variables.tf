@@ -193,6 +193,57 @@ variable "budget_alert_recipients" {
   }
 }
 
+variable "enable_observability" {
+  description = "Creates the reviewed OCI Monitoring, Logging, Notifications and free-tier APM foundation. Keep false until the plan and recipients are approved."
+  type        = bool
+  default     = false
+}
+
+variable "observability_alert_endpoint" {
+  description = "Email endpoint for operational alert confirmation. Supply only through Resource Manager or an ignored tfvars file."
+  type        = string
+  sensitive   = true
+  default     = ""
+
+  validation {
+    condition     = var.observability_alert_endpoint == "" || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.observability_alert_endpoint))
+    error_message = "observability_alert_endpoint must be empty or a valid email address."
+  }
+}
+
+variable "observability_log_retention_days" {
+  description = "OCI Logging retention in supported 30-day increments."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.observability_log_retention_days >= 30 && var.observability_log_retention_days <= 180 && var.observability_log_retention_days % 30 == 0
+    error_message = "observability_log_retention_days must be a 30-day increment between 30 and 180."
+  }
+}
+
+variable "observability_cpu_alarm_threshold" {
+  description = "Sustained CPU utilization percentage that triggers a warning."
+  type        = number
+  default     = 85
+
+  validation {
+    condition     = var.observability_cpu_alarm_threshold >= 50 && var.observability_cpu_alarm_threshold <= 100
+    error_message = "observability_cpu_alarm_threshold must be between 50 and 100."
+  }
+}
+
+variable "observability_memory_alarm_threshold" {
+  description = "Sustained memory utilization percentage that triggers a warning."
+  type        = number
+  default     = 85
+
+  validation {
+    condition     = var.observability_memory_alarm_threshold >= 50 && var.observability_memory_alarm_threshold <= 100
+    error_message = "observability_memory_alarm_threshold must be between 50 and 100."
+  }
+}
+
 variable "freeform_tags" {
   description = "Non-confidential governance tags applied to supported resources."
   type        = map(string)

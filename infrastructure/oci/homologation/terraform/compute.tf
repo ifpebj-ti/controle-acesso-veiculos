@@ -44,6 +44,11 @@ resource "oci_core_instance" "application" {
     }
 
     plugins_config {
+      name          = "Custom Logs Monitoring"
+      desired_state = "ENABLED"
+    }
+
+    plugins_config {
       name          = "Compute Instance Run Command"
       desired_state = "ENABLED"
     }
