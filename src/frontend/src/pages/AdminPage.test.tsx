@@ -37,6 +37,7 @@ vi.mock("../features/authentication", () => ({
   useAuthenticatedSession: vi.fn(),
 }));
 vi.mock("../features/user-accounts/services/userAccountsService", () => ({
+  changeAccountProfile: vi.fn(),
   createUserAccount: vi.fn(),
   deactivateUserAccount: vi.fn(),
   reactivateUserAccount: vi.fn(),
@@ -52,6 +53,8 @@ vi.mock("../services/api-errors", () => ({
 }));
 
 const activeAccount: UserAccount = {
+  authenticationMethod: "Local",
+  externalIdentityLinked: false,
   active: true,
   createdAtUtc: "2030-06-10T11:00:00Z",
   email: "porteiro.ficticio@example.test",
@@ -510,6 +513,7 @@ describe("AdminPage", () => {
 
   it("retries a failed refresh without creating the account again", async () => {
     vi.mocked(createUserAccount).mockResolvedValue({
+      authenticationMethod: "Local",
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
@@ -549,6 +553,7 @@ describe("AdminPage", () => {
 
   it("creates an account without a password and reveals the credential only once", async () => {
     vi.mocked(createUserAccount).mockResolvedValue({
+      authenticationMethod: "Local",
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
@@ -612,6 +617,7 @@ describe("AdminPage", () => {
 
   it("announces clipboard success and failure without persisting the credential", async () => {
     vi.mocked(createUserAccount).mockResolvedValue({
+      authenticationMethod: "Local",
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
@@ -735,6 +741,7 @@ describe("AdminPage", () => {
 
   it("clears a disclosed credential when administrative access is lost", async () => {
     vi.mocked(createUserAccount).mockResolvedValue({
+      authenticationMethod: "Local",
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
@@ -1012,6 +1019,7 @@ describe("AdminPage", () => {
 
   it("blocks duplicate creation while the request is pending", async () => {
     let resolveCreation!: (value: {
+      authenticationMethod: "Local";
       id: number;
       email: string;
       profileName: "SetorTransporte";
@@ -1039,6 +1047,7 @@ describe("AdminPage", () => {
 
     await act(async () =>
       resolveCreation({
+        authenticationMethod: "Local",
         email: "nova.pessoa@example.test",
         id: 10,
         profileName: "SetorTransporte",

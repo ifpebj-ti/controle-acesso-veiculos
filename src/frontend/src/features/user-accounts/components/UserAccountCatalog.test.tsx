@@ -8,6 +8,8 @@ const page: UserAccountPage = {
   items: [
     {
       active: true,
+      authenticationMethod: "Local",
+      externalIdentityLinked: false,
       createdAtUtc: "2030-06-10T11:00:00Z",
       email: "porteiro.ficticio@example.test",
       id: 8,
@@ -33,6 +35,7 @@ describe("UserAccountCatalog", () => {
   it("keeps cards until the catalog has enough width for every column", () => {
     render(
       <UserAccountCatalog
+        onChangeProfile={vi.fn()}
         currentUserId={1}
         onPageChange={vi.fn()}
         onResetCredential={vi.fn()}
@@ -60,6 +63,7 @@ describe("UserAccountCatalog", () => {
     const onToggle = vi.fn();
     const view = render(
       <UserAccountCatalog
+        onChangeProfile={vi.fn()}
         currentUserId={1}
         onPageChange={onPageChange}
         onResetCredential={onResetCredential}

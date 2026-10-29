@@ -10,10 +10,12 @@ import {
 } from "./userAccountsService";
 
 vi.mock("../../../services/api", () => ({
-  api: { delete: vi.fn(), get: vi.fn(), post: vi.fn() },
+  api: { delete: vi.fn(), get: vi.fn(), post: vi.fn(), put: vi.fn() },
 }));
 
 const account = {
+  authenticationMethod: "Local",
+  externalIdentityLinked: false,
   active: true,
   createdAtUtc: "2030-06-10T11:00:00Z",
   email: "gestor.ficticio@example.test",
@@ -44,6 +46,7 @@ describe("userAccountsService", () => {
         email: account.email,
         id: account.id,
         profileName: account.profileName,
+        authenticationMethod: "Local",
         temporaryCredential: "temporary-test-credential",
         temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
       },
@@ -95,6 +98,7 @@ describe("userAccountsService", () => {
           email: account.email,
           id: account.id,
           profileName: account.profileName,
+          authenticationMethod: "Local",
           temporaryCredential: "temporary-test-credential",
           temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
         },

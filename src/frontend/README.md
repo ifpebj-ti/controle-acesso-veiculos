@@ -201,6 +201,35 @@ validando cada operação. Falhas de validação, rede, conflito e acesso negado
 apresentadas sem produzir confirmação falsa. A integração não representa
 homologação para produção.
 
+## Alteração administrativa de perfil — Issue #473
+
+Na administração de contas, a ação “Alterar perfil” fica disponível para outra
+conta ativa. O formulário oferece somente os quatro perfis do contrato, exige
+justificativa de 10 a 500 caracteres e confirmação explícita das consequências.
+O servidor continua responsável por autorização, autoalteração, estado da
+conta, último Administrador ativo e método de autenticação.
+
+O serviço da feature envia um único `PUT /users/{id}/profile`, sem repetição
+automática após HTTP 401, e valida a resposta com Zod. A consulta é revalidada
+com os filtros e a página aplicados. Uma falha da consulta após sucesso oferece
+somente recarga, sem repetir a alteração. Falhas de validação, conflito e limite
+de tentativas preservam os campos. Resultado incerto por rede, erro inesperado
+ou resposta incompatível exige fechar e atualizar a lista antes de nova tentativa.
+
+O método de autenticação e o vínculo externo exibidos vêm da API. Contas Google
+não oferecem redefinição local de senha. A criação aceita credencial nula para
+Google; a promoção para Administrador mostra a credencial temporária somente
+quando retornada pelo servidor, reutilizando a exibição única em memória. Ela
+não é enviada a logs, URL ou storage e é removida da interface ao fechar.
+
+O diálogo reutiliza o seletor e os tokens existentes. Mantém o restante da
+página inerte, contém Tab/Shift+Tab, permite Escape fora de uma mutação pendente
+e devolve o foco ao cancelar. Erros recebem anúncio acessível, foco e rolagem
+local para permanecerem visíveis. O padrão foi adaptado do
+[W3C APG — Modal Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+Os testes automatizados não substituem leitor de tela, tablet físico nem
+homologação institucional. A revisão desses critérios continua pendente.
+
 ## Sessão e segurança
 
 O access token permanece exclusivamente na memória do processo JavaScript. O
