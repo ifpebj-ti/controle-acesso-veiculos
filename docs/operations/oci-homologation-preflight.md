@@ -3,8 +3,9 @@
 > **Estado em 25/10/2026:** o preflight foi concluído e a topologia de homologação
 > técnica foi provisionada com VM privada, Load Balancer, WAF e Bastion. Este
 > documento permanece como checklist reutilizável para mudanças e recriações. DNS
-> e certificado público confiável, backup e restauração na OCI, observabilidade
-> operada e piloto institucional continuam pendentes.
+> e certificado público confiável foram validados em 26/10/2026; sua renovação
+> automatizada permanece na Issue #509. Backup e restauração na OCI,
+> observabilidade operada e piloto institucional continuam pendentes.
 
 ## Objetivo e limite
 
@@ -43,29 +44,29 @@ específica, devem ser usados somente dados fictícios.
 
 ## Participantes mínimos
 
-| Papel | Responsabilidade no preflight |
-|---|---|
-| administrador autorizado da tenancy | consultar assinatura, permissões, limites e cobrança sem compartilhar credenciais |
-| responsável técnico | conduzir o checklist, comparar a arquitetura e registrar somente o resultado sanitizado |
-| revisor técnico ou orientador | revisar custo, exposição, responsabilidades e decisão de saída |
-| responsável financeiro institucional | confirmar teto, validade do crédito e destinatários dos alertas, quando aplicável |
-| responsável funcional | confirmar janela e finalidade do piloto, sem operar a infraestrutura |
+| Papel                                | Responsabilidade no preflight                                                           |
+| ------------------------------------ | --------------------------------------------------------------------------------------- |
+| administrador autorizado da tenancy  | consultar assinatura, permissões, limites e cobrança sem compartilhar credenciais       |
+| responsável técnico                  | conduzir o checklist, comparar a arquitetura e registrar somente o resultado sanitizado |
+| revisor técnico ou orientador        | revisar custo, exposição, responsabilidades e decisão de saída                          |
+| responsável financeiro institucional | confirmar teto, validade do crédito e destinatários dos alertas, quando aplicável       |
+| responsável funcional                | confirmar janela e finalidade do piloto, sem operar a infraestrutura                    |
 
 Uma pessoa pode exercer mais de um papel quando autorizado, mas o plano de
 infraestrutura precisa de revisão por uma segunda pessoa antes de qualquer `apply`.
 
 ## Evidência permitida e proibida
 
-| Pode constar no repositório | Deve permanecer restrito |
-|---|---|
-| tipo genérico de assinatura | nome e OCID da tenancy |
-| moeda, teto aprovado e mês de expiração | identificadores de assinatura e faturamento |
-| nome público da região escolhida | OCIDs de compartments, recursos, usuários ou grupos |
-| shape e arquitetura candidatos | IP público ou privado do ambiente |
-| custo mensal e anual estimado, arredondado | faturas, método de pagamento e dados contratuais |
-| resposta “confirmado”, “pendente” ou “indisponível” | nomes, e-mails e identificadores das pessoas |
-| função responsável, sem dado pessoal | senhas, tokens, cookies, chaves, fingerprints e arquivos OCI CLI |
-| decisão final e seus bloqueios | captura de tela que exponha identidade, saldo detalhado ou estrutura interna |
+| Pode constar no repositório                         | Deve permanecer restrito                                                     |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- |
+| tipo genérico de assinatura                         | nome e OCID da tenancy                                                       |
+| moeda, teto aprovado e mês de expiração             | identificadores de assinatura e faturamento                                  |
+| nome público da região escolhida                    | OCIDs de compartments, recursos, usuários ou grupos                          |
+| shape e arquitetura candidatos                      | IP público ou privado do ambiente                                            |
+| custo mensal e anual estimado, arredondado          | faturas, método de pagamento e dados contratuais                             |
+| resposta “confirmado”, “pendente” ou “indisponível” | nomes, e-mails e identificadores das pessoas                                 |
+| função responsável, sem dado pessoal                | senhas, tokens, cookies, chaves, fingerprints e arquivos OCI CLI             |
+| decisão final e seus bloqueios                      | captura de tela que exponha identidade, saldo detalhado ou estrutura interna |
 
 Quando a comprovação detalhada for necessária, registrar sua localização e o papel
 custodiante, nunca o conteúdo sensível.
@@ -147,17 +148,17 @@ compartilhado ou limite não disponível.
 Montar uma estimativa oficial antes do `plan`, incluindo, mesmo quando o valor
 calculado for zero:
 
-| Componente | Premissa a estimar |
-|---|---|
-| compute | shape, OCPUs, memória e horas mensais |
-| armazenamento | boot/block volume, desempenho, backups e crescimento |
-| rede | NAT Gateway, Flexible Load Balancer de 10 Mbps, IP e tráfego de saída |
-| WAF | primeira instância, volume mensal de requisições e logs |
-| segurança | Vault, chaves e operações criptográficas |
-| backup | Object Storage, operações, retenção de 35 dias e restauração |
-| observabilidade | ingestão e retenção de logs, métricas, alarmes e notificações |
-| DNS e certificado | zona, consultas e método de renovação |
-| margem | variação de uso, câmbio, impostos e recuperação temporária |
+| Componente        | Premissa a estimar                                                    |
+| ----------------- | --------------------------------------------------------------------- |
+| compute           | shape, OCPUs, memória e horas mensais                                 |
+| armazenamento     | boot/block volume, desempenho, backups e crescimento                  |
+| rede              | NAT Gateway, Flexible Load Balancer de 10 Mbps, IP e tráfego de saída |
+| WAF               | primeira instância, volume mensal de requisições e logs               |
+| segurança         | Vault, chaves e operações criptográficas                              |
+| backup            | Object Storage, operações, retenção de 35 dias e restauração          |
+| observabilidade   | ingestão e retenção de logs, métricas, alarmes e notificações         |
+| DNS e certificado | zona, consultas e método de renovação                                 |
+| margem            | variação de uso, câmbio, impostos e recuperação temporária            |
 
 Registrar custo mensal e anual estimado e a folga até o teto aprovado. Não tratar
 recurso “Always Free” como garantido antes de confirmar elegibilidade e capacidade
