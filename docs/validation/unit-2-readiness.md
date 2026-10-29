@@ -4,8 +4,17 @@
 
 Esta matriz relaciona as entregas obrigatórias da Unidade 2, conforme o documento
 acadêmico recebido em 23 de outubro de 2026, às evidências atuais do projeto. A
-fotografia foi atualizada em **26 de outubro de 2026** e deve ser revisada a cada
+fotografia documental foi revisada em **28 de outubro de 2026** e deve ser revisada a cada
 entrega relevante.
+
+Os PRs #520, #524 e #521 incorporaram as correções de hostname, protocolo HTTPS
+e callback Google. Readiness, login fictício, CSRF, refresh e logout foram
+validados no domínio público após os ajustes operacionais. A VM continua na
+release `v0.4.0`, com correção temporária de proxy; a próxima release precisa
+incorporar a configuração definitiva. O
+[guia de implantação](../operations/versioned-container-deployment.md#primeira-promoção-após-os-ajustes-de-https)
+detalha a promoção e a compatibilidade dos segredos. Essas correções consolidam
+um item já atendido e não acrescentam pontos à estimativa acadêmica.
 
 As classificações são:
 
@@ -58,7 +67,8 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na fotografia de 26/10/2026 existem **8 itens atendidos, 6 parciais e 3
+Na contagem de 26/10/2026, preservada nesta revisão de 28/10/2026, existem
+**8 itens atendidos, 6 parciais e 3
 pendentes**, resultando em **11 / 17 = 64,7%**. A incerteza estimada é de **±5
 pontos percentuais**, principalmente porque os indicadores do portal, a cobertura
 real e as validações humanas ainda precisam ser aferidos.

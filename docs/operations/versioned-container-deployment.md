@@ -3,14 +3,14 @@
 ## Objetivo e limite
 
 O Nginx preserva apenas `http` ou `https` quando a borda informa o protocolo e
-usa o esquema da conex\u00e3o como fallback. O Load Balancer/Caddy deve sobrescrever
-esse cabe\u00e7alho; valores arbitr\u00e1rios enviados pelo cliente n\u00e3o s\u00e3o repassados.
+usa o esquema da conexão como fallback. O Load Balancer/Caddy deve sobrescrever
+esse cabeçalho; valores arbitrários enviados pelo cliente não são repassados.
 
-O backend n\u00e3o publica porta no host. Apenas o proxy na rede privada `edge` o
-alcan\u00e7a e sobrescreve os cabe\u00e7alhos encaminhados. Por isso, a configura\u00e7\u00e3o de
-produ\u00e7\u00e3o habilita o processamento de `X-Forwarded-For` e
+O backend não publica porta no host. Apenas o proxy na rede privada `edge` o
+alcança e sobrescreve os cabeçalhos encaminhados. Por isso, a configuração de
+produção habilita o processamento de `X-Forwarded-For` e
 `X-Forwarded-Proto`: a API recupera o esquema HTTPS original e pode emitir os
-cookies `Secure` do ciclo de sess\u00e3o. N\u00e3o reutilize essa configura\u00e7\u00e3o com a porta
+cookies `Secure` do ciclo de sessão. Não reutilize essa configuração com a porta
 do backend exposta diretamente.
 
 O arquivo `infrastructure/docker/docker-compose.production.yml` executa a mesma
@@ -36,6 +36,28 @@ pela borda. Ele não é o domínio institucional definitivo. A renovação autom
 do certificado, o backup protegido, a observabilidade operada e a homologação
 institucional continuam pendentes;
 portanto, o ambiente permanece classificado como homologação, não produção.
+
+### Código incorporado e configuração implantada
+
+A fotografia de 28/10/2026 distingue três estados verificáveis:
+
+| Estado                     | Evidência                                                                                                        | Limite                                                                     |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Release implantada         | Imagens frontend e backend `0.4.0`                                                                               | Não contém automaticamente commits posteriores da `main`                   |
+| Correção operacional na VM | `AllowedHosts` explícito, processamento do protocolo encaminhado e configuração de Nginx montada somente leitura | Ajuste controlado e temporário para restaurar o ciclo de sessão HTTPS      |
+| Implementação na `main`    | PR #518: segredos por arquivo; #520: hostname; #524: HTTPS encaminhado; #521: callback dedicado                  | Precisa de nova release e promoção para integrar a configuração definitiva |
+
+Após a correção operacional, readiness, login administrativo fictício, CSRF e
+refresh responderam HTTP 200; logout respondeu HTTP 204. O refresh manteve
+cookie `Secure` e `HttpOnly`. Esse ensaio não habilitou Google OIDC e não
+comprovou a migração dos segredos de runtime para arquivos na VM.
+
+O encaminhamento de `/signin-google` está incorporado ao código do Nginx na
+`main`. Ele deve ser confirmado novamente na imagem da próxima release; não se
+deve inferir sua implantação a partir do merge do PR. A autenticação Google
+depende também do cliente OAuth externo, segredo protegido e teste com o
+provedor. O WAF possui base provisionada, com validação operacional completa
+pendente na Issue #468.
 
 ## Release disponível
 
@@ -281,6 +303,38 @@ isolado. Em caso de comprometimento da chave privada, substitua certificado e ke
 ring de forma controlada e encerre as sessões de maneira conservadora.
 
 ## Atualização e rollback
+
+### Primeira promoção após os ajustes de HTTPS
+
+Antes de aplicar o Compose atual à VM que ainda executa `0.4.0`:
+
+1. publicar uma nova release revisada que inclua os PRs #518, #520, #524 e #521,
+   após concluir o incremento funcional escolhido;
+2. preservar os arquivos de configuração anteriores em armazenamento restrito,
+   registrar a versão e os digests e verificar backup e compatibilidade do banco;
+3. preparar os arquivos externos de senha do PostgreSQL, connection string e
+   chave JWT com os valores de runtime vigentes, sem imprimi-los ou fazer rotação
+   incidental; montar apenas o Compose novo sobre a configuração antiga falha
+   por ausência das novas variáveis de caminho;
+4. confirmar que a imagem backend escolhida implementa a leitura por arquivo
+   e definir os caminhos no ambiente protegido, retirando os valores diretos;
+5. usar explicitamente o projeto `cav-hml`, o diretório implantado e o arquivo
+   de ambiente protegido em todos os comandos Compose;
+6. retirar a montagem temporária `nginx.issue-523.conf` no Compose candidato
+   para carregar a configuração embutida na imagem nova, mantendo a cópia
+   anterior disponível até validar o resultado;
+7. renderizar e validar o candidato com `config --quiet`, promover e verificar
+   saúde, login, CSRF, refresh, logout e caminho do callback pela borda HTTPS;
+8. confirmar, sem publicar os valores, que os segredos deixaram o ambiente dos
+   contêineres e que somente os caminhos dos arquivos estão configurados;
+9. registrar a versão aplicada e remover o ajuste temporário somente após a
+   validação completa; se falhar, restaurar conjuntamente Compose, ambiente,
+   montagem Nginx e imagens anteriores, preservando os volumes.
+
+Não remova o arquivo Nginx enquanto houver contêiner usando sua montagem. O
+rollback exige o conjunto de configurações compatível com a imagem antiga,
+não apenas a alteração de `DEPLOYMENT_VERSION`. Não publique a configuração
+renderizada, pois versões anteriores ainda podem conter valores sensíveis.
 
 Para atualizar, altere somente `DEPLOYMENT_VERSION` para uma release revisada,
 faça backup, aplique as migrations controladas e execute novamente `pull` e
