@@ -36,13 +36,13 @@ aceita é somente 443. A execução usa timeout de dez segundos por operação d
 rede, sem repetição automática. `SSLKEYLOGFILE` é rejeitado para impedir gravação
 acidental de material de sessão TLS no ambiente do operador.
 
-| Código de saída | Resultado | Ação operacional |
-| --------------- | --------- | ---------------- |
-| 0 | Certificado válido por mais de 30 dias e readiness saudável | Registrar a verificação |
-| 1 | Até 30 dias restantes | Iniciar renovação |
-| 2 | Até 14 dias restantes | Priorizar renovação e acionar responsável |
-| 3 | Até 7 dias restantes | Executar contingência de renovação |
-| 4 | Cadeia/hostname inválido, rede, contrato ou HTTP inesperado | Investigar e escalar; não desabilitar TLS |
+| Código de saída | Resultado                                                   | Ação operacional                          |
+| --------------- | ----------------------------------------------------------- | ----------------------------------------- |
+| 0               | Certificado válido por mais de 30 dias e readiness saudável | Registrar a verificação                   |
+| 1               | Até 30 dias restantes                                       | Iniciar renovação                         |
+| 2               | Até 14 dias restantes                                       | Priorizar renovação e acionar responsável |
+| 3               | Até 7 dias restantes                                        | Executar contingência de renovação        |
+| 4               | Cadeia/hostname inválido, rede, contrato ou HTTP inesperado | Investigar e escalar; não desabilitar TLS |
 
 Os limiares usam o tempo restante exato; `days_remaining` mostra dias inteiros
 arredondados para baixo. O teste consulta apenas o certificado ativo e a saúde
