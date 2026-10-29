@@ -109,6 +109,21 @@ contas de emergência, retorno ao serviço e preservação de evidências está 
 [runbook de contingência de identidade Google](../operations/google-identity-contingency.md).
 Ele só se torna executável depois da implementação e homologação da Issue #449.
 
+### Rotas públicas do Google OIDC
+
+Na topologia conteinerizada, o navegador inicia o fluxo por
+`/api/auth/google/start`. O prefixo `/api` é removido pelo proxy antes de a
+requisição chegar à API. O retorno do provedor usa a rota pública exata
+`/signin-google`, encaminhada diretamente ao mesmo caminho no backend, sem passar
+pelo fallback da SPA. Portanto, o cliente OAuth do ambiente deve cadastrar como
+redirect URI `https://<host-da-aplicação>/signin-google`.
+
+Não configure `/api/signin-google`: isso faria o caminho público divergir do
+`Authentication:Google:CallbackPath` validado pelo middleware. A rota de callback
+não é uma tela, não deve ser aberta manualmente e continua protegida por `state`,
+nonce, cookie de correlação de curta duração e HTTPS. Cada ambiente usa host,
+cliente e segredo próprios.
+
 ## Integração do frontend
 
 A Issue #117 aplica essa decisão no frontend React. O formulário usa e-mail e
