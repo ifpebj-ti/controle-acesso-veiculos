@@ -2,6 +2,17 @@
 
 ## Objetivo e limite
 
+O Nginx preserva apenas `http` ou `https` quando a borda informa o protocolo e
+usa o esquema da conex\u00e3o como fallback. O Load Balancer/Caddy deve sobrescrever
+esse cabe\u00e7alho; valores arbitr\u00e1rios enviados pelo cliente n\u00e3o s\u00e3o repassados.
+
+O backend n\u00e3o publica porta no host. Apenas o proxy na rede privada `edge` o
+alcan\u00e7a e sobrescreve os cabe\u00e7alhos encaminhados. Por isso, a configura\u00e7\u00e3o de
+produ\u00e7\u00e3o habilita o processamento de `X-Forwarded-For` e
+`X-Forwarded-Proto`: a API recupera o esquema HTTPS original e pode emitir os
+cookies `Secure` do ciclo de sess\u00e3o. N\u00e3o reutilize essa configura\u00e7\u00e3o com a porta
+do backend exposta diretamente.
+
 O arquivo `infrastructure/docker/docker-compose.production.yml` executa a mesma
 versão publicada do frontend e do backend no GitHub Container Registry (GHCR).
 Ele não contém `build`: o host de destino baixa os artefatos que a CI já

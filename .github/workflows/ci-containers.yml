@@ -233,6 +233,7 @@ jobs:
             )
             and (.services.backend.ports == null)
             and (.services.postgresql.ports == null)
+            and (.services.backend.environment.ASPNETCORE_FORWARDEDHEADERS_ENABLED == "true")
             and (.services.backend.environment.Authentication__Jwt__SigningKey == null)
             and (.services.backend.environment.ConnectionStrings__DefaultConnection == null)
             and (.services.backend.environment.Authentication__Jwt__SigningKeyFile == "/run/secrets/jwt-signing-key")

@@ -36,6 +36,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      # O backend nao possui porta publica: somente o proxy da rede edge pode
+      # alcanca-lo e sobrescreve X-Forwarded-For/X-Forwarded-Proto.
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       AllowedHosts: ${ALLOWED_HOSTS:?Defina ALLOWED_HOSTS com o host publico da aplicacao}
       ConnectionStrings__DefaultConnectionFile: /run/secrets/database-connection
       Authentication__Jwt__SigningKeyFile: /run/secrets/jwt-signing-key
