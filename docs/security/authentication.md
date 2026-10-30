@@ -280,3 +280,22 @@ fluxo operacional.
 ## Validação automatizada
 
 Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, atualização progressiva de hash sem regravação desnecessária, atomicidade da atualização, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. O ciclo de sessão acrescenta testes de cookie, ausência de segredo no corpo e no banco, CSRF, rotação, replay, concorrência, inatividade, duração absoluta, logout, perfil inativo, revogação por desativação e rollback. A troca autenticada acrescenta testes de senha atual incorreta, reutilização, validação, revogação, invalidação imediata do JWT, concorrência, rate limiting, auditoria mínima e rollback. Credenciais temporárias acrescentam geração pelo servidor, expiração, restrição operacional, troca obrigatória, autorização administrativa, revogação, concorrência, auditoria sem segredo e rollback transacional. Os testes de persistência usam PostgreSQL real e dados, senhas e chaves fictícios exclusivos do ambiente temporário.
+
+## Evidência automatizada do protocolo Google — Issue #448
+
+`GoogleOidcProtocolTests` exercita o middleware real com metadados fictícios
+estáticos e backchannel bloqueado. Os cenários verificam code flow com PKCE
+S256, escopos mínimos, emissão de state/nonce e cookies Secure/HttpOnly restritos
+ao callback, negação de state ausente/adulterado, ausência do cookie de correlação,
+recusa do provedor e repetição dessa recusa, além de conclusão sem identidade
+externa. Nenhum desses caminhos deve criar sessão da aplicação ou consultar o
+provedor; os testes verificam a ausência dessas requisições.
+
+Isso não comprova troca de código real, validação de assinatura/nonce de um ID
+token recebido, replay de código bem-sucedido ou interoperabilidade com o Google.
+O ensaio HTTPS com contas pré-autorizadas continua obrigatório na Issue #448.
+As falhas retornam mensagem genérica em português, sem incluir state, código ou
+segredo. O acesso administrativo local e as regras de perfil não são alterados.
+
+Referência do middleware:
+[OpenIdConnectOptions — Microsoft](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.authentication.openidconnect.openidconnectoptions).
