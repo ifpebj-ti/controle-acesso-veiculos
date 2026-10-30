@@ -14,6 +14,7 @@ import {
   useAuthenticatedSession,
 } from "../features/authentication";
 import {
+  AccountProfileDialog,
   CredentialResetDialog,
   TemporaryCredentialDialog,
   UserAccountCatalog,
@@ -100,7 +101,7 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
         <ActionFeedback
           className="mt-6"
           floating
-          focusOnChange
+          focusOnChange={!accounts.credentialDisclosure}
           message={accounts.notice}
           onDismiss={() => accounts.setNotice(null)}
           tone="success"
@@ -160,6 +161,7 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
               title="Contas do sistema"
             />
             <UserAccountCatalog
+              onChangeProfile={accounts.profileChange.open}
               currentUserId={currentUserId}
               onPageChange={accounts.goToPage}
               onResetCredential={accounts.openCredentialReset}
@@ -183,6 +185,18 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
           disponível apenas para consulta e não pode ser alterado ou apagado.
         </p>
       </aside>
+
+      {accounts.profileChange.target && (
+        <AccountProfileDialog
+          account={accounts.profileChange.target}
+          busy={accounts.pendingAction !== null}
+          errorMessage={accounts.profileChange.error}
+          requiresReload={accounts.profileChange.requiresReload}
+          onCancel={accounts.profileChange.close}
+          onConfirm={(input) => void accounts.profileChange.confirm(input)}
+          returnFocusTo={accounts.profileChange.returnFocusTo}
+        />
+      )}
 
       {accounts.resetTarget && (
         <CredentialResetDialog

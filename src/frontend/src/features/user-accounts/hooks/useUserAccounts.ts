@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAccountProfileChange } from "./useAccountProfileChange";
+import { profileLabels } from "../../authentication";
 
 import { useConfirmation } from "../../../components/ui/confirmationContext";
 import {
@@ -202,20 +204,29 @@ export function useUserAccounts() {
     setServerErrors({});
     try {
       const created = await createUserAccount(input);
-      const credential = {
-        temporaryCredential: created.temporaryCredential,
-        temporaryCredentialExpiresAtUtc:
-          created.temporaryCredentialExpiresAtUtc,
-      };
-      setCredentialDisclosure({
-        accountId: created.id,
-        accountName: input.name,
-        credential,
-        returnFocusTo: formReturnFocusTo,
-      });
+      if (
+        created.temporaryCredential &&
+        created.temporaryCredentialExpiresAtUtc
+      ) {
+        setCredentialDisclosure({
+          accountId: created.id,
+          accountName: input.name,
+          credential: {
+            temporaryCredential: created.temporaryCredential,
+            temporaryCredentialExpiresAtUtc:
+              created.temporaryCredentialExpiresAtUtc,
+          },
+          returnFocusTo: formReturnFocusTo,
+        });
+      }
       setFormReturnFocusTo(null);
       setFormOpen(false);
-      await load(applied, "Conta criada com sucesso.");
+      await load(
+        applied,
+        created.authenticationMethod === "Google"
+          ? "Conta criada com sucesso. O acesso será pelo Google, sem senha local."
+          : "Conta criada com sucesso.",
+      );
     } catch (error) {
       const description = describeApiError(error);
       const fieldErrors = createFieldErrors(error);
@@ -244,7 +255,13 @@ export function useUserAccounts() {
     account: UserAccount,
     trigger?: HTMLElement | null,
   ) {
-    if (pendingAction || status !== "ready" || !account.active) return;
+    if (
+      pendingAction ||
+      status !== "ready" ||
+      !account.active ||
+      account.authenticationMethod === "Google"
+    )
+      return;
     setResetError(null);
     setResetReturnFocusTo(trigger ?? null);
     setResetTarget(account);
@@ -332,7 +349,42 @@ export function useUserAccounts() {
     }
   }
 
+  const profileChange = useAccountProfileChange({
+    pendingAction,
+    ready: status === "ready",
+    setPendingAction,
+    onReload: () => void load(applied),
+    onDenied: (message) => {
+      clearSensitiveTransientState();
+      setStatus("denied");
+      setErrorMessage(message);
+    },
+    onSuccess: async (account, result, trigger) => {
+      setNotice(null);
+      if (
+        result.temporaryCredential &&
+        result.temporaryCredentialExpiresAtUtc
+      ) {
+        setCredentialDisclosure({
+          accountId: account.id,
+          accountName: account.name,
+          credential: {
+            temporaryCredential: result.temporaryCredential,
+            temporaryCredentialExpiresAtUtc:
+              result.temporaryCredentialExpiresAtUtc,
+          },
+          returnFocusTo: trigger,
+        });
+      }
+      await load(
+        applied,
+        `Perfil alterado para ${profileLabels[result.currentProfileName]}. As sessões anteriores da conta foram encerradas.`,
+      );
+    },
+  });
+
   return {
+    profileChange,
     applyFilters,
     changeAccountState,
     closeCredentialDisclosure,

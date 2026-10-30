@@ -9,6 +9,8 @@ const validInstant = z
 export const userAccountSchema = z
   .object({
     active: z.boolean(),
+    authenticationMethod: z.enum(["Local", "Google"]),
+    externalIdentityLinked: z.boolean(),
     createdAtUtc: validInstant,
     email: z.email().max(254),
     id: z.number().int().positive(),
@@ -33,13 +35,47 @@ export const userAccountPageSchema = z
 
 export const createdUserAccountSchema = z
   .object({
+    authenticationMethod: z.enum(["Local", "Google"]),
     email: z.email().max(254),
     id: z.number().int().positive(),
     profileName: z.enum(profileNames),
-    temporaryCredential: z.string().min(1),
-    temporaryCredentialExpiresAtUtc: validInstant,
+    temporaryCredential: z.string().min(1).nullable(),
+    temporaryCredentialExpiresAtUtc: validInstant.nullable(),
   })
-  .strict();
+  .strict()
+  .refine(consistentCredential);
+
+function consistentCredential(value: {
+  authenticationMethod: "Local" | "Google";
+  temporaryCredential: string | null;
+  temporaryCredentialExpiresAtUtc: string | null;
+}) {
+  return value.authenticationMethod === "Local"
+    ? value.temporaryCredential !== null &&
+        value.temporaryCredentialExpiresAtUtc !== null
+    : value.temporaryCredential === null &&
+        value.temporaryCredentialExpiresAtUtc === null;
+}
+
+export const changedAccountProfileSchema = z
+  .object({
+    previousProfileName: z.enum(profileNames),
+    currentProfileName: z.enum(profileNames),
+    authenticationMethod: z.enum(["Local", "Google"]),
+    temporaryCredential: z.string().min(1).nullable(),
+    temporaryCredentialExpiresAtUtc: validInstant.nullable(),
+  })
+  .strict()
+  .refine(consistentCredential);
+
+export const changeAccountProfileFormSchema = z.object({
+  profileName: z.enum(profileNames),
+  reason: z
+    .string()
+    .trim()
+    .min(10, "Informe uma justificativa de 10 a 500 caracteres.")
+    .max(500, "Informe uma justificativa de 10 a 500 caracteres."),
+});
 
 export const temporaryCredentialSchema = z
   .object({
