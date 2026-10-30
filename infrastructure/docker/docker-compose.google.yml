@@ -1,0 +1,16 @@
+# Opt-in: combine only with the production Compose and a compatible release.
+services:
+  backend:
+    environment:
+      Authentication__Google__Enabled: "true"
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:?Defina GOOGLE_CLIENT_ID do cliente web de homologacao}
+      Authentication__Google__ClientSecretFile: /run/secrets/google-client-secret
+      Authentication__Google__CallbackPath: /signin-google
+      Authentication__Google__FrontendCompletionPath: /login
+    secrets:
+      - source: google-client-secret
+        target: google-client-secret
+
+secrets:
+  google-client-secret:
+    file: ${GOOGLE_CLIENT_SECRET_FILE:?Defina GOOGLE_CLIENT_SECRET_FILE fora do repositorio}

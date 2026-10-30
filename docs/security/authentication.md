@@ -124,6 +124,10 @@ não é uma tela, não deve ser aberta manualmente e continua protegida por `sta
 nonce, cookie de correlação de curta duração e HTTPS. Cada ambiente usa host,
 cliente e segredo próprios.
 
+O [roteiro de configuração Google em homologação](../operations/google-oidc-setup.md)
+descreve o cliente web, o segredo por arquivo, o override Compose opcional e o
+ensaio necessário para distinguir configuração pronta de login homologado.
+
 ## Integração do frontend
 
 A Issue #117 aplica essa decisão no frontend React. O formulário usa e-mail e

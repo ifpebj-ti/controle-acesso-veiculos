@@ -110,9 +110,18 @@ Variáveis previstas:
 Authentication__Google__Enabled
 Authentication__Google__ClientId
 Authentication__Google__ClientSecret
+Authentication__Google__ClientSecretFile
 Authentication__Google__CallbackPath
 Authentication__Google__FrontendCompletionPath
 ```
+
+Na implantação conteinerizada compatível, o segredo é fornecido por
+`Authentication__Google__ClientSecretFile`, montado somente leitura e fora do
+repositório. O valor direto e o caminho não podem coexistir. O override
+`docker-compose.google.yml` ativa essa configuração explicitamente; o
+[roteiro operacional](../../operations/google-oidc-setup.md) descreve o cliente
+web e os testes. A listagem do valor direto acima documenta a compatibilidade
+da API, não uma recomendação de armazenamento em variáveis do contêiner.
 
 Habilitar o provedor sem configuração completa deve impedir o startup. O deploy
 deve primeiro aplicar a migration, provisionar segredos, testar as contas
