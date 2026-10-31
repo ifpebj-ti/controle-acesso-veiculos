@@ -8,6 +8,13 @@ from its first published release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Return `Local`/`Google` strings for `authenticationMethod` in administrative
+  account listings, consistently with account creation and profile changes.
+  Preserve pagination and all existing public fields without changing the
+  domain, authentication policy or global JSON converters.
+
 ## [0.4.0] - 2026-10-22
 
 ### Added
