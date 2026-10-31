@@ -299,3 +299,17 @@ segredo. O acesso administrativo local e as regras de perfil não são alterados
 
 Referência do middleware:
 [OpenIdConnectOptions — Microsoft](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.authentication.openidconnect.openidconnectoptions).
+
+## Contrato HTTP do método de autenticação nas contas
+
+A listagem administrativa `GET /users`, a criação `POST /users` e a alteração
+`PUT /users/{id}/profile` representam `authenticationMethod` como texto `Local`
+ou `Google`. A API mapeia o enum interno para o DTO HTTP; valores numéricos do
+domínio não compõem esse contrato público. `externalIdentityLinked` é booleano
+e informa somente a existência do vínculo, nunca o `subject` ou um token Google.
+Paginação, filtros e demais campos públicos da listagem são preservados.
+
+A Issue #542 corrige a serialização numérica identificada no ensaio real do
+candidato frontend #530, que valida esse campo estritamente. A regressão integrada
+verifica o JSON de contas Local e Google e o conjunto de propriedades expostas.
+Não há mudança de perfil, persistência ou regra de autenticação nesta correção.
