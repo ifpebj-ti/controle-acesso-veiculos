@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 3.7
+**Versão:** 3.8
 
-**Data de referência:** 25 de outubro de 2026
+**Data de referência:** 31 de outubro de 2026
 
-**Rastreabilidade:** Issues #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218, #220, #227, #251, #258, #355, #441, #448 e #469
+**Rastreabilidade:** Issues #537, #540 e #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218, #220, #227, #251, #258, #355, #441, #448 e #469
 
 ## Objetivo e limites
 
@@ -18,13 +18,13 @@ Esta modelagem identifica riscos de segurança e privacidade no desenho atual e
 planejado do sistema. Ela cobre frontend, API, PostgreSQL, containers, GitHub,
 CI/CD, operação local, homologação técnica na OCI e backups.
 
-Não são considerados implementados:
+Permanecem fora da comprovação de prontidão institucional:
 
 - matriz definitiva de autorização;
 - auditoria transversal e imutável;
-- demais endpoints funcionais além dos fluxos geral, correção descritiva, institucional, consultas históricas e catálogos de frota e motoristas;
+- homologação institucional dos fluxos integrados, incluindo contas, eventos, auditoria e relatórios; a existência de endpoints e testes não equivale ao aceite observado;
 - ambiente institucional de produção;
-- DNS público e certificado confiável para a homologação;
+- renovação automática do certificado da homologação e domínio institucional definitivo;
 - backup protegido de produção, política de recuperação e contingência;
 - collector, armazenamento, painéis, alertas e resposta operacional de observabilidade.
 
@@ -166,7 +166,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-10 | Information disclosure             | PostgreSQL publicado em interface de rede inadequada                                                               |   2 |   3 |     6 | Não publicar banco, firewall, rede privada e exposição pública exclusiva pelo Load Balancer — #25, #382 e #468                                                                                                                                                                                                          | Mitigado na homologação técnica; produção ainda não implantada                                                                                                                                               |
 | TM-11 | Denial of service                  | Payload, consulta cara ou geração de relatório esgota API ou banco                                                 |   2 |   2 |     4 | Limite de payload, período, paginação, volume de exportação, timeout, rate limiting, índices e métricas medidos — #31, #49, #59, #63, #69, #78, #102 e #441                                                                                                                                                             | Limite global de 1 MiB, consultas paginadas, período máximo de 31 dias, exportação limitada a 1.000 registros e rate limit por Administrador; timeout dedicado e calibração com carga permanecem pendentes   |
 | TM-12 | Denial of service                  | Falha de rede, API ou PostgreSQL interrompe a portaria                                                             |   3 |   3 |     9 | Readiness, smoke test integrado, telemetria OTLP, monitoramento, backup e contingência reconciliável — #25, #30, #92 e #102                                                                                                                                                                                             | Inicialização integrada verificada e sinais exportáveis configurados; collector, alertas, reconciliação e validação institucional estão pendentes                                                            |
-| TM-13 | Elevation of privilege             | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido                       |   3 |   3 |     9 | Políticas explícitas, deny-by-default, ciclo de contas, correção, consultas históricas, auditoria e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63, #65, #73, #78 e #83                                                                                                            | Catálogo de eventos separa leitura operacional de gestão por Transporte/Administração; matriz final pendente                                                                                                 |
+| TM-13 | Elevation of privilege             | Usuário comum executa operação administrativa, corrige registro ou acessa histórico indevido                       |   3 |   3 |     9 | Políticas explícitas, deny-by-default, ciclo de contas, correção, consultas históricas, auditoria e leitura/gestão de catálogos separadas e testes por perfil — #29, #55, #57, #59, #63, #65, #73, #78 e #83                                                                                                            | Catálogo de eventos mantém leitura aos quatro perfis e gestão somente ao Administrador conforme a API; matriz institucional final pendente                                                                   |
 | TM-14 | Elevation of privilege             | Container executado como root amplia impacto de exploração                                                         |   2 |   3 |     6 | Usuário não privilegiado, filesystem e capabilities restritos — #25                                                                                                                                                                                                                                                     | Planejado                                                                                                                                                                                                    |
 | TM-15 | Information disclosure             | Backup desprotegido expõe dados e histórico                                                                        |   2 |   3 |     6 | Manifesto SHA-256 local; configuração reproduzível para OCI Object Storage privado, Vault, instance principal, MFA, separação IAM, retenção e alerta — #30, #67, #308 e #311                                                                                                                                            | Integridade acidental e restauração mitigadas localmente; aplicação na tenancy, exercício e comprovação da proteção em produção permanecem pendentes                                                         |
 | TM-16 | Information disclosure             | Retenção indefinida mantém dados pessoais sem finalidade                                                           |   2 |   3 |     6 | Cinco anos para registros operacionais e papel, 90 dias para logs e 35 dias para backups; descarte rastreável — #30                                                                                                                                                                                                     | Prazo operacional aprovado; revisão arquivística e implementação do expurgo seguro pendentes                                                                                                                 |
@@ -177,10 +177,10 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-21 | Spoofing / Tampering               | Site externo induz o navegador autenticado a renovar ou encerrar uma sessão por CSRF                               |   2 |   3 |     6 | `SameSite=Strict`, caminho mínimo, token antifalsificação vinculado ao cookie e arquitetura same-origin — #190 e #191                                                                                                                                                                                                   | Mitigado no fluxo integrado; validação autenticada pelo hostname público permanece pendente — #519                                                                                                           |
 | TM-22 | Tampering / Information disclosure | Conteúdo não autorizado é carregado ou a aplicação é incorporada por uma página externa                            |   2 |   3 |     6 | CSP same-origin, bloqueio de frames, MIME sniffing desabilitado, política de referência, permissões mínimas e baseline DAST passiva — #196 e #227                                                                                                                                                                       | HTTPS, HSTS e cabeçalhos foram verificados na superfície pública; fluxos autenticados e nova execução do DAST no hostname permanecem pendentes                                                               |
 | TM-23 | Tampering / Information disclosure | Consulta de recorrentes enumera pessoas ou cliente adultera os identificadores e textos do vínculo selecionado     |   2 |   3 |     6 | Política operacional, termo entre 3 e 80 caracteres, limite fixo de 10 resultados, rate limiting global por usuário, resposta sem documento/e-mail/histórico e revalidação canônica do par no servidor — #213                                                                                                           | Mitigado no backend; calibração com uso real e integração do frontend permanecem pendentes                                                                                                                   |
-| TM-24 | Spoofing / Information disclosure  | Tablet compartilhado permanece autenticado sem operador e permite uso da sessão por outra pessoa                   |   3 |   3 |     9 | Inatividade de 15 minutos, duração absoluta de 12 horas, referência e prazos emitidos pelo servidor, logout explícito, coordenação entre abas e renovação condicionada a atividade humana — #268                                                                                                                        | Política e contrato do servidor implementados; integração do frontend e validação no tablet da portaria pendentes                                                                                            |
+| TM-24 | Spoofing / Information disclosure  | Tablet compartilhado permanece autenticado sem operador e permite uso da sessão por outra pessoa                   |   3 |   3 |     9 | Inatividade de 15 minutos, duração absoluta de 12 horas, referência e prazos emitidos pelo servidor, logout explícito, coordenação entre abas e renovação condicionada a atividade humana — #268                                                                                                                        | Política do servidor e integração de inatividade do frontend implementadas; observação no tablet real da portaria e aceite institucional permanecem pendentes                                                |
 | TM-25 | Tampering / Denial of service      | Perda, divergência ou exposição do key ring invalida tokens antifalsificação ou expõe material protegido           |   2 |   3 |     6 | Key ring durável compartilhado, `ApplicationName` estável, XML protegido por certificado X.509 externo, falha fechada de configuração e ensaio de substituição — #355                                                                                                                                                   | Mitigado no Compose e na API; provisionamento definitivo em OCI Vault/File Storage e exercício operacional permanecem pendentes                                                                              |
-| TM-26 | Spoofing / Elevation of privilege  | Uma conta Google é vinculada ao usuário local errado ou recebe perfil apenas por possuir e-mail válido             |   2 |   3 |     6 | Pré-autorização local exata, `email_verified`, vínculo único pelo `sub`, conflito fechado, perfil exclusivamente local, método explícito por conta, separação entre Google operacional e login local administrativo — #448 e #469                                                                                       | Controles de domínio e persistência implementados; gestão completa pelo Administrador e homologação com o provedor real permanecem pendentes                                                                 |
-| TM-27 | Spoofing / Tampering / Disclosure  | Callback OIDC sofre replay/CSRF, open redirect ou expõe código, token e segredo no navegador, URL ou log           |   2 |   3 |     6 | Authorization Code + PKCE, `state`, `nonce`, caminhos locais fixos, cookie externo curto, `SaveTokens=false`, callback no backend e ausência de tokens na URL/storage/auditoria — #448                                                                                                                                  | Base técnica implementada e desabilitada por padrão; credenciais Google, callback com o provedor real, teste de replay e integração do frontend permanecem pendentes                                         |
+| TM-26 | Spoofing / Elevation of privilege  | Uma conta Google é vinculada ao usuário local errado ou recebe perfil apenas por possuir e-mail válido             |   2 |   3 |     6 | Pré-autorização local exata, `email_verified`, vínculo único pelo `sub`, conflito fechado, perfil exclusivamente local, método explícito por conta, separação entre Google operacional e login local administrativo — #448 e #469                                                                                       | Controles de domínio, persistência e governança no backend implementados; integração administrativa candidata no PR #530 e homologação com o provedor real permanecem pendentes                              |
+| TM-27 | Spoofing / Tampering / Disclosure  | Callback OIDC sofre replay/CSRF, open redirect ou expõe código, token e segredo no navegador, URL ou log           |   2 |   3 |     6 | Authorization Code + PKCE, `state`, `nonce`, caminhos locais fixos, cookie externo curto, `SaveTokens=false`, callback no backend e ausência de tokens na URL/storage/auditoria — #448                                                                                                                                  | Base implementada e desabilitada por padrão; cliente Google cadastrado e regressões locais no PR #538; callback real, validação de ID token, replay de código e frontend homologado permanecem pendentes     |
 
 ## Controles existentes verificados
 
@@ -266,9 +266,11 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 O provisionamento da homologação reduziu o risco de exposição direta da origem: a
 VM está privada, a entrada passa por Load Balancer e WAF e a release versionada
 respondeu aos health checks. O risco residual para uso institucional continua
-alto porque o certificado público confiável, DNS, observabilidade operada,
+alto porque renovação automática do certificado, observabilidade operada,
 calibração de falsos positivos, backup externo e recuperação ainda não foram
-comprovados. A base OTLP não substitui collector protegido, painéis, alertas ou
+comprovados. O hostname temporário e seu certificado público já possuem evidência
+datada de funcionamento; isso não comprova continuidade de renovação nem autoriza
+o domínio institucional definitivo. A base OTLP não substitui collector protegido, painéis, alertas ou
 resposta operacional. O ensaio local de backup não comprova Object Storage, Vault,
 PITR, RPO de uma hora, RTO de quatro horas ou contingência institucional. Portanto,
 a homologação técnica não deve ser tratada como produção nem receber dados reais.
@@ -308,6 +310,28 @@ Revisar esta modelagem quando ocorrer:
 - infraestrutura real da portaria;
 - comprovação do RPO de uma hora e RTO de quatro horas;
 - substituto do responsável pelo processo e referência de proteção de dados;
-- DNS e certificado público confiável para a homologação;
+- renovação automática do certificado público e definição do domínio institucional definitivo;
 - calibração do WAF, logs operacionais, rollback e piloto acompanhado;
 - backup externo e exercício de recuperação na OCI.
+
+### Evidências e limites desta revisão — Issue #540
+
+Esta revisão usa a `main` em `5bc08ef` e a verificação pública de 30/10/2026:
+HTTPS confiável no hostname temporário, TLS 1.3 e readiness 200. A checagem
+pontual não comprova renovação automática, disponibilidade futura ou operação
+institucional. A release implantada continua `0.4.0`, com ajuste temporário do
+proxy; merges posteriores não alteram automaticamente a VM.
+
+O cadastro externo do cliente Google foi concluído em 30/10/2026, com segredo
+fora do Git. Os sete testes incorporados pelo PR #538 verificam PKCE, cookies,
+state/correlação inválidos e caminhos de negação com provedor fictício. Eles não
+comprovam autenticação real, assinatura/nonce de ID token recebido nem replay de
+código bem-sucedido. Essas evidências e os seus limites estão em
+[autenticação](authentication.md#evidência-automatizada-do-protocolo-google--issue-448)
+e no [roteiro Google](../operations/google-oidc-setup.md).
+
+O [runbook de contingência](../operations/google-identity-contingency.md) acompanha
+a decisão dos quatro perfis: Administrador Local e operadores Google, sem quinto
+perfil ou conversão emergencial. A reconciliação continua na Issue #100. Nenhuma
+pontuação STRIDE foi reduzida nesta revisão documental e nenhum novo pentest ou
+aceite institucional foi declarado.
