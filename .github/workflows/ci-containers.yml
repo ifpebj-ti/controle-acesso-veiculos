@@ -243,6 +243,35 @@ jobs:
           ' <<< "$(docker compose --file docker-compose.production.yml config --format json)" \
             > /dev/null
 
+      - name: Validate optional Google production configuration
+        working-directory: infrastructure/docker
+        shell: bash
+        run: |
+          export GOOGLE_CLIENT_ID='fictional-ci.apps.googleusercontent.com'
+          export GOOGLE_CLIENT_SECRET_FILE='./secrets/fictional-google-secret.txt'
+          jq --exit-status '
+            .services.backend.environment.Authentication__Google__Enabled == "true"
+            and .services.backend.environment.Authentication__Google__ClientId == "fictional-ci.apps.googleusercontent.com"
+            and .services.backend.environment.Authentication__Google__ClientSecret == null
+            and .services.backend.environment.Authentication__Google__ClientSecretFile == "/run/secrets/google-client-secret"
+            and .services.backend.environment.Authentication__Google__CallbackPath == "/signin-google"
+            and .services.backend.environment.Authentication__Google__FrontendCompletionPath == "/login"
+            and (.services.backend.ports == null)
+            and any(.services.backend.secrets[]; .source == "google-client-secret" and .target == "google-client-secret")
+          ' <<< "$(docker compose -f docker-compose.production.yml -f docker-compose.google.yml config --format json)" > /dev/null
+
+          unset GOOGLE_CLIENT_ID
+          if docker compose -f docker-compose.production.yml -f docker-compose.google.yml config --quiet 2>/dev/null; then
+            echo 'Google configuration must reject a missing client ID.' >&2
+            exit 1
+          fi
+          export GOOGLE_CLIENT_ID='fictional-ci.apps.googleusercontent.com'
+          unset GOOGLE_CLIENT_SECRET_FILE
+          if docker compose -f docker-compose.production.yml -f docker-compose.google.yml config --quiet 2>/dev/null; then
+            echo 'Google configuration must reject a missing secret file.' >&2
+            exit 1
+          fi
+
       - name: Start integrated stack
         working-directory: infrastructure/docker
         run: docker compose up --build --detach
