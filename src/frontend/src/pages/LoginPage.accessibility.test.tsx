@@ -45,10 +45,10 @@ describe("LoginPage accessibility", () => {
     const shell = container.querySelector(".login-shell");
     const composition = container.querySelector(".login-composition");
 
-    expect(main).toHaveClass("login-page", "overflow-x-hidden");
+    expect(main).toHaveClass("login-page", "min-h-dvh", "overflow-x-hidden");
     expect(main).not.toHaveClass("overflow-hidden");
-    expect(shell).toHaveClass("min-h-svh", "w-full");
-    expect(composition).toHaveClass("min-h-svh", "w-full");
+    expect(shell).toHaveClass("min-h-dvh", "w-full");
+    expect(composition).toHaveClass("min-h-dvh", "w-full");
     expect(composition).not.toHaveClass("rounded-[1.75rem]", "shadow-2xl");
   });
 

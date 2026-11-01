@@ -1986,6 +1986,20 @@ button:disabled {
   background: var(--ui-primary);
 }
 
+/* Match the login and its document ancestors as browser controls expand/collapse. */
+body:has(.login-page),
+#root:has(.login-page) {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.login-page,
+.login-shell,
+.login-composition {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .login-page {
   isolation: isolate;
   background: var(--ui-background);
@@ -2247,6 +2261,11 @@ button:disabled {
 }
 
 @media (min-width: 1024px) {
+  .login-visual {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   .login-visual-divider--mobile {
     display: none;
   }

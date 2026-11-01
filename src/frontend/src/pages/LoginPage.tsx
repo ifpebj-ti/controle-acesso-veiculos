@@ -193,14 +193,14 @@ export function LoginPage() {
   };
 
   return (
-    <main className="login-page relative min-h-svh overflow-x-hidden bg-background text-text">
+    <main className="login-page relative min-h-dvh overflow-x-hidden bg-background text-text">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-1 bg-primary"
       />
 
-      <div className="login-shell relative z-10 flex min-h-svh w-full items-stretch">
-        <section className="login-composition grid min-h-svh w-full overflow-hidden bg-surface-raised lg:grid-cols-[minmax(34rem,54%)_minmax(28rem,46%)]">
+      <div className="login-shell relative z-10 flex min-h-dvh w-full items-stretch">
+        <section className="login-composition grid min-h-dvh w-full overflow-hidden bg-surface-raised lg:grid-cols-[minmax(34rem,54%)_minmax(28rem,46%)]">
           <div className="login-form-panel order-2 flex min-h-full flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:order-1 lg:px-[clamp(4rem,7vw,9rem)] lg:py-12">
             <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
 
@@ -360,7 +360,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden px-7 pb-20 pt-7 text-visual-text sm:min-h-[30rem] sm:px-10 sm:pb-40 sm:pt-10 lg:order-2 lg:min-h-svh lg:px-12 lg:py-12 lg:pl-40">
+          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden px-7 pb-20 pt-7 text-visual-text sm:min-h-[30rem] sm:px-10 sm:pb-40 sm:pt-10 lg:order-2 lg:min-h-dvh lg:px-12 lg:py-12 lg:pl-40">
             <img
               alt=""
               className="login-visual-photo"
