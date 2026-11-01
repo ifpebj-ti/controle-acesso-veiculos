@@ -132,7 +132,7 @@ describe("LoginPage accessibility", () => {
       name: "Continuar com Google",
     });
     const administrativeAccess = screen.getByRole("button", {
-      name: "Acesso administrativo",
+      name: "Entrar com usuário e senha",
     });
     expect(google.compareDocumentPosition(administrativeAccess)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -175,7 +175,7 @@ describe("LoginPage accessibility", () => {
 
     expect(
       await screen.findByText(
-        "Utilize a conta individual cadastrada pelo administrador.",
+        "O acesso é permitido somente a contas previamente autorizadas pelo Administrador.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -199,7 +199,7 @@ describe("LoginPage accessibility", () => {
     await expectNoSeriousAccessibilityViolations(container);
 
     await user.click(
-      screen.getByRole("button", { name: "Acesso administrativo" }),
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
     );
     await expectNoSeriousAccessibilityViolations(container);
   });

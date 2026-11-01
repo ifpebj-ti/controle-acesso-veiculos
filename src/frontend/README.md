@@ -43,8 +43,14 @@ A versão atual consulta `GET /auth/providers` sem usar uma variável de build
 como fonte de verdade. Quando a API habilita o Google, a ação principal navega
 completamente para `/auth/google/start`; Porteiro, Vigilante e Setor de
 Transporte concluem o fluxo no backend. O formulário de e-mail e senha permanece
-fechado até a ação explícita “Acesso administrativo” e é exclusivo do perfil
-Administrador. O fluxo geral de veículos também consome a API para registrar
+fechado até a ação explícita “Entrar com usuário e senha”, indicada como
+“Acesso administrativo”, e é exclusivo do perfil Administrador. Essa ação
+substitui a visualização Google pelo formulário de e-mail e senha, sem nova
+rota, e posiciona o foco no e-mail. “Voltar” desmonta o formulário, apaga a senha
+e devolve o foco à ação que o abriu. Contas Google podem ser pessoais ou
+institucionais, desde que estejam ativas e previamente autorizadas pelo
+Administrador; identidade Google não concede acesso nem perfil.
+O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
 o catálogo de motoristas lista, autoriza e desativa autorizações pela API. A
@@ -61,8 +67,8 @@ mesma tela também consulta a trilha de auditoria em uma área separada.
 Fluxo sugerido para validação local:
 
 1. iniciar a API e acessar `/login`; com Google desabilitado, confirmar que a
-   ação principal não é apresentada e abrir explicitamente “Acesso
-   administrativo” para usar uma conta local fictícia do perfil Administrador;
+   ação principal não é apresentada e escolher explicitamente “Entrar com
+   usuário e senha” para usar uma conta local fictícia do perfil Administrador;
 2. em um ambiente HTTPS com OAuth configurado, confirmar que “Continuar com
    Google” faz uma navegação completa e que e-mail e perfil exibidos depois do
    retorno vieram exclusivamente da sessão local restaurada pela API;

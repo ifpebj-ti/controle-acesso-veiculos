@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "../../../components/ui/Button";
@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from "../types";
 
 interface AdministrativeLoginFormProps {
   externalDescriptionId?: string;
+  onBack: () => void;
   onAuthenticated: (user: AuthenticatedUser) => void;
 }
 
@@ -29,9 +30,11 @@ function loginErrorMessage(error: unknown) {
 
 export function AdministrativeLoginForm({
   externalDescriptionId,
+  onBack,
   onAuthenticated,
 }: AdministrativeLoginFormProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const submissionInFlight = useRef(false);
   const { login } = useSession();
   const {
     control,
@@ -52,16 +55,26 @@ export function AdministrativeLoginForm({
   ]
     .filter(Boolean)
     .join(" ");
-  const submitLogin = handleSubmit(async (values) => {
+  const submitLogin = async (values: LoginFormValues) => {
+    if (submissionInFlight.current) return;
+    submissionInFlight.current = true;
     try {
       onAuthenticated(await login(values));
     } catch (error) {
       setError("root.server", { message: loginErrorMessage(error) });
+    } finally {
+      submissionInFlight.current = false;
     }
-  });
+  };
 
   return (
-    <form className="mt-5 space-y-5" noValidate onSubmit={submitLogin}>
+    <form
+      className="mt-5 space-y-5"
+      noValidate
+      onSubmit={(event) => {
+        void handleSubmit(submitLogin)(event);
+      }}
+    >
       {errors.root?.server?.message && (
         <div
           className="rounded-xl border border-danger-border bg-danger-surface px-4 py-3 text-sm font-medium text-danger-text"
@@ -191,6 +204,14 @@ export function AdministrativeLoginForm({
         )}
         {isSubmitting ? "Entrando..." : "Entrar"}
         {!isSubmitting && <Icon name="arrow-right" size={20} />}
+      </Button>
+      <Button
+        className="w-full"
+        disabled={isSubmitting}
+        onClick={onBack}
+        variant="neutral"
+      >
+        Voltar
       </Button>
     </form>
   );

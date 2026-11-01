@@ -19,7 +19,10 @@ vi.mock(
 );
 
 import { AppearanceProvider } from "../features/appearance";
-import { SessionContext } from "../features/authentication/session/SessionContext";
+import {
+  SessionContext,
+  type SessionContextValue,
+} from "../features/authentication/session/SessionContext";
 import type { AuthenticatedUser } from "../features/authentication";
 import { LoginPage } from "./LoginPage";
 
@@ -30,9 +33,11 @@ function LocationState() {
 
 function renderLogin({
   initialEntry = "/login",
+  login = vi.fn<SessionContextValue["login"]>(),
   restoreExternalSession = vi.fn<() => Promise<AuthenticatedUser>>(),
 }: {
   initialEntry?: string;
+  login?: SessionContextValue["login"];
   restoreExternalSession?: () => Promise<AuthenticatedUser>;
 } = {}) {
   return render(
@@ -41,7 +46,7 @@ function renderLogin({
         value={{
           completePasswordChange: vi.fn(),
           expiresAtUtc: null,
-          login: vi.fn(),
+          login,
           logout: vi.fn(),
           restoreExternalSession,
           sessionEndReason: null,
@@ -75,6 +80,109 @@ beforeEach(() => {
 });
 
 describe("LoginPage Google and administrative access", () => {
+  it("switches exclusive views, clears credentials and restores keyboard focus", async () => {
+    authenticationService.getAuthenticationProviders.mockResolvedValue({
+      googleEnabled: true,
+    });
+    const user = userEvent.setup();
+    renderLogin();
+
+    await screen.findByRole("button", { name: "Continuar com Google" });
+    const administrativeAccess = screen.getByRole("button", {
+      name: "Entrar com usuário e senha",
+    });
+    administrativeAccess.focus();
+    await user.keyboard("{Enter}");
+
+    expect(
+      screen.getByRole("heading", { name: "Acesso administrativo" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Continuar com Google" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Entrar com usuário e senha" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("E-mail:")).toHaveFocus();
+    await user.type(screen.getByLabelText("E-mail:"), "admin@example.test");
+    await user.type(
+      screen.getByLabelText("Senha:"),
+      "Fictitious-test-only-461!",
+    );
+    await user.click(screen.getByRole("button", { name: "Voltar" }));
+
+    expect(screen.queryByLabelText("Senha:")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+    ).toHaveFocus();
+    expect(
+      screen.getByRole("button", { name: "Continuar com Google" }),
+    ).toBeInTheDocument();
+    await user.keyboard("{Enter}");
+    expect(screen.getByLabelText("E-mail:")).toHaveFocus();
+    expect(screen.getByLabelText("Senha:")).toHaveValue("");
+  });
+
+  it("submits once while pending and keeps the administrative view on failure", async () => {
+    authenticationService.getAuthenticationProviders.mockResolvedValue({
+      googleEnabled: true,
+    });
+    let rejectLogin!: (reason: unknown) => void;
+    const login = vi.fn<SessionContextValue["login"]>().mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          rejectLogin = reject;
+        }),
+    );
+    const user = userEvent.setup();
+    renderLogin({ login });
+    await user.click(
+      await screen.findByRole("button", { name: "Entrar com usuário e senha" }),
+    );
+    await user.type(screen.getByLabelText("E-mail:"), "admin@example.test");
+    await user.type(
+      screen.getByLabelText("Senha:"),
+      "Fictitious-test-only-461!",
+    );
+    await user.dblClick(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(login).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Entrando..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Voltar" })).toBeDisabled();
+    rejectLogin(new Error("network unavailable"));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByLabelText("E-mail:")).toHaveValue("admin@example.test");
+    expect(
+      screen.queryByRole("button", { name: "Continuar com Google" }),
+    ).not.toBeInTheDocument();
+    expect(login).toHaveBeenCalledOnce();
+  });
+
+  it("announces a failure to start Google and permits an explicit retry", async () => {
+    authenticationService.getAuthenticationProviders.mockResolvedValue({
+      googleEnabled: true,
+    });
+    authenticationService.startGoogleAuthentication.mockImplementationOnce(
+      () => {
+        throw new Error("navigation unavailable");
+      },
+    );
+    const user = userEvent.setup();
+    renderLogin();
+    await user.click(
+      await screen.findByRole("button", { name: "Continuar com Google" }),
+    );
+    const alert = await screen.findByRole("alert");
+    await waitFor(() => expect(alert).toHaveFocus());
+    expect(alert).toHaveTextContent("Não foi possível iniciar o acesso agora.");
+    await user.click(
+      screen.getByRole("button", { name: "Continuar com Google" }),
+    );
+    expect(
+      authenticationService.startGoogleAuthentication,
+    ).toHaveBeenCalledTimes(2);
+  });
+
   it("shows Google as the primary action only when the API enables it", async () => {
     authenticationService.getAuthenticationProviders.mockResolvedValue({
       googleEnabled: true,
@@ -108,7 +216,7 @@ describe("LoginPage Google and administrative access", () => {
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       ).toHaveFocus(),
     );
     expect(
@@ -137,12 +245,14 @@ describe("LoginPage Google and administrative access", () => {
     expect(screen.queryByLabelText("E-mail:")).not.toBeInTheDocument();
 
     await user.click(
-      screen.getByRole("button", { name: "Acesso administrativo" }),
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
     );
 
     expect(screen.getByLabelText("E-mail:")).toHaveFocus();
     expect(
-      screen.getByText("Exclusivo para contas do perfil Administrador."),
+      screen.getByText(
+        "Entre com e-mail e senha. Exclusivo para contas do perfil Administrador.",
+      ),
     ).toBeInTheDocument();
   });
 

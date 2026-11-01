@@ -130,7 +130,9 @@ A Issue #461 integra a decisão no frontend React. A tela consulta
 `GET /auth/providers` sem cache e só apresenta “Continuar com Google” quando a
 resposta validada informa `googleEnabled: true`. O início usa navegação completa
 para `/auth/google/start`, sem `fetch`, popup ou SDK Google. O formulário de
-e-mail e senha só aparece depois da ação “Acesso administrativo” e permanece
+e-mail e senha só aparece depois da ação “Entrar com usuário e senha”, indicada
+como “Acesso administrativo”, em uma visualização exclusiva na mesma rota. A
+ação “Voltar” apaga o formulário e restaura o foco ao acionador. O acesso permanece
 exclusivo do perfil Administrador; o backend continua impondo o método aceito.
 
 No retorno `/login?status=success`, o frontend remove o parâmetro e restaura a
