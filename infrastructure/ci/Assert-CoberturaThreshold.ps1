@@ -27,17 +27,25 @@ if ($reports.Count -ne 1) {
 }
 
 [xml] $coverage = Get-Content -LiteralPath $reports[0].FullName
-$package = @($coverage.coverage.packages.package) |
-  Where-Object { $_.name -eq $PackageName } |
-  Select-Object -First 1
+$packages = @($coverage.coverage.packages.package | Where-Object { $_.name -eq $PackageName })
 
-if ($null -eq $package) {
-  throw "Package '$PackageName' was not found in '$($reports[0].FullName)'."
+if ($packages.Count -ne 1) {
+  throw "Expected exactly one package '$PackageName', found $($packages.Count)."
 }
+$package = $packages[0]
 
 $culture = [Globalization.CultureInfo]::InvariantCulture
-$lineCoverage = [double]::Parse($package.'line-rate', $culture) * 100
-$branchCoverage = [double]::Parse($package.'branch-rate', $culture) * 100
+$style = [Globalization.NumberStyles]::Float
+$lineRate = [double]::Parse($package.'line-rate', $style, $culture)
+$branchRate = [double]::Parse($package.'branch-rate', $style, $culture)
+
+foreach ($rate in @($lineRate, $branchRate)) {
+  if ([double]::IsNaN($rate) -or [double]::IsInfinity($rate) -or $rate -lt 0 -or $rate -gt 1) {
+    throw "Coverage rates for '$PackageName' must be finite values between 0 and 1."
+  }
+}
+$lineCoverage = $lineRate * 100
+$branchCoverage = $branchRate * 100
 
 Write-Output (
   '{0}: lines {1:N2}% (minimum {2:N2}%), branches {3:N2}% (minimum {4:N2}%)' -f

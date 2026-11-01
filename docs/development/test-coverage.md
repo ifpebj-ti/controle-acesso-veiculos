@@ -50,7 +50,47 @@ para ramificações. Esses valores impedem regressão imediata sem declarar que 
 métricas já atingiram a meta final. Os pisos devem subir junto com testes novos; não
 devem ser reduzidos para acomodar uma mudança.
 
+Em 01/11/2026, após sincronizar o candidato #507 com a main `6a787c3`, a execução
+completa sequencial passou com **585 testes em 57 arquivos**. A remoção já
+incorporada do código de demonstração alterou o denominador, sem retirar código
+adicional do conjunto medido neste incremento:
+
+| Métrica      | Cobertos | Total | Percentual |
+| ------------ | -------: | ----: | ---------: |
+| Linhas       |    3.501 | 3.829 |     91,43% |
+| Instruções   |    3.665 | 4.150 |     88,31% |
+| Funções      |      982 | 1.067 |     92,03% |
+| Ramificações |    2.509 | 3.125 |     80,28% |
+
+O ganho desta medição não deve ser atribuído a novos testes de interface: os
+numeradores permaneceram iguais aos da fotografia anterior. Instruções e
+ramificações continuam abaixo de 90%; a Issue #499 permanece aberta.
+
 ## Backend
+
+### Nova medição após sincronização — 01/11/2026
+
+O candidato #507 foi sincronizado com a main `6a787c3`. A primeira medição
+encontrou regressão de ramificações: domínio 89,71% e aplicação 89,38%. Os pisos
+de 90% foram preservados. Testes adicionais cobrem validação de cotas e limites
+de autorizações de veículos em eventos, recusa de alteração do próprio perfil,
+validação antes de persistência e emissão de credencial temporária apenas para
+Administrador Local. Os testes anteriores foram preservados.
+
+| Camada      | Testes aprovados | Linhas | Ramificações |
+| ----------- | ---------------: | -----: | -----------: |
+| Domain      |              128 | 92,35% |       90,88% |
+| Application |              167 | 93,47% |       90,25% |
+
+Esses valores são medições independentes das duas suítes unitárias no candidato,
+não cobertura consolidada da API, infraestrutura ou fluxos com PostgreSQL.
+
+O verificador de Cobertura agora rejeita valores não finitos, taxas fora de
+0–1, separadores decimais incompatíveis, pacotes duplicados e ausência ou
+ambiguidade de relatórios. Dezesseis cenários de regressão offline exercitam
+aceitação do piso exato e rejeições; seis deles reproduziram aceitação incorreta
+antes da correção. A CI executa o teste do verificador antes de aplicar os pisos.
+Não houve exclusão de código, redução de limite ou alteração funcional.
 
 Execute na raiz do repositório, com o Docker disponível para a suíte de integração:
 

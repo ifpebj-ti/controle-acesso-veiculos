@@ -90,6 +90,10 @@ jobs:
             --coverage-output-format cobertura `
             --results-directory artifacts/coverage-gate/application
 
+      - name: Verify coverage gate rejection cases
+        shell: pwsh
+        run: ./infrastructure/ci/Test-CoberturaThreshold.ps1
+
       - name: Enforce critical coverage ratchet
         shell: pwsh
         run: |
