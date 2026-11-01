@@ -1,4 +1,5 @@
 export { PasswordChangeForm } from "./components/PasswordChangeForm";
+export { canShowPasswordChange } from "./passwordChangeVisibility";
 export { SessionProvider } from "./session/SessionProvider";
 export { useAuthenticatedSession, useSession } from "./session/useSession";
 export {

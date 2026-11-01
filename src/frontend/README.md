@@ -258,8 +258,15 @@ e não pode ser lido pelo frontend. O fluxo implementado:
   a expiração efetiva do access token;
 - encerra imediatamente o estado local no logout e tenta revogar a sessão no
   servidor, informando quando essa confirmação não for possível;
-- permite que qualquer perfil autenticado altere a própria senha por
-  `POST /auth/password`, sem repetir automaticamente essa mutação;
+- oferece a alteração voluntária de senha local somente ao Administrador,
+  por `POST /auth/password`, sem repetir automaticamente essa mutação;
+- omite “Alterar senha” dos menus dos perfis operacionais e redireciona o
+  acesso direto a `/conta/senha` para a visão geral sem montar o formulário;
+  a senha da conta Google é gerenciada no próprio provedor;
+- preserva a troca obrigatória quando a API informa `requiresPasswordChange`,
+  inclusive em sessões locais legadas de ensaio. O contrato de sessão não
+  informa o método da conta; a interface não o deduz da configuração global
+  `googleEnabled`. A API continua validando o método e autorizando cada tentativa;
 - encerra o estado local depois da troca de senha bem-sucedida e solicita uma
   nova entrada, pois o servidor revoga as sessões anteriores;
 - valida obrigatoriamente `user.requiresPasswordChange` no login e na

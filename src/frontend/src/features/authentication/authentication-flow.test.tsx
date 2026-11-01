@@ -1,5 +1,11 @@
 import { StrictMode } from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -256,6 +262,30 @@ function seedRestorableSession() {
 }
 
 describe("authentication flow", () => {
+  it.each<ProfileName>(["Porteiro", "Vigilante", "SetorTransporte"])(
+    "restores %s at a direct password URL without exposing or submitting the form",
+    async (profileName) => {
+      seedRestorableSession();
+      vi.mocked(api.get).mockResolvedValue({
+        data: { requestToken: "test-only-csrf-token" },
+      });
+      const post = vi
+        .spyOn(api, "post")
+        .mockResolvedValue(responseFor(profileName));
+
+      renderRestrictedApplication("/conta/senha");
+
+      const heading = await screen.findByRole("heading", {
+        name: "Painel operacional fictício",
+      });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Alterar senha" }),
+      ).not.toBeInTheDocument();
+      expect(post.mock.calls.map(([url]) => url)).toEqual(["/auth/refresh"]);
+    },
+  );
   it("restores a renewable session before rendering protected content", async () => {
     seedRestorableSession();
     vi.mocked(api.get).mockResolvedValue({
