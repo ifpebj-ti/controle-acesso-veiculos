@@ -49,6 +49,8 @@ export function LoginPage() {
     useState(false);
   const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
   const callbackHandled = useRef(false);
+  const administrativeAccessRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreAdministrativeFocus = useRef(false);
   const statusMessageRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -136,6 +138,15 @@ export function LoginPage() {
     return () => window.clearTimeout(focusTimeout);
   }, [authenticationReturnStatus, providersState, status]);
 
+  useEffect(() => {
+    if (isAdministrativeAccessOpen) {
+      document.querySelector<HTMLElement>("#email")?.focus();
+    } else if (shouldRestoreAdministrativeFocus.current) {
+      shouldRestoreAdministrativeFocus.current = false;
+      administrativeAccessRef.current?.focus();
+    }
+  }, [isAdministrativeAccessOpen]);
+
   if (status === "restoring") {
     return (
       <SessionLoadingState
@@ -161,10 +172,8 @@ export function LoginPage() {
     callbackError ??
     (sessionEndReason ? sessionEndMessage(sessionEndReason) : null);
   const openAdministrativeAccess = () => {
+    shouldRestoreAdministrativeFocus.current = true;
     setIsAdministrativeAccessOpen(true);
-    window.setTimeout(() =>
-      document.querySelector<HTMLElement>("#email")?.focus(),
-    );
   };
   const closeAdministrativeAccess = () => {
     setIsAdministrativeAccessOpen(false);
@@ -200,12 +209,18 @@ export function LoginPage() {
                 <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-primary">
                   Controle de acesso
                 </p>
-                <h1 className="font-display text-4xl font-bold leading-tight text-text sm:text-5xl">
-                  Bem-vindo(a)!
+                <h1
+                  className="font-display text-4xl font-bold leading-tight text-text sm:text-5xl"
+                  id="login-view-title"
+                >
+                  {isAdministrativeAccessOpen
+                    ? "Acesso administrativo"
+                    : "Bem-vindo(a)!"}
                 </h1>
                 <p className="mt-4 max-w-xl text-base leading-7 text-text-muted">
-                  Acesse sua conta para registrar e acompanhar a movimentação de
-                  veículos no campus.
+                  {isAdministrativeAccessOpen
+                    ? "Entre com e-mail e senha. Exclusivo para contas do perfil Administrador."
+                    : "Acesse sua conta para registrar e acompanhar a movimentação de veículos no campus."}
                 </p>
               </header>
 
@@ -221,114 +236,103 @@ export function LoginPage() {
                 </div>
               )}
 
-              <div className="mt-7 w-full max-w-xl">
-                {providersState.status === "loading" && (
-                  <div
-                    aria-live="polite"
-                    className="rounded-xl border border-border bg-surface px-4 py-4 text-sm text-text-muted"
-                    role="status"
-                  >
-                    Verificando as opções de acesso…
-                  </div>
-                )}
-
-                {providersState.status === "ready" &&
-                  providersState.googleEnabled && (
-                    <div>
-                      <p className="mb-3 text-sm leading-6 text-text-muted">
-                        Para Porteiro, Vigilante e Setor de Transporte.
-                      </p>
-                      <Button
-                        aria-busy={isGoogleRedirecting}
-                        className="w-full"
-                        disabled={isGoogleRedirecting}
-                        id="google-login"
-                        onClick={beginGoogleAccess}
-                      >
-                        {isGoogleRedirecting
-                          ? "Redirecionando…"
-                          : "Continuar com Google"}
-                        {!isGoogleRedirecting && (
-                          <Icon name="arrow-right" size={20} />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-
-                {providersState.status === "ready" &&
-                  !providersState.googleEnabled && (
-                    <p
-                      className="rounded-xl border border-border bg-surface px-4 py-4 text-sm text-text-muted"
-                      role="status"
-                    >
-                      O acesso com Google não está disponível neste ambiente.
-                    </p>
-                  )}
-
-                {providersState.status === "unavailable" && (
-                  <div
-                    className="rounded-xl border border-danger-border bg-danger-surface px-4 py-4 text-sm text-danger-text"
-                    role="alert"
-                  >
-                    <p>
-                      Não foi possível verificar as opções de acesso. Tente
-                      novamente.
-                    </p>
-                    <Button
-                      className="mt-3"
-                      id="provider-discovery-retry"
-                      onClick={retry}
-                      variant="secondary"
-                    >
-                      Tentar novamente
-                    </Button>
-                  </div>
-                )}
-              </div>
-
               {!isAdministrativeAccessOpen ? (
-                <div className="mt-6 w-full max-w-xl border-t border-border pt-5">
-                  <Button
-                    aria-expanded="false"
-                    className="w-full"
-                    id="administrative-access-toggle"
-                    onClick={openAdministrativeAccess}
-                    variant="neutral"
-                  >
-                    Acesso administrativo
-                  </Button>
-                </div>
+                <>
+                  <div className="mt-7 w-full max-w-xl">
+                    {providersState.status === "loading" && (
+                      <div
+                        aria-live="polite"
+                        className="rounded-xl border border-border bg-surface px-4 py-4 text-sm text-text-muted"
+                        role="status"
+                      >
+                        Verificando as opções de acesso…
+                      </div>
+                    )}
+
+                    {providersState.status === "ready" &&
+                      providersState.googleEnabled && (
+                        <div>
+                          <p className="mb-3 text-sm leading-6 text-text-muted">
+                            Para Porteiro, Vigilante e Setor de Transporte.
+                          </p>
+                          <Button
+                            aria-busy={isGoogleRedirecting}
+                            className="w-full"
+                            disabled={isGoogleRedirecting}
+                            id="google-login"
+                            onClick={beginGoogleAccess}
+                          >
+                            {isGoogleRedirecting
+                              ? "Redirecionando…"
+                              : "Continuar com Google"}
+                            {!isGoogleRedirecting && (
+                              <Icon name="arrow-right" size={20} />
+                            )}
+                          </Button>
+                          <p className="mt-3 text-sm leading-6 text-text-muted">
+                            Use sua conta Google pessoal ou institucional, ativa
+                            e previamente autorizada pelo Administrador.
+                          </p>
+                        </div>
+                      )}
+
+                    {providersState.status === "ready" &&
+                      !providersState.googleEnabled && (
+                        <p
+                          className="rounded-xl border border-border bg-surface px-4 py-4 text-sm text-text-muted"
+                          role="status"
+                        >
+                          O acesso com Google não está disponível neste
+                          ambiente.
+                        </p>
+                      )}
+
+                    {providersState.status === "unavailable" && (
+                      <div
+                        className="rounded-xl border border-danger-border bg-danger-surface px-4 py-4 text-sm text-danger-text"
+                        role="alert"
+                      >
+                        <p>
+                          Não foi possível verificar as opções de acesso. Tente
+                          novamente.
+                        </p>
+                        <Button
+                          className="mt-3"
+                          id="provider-discovery-retry"
+                          onClick={retry}
+                          variant="secondary"
+                        >
+                          Tentar novamente
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 w-full max-w-xl border-t border-border pt-5">
+                    <p className="text-xs text-text-muted">
+                      Acesso administrativo
+                    </p>
+                    <button
+                      className="mt-1 inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-primary underline underline-offset-4 focus:outline-none focus-visible:ring-3 focus-visible:ring-focus"
+                      id="administrative-access-toggle"
+                      onClick={openAdministrativeAccess}
+                      ref={administrativeAccessRef}
+                      type="button"
+                    >
+                      Entrar com usuário e senha
+                    </button>
+                  </div>
+                </>
               ) : (
                 <section
-                  aria-labelledby="administrative-access-title"
-                  className="mt-6 w-full max-w-xl border-t border-border pt-5"
+                  aria-labelledby="login-view-title"
+                  className="mt-7 w-full max-w-xl"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2
-                        className="text-lg font-bold text-text"
-                        id="administrative-access-title"
-                      >
-                        Acesso administrativo
-                      </h2>
-                      <p className="mt-1 text-sm leading-6 text-text-muted">
-                        Exclusivo para contas do perfil Administrador.
-                      </p>
-                    </div>
-                    <Button
-                      aria-label="Fechar acesso administrativo"
-                      className="shrink-0 whitespace-nowrap"
-                      onClick={closeAdministrativeAccess}
-                      variant="neutral"
-                    >
-                      Fechar
-                    </Button>
-                  </div>
-
                   <AdministrativeLoginForm
                     externalDescriptionId={
                       loginStatusMessage ? "login-status-message" : undefined
                     }
+                    onBack={closeAdministrativeAccess}
                     onAuthenticated={(authenticatedUser) =>
                       navigate(
                         authenticatedUser.requiresPasswordChange
@@ -349,7 +353,10 @@ export function LoginPage() {
               >
                 <Icon name="lock" size={18} />
               </span>
-              <p>Utilize a conta individual cadastrada pelo administrador.</p>
+              <p>
+                O acesso é permitido somente a contas previamente autorizadas
+                pelo Administrador.
+              </p>
             </div>
           </div>
 

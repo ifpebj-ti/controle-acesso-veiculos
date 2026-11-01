@@ -203,7 +203,7 @@ function renderAuthenticationFlow(
 async function submitCredentials() {
   const user = userEvent.setup();
   await user.click(
-    await screen.findByRole("button", { name: "Acesso administrativo" }),
+    await screen.findByRole("button", { name: "Entrar com usuário e senha" }),
   );
   await user.type(
     await screen.findByLabelText("E-mail:"),
@@ -641,7 +641,7 @@ describe("authentication flow", () => {
       "Senha alterada com segurança. Entre novamente usando a nova senha.",
     );
     await userEvent.click(
-      screen.getByRole("button", { name: "Acesso administrativo" }),
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
     );
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-describedby",
@@ -665,7 +665,7 @@ describe("authentication flow", () => {
       "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.",
     );
     await userEvent.click(
-      screen.getByRole("button", { name: "Acesso administrativo" }),
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
     );
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-describedby",
@@ -686,7 +686,7 @@ describe("authentication flow", () => {
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
@@ -728,7 +728,7 @@ describe("authentication flow", () => {
         await vi.advanceTimersByTimeAsync(0);
       });
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       const email = screen.getByLabelText("E-mail:");
       fireEvent.change(email, {
@@ -774,7 +774,7 @@ describe("authentication flow", () => {
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
@@ -840,7 +840,7 @@ describe("authentication flow", () => {
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
@@ -907,7 +907,7 @@ describe("authentication flow", () => {
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
@@ -982,7 +982,7 @@ describe("authentication flow", () => {
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
@@ -1057,7 +1057,7 @@ describe("authentication flow", () => {
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
@@ -1088,7 +1088,7 @@ describe("authentication flow", () => {
         ),
       ).toHaveAttribute("role", "alert");
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
         "aria-describedby",
@@ -1131,7 +1131,7 @@ describe("authentication flow", () => {
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
       fireEvent.click(
-        screen.getByRole("button", { name: "Acesso administrativo" }),
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },

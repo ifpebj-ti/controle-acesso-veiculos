@@ -39,7 +39,7 @@ function renderLogin(sessionEndReason: SessionEndReason | null = null) {
     </AppearanceProvider>,
   );
   fireEvent.click(
-    screen.getByRole("button", { name: "Acesso administrativo" }),
+    screen.getByRole("button", { name: "Entrar com usuário e senha" }),
   );
   return { ...view, login };
 }
