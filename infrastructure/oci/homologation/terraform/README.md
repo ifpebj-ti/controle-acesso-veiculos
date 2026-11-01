@@ -8,10 +8,12 @@ com VM privada, Load Balancer, WAF e Bastion; a aplicação `v0.4.0` foi instala
 por um procedimento operacional separado. Senhas, chave JWT, banco com dados e
 chaves privadas não entram no Terraform.
 
-O ambiente ainda usa certificado temporário e não possui DNS público aprovado.
-Backup externo, observabilidade operada e piloto institucional também permanecem
-pendentes. Novos `apply` devem ocorrer somente depois da revisão do plano, da
-estimativa de custo e da confirmação explícita do responsável pela conta.
+O hostname temporário `dat.ernandescosta.me` e o certificado público confiável
+foram ativados fora do Terraform, por procedimento operacional separado. A
+renovação automática, o backup externo, a observabilidade operada e o piloto
+institucional ainda permanecem pendentes. Novos `apply` devem ocorrer somente
+depois da revisão do plano, da estimativa de custo e da confirmação explícita do
+responsável pela conta.
 
 ## Recursos representados
 
@@ -38,7 +40,8 @@ estimativa de custo e da confirmação explícita do responsável pela conta.
 O `cloud-init` não contém segredos, domínio, token, chave SSH ou credencial. A VM
 não recebe IP público e aceita a porta interna `8088` somente da subnet do Load
 Balancer. A aplicação e as credenciais são instaladas em etapa posterior e
-controlada; o DNS e o certificado público confiável permanecem pendentes.
+controlada; o DNS temporário e o certificado público confiável foram ativados
+por esse procedimento separado e não integram o estado do Terraform.
 
 ## Gate financeiro
 
@@ -139,12 +142,14 @@ confirme:
    para começar a consultar comandos;
 3. confirme Cloud Agent, Run Command, monitoring, firewall, Docker e atualizações automáticas;
 4. confirme que a VM não possui IP público e crie uma sessão temporária do Bastion;
-5. instale e valide a borda privada descrita em `../edge`;
-6. configure DNS com o IP do Load Balancer exibido como output sensível;
-7. prepare segredos e execute o Compose versionado sem build no host;
-8. habilite backup protegido antes de preservar qualquer dado;
-9. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
-10. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
+5. use o usuário administrativo individual da sessão; o usuário isolado do Run
+   Command não deve receber acesso genérico ao Docker ou aos arquivos de segredo;
+6. instale e valide a borda privada descrita em `../edge`;
+7. configure DNS com o IP do Load Balancer exibido como output sensível;
+8. prepare segredos e execute o Compose versionado sem build no host;
+9. habilite backup protegido antes de preservar qualquer dado;
+10. habilite e revise logs do WAF antes de promover regras observadas para bloqueio;
+11. execute smoke tests, ZAP autorizado, teste dos quatro perfis e rollback.
 
 ## Limites conhecidos
 

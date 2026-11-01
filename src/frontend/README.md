@@ -39,6 +39,16 @@ migração das páginas operacionais e administrativas continuam nas etapas segu
 
 ## Estado atual
 
+A aplicação de produção não inclui provedor de demonstração nem registros
+fictícios embutidos. As telas integradas exibem somente respostas validadas da
+API. Em testes automatizados, fixtures e respostas simuladas permanecem nos
+arquivos de teste. Para homologação isolada, os dados fictícios são preparados
+explicitamente pelos contratos reais, conforme
+[`infrastructure/demo/README.md`](../../infrastructure/demo/README.md).
+Esses dados de homologação não representam registros institucionais nem
+homologação para produção. Exemplos e placeholders dos campos são instruções
+de preenchimento, não registros de negócio.
+
 A versão atual integra autenticação e sessão em memória ao endpoint
 `POST /auth/login`. O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
@@ -431,7 +441,6 @@ src/
 ├── components/
 │   ├── layout/       # Layouts compartilhados.
 │   └── ui/           # Componentes visuais reutilizáveis.
-├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── features/
 │   ├── access-records/ # Contratos, validação e serviços do fluxo geral.
 │   ├── administrative-reports/ # Contratos e serviços dos relatórios administrativos.
@@ -477,8 +486,6 @@ src/
 - definição institucional do canal usado para repassar credenciais temporárias
   criadas ou redefinidas pelo Administrador;
 - suporte à renovação transparente em navegadores sem Web Locks API;
-- persistência dos dados demonstrativos;
-- integração com PostgreSQL;
 - garantia de autorização baseada somente na interface;
 - homologação do cliente ou prontidão para produção.
 

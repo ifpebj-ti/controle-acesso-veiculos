@@ -2,6 +2,19 @@
 
 ## Estado
 
+### Proxy reverso e origem HTTPS
+
+O Nginx aceita somente os valores exatos `http` e `https` recebidos da borda e
+usa o esquema da conexão como fallback. Outros valores de
+`X-Forwarded-Proto` não são propagados.
+
+Na implantação versionada, o TLS termina no proxy reverso e o backend permanece
+sem porta publicada, acessível apenas pelo proxy na rede privada `edge`. O
+contêiner da API processa um salto dos cabeçalhos encaminhados pelo proxy, que
+sobrescreve `X-Forwarded-For` e `X-Forwarded-Proto`. Assim, o ASP.NET Core
+reconhece a origem HTTPS antes de emitir cookies `Secure`; essa confiança não
+deve ser habilitada se o backend for exposto diretamente.
+
 A fundação técnica da Issue #29 implementa login individual, provisionamento inicial controlado, criação, consulta, desativação e reativação administrativas de contas, hash de senha, bloqueio temporário, access token JWT, negação por padrão e políticas preliminares. A Issue #190 acrescenta o ciclo de vida de sessão controlado pelo servidor, a Issue #251 acrescenta a troca autenticada de senha e a Issue #258 acrescenta credencial temporária, troca obrigatória e redefinição administrativa. A Issue #220 consolida a decisão institucional do MVP: dois Administradores funcionais podem provisionar ou redefinir contas e entregam a credencial temporária diretamente ao titular. A observação do procedimento no ambiente real e a matriz final permanecem na Issue #162.
 
 Em 14/10/2026 foi aceita a substituição do login cotidiano por Google OIDC,
@@ -95,6 +108,25 @@ O procedimento planejado para indisponibilidade do provedor, uso individual de
 contas de emergência, retorno ao serviço e preservação de evidências está no
 [runbook de contingência de identidade Google](../operations/google-identity-contingency.md).
 Ele só se torna executável depois da implementação e homologação da Issue #449.
+
+### Rotas públicas do Google OIDC
+
+Na topologia conteinerizada, o navegador inicia o fluxo por
+`/api/auth/google/start`. O prefixo `/api` é removido pelo proxy antes de a
+requisição chegar à API. O retorno do provedor usa a rota pública exata
+`/signin-google`, encaminhada diretamente ao mesmo caminho no backend, sem passar
+pelo fallback da SPA. Portanto, o cliente OAuth do ambiente deve cadastrar como
+redirect URI `https://<host-da-aplicação>/signin-google`.
+
+Não configure `/api/signin-google`: isso faria o caminho público divergir do
+`Authentication:Google:CallbackPath` validado pelo middleware. A rota de callback
+não é uma tela, não deve ser aberta manualmente e continua protegida por `state`,
+nonce, cookie de correlação de curta duração e HTTPS. Cada ambiente usa host,
+cliente e segredo próprios.
+
+O [roteiro de configuração Google em homologação](../operations/google-oidc-setup.md)
+descreve o cliente web, o segredo por arquivo, o override Compose opcional e o
+ensaio necessário para distinguir configuração pronta de login homologado.
 
 ## Integração do frontend
 
@@ -248,3 +280,44 @@ fluxo operacional.
 ## Validação automatizada
 
 Os testes cobrem login válido e seu contrato mínimo de identidade, credenciais inválidas, usuário inativo, bloqueio após cinco tentativas, atualização progressiva de hash sem regravação desnecessária, atomicidade da atualização, auditoria mínima sem dados sensíveis, rollback quando a auditoria falha, limite de requisições correlacionado, acesso sem token, acesso permitido, acesso negado por perfil, criação e pesquisa administrativas, revogação imediata por desativação, reativação, auto-desativação, concorrência entre administradores, ator de sistema e upgrade/downgrade seguro da auditoria. O ciclo de sessão acrescenta testes de cookie, ausência de segredo no corpo e no banco, CSRF, rotação, replay, concorrência, inatividade, duração absoluta, logout, perfil inativo, revogação por desativação e rollback. A troca autenticada acrescenta testes de senha atual incorreta, reutilização, validação, revogação, invalidação imediata do JWT, concorrência, rate limiting, auditoria mínima e rollback. Credenciais temporárias acrescentam geração pelo servidor, expiração, restrição operacional, troca obrigatória, autorização administrativa, revogação, concorrência, auditoria sem segredo e rollback transacional. Os testes de persistência usam PostgreSQL real e dados, senhas e chaves fictícios exclusivos do ambiente temporário.
+
+## Evidência automatizada do protocolo Google — Issue #448
+
+`GoogleOidcProtocolTests` exercita o middleware real com metadados fictícios
+estáticos e backchannel bloqueado. Os cenários verificam code flow com PKCE
+S256, escopos mínimos, emissão de state/nonce e cookies Secure/HttpOnly restritos
+ao callback, negação de state ausente/adulterado, ausência do cookie de correlação,
+recusa do provedor e repetição dessa recusa, além de conclusão sem identidade
+externa. Nenhum desses caminhos deve criar sessão da aplicação ou consultar o
+provedor; os testes verificam a ausência dessas requisições.
+
+`GoogleOidcSignedTokenTests` complementa essa evidência na Issue #561: um
+backchannel em memória devolve um ID token fictício assinado com RSA efêmero.
+O callback real aceita o caso válido e rejeita assinatura, emissor, audiência,
+expiração ou nonce inválidos e e-mail não verificado. A troca verifica que o
+verificador PKCE corresponde ao desafio enviado. O caso válido emite somente
+o cookie de identidade externa temporária, sem concluir a autorização da conta
+ou criar a sessão operacional. Não há chamadas externas nem acesso ao banco.
+
+Esses cenários não comprovam troca de código com um provedor real,
+replay de código bem-sucedido ou interoperabilidade com o Google.
+O ensaio HTTPS com contas pré-autorizadas continua obrigatório na Issue #448.
+As falhas retornam mensagem genérica em português, sem incluir state, código ou
+segredo. O acesso administrativo local e as regras de perfil não são alterados.
+
+Referência do middleware:
+[OpenIdConnectOptions — Microsoft](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.authentication.openidconnect.openidconnectoptions).
+
+## Contrato HTTP do método de autenticação nas contas
+
+A listagem administrativa `GET /users`, a criação `POST /users` e a alteração
+`PUT /users/{id}/profile` representam `authenticationMethod` como texto `Local`
+ou `Google`. A API mapeia o enum interno para o DTO HTTP; valores numéricos do
+domínio não compõem esse contrato público. `externalIdentityLinked` é booleano
+e informa somente a existência do vínculo, nunca o `subject` ou um token Google.
+Paginação, filtros e demais campos públicos da listagem são preservados.
+
+A Issue #542 corrige a serialização numérica identificada no ensaio real do
+candidato frontend #530, que valida esse campo estritamente. A regressão integrada
+verifica o JSON de contas Local e Google e o conjunto de propriedades expostas.
+Não há mudança de perfil, persistência ou regra de autenticação nesta correção.

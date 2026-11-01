@@ -2,6 +2,17 @@
 
 ## Objetivo e limite
 
+O Nginx preserva apenas `http` ou `https` quando a borda informa o protocolo e
+usa o esquema da conexão como fallback. O Load Balancer/Caddy deve sobrescrever
+esse cabeçalho; valores arbitrários enviados pelo cliente não são repassados.
+
+O backend não publica porta no host. Apenas o proxy na rede privada `edge` o
+alcança e sobrescreve os cabeçalhos encaminhados. Por isso, a configuração de
+produção habilita o processamento de `X-Forwarded-For` e
+`X-Forwarded-Proto`: a API recupera o esquema HTTPS original e pode emitir os
+cookies `Secure` do ciclo de sessão. Não reutilize essa configuração com a porta
+do backend exposta diretamente.
+
 O arquivo `infrastructure/docker/docker-compose.production.yml` executa a mesma
 versão publicada do frontend e do backend no GitHub Container Registry (GHCR).
 Ele não contém `build`: o host de destino baixa os artefatos que a CI já
@@ -19,10 +30,34 @@ PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF.
 promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
 uma nova release revisada seja publicada e `DEPLOYMENT_VERSION` seja alterada.
 
-O endpoint `dat.ernandescosta.me` usa certificado público confiável e termina o
-TLS no Load Balancer. A renovação automática do certificado, o backup protegido,
-a observabilidade operada e a homologação institucional continuam pendentes;
+O hostname temporário `dat.ernandescosta.me` resolve para a borda protegida e usa
+certificado público confiável; o TLS termina no Load Balancer e HSTS é entregue
+pela borda. Ele não é o domínio institucional definitivo. A renovação automática
+do certificado, o backup protegido, a observabilidade operada e a homologação
+institucional continuam pendentes;
 portanto, o ambiente permanece classificado como homologação, não produção.
+
+### Código incorporado e configuração implantada
+
+A fotografia de 28/10/2026 distingue três estados verificáveis:
+
+| Estado                     | Evidência                                                                                                        | Limite                                                                     |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Release implantada         | Imagens frontend e backend `0.4.0`                                                                               | Não contém automaticamente commits posteriores da `main`                   |
+| Correção operacional na VM | `AllowedHosts` explícito, processamento do protocolo encaminhado e configuração de Nginx montada somente leitura | Ajuste controlado e temporário para restaurar o ciclo de sessão HTTPS      |
+| Implementação na `main`    | PR #518: segredos por arquivo; #520: hostname; #524: HTTPS encaminhado; #521: callback dedicado                  | Precisa de nova release e promoção para integrar a configuração definitiva |
+
+Após a correção operacional, readiness, login administrativo fictício, CSRF e
+refresh responderam HTTP 200; logout respondeu HTTP 204. O refresh manteve
+cookie `Secure` e `HttpOnly`. Esse ensaio não habilitou Google OIDC e não
+comprovou a migração dos segredos de runtime para arquivos na VM.
+
+O encaminhamento de `/signin-google` está incorporado ao código do Nginx na
+`main`. Ele deve ser confirmado novamente na imagem da próxima release; não se
+deve inferir sua implantação a partir do merge do PR. A autenticação Google
+depende também do cliente OAuth externo, segredo protegido e teste com o
+provedor. O WAF possui base provisionada, com validação operacional completa
+pendente na Issue #468.
 
 ## Release disponível
 
@@ -83,8 +118,8 @@ Copy-Item .env.production.example .env.production
 Defina no arquivo local:
 
 - `DEPLOYMENT_VERSION`: a mesma release para frontend e backend, como `0.4.0`;
-- `ALLOWED_HOSTS`: o domínio público esperado pela API e `localhost`, usado
-  somente pela verificação de saúde interna;
+- `ALLOWED_HOSTS`: a lista explícita do domínio público esperado pela API e
+  `localhost`, usado somente pela verificação de saúde interna. Não use `*`;
 - caminhos absolutos para três arquivos protegidos: senha do PostgreSQL,
   connection string do backend e chave JWT;
 - certificado PFX de Data Protection fornecido pelo secret manager, sua senha e o
@@ -218,6 +253,46 @@ docker compose \
 O resultado esperado é PostgreSQL, backend e frontend saudáveis. A validação
 funcional deve usar o domínio HTTPS, não a porta HTTP de loopback.
 
+Antes de liberar o ambiente aos testadores, confirme que a interface e a API
+aceitam o mesmo hostname público:
+
+```bash
+curl --fail --show-error --silent \
+  --output /dev/null \
+  --write-out '%{http_code}\n' \
+  "https://${APP_HOSTNAME}/login"
+
+curl --fail --show-error --silent \
+  "https://${APP_HOSTNAME}/api/health/ready"
+```
+
+As duas chamadas devem responder HTTP 200. Uma resposta `400 Invalid Hostname`
+na API indica divergência entre o hostname publicado e `ALLOWED_HOSTS`; corrija
+a lista explícita e recrie somente o backend. Não use `AllowedHosts=*` como
+atalho, pois isso remove uma defesa contra cabeçalhos `Host` forjados.
+
+Um operador autorizado pode executar a alteração transacional pela sessão
+temporária do OCI Bastion, sem imprimir o arquivo de ambiente:
+
+```bash
+sudo infrastructure/oci/homologation/scripts/Update-AllowedHosts.sh \
+  --deployment-directory /opt/controle-acesso-veiculos \
+  --environment-file /etc/controle-acesso-veiculos/.env.production \
+  --project-name cav-hml \
+  --hostname dat.ernandescosta.me
+```
+
+O script aceita somente hostname DNS minúsculo e explícito, exige exatamente
+uma entrada `ALLOWED_HOSTS` no arquivo protegido informado por caminho absoluto,
+exige o nome explícito do projeto Compose existente, valida o modelo e recria
+apenas o backend desse projeto. Informar o projeto evita criar redes, volumes ou
+contêineres paralelos por diferença no diretório de execução. O arquivo de
+ambiente fica separado dos artefatos implantados e não deve ser movido, ligado
+simbolicamente ou impresso. Se a validação ou a substituição falhar, o script
+restaura o arquivo anterior e tenta recolocar o backend conhecido. O operador
+ainda deve executar os testes públicos de readiness, login e renovação de sessão
+antes de encerrar a mudança.
+
 Depois de substituir o backend, obtenha um token antifalsificação, substitua a
 instância e valide o mesmo par em uma operação protegida. HTTP 400 nesse ensaio
 indica `ApplicationName`, volume ou certificado divergente entre réplicas.
@@ -228,6 +303,38 @@ isolado. Em caso de comprometimento da chave privada, substitua certificado e ke
 ring de forma controlada e encerre as sessões de maneira conservadora.
 
 ## Atualização e rollback
+
+### Primeira promoção após os ajustes de HTTPS
+
+Antes de aplicar o Compose atual à VM que ainda executa `0.4.0`:
+
+1. publicar uma nova release revisada que inclua os PRs #518, #520, #524 e #521,
+   após concluir o incremento funcional escolhido;
+2. preservar os arquivos de configuração anteriores em armazenamento restrito,
+   registrar a versão e os digests e verificar backup e compatibilidade do banco;
+3. preparar os arquivos externos de senha do PostgreSQL, connection string e
+   chave JWT com os valores de runtime vigentes, sem imprimi-los ou fazer rotação
+   incidental; montar apenas o Compose novo sobre a configuração antiga falha
+   por ausência das novas variáveis de caminho;
+4. confirmar que a imagem backend escolhida implementa a leitura por arquivo
+   e definir os caminhos no ambiente protegido, retirando os valores diretos;
+5. usar explicitamente o projeto `cav-hml`, o diretório implantado e o arquivo
+   de ambiente protegido em todos os comandos Compose;
+6. retirar a montagem temporária `nginx.issue-523.conf` no Compose candidato
+   para carregar a configuração embutida na imagem nova, mantendo a cópia
+   anterior disponível até validar o resultado;
+7. renderizar e validar o candidato com `config --quiet`, promover e verificar
+   saúde, login, CSRF, refresh, logout e caminho do callback pela borda HTTPS;
+8. confirmar, sem publicar os valores, que os segredos deixaram o ambiente dos
+   contêineres e que somente os caminhos dos arquivos estão configurados;
+9. registrar a versão aplicada e remover o ajuste temporário somente após a
+   validação completa; se falhar, restaurar conjuntamente Compose, ambiente,
+   montagem Nginx e imagens anteriores, preservando os volumes.
+
+Não remova o arquivo Nginx enquanto houver contêiner usando sua montagem. O
+rollback exige o conjunto de configurações compatível com a imagem antiga,
+não apenas a alteração de `DEPLOYMENT_VERSION`. Não publique a configuração
+renderizada, pois versões anteriores ainda podem conter valores sensíveis.
 
 Para atualizar, altere somente `DEPLOYMENT_VERSION` para uma release revisada,
 faça backup, aplique as migrations controladas e execute novamente `pull` e
