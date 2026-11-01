@@ -102,6 +102,32 @@ describe("AppLayout", () => {
     "SetorTransporte",
     "Administrador",
   ])(
+    "shows voluntary password change only for the administrator in both menus (%s)",
+    async (profile) => {
+      const user = userEvent.setup();
+      renderLayout(profile);
+      const sidebar = screen.getByRole("complementary");
+      const expectedLinks = profile === "Administrador" ? 1 : 0;
+      expect(
+        within(sidebar).queryAllByRole("link", { name: "Alterar senha" }),
+      ).toHaveLength(expectedLinks);
+
+      screen.getByRole("button", { name: "Abrir menu" }).focus();
+      await user.keyboard("{Enter}");
+      const dialog = screen.getByRole("dialog", { name: "Menu principal" });
+      expect(
+        within(dialog).queryAllByRole("link", { name: "Alterar senha" }),
+      ).toHaveLength(expectedLinks);
+      await user.keyboard("{Escape}");
+      expect(screen.getByRole("button", { name: "Abrir menu" })).toHaveFocus();
+    },
+  );
+  it.each<ProfileName>([
+    "Porteiro",
+    "Vigilante",
+    "SetorTransporte",
+    "Administrador",
+  ])(
     "preserves both ends of the mobile focus trap and logout for %s",
     async (profile) => {
       const user = userEvent.setup();
@@ -293,8 +319,8 @@ describe("AppLayout", () => {
       within(dialog).queryByRole("link", { name: "Relatórios" }),
     ).not.toBeInTheDocument();
     expect(
-      within(dialog).getByRole("link", { name: "Alterar senha" }),
-    ).toHaveAttribute("href", "/conta/senha");
+      within(dialog).queryByRole("link", { name: "Alterar senha" }),
+    ).not.toBeInTheDocument();
   });
 
   it("announces collapsible groups and preserves a clear active item", async () => {
