@@ -8,6 +8,20 @@ from its first published release.
 
 ## [Unreleased]
 
+### Added
+
+- A read-only public HTTPS/readiness probe with certificate validation,
+  bounded responses, sanitized failures and 30/14/7-day expiry states.
+  Offline regressions run in infrastructure CI; certificate renewal,
+  scheduling and operational alert delivery remain separate work.
+
+### Fixed
+
+- Return `Local`/`Google` strings for `authenticationMethod` in administrative
+  account listings, consistently with account creation and profile changes.
+  Preserve pagination and all existing public fields without changing the
+  domain, authentication policy or global JSON converters.
+
 ## [0.4.0] - 2026-10-22
 
 ### Added

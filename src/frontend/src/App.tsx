@@ -1,7 +1,6 @@
 import { RouterProvider } from "react-router-dom";
 
 import { ConfirmationProvider } from "./components/ui/ConfirmationProvider";
-import { DemoProvider } from "./demo";
 import { AppearanceProvider } from "./features/appearance";
 import { SessionProvider } from "./features/authentication";
 import { router } from "./routes";
@@ -11,9 +10,7 @@ export default function App() {
     <AppearanceProvider>
       <SessionProvider>
         <ConfirmationProvider>
-          <DemoProvider>
-            <RouterProvider router={router} />
-          </DemoProvider>
+          <RouterProvider router={router} />
         </ConfirmationProvider>
       </SessionProvider>
     </AppearanceProvider>
