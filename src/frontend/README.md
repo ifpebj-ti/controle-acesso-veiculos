@@ -50,7 +50,16 @@ homologação para produção. Exemplos e placeholders dos campos são instruç�
 de preenchimento, não registros de negócio.
 
 A versão atual consulta `GET /auth/providers` sem usar uma variável de build
-como fonte de verdade. Quando a API habilita o Google, a ação principal navega
+como fonte de verdade. Com `googleEnabled: false`, “Continuar com Google”
+permanece visível, desabilitado e acompanhado da mensagem de indisponibilidade;
+isso não habilita autenticação nem depende de haver contas autorizadas.
+O botão usa o “G” colorido oficial, servido localmente em
+`public/brand/google-g.png`, com proporção preservada, fundo branco próprio e
+imagem decorativa; o texto continua como nome acessível. Fonte do arquivo:
+[Google Identity](https://developers.google.com/static/identity/images/g-logo.png).
+As [orientações de marca](https://developers.google.com/identity/branding-guidelines)
+foram consultadas para o ícone; nenhum SDK ou recurso remoto é carregado no login.
+Quando a API habilita o Google, a ação principal navega
 completamente para `/auth/google/start`; Porteiro, Vigilante e Setor de
 Transporte concluem o fluxo no backend. O formulário de e-mail e senha permanece
 fechado até a ação explícita “Entrar com usuário e senha”, indicada como
@@ -83,7 +92,7 @@ mesma tela também consulta a trilha de auditoria em uma área separada.
 Fluxo sugerido para validação local:
 
 1. iniciar a API e acessar `/login`; com Google desabilitado, confirmar que a
-   ação principal não é apresentada e escolher explicitamente “Entrar com
+   ação Google está visível e desabilitada e escolher explicitamente “Entrar com
    usuário e senha” para usar uma conta local fictícia do perfil Administrador;
 2. em um ambiente HTTPS com OAuth configurado, confirmar que “Continuar com
    Google” faz uma navegação completa e que e-mail e perfil exibidos depois do

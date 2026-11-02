@@ -131,8 +131,12 @@ ensaio necessário para distinguir configuração pronta de login homologado.
 ## Integração do frontend
 
 A Issue #461 integra a decisão no frontend React. A tela consulta
-`GET /auth/providers` sem cache e só apresenta “Continuar com Google” quando a
-resposta validada informa `googleEnabled: true`. O início usa navegação completa
+`GET /auth/providers` sem cache. “Continuar com Google” só permite iniciar o
+acesso quando a resposta validada informa `googleEnabled: true`. Com `false`,
+o botão permanece visível e desabilitado, com mensagem de indisponibilidade.
+A ausência de contas autorizadas não controla a exibição; a API verifica o
+acesso após a autenticação. Falha na descoberta mantém o estado de erro e não
+habilita o botão. O início usa navegação completa
 para `/auth/google/start`, sem `fetch`, popup ou SDK Google. O formulário de
 e-mail e senha só aparece depois da ação “Entrar com usuário e senha”, indicada
 como “Acesso administrativo”, em uma visualização exclusiva na mesma rota. A
@@ -301,8 +305,16 @@ recusa do provedor e repetição dessa recusa, além de conclusão sem identidad
 externa. Nenhum desses caminhos deve criar sessão da aplicação ou consultar o
 provedor; os testes verificam a ausência dessas requisições.
 
-Isso não comprova troca de código real, validação de assinatura/nonce de um ID
-token recebido, replay de código bem-sucedido ou interoperabilidade com o Google.
+`GoogleOidcSignedTokenTests` complementa essa evidência na Issue #561: um
+backchannel em memória devolve um ID token fictício assinado com RSA efêmero.
+O callback real aceita o caso válido e rejeita assinatura, emissor, audiência,
+expiração ou nonce inválidos e e-mail não verificado. A troca verifica que o
+verificador PKCE corresponde ao desafio enviado. O caso válido emite somente
+o cookie de identidade externa temporária, sem concluir a autorização da conta
+ou criar a sessão operacional. Não há chamadas externas nem acesso ao banco.
+
+Esses cenários não comprovam troca de código com um provedor real,
+replay de código bem-sucedido ou interoperabilidade com o Google.
 O ensaio HTTPS com contas pré-autorizadas continua obrigatório na Issue #448.
 As falhas retornam mensagem genérica em português, sem incluir state, código ou
 segredo. O acesso administrativo local e as regras de perfil não são alterados.

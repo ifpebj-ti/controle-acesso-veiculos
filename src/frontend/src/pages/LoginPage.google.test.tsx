@@ -194,6 +194,11 @@ describe("LoginPage Google and administrative access", () => {
       name: "Continuar com Google",
     });
     await waitFor(() => expect(google).toHaveFocus());
+    expect(google.querySelector("img")).toHaveAttribute(
+      "src",
+      "/brand/google-g.png",
+    );
+    expect(google.querySelector("img")).toHaveAttribute("alt", "");
     expect(screen.queryByLabelText("E-mail:")).not.toBeInTheDocument();
 
     await user.click(google);
@@ -203,10 +208,11 @@ describe("LoginPage Google and administrative access", () => {
     ).toHaveBeenCalledOnce();
   });
 
-  it("does not show Google when the provider is disabled", async () => {
+  it("keeps Google visible but unavailable when the API disables the provider", async () => {
     authenticationService.getAuthenticationProviders.mockResolvedValue({
       googleEnabled: false,
     });
+    const user = userEvent.setup();
     renderLogin();
 
     expect(
@@ -219,9 +225,23 @@ describe("LoginPage Google and administrative access", () => {
         screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       ).toHaveFocus(),
     );
+    const google = screen.getByRole("button", { name: "Continuar com Google" });
+    expect(google).toBeDisabled();
+    expect(google.querySelector("img")).toHaveAttribute(
+      "src",
+      "/brand/google-g.png",
+    );
+    expect(google).toHaveAccessibleDescription(
+      "O acesso com Google não está disponível neste ambiente.",
+    );
+    await user.click(google);
     expect(
-      screen.queryByRole("button", { name: "Continuar com Google" }),
-    ).not.toBeInTheDocument();
+      authenticationService.startGoogleAuthentication,
+    ).not.toHaveBeenCalled();
+    await user.tab();
+    expect(
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+    ).toHaveFocus();
     expect(screen.queryByLabelText("E-mail:")).not.toBeInTheDocument();
   });
 

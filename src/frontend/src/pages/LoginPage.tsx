@@ -16,6 +16,7 @@ import {
   useSession,
 } from "../features/authentication";
 import { AdministrativeLoginForm } from "../features/authentication/components/AdministrativeLoginForm";
+import { GoogleBrandIcon } from "../features/authentication/components/GoogleBrandIcon";
 import { useAuthenticationProviders } from "../features/authentication/hooks/useAuthenticationProviders";
 import { getLoginDestination } from "../routes/loginDestination";
 
@@ -259,12 +260,10 @@ export function LoginPage() {
                             id="google-login"
                             onClick={beginGoogleAccess}
                           >
+                            <GoogleBrandIcon />
                             {isGoogleRedirecting
                               ? "Redirecionando…"
                               : "Continuar com Google"}
-                            {!isGoogleRedirecting && (
-                              <Icon name="arrow-right" size={20} />
-                            )}
                           </Button>
                           <p className="mt-3 text-sm leading-6 text-text-muted">
                             Use sua conta Google pessoal ou institucional, ativa
@@ -275,13 +274,25 @@ export function LoginPage() {
 
                     {providersState.status === "ready" &&
                       !providersState.googleEnabled && (
-                        <p
-                          className="rounded-xl border border-border bg-surface px-4 py-4 text-sm text-text-muted"
-                          role="status"
-                        >
-                          O acesso com Google não está disponível neste
-                          ambiente.
-                        </p>
+                        <div>
+                          <Button
+                            aria-describedby="google-unavailable-message"
+                            className="w-full"
+                            disabled
+                            id="google-login"
+                          >
+                            <GoogleBrandIcon />
+                            Continuar com Google
+                          </Button>
+                          <p
+                            className="mt-3 text-sm leading-6 text-text-muted"
+                            id="google-unavailable-message"
+                            role="status"
+                          >
+                            O acesso com Google não está disponível neste
+                            ambiente.
+                          </p>
+                        </div>
                       )}
 
                     {providersState.status === "unavailable" && (
