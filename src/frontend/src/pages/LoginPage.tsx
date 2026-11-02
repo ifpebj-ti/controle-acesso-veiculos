@@ -16,6 +16,7 @@ import {
   useSession,
 } from "../features/authentication";
 import { AdministrativeLoginForm } from "../features/authentication/components/AdministrativeLoginForm";
+import { GoogleBrandIcon } from "../features/authentication/components/GoogleBrandIcon";
 import { useAuthenticationProviders } from "../features/authentication/hooks/useAuthenticationProviders";
 
 interface LoginLocationState {
@@ -262,12 +263,10 @@ export function LoginPage() {
                             id="google-login"
                             onClick={beginGoogleAccess}
                           >
+                            <GoogleBrandIcon />
                             {isGoogleRedirecting
                               ? "Redirecionando…"
                               : "Continuar com Google"}
-                            {!isGoogleRedirecting && (
-                              <Icon name="arrow-right" size={20} />
-                            )}
                           </Button>
                           <p className="mt-3 text-sm leading-6 text-text-muted">
                             Use sua conta Google pessoal ou institucional, ativa
@@ -285,8 +284,8 @@ export function LoginPage() {
                             disabled
                             id="google-login"
                           >
+                            <GoogleBrandIcon />
                             Continuar com Google
-                            <Icon name="arrow-right" size={20} />
                           </Button>
                           <p
                             className="mt-3 text-sm leading-6 text-text-muted"
