@@ -53,6 +53,12 @@ A versão atual consulta `GET /auth/providers` sem usar uma variável de build
 como fonte de verdade. Com `googleEnabled: false`, “Continuar com Google”
 permanece visível, desabilitado e acompanhado da mensagem de indisponibilidade;
 isso não habilita autenticação nem depende de haver contas autorizadas.
+O botão usa o “G” colorido oficial, servido localmente em
+`public/brand/google-g.png`, com proporção preservada, fundo branco próprio e
+imagem decorativa; o texto continua como nome acessível. Fonte do arquivo:
+[Google Identity](https://developers.google.com/static/identity/images/g-logo.png).
+As [orientações de marca](https://developers.google.com/identity/branding-guidelines)
+foram consultadas para o ícone; nenhum SDK ou recurso remoto é carregado no login.
 Quando a API habilita o Google, a ação principal navega
 completamente para `/auth/google/start`; Porteiro, Vigilante e Setor de
 Transporte concluem o fluxo no backend. O formulário de e-mail e senha permanece

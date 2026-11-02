@@ -194,6 +194,11 @@ describe("LoginPage Google and administrative access", () => {
       name: "Continuar com Google",
     });
     await waitFor(() => expect(google).toHaveFocus());
+    expect(google.querySelector("img")).toHaveAttribute(
+      "src",
+      "/brand/google-g.png",
+    );
+    expect(google.querySelector("img")).toHaveAttribute("alt", "");
     expect(screen.queryByLabelText("E-mail:")).not.toBeInTheDocument();
 
     await user.click(google);
@@ -222,6 +227,10 @@ describe("LoginPage Google and administrative access", () => {
     );
     const google = screen.getByRole("button", { name: "Continuar com Google" });
     expect(google).toBeDisabled();
+    expect(google.querySelector("img")).toHaveAttribute(
+      "src",
+      "/brand/google-g.png",
+    );
     expect(google).toHaveAccessibleDescription(
       "O acesso com Google não está disponível neste ambiente.",
     );
