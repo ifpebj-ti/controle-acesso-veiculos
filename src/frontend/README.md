@@ -53,6 +53,12 @@ A versão atual consulta `GET /auth/providers` sem usar uma variável de build
 como fonte de verdade. Com `googleEnabled: false`, “Continuar com Google”
 permanece visível, desabilitado e acompanhado da mensagem de indisponibilidade;
 isso não habilita autenticação nem depende de haver contas autorizadas.
+Ao voltar pelo histórico com a página preservada pelo navegador (BFCache),
+o estado transitório de saída para o Google é encerrado e os provedores são
+consultados novamente. O sistema aguarda nova ação explícita; foco ou troca de
+aba não liberam outra tentativa durante a navegação. O retorno sem cache usa
+uma nova página com o estado inicial. Nenhum timer ou armazenamento de token
+é usado para destravar o botão, e a restauração do callback continua separada.
 O botão usa o “G” colorido oficial, servido localmente em
 `public/brand/google-g.png`, com proporção preservada, fundo branco próprio e
 imagem decorativa; o texto continua como nome acessível. Fonte do arquivo:

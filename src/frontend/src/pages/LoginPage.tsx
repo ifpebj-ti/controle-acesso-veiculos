@@ -50,6 +50,9 @@ export function LoginPage() {
   const [isAdministrativeAccessOpen, setIsAdministrativeAccessOpen] =
     useState(false);
   const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
+  const googleRedirectPending = useRef(false);
+  const googleLoginRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreGoogleFocus = useRef(false);
   const callbackHandled = useRef(false);
   const administrativeAccessRef = useRef<HTMLButtonElement>(null);
   const shouldRestoreAdministrativeFocus = useRef(false);
@@ -63,6 +66,60 @@ export function LoginPage() {
   const locationState = location.state as LoginLocationState | null;
   const requestedPath = locationState?.from?.pathname;
   const authenticationReturnStatus = searchParams.get("status");
+  const isGoogleCallbackReturn =
+    authenticationReturnStatus === "success" ||
+    authenticationReturnStatus === "denied";
+
+  useEffect(() => {
+    function restoreGoogleAction(event: PageTransitionEvent) {
+      if (!event.persisted || !googleRedirectPending.current) return;
+
+      googleRedirectPending.current = false;
+      shouldRestoreGoogleFocus.current = true;
+      setIsGoogleRedirecting(false);
+      retry();
+    }
+
+    window.addEventListener("pageshow", restoreGoogleAction);
+    return () => window.removeEventListener("pageshow", restoreGoogleAction);
+  }, [retry]);
+
+  useEffect(() => {
+    if (
+      !shouldRestoreGoogleFocus.current ||
+      isGoogleRedirecting ||
+      providersState.status === "loading"
+    ) {
+      return;
+    }
+
+    shouldRestoreGoogleFocus.current = false;
+    if (
+      status !== "unauthenticated" ||
+      isGoogleCallbackReturn ||
+      isAdministrativeAccessOpen ||
+      (document.activeElement !== document.body &&
+        document.activeElement !== googleLoginRef.current)
+    ) {
+      return;
+    }
+
+    const target =
+      providersState.status === "ready" && providersState.googleEnabled
+        ? googleLoginRef.current
+        : providersState.status === "unavailable"
+          ? document.querySelector<HTMLButtonElement>(
+              "#provider-discovery-retry",
+            )
+          : administrativeAccessRef.current;
+    target?.focus();
+  }, [
+    isAdministrativeAccessOpen,
+    isGoogleCallbackReturn,
+    isGoogleRedirecting,
+    providersState,
+    status,
+  ]);
 
   useEffect(() => {
     if (
@@ -75,6 +132,8 @@ export function LoginPage() {
     }
 
     callbackHandled.current = true;
+    if (status === "authenticated") return;
+
     const remainingSearchParams = new URLSearchParams(searchParams);
     remainingSearchParams.delete("status");
     setSearchParams(remainingSearchParams, {
@@ -91,8 +150,6 @@ export function LoginPage() {
       });
       return;
     }
-
-    if (status === "authenticated") return;
 
     void restoreExternalSession()
       .then((authenticatedUser) => {
@@ -177,11 +234,23 @@ export function LoginPage() {
     setIsAdministrativeAccessOpen(false);
   };
   const beginGoogleAccess = () => {
+    if (
+      googleRedirectPending.current ||
+      status !== "unauthenticated" ||
+      isGoogleCallbackReturn ||
+      providersState.status !== "ready" ||
+      !providersState.googleEnabled
+    ) {
+      return;
+    }
+
+    googleRedirectPending.current = true;
     setCallbackError(null);
     setIsGoogleRedirecting(true);
     try {
       startGoogleAuthentication();
     } catch {
+      googleRedirectPending.current = false;
       setIsGoogleRedirecting(false);
       setCallbackError(
         "Não foi possível iniciar o acesso agora. Tente novamente mais tarde.",
@@ -256,9 +325,14 @@ export function LoginPage() {
                           <Button
                             aria-busy={isGoogleRedirecting}
                             className="w-full"
-                            disabled={isGoogleRedirecting}
+                            disabled={
+                              isGoogleRedirecting ||
+                              status !== "unauthenticated" ||
+                              isGoogleCallbackReturn
+                            }
                             id="google-login"
                             onClick={beginGoogleAccess}
+                            ref={googleLoginRef}
                           >
                             <GoogleBrandIcon />
                             {isGoogleRedirecting
@@ -323,6 +397,11 @@ export function LoginPage() {
                     <button
                       className="mt-1 inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-primary underline underline-offset-4 focus:outline-none focus-visible:ring-3 focus-visible:ring-focus"
                       id="administrative-access-toggle"
+                      disabled={
+                        isGoogleRedirecting ||
+                        status === "authenticating" ||
+                        isGoogleCallbackReturn
+                      }
                       onClick={openAdministrativeAccess}
                       ref={administrativeAccessRef}
                       type="button"
