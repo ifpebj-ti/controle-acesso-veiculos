@@ -26,6 +26,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Test public TLS probe without network traffic
+        run: >-
+          python3 -B -m unittest discover
+          --start-directory infrastructure/oci/homologation/scripts/tests
+          --pattern 'test_public_tls.py' --verbose
+
       - name: Initialize providers without a backend
         run: >-
           docker run --rm
