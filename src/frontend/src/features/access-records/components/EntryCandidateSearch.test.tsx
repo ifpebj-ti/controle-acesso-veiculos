@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type FormEvent, useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoSeriousAccessibilityViolations } from "../../../test/accessibility";
 import { searchAccessEntryCandidates } from "../services/accessRecordsService";
@@ -26,14 +26,17 @@ const candidate: AccessEntryCandidate = {
   vehicleType: "Automóvel",
 };
 
-function Harness() {
+function Harness({ withPlate = false }: { withPlate?: boolean }) {
   const [selected, setSelected] = useState<AccessEntryCandidate | null>(null);
   return (
-    <EntryCandidateSearch
-      onClear={() => setSelected(null)}
-      onSelect={setSelected}
-      selectedCandidate={selected}
-    />
+    <>
+      <EntryCandidateSearch
+        onClear={() => setSelected(null)}
+        onSelect={setSelected}
+        selectedCandidate={selected}
+      />
+      {withPlate && <input aria-label="Placa para conferência" id="plate" />}
+    </>
   );
 }
 
@@ -49,6 +52,68 @@ function deferred<T>() {
 
 describe("EntryCandidateSearch", () => {
   beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.restoreAllMocks());
+
+  async function selectWithDeferredFocus() {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const nextFrame = () =>
+      act(() => frames.splice(0).forEach((callback) => callback(0)));
+    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([candidate]);
+    const user = userEvent.setup();
+    render(<Harness withPlate />);
+    const search = screen.getByRole("combobox");
+    await user.type(search, "REC");
+    await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
+    return { nextFrame, search, user };
+  }
+
+  it("moves focus to the plate after selection when interaction has not changed", async () => {
+    const { nextFrame } = await selectWithDeferredFocus();
+    nextFrame();
+    nextFrame();
+    expect(screen.getByLabelText("Placa para conferência")).toHaveFocus();
+  });
+
+  it("does not close a new search with the previous selection's deferred focus", async () => {
+    const { nextFrame, search, user } = await selectWithDeferredFocus();
+    const alternate = {
+      ...candidate,
+      plate: "ALT4B56",
+      personId: 4,
+      vehicleId: 5,
+    };
+    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([alternate]);
+    await user.type(search, "ALT");
+    const option = await screen.findByRole("option", { name: /ALT4B56/ });
+    nextFrame();
+    nextFrame();
+    expect(search).toHaveFocus();
+    expect(option).toBeVisible();
+    expect(search).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByText(`${candidate.plate} · ${candidate.driverName}`),
+    ).toBeVisible();
+    await user.click(option);
+    expect(
+      screen.getByText(`${alternate.plate} · ${alternate.driverName}`),
+    ).toBeVisible();
+    expect(searchAccessEntryCandidates).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not steal focus from another control after selection", async () => {
+    const { nextFrame } = await selectWithDeferredFocus();
+    const manual = screen.getByRole("button", {
+      name: "Usar preenchimento manual",
+    });
+    act(() => manual.focus());
+    nextFrame();
+    nextFrame();
+    expect(manual).toHaveFocus();
+  });
 
   it("waits for three characters and announces an empty result", async () => {
     vi.mocked(searchAccessEntryCandidates).mockResolvedValue([]);
