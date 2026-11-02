@@ -59,6 +59,28 @@ não usa o refresh token do Google neste fluxo.
 
 ## Pendências antes de concluir a #591
 
+### Ensaio HTTPS e auditoria posterior
+
+No frontend `d5a7ba5`, o titular relatou entrada Google como Porteiro,
+continuidade em aproximadamente quinze recargas e saída após recargas forçadas.
+Também confirmou recuperação pelo Google, novamente como Porteiro, sem o
+travamento anterior. É relato do titular; não é um teste de carga controlado,
+uma regra de quinze recargas ou medição exata do limiar de bloqueio.
+
+Uma consulta administrativa somente leitura à API de auditoria, limitada às
+identidades consentidas e à janela do ensaio, encontrou quatro registros
+`TokenReuseDetected` e dois `LoginSucceeded`. A evidência publicada é agregada;
+não inclui identidades, cookies, tokens ou códigos. A consulta não desativou
+contas nem revogou sessões operacionais para fabricar o cenário.
+
+Isso confirma o acionamento da revogação por reutilização na janela observada
+e é compatível com a recuperação relatada. Não determina qual requisição,
+interrupção de transporte, aba ou concorrência originou cada reapresentação.
+Portanto, a causa detalhada do incidente não é declarada resolvida. O ajuste do
+WAF não remove nem deve remover essa proteção.
+
+### Validação automatizada e trabalho restante
+
 Os sete testes de `AuthenticationSessionTests` passaram na execução local com
 API e PostgreSQL descartável. O comando utilizou .NET 10, filtro da classe,
 relatório TRX e diretório de artefatos ignorado. Inclui a reprodução de resposta
@@ -66,7 +88,8 @@ perdida e a verificação concorrente fortalecida. Esse resultado não é uma
 execução de toda a suíte do backend.
 
 - Relacionar o SHA e o PR desta evidência na Issue #591.
-- Observar recarga normal e nova autenticação no candidato HTTPS atualizado.
+- Preservar a atribuição do ensaio HTTPS acima; aprofundar somente se a falha
+  reaparecer em recargas normais, sem forçar navegação concorrente.
 - Se a falha persistir sem recarga interrompida, correlacionar somente códigos,
   horários e identificadores técnicos sanitizados; não capturar cookies, tokens,
   e-mails ou parâmetros OAuth em evidência pública.
