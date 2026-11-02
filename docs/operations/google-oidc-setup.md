@@ -1,6 +1,6 @@
 # Configuração do Google OIDC em homologação
 
-**Rastreabilidade:** Issues #448 e #529; frontend #461 e #493.
+**Rastreabilidade:** Issues #448, #529 e #573; frontend #461 e #493.
 
 ## Estado e pré-requisitos
 
@@ -44,6 +44,23 @@ de usuários de teste/verificação. Não suponha que a audiência externa liber
 qualquer conta: a aplicação só aceita a conta exata pré-autorizada no banco.
 Não configure `hd` como requisito de domínio. Não solicite Gmail, Drive ou
 `offline_access`; o sistema mantém sua própria sessão renovável.
+
+### Lista de teste Google e autorização local são controles distintos
+
+Para requisições restritas aos escopos básicos `openid`, `email` e `profile`,
+o Google documenta uma exceção às restrições usuais de Testing: a identidade
+não precisa estar na lista de usuários de teste. A expiração de consentimento
+em sete dias dessa modalidade também não deve ser presumida para esse recorte.
+Isso não elimina restrições de disponibilidade do serviço ou políticas do
+Google Workspace da conta. Confira os escopos efetivamente enviados e eventual
+erro do provedor; não acrescente permissões ou publique o aplicativo apenas
+para contornar uma suposição sobre a lista.
+
+A pré-autorização **no banco da aplicação** continua obrigatória em todos os
+casos: endereço Google exato, conta ativa e perfil operacional permitido.
+Consentimento Google, inclusão em uma lista no console ou domínio institucional
+não concedem acesso ao sistema. Não publique os endereços dos titulares nas
+evidências. Consulte a [política oficial de audiência](https://support.google.com/cloud/answer/15549945?hl=en).
 
 O Google pode exigir consentimento, dados de contato, domínios autorizados,
 verificação de propriedade ou aprovação administrativa. Conclua cada requisito
@@ -95,6 +112,22 @@ tiver sido alterada independentemente, confira o estado efetivo em
 
 ## Ensaio para liberar os PRs do frontend
 
+### Preparar o candidato antes do teste
+
+- Registre os SHAs exatos de backend e frontend e a base integrada. Checks
+  verdes não comprovam que essas versões estão no site.
+- O workflow atual `ci-containers.yml` constrói e verifica PRs, mas só publica
+  as imagens de release no evento de push de uma tag `v*` validada. Merge ou
+  sucesso do build de um PR não publica nem implanta automaticamente o candidato.
+- Para ensaio anterior ao merge, use um candidato isolado, revisado e identificado,
+  com procedimento explícito de construção/transferência de imagens e rollback.
+  Não rotule código ainda candidato como release aprovada nem reutilize `0.4.0`.
+- Confirme acesso administrativo, configuração por arquivo, migrations
+  compatíveis, proteção das chaves persistentes e backup antes de promover.
+  Preserve o conjunto completo de configuração da versão anterior.
+- Cliente OAuth cadastrado, segredo disponível em canal protegido e callback
+  correto são pré-requisitos; o resultado só é confirmado pelo ensaio real.
+
 1. Confirme HTTPS confiável e readiness saudável pela borda.
 2. Confirme o login de um Administrador local e seu acesso à gestão de contas.
 3. Cadastre uma conta Google de teste autorizada para um perfil operacional.
@@ -130,5 +163,6 @@ comprometimento exige revogação pelo responsável no Google.
 
 - [Google OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect)
 - [Google: clientes OAuth](https://support.google.com/cloud/answer/15549257)
+- [Google: audiência e exceções do modo Testing](https://support.google.com/cloud/answer/15549945?hl=en)
 - [OAuth para aplicações web no servidor](https://developers.google.com/identity/protocols/oauth2/web-server)
 - [ADR 0005](../architecture/decisions/0005-google-oidc-and-emergency-access.md)
