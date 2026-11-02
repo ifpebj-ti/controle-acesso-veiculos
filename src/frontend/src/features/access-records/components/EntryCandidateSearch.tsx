@@ -39,12 +39,20 @@ export function EntryCandidateSearch({
   const guidanceId = `entry-candidate-guidance-${generatedId}`;
   const statusId = `entry-candidate-status-${generatedId}`;
   const requestId = useRef(0);
+  const focusSequence = useRef(0);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AccessEntryCandidate[]>([]);
   const [status, setStatus] = useState<SearchStatus>("idle");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const normalizedQuery = query.trim();
+
+  useEffect(
+    () => () => {
+      focusSequence.current += 1;
+    },
+    [],
+  );
 
   useEffect(() => {
     if (normalizedQuery.length < 3) {
@@ -84,6 +92,7 @@ export function EntryCandidateSearch({
   }, [normalizedQuery]);
 
   function selectCandidate(candidate: AccessEntryCandidate) {
+    const selectionFocus = ++focusSequence.current;
     onSelect(candidate);
     setQuery("");
     setResults([]);
@@ -91,13 +100,19 @@ export function EntryCandidateSearch({
     setOpen(false);
     setActiveIndex(-1);
     window.requestAnimationFrame(() =>
-      window.requestAnimationFrame(() =>
-        document.getElementById("plate")?.focus(),
-      ),
+      window.requestAnimationFrame(() => {
+        if (
+          selectionFocus === focusSequence.current &&
+          document.activeElement === document.getElementById(inputId)
+        ) {
+          document.getElementById("plate")?.focus();
+        }
+      }),
     );
   }
 
   function handleQueryChange(value: string) {
+    focusSequence.current += 1;
     setQuery(value);
     setOpen(true);
     if (value.trim().length < 3) {
@@ -190,7 +205,13 @@ export function EntryCandidateSearch({
           maxLength={80}
           onBlur={() => setOpen(false)}
           onChange={(event) => handleQueryChange(event.target.value)}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            focusSequence.current += 1;
+            setOpen(true);
+          }}
+          onPointerDown={() => {
+            focusSequence.current += 1;
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Ex.: DEM-1A23 ou Pessoa de demonstração"
           role="combobox"
