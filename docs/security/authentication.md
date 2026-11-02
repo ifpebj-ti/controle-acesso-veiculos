@@ -131,8 +131,12 @@ ensaio necessário para distinguir configuração pronta de login homologado.
 ## Integração do frontend
 
 A Issue #461 integra a decisão no frontend React. A tela consulta
-`GET /auth/providers` sem cache e só apresenta “Continuar com Google” quando a
-resposta validada informa `googleEnabled: true`. O início usa navegação completa
+`GET /auth/providers` sem cache. “Continuar com Google” só permite iniciar o
+acesso quando a resposta validada informa `googleEnabled: true`. Com `false`,
+o botão permanece visível e desabilitado, com mensagem de indisponibilidade.
+A ausência de contas autorizadas não controla a exibição; a API verifica o
+acesso após a autenticação. Falha na descoberta mantém o estado de erro e não
+habilita o botão. O início usa navegação completa
 para `/auth/google/start`, sem `fetch`, popup ou SDK Google. O formulário de
 e-mail e senha só aparece depois da ação “Entrar com usuário e senha”, indicada
 como “Acesso administrativo”, em uma visualização exclusiva na mesma rota. A
