@@ -155,7 +155,39 @@ CHAVE_ALEATORIA
 ```
 
 No Linux, aplique `chmod 600` e mantenha o diretório inacessível para outros
-usuários. O backend falha no startup quando um caminho é relativo, o arquivo não
+usuários. O proprietário dos arquivos lidos pelo backend deve permitir acesso
+ao UID efetivo da imagem não root. Um arquivo `root:root` em modo `0600` não
+fica legível para a aplicação apenas por ser declarado como secret no Compose.
+Confira o UID da imagem escolhida e ajuste somente os arquivos destinados a
+esse serviço, sem trocar o conteúdo nem conceder leitura a todos.
+
+Exemplo para **um arquivo do backend**, com imagem já obtida e caminho absoluto
+protegido; repita a verificação para connection string, chave JWT, PFX, senha do
+PFX e, quando habilitado, segredo Google:
+
+```bash
+candidate_image=ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:VERSAO_REVISADA
+runtime_uid=$(docker run --rm --network none --read-only --cap-drop ALL \
+  --security-opt no-new-privileges --entrypoint /bin/sh "$candidate_image" -ec 'id -u')
+case "$runtime_uid" in ''|*[!0-9]*|0) exit 1 ;; esac
+sudo chown "$runtime_uid" /CAMINHO_ABSOLUTO/segredo-do-backend
+sudo chmod 600 /CAMINHO_ABSOLUTO/segredo-do-backend
+docker run --rm --network none --read-only --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --mount type=bind,source=/CAMINHO_ABSOLUTO/segredo-do-backend,target=/run/secrets/probe,readonly \
+  --entrypoint /bin/sh "$candidate_image" -ec 'test -r /run/secrets/probe'
+```
+
+O comando verifica permissão sem imprimir o conteúdo e não inicia a API. Não
+use esse exemplo para alterar indiscriminadamente arquivos de PostgreSQL ou de
+outros serviços: cada imagem tem seu próprio processo de inicialização.
+Preserve o acesso do operador pela administração do host. `config --quiet`
+valida o modelo, mas não comprova que o usuário do contêiner consegue ler cada
+arquivo. Em secrets locais por arquivo, não presuma remapeamento de proprietário
+por `uid`, `gid` ou `mode`; confira a [documentação do Compose](https://docs.docker.com/reference/compose-file/services/#secrets)
+e teste o acesso efetivo. Rastreabilidade: #583, reprodução com conteúdo fictício.
+
+O backend falha no startup quando um caminho é relativo, o arquivo não
 existe, está vazio, excede 16 KiB ou quando valor direto e arquivo são fornecidos
 ao mesmo tempo. O conteúdo nunca integra a mensagem de erro.
 
@@ -168,7 +200,8 @@ docker volume create controle-acesso-veiculos-data-protection
 ```
 
 O caminho informado em `DATA_PROTECTION_CERTIFICATE_FILE` deve existir no host,
-ser legível somente pelo operador autorizado e conter um PFX com chave privada.
+permitir leitura pelo processo backend e administração somente pelos operadores
+autorizados, sem leitura pública, e conter um PFX com chave privada.
 O Compose o monta como secret somente leitura. Não coloque PFX, senha ou XML do
 key ring junto das imagens, do repositório ou dos artefatos de CI.
 

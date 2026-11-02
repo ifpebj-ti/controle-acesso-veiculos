@@ -77,8 +77,12 @@ segredo durante compartilhamento de tela. Não use a senha da conta Google como
 segredo do aplicativo.
 
 Na VM, o arquivo do segredo deve ficar fora do repositório, com caminho
-absoluto, proprietário e permissões restritas. Registre somente os caminhos no
-ambiente protegido:
+absoluto, proprietário e permissões restritas, incluindo a leitura pelo UID
+efetivo do backend não root. `root:root 0600` sozinho não atende esse requisito
+em uma montagem local por arquivo. Siga a
+[verificação de acesso do serviço](versioned-container-deployment.md) antes de
+recriar o contêiner; não use `chmod` de leitura pública para corrigir a falha.
+Registre somente os caminhos no ambiente protegido:
 
 ```dotenv
 GOOGLE_CLIENT_ID=ID_DO_CLIENTE_WEB.apps.googleusercontent.com
