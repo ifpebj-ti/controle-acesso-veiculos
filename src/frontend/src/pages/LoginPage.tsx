@@ -278,13 +278,25 @@ export function LoginPage() {
 
                     {providersState.status === "ready" &&
                       !providersState.googleEnabled && (
-                        <p
-                          className="rounded-xl border border-border bg-surface px-4 py-4 text-sm text-text-muted"
-                          role="status"
-                        >
-                          O acesso com Google não está disponível neste
-                          ambiente.
-                        </p>
+                        <div>
+                          <Button
+                            aria-describedby="google-unavailable-message"
+                            className="w-full"
+                            disabled
+                            id="google-login"
+                          >
+                            Continuar com Google
+                            <Icon name="arrow-right" size={20} />
+                          </Button>
+                          <p
+                            className="mt-3 text-sm leading-6 text-text-muted"
+                            id="google-unavailable-message"
+                            role="status"
+                          >
+                            O acesso com Google não está disponível neste
+                            ambiente.
+                          </p>
+                        </div>
                       )}
 
                     {providersState.status === "unavailable" && (
