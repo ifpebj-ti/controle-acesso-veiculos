@@ -15,6 +15,11 @@ from its first published release.
   Offline regressions run in infrastructure CI; certificate renewal,
   scheduling and operational alert delivery remain separate work.
 
+### Changed
+
+- Balance desktop login content width, heading size and spacing while retaining
+  the mobile composition, institutional identity and existing sign-in behavior.
+
 ### Fixed
 
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative

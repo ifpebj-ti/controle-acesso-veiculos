@@ -2261,6 +2261,42 @@ body:has(.login-page),
 }
 
 @media (min-width: 1024px) {
+  .login-form-content,
+  .login-form-panel > .login-brand,
+  .login-form-panel > .login-support {
+    width: 100%;
+    max-width: 28rem;
+    margin-inline: auto;
+  }
+
+  .login-form-content {
+    padding-block: 1.5rem;
+  }
+
+  .login-view-title {
+    font-size: 2.5rem;
+    line-height: 1.15;
+  }
+
+  .login-eyebrow {
+    margin-bottom: 0.5rem;
+  }
+
+  .login-introduction {
+    margin-top: 0.75rem;
+    line-height: 1.6;
+  }
+
+  .login-provider-options,
+  .login-administrative-entry {
+    margin-top: 1.25rem;
+  }
+
+  .login-administrative-entry,
+  .login-form-panel > .login-support {
+    padding-top: 1rem;
+  }
+
   .login-visual {
     min-height: 100vh;
     min-height: 100dvh;

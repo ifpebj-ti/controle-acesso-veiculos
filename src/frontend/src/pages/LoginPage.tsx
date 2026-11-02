@@ -205,20 +205,20 @@ export function LoginPage() {
           <div className="login-form-panel order-2 flex min-h-full flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:order-1 lg:px-[clamp(4rem,7vw,9rem)] lg:py-12">
             <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
 
-            <div className="my-auto py-8 sm:py-9 lg:py-8">
+            <div className="login-form-content my-auto py-8 sm:py-9 lg:py-8">
               <header>
-                <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-primary">
+                <p className="login-eyebrow mb-3 text-sm font-bold uppercase tracking-[0.16em] text-primary">
                   Controle de acesso
                 </p>
                 <h1
-                  className="font-display text-4xl font-bold leading-tight text-text sm:text-5xl"
+                  className="login-view-title font-display text-4xl font-bold leading-tight text-text sm:text-5xl"
                   id="login-view-title"
                 >
                   {isAdministrativeAccessOpen
                     ? "Acesso administrativo"
                     : "Bem-vindo(a)!"}
                 </h1>
-                <p className="mt-4 max-w-xl text-base leading-7 text-text-muted">
+                <p className="login-introduction mt-4 max-w-xl text-base leading-7 text-text-muted">
                   {isAdministrativeAccessOpen
                     ? "Entre com e-mail e senha. Exclusivo para contas do perfil Administrador."
                     : "Acesse sua conta para registrar e acompanhar a movimentação de veículos no campus."}
@@ -239,7 +239,7 @@ export function LoginPage() {
 
               {!isAdministrativeAccessOpen ? (
                 <>
-                  <div className="mt-7 w-full max-w-xl">
+                  <div className="login-provider-options mt-7 w-full max-w-xl">
                     {providersState.status === "loading" && (
                       <div
                         aria-live="polite"
@@ -319,7 +319,7 @@ export function LoginPage() {
                     )}
                   </div>
 
-                  <div className="mt-6 w-full max-w-xl border-t border-border pt-5">
+                  <div className="login-administrative-entry mt-6 w-full max-w-xl border-t border-border pt-5">
                     <p className="text-xs text-text-muted">
                       Acesso administrativo
                     </p>

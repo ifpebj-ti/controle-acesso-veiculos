@@ -385,6 +385,15 @@ creme do sistema. Em superfícies coloridas, o componente deve usar a combinaç�
 com contraste medido, sem substituir as cores semânticas próprias de erro,
 sucesso, aviso ou indisponibilidade.
 
+## Composição do login em desktop
+
+A partir de 1024 px, o conteúdo de entrada usa uma coluna de até 28 rem,
+alinhada à marca e à orientação inferior. O título e os espaçamentos são
+ajustados somente nessa faixa; foto, curvas, temas e dimensões dos controles
+permanecem preservados. Em larguras menores, inclusive no reflow causado pelo
+zoom, continua valendo a composição móvel existente. A apresentação não altera
+descoberta de provedores, callback, sessão, acesso administrativo ou autorização.
+
 ## Testes e acessibilidade
 
 ### Transições de rota
