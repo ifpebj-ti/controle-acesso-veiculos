@@ -69,6 +69,12 @@ rota, e posiciona o foco no e-mail. “Voltar” desmonta o formulário, apaga a
 e devolve o foco à ação que o abriu. Contas Google podem ser pessoais ou
 institucionais, desde que estejam ativas e previamente autorizadas pelo
 Administrador; identidade Google não concede acesso nem perfil.
+Ao voltar pelo histórico com a página preservada pelo navegador (BFCache),
+o estado transitório de saída para o Google é encerrado e os provedores são
+consultados novamente. O sistema aguarda nova ação explícita; foco ou troca de
+aba não liberam outra tentativa durante a navegação. O retorno sem cache usa
+uma nova página com o estado inicial. Nenhum timer ou armazenamento de token
+é usado para destravar o botão, e a restauração do callback continua separada.
 O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;

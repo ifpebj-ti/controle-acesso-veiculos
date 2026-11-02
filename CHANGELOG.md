@@ -17,6 +17,9 @@ from its first published release.
 
 ### Fixed
 
+- Restore Google sign-in after a cached browser-history return, rechecking
+  provider availability before an explicit retry and preventing overlapping
+  departures or callback restoration. Preserve administrative access and focus.
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative
   account listings, consistently with account creation and profile changes.
   Preserve pagination and all existing public fields without changing the
