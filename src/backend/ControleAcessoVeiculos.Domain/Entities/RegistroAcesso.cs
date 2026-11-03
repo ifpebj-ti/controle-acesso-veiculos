@@ -56,6 +56,7 @@ public class RegistroAcesso
     public StatusRegistroAcesso Status { get; private set; }
     public int CriadoPorId { get; private set; }
     public int? AtualizadoPorId { get; private set; }
+    public int? EncerradoPorId { get; private set; }
     public string? Observacao { get; private set; }
     public DateTime DataCriacao { get; private set; }
     public DateTime? DataAlteracao { get; private set; }
@@ -79,6 +80,7 @@ public class RegistroAcesso
         DataHoraSaida = dataHoraSaida;
         TipoEncerramento = TipoEncerramentoAcesso.Regular;
         AtualizadoPorId = atualizadoPorId;
+        EncerradoPorId = atualizadoPorId;
         Status = StatusRegistroAcesso.Encerrado;
         DataAlteracao = DateTime.UtcNow;
     }
@@ -121,6 +123,7 @@ public class RegistroAcesso
         ObservacaoEncerramentoExcepcional = observacao.Trim();
         DataHoraRegularizacao = dataHoraRegularizacao;
         AtualizadoPorId = atualizadoPorId;
+        EncerradoPorId = atualizadoPorId;
         Status = StatusRegistroAcesso.Encerrado;
         DataAlteracao = dataHoraRegularizacao;
     }

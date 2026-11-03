@@ -103,9 +103,17 @@ reescrever acessos ou auditorias anteriores. Chaves estrangeiras restringem
 exclusão; constraints cobrem estado, autoria de decisão, motivo e cronologia.
 A auditoria armazena ação e referência ao pedido, evitando duplicar seus textos.
 
+A migration `20261103164228_PreserveAccessClosureActor` separa quem registrou o
+encerramento de quem fez a última edição descritiva (#609). A aprovação posterior
+não muda a autoria da saída nos relatórios. Para registros antigos, a atribuição
+somente é recuperada de auditorias de encerramento com um único autor identificável.
+Ausência de evidência, autores conflitantes e acessos ainda abertos permanecem sem
+autor de saída; não se usa o último editor como substituto. Revisar esses casos
+pela trilha existente, sem inventar autoria. O contrato público do relatório é preservado.
+
 Antes de promover: concluir a interface com Raíssa, testar a composição, fazer
-backup verificável, revisar/aplicar a migration em janela controlada e publicar
+backup verificável, revisar/aplicar as duas migrations em janela controlada e publicar
 imagens versionadas compatíveis. O banco de homologação ainda permanece intacto.
-Downgrade remove a nova tabela: testar somente em banco descartável; após uso
+Downgrade remove a nova tabela e a coluna dedicada de autoria: testar somente em banco descartável; após uso
 real, planejar restauração/compatibilidade sem apagar solicitações existentes.
 Manter #607 draft/Refs #451 enquanto integração e critérios restantes faltarem.

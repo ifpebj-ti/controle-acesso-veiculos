@@ -569,6 +569,10 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("data_hora_saida");
 
+                    b.Property<int?>("EncerradoPorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("encerrado_por_id");
+
                     b.Property<string>("MotivoEncerramentoExcepcional")
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
@@ -629,6 +633,9 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
 
                     b.HasIndex("DataHoraRegularizacao")
                         .HasDatabaseName("ix_registros_acesso_data_regularizacao");
+
+                    b.HasIndex("EncerradoPorId")
+                        .HasDatabaseName("ix_registros_acesso_encerrado_por_id");
 
                     b.HasIndex("PessoaId")
                         .HasDatabaseName("ix_registros_acesso_pessoa_id");
@@ -1222,6 +1229,12 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_registros_acesso_usuarios_criado_por_id");
+
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("EncerradoPorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_registros_acesso_usuarios_encerrado_por_id");
 
                     b.HasOne("ControleAcessoVeiculos.Domain.Entities.Pessoa", null)
                         .WithMany()

@@ -256,6 +256,31 @@ public sealed class AccessCorrectionReviewTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task PendingRequestDoesNotBlockExitAndApprovalPreservesTheExitAuthor()
+    {
+        using var application = ReviewApplication();
+        var (actorId, actor) = await ClientAsync(application, ProfileNames.Doorman);
+        using var actorClient = actor;
+        var (exitActorId, exitActor) = await ClientAsync(application, ProfileNames.SecurityGuard);
+        using var exitClient = exitActor;
+        var (_, reviewer) = await ClientAsync(application, ProfileNames.Administrator);
+        using var reviewerClient = reviewer;
+        var accessId = await SeedAccessAsync(actorId);
+        var request = await ReadAsync(await actorClient.PostAsJsonAsync(SubmitPath(accessId), Command(),
+            cancellationToken: TestContext.Current.CancellationToken));
+        (await exitClient.PostAsync($"/access-records/{accessId}/exit", null,
+            TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
+        (await DecideAsync(reviewerClient, request.Id, "Approve")).EnsureSuccessStatusCode();
+        using var response = await reviewerClient.GetAsync(
+            $"/reports/vehicle-movements?from=2003-01-01&to=2003-01-01&plate={request.Plate}",
+            TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        using var report = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var row = report.RootElement.GetProperty("items").EnumerateArray().Single(x => x.GetProperty("id").GetInt32() == accessId);
+        Assert.Equal(exitActorId, row.GetProperty("exitRecordedBy").GetProperty("userId").GetInt32());
+    }
+
+    [Fact]
     public async Task MigrationSupportsCleanUpgradeAndDowngradeInAnIsolatedDatabase()
     {
         using var scope = factory.Services.CreateScope();
@@ -271,19 +296,83 @@ public sealed class AccessCorrectionReviewTests(ApiFactory factory)
             await using var isolated = new ControleAcessoVeiculosDbContext(
                 new DbContextOptionsBuilder<ControleAcessoVeiculosDbContext>().UseNpgsql(builder.ConnectionString).Options);
             var migrations = isolated.Database.GetMigrations().ToArray();
+            var baseline = migrations[Array.FindIndex(migrations, x => x.EndsWith("_AddAccessCorrectionReview", StringComparison.Ordinal)) - 1];
             var migrator = isolated.GetService<IMigrator>();
-            await migrator.MigrateAsync(migrations[^2], cancellationToken: TestContext.Current.CancellationToken);
+            await migrator.MigrateAsync(baseline, cancellationToken: TestContext.Current.CancellationToken);
+            var legacyIds = await SeedLegacyClosureEvidenceAsync(isolated);
             await migrator.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
             Assert.False(await isolated.SolicitacoesCorrecaoAcesso.AnyAsync(cancellationToken: TestContext.Current.CancellationToken));
-            await migrator.MigrateAsync(migrations[^2], cancellationToken: TestContext.Current.CancellationToken);
+            await AssertLegacyClosureEvidenceAsync(isolated, legacyIds);
+            await migrator.MigrateAsync(baseline, cancellationToken: TestContext.Current.CancellationToken);
             await migrator.MigrateAsync(cancellationToken: TestContext.Current.CancellationToken);
             Assert.False(await isolated.SolicitacoesCorrecaoAcesso.AnyAsync(cancellationToken: TestContext.Current.CancellationToken));
+            await AssertLegacyClosureEvidenceAsync(isolated, legacyIds);
         }
         finally
         {
             await using var drop = new NpgsqlCommand($"DROP DATABASE \"{databaseName}\" WITH (FORCE)", admin);
             await drop.ExecuteNonQueryAsync(cancellationToken: TestContext.Current.CancellationToken);
         }
+    }
+
+    private static async Task<int[]> SeedLegacyClosureEvidenceAsync(ControleAcessoVeiculosDbContext db)
+    {
+        var token = TestContext.Current.CancellationToken;
+        var profile = new Perfil("Legacy review fixture", "Fictitious migration fixture.");
+        var person = new Pessoa("Fictitious legacy operator");
+        var editorPerson = new Pessoa("Fictitious legacy editor");
+        var category = new CategoriaAcesso("Legacy review fixture", "Fictitious migration fixture.");
+        var vehicle = new Veiculo("ABC1D23", "Automóvel", null, false);
+        db.AddRange(profile, person, editorPerson, category, vehicle);
+        await db.SaveChangesAsync(token);
+        var exitActor = new Usuario("legacy-exit@example.test", "migration-fixture-not-a-login-hash", person.Id, profile.Id);
+        var editor = new Usuario("legacy-editor@example.test", "migration-fixture-not-a-login-hash", editorPerson.Id, profile.Id);
+        db.AddRange(exitActor, editor);
+        await db.SaveChangesAsync(token);
+        var ids = new List<int>();
+        await using var connection = new NpgsqlConnection(db.Database.GetConnectionString());
+        await connection.OpenAsync(token);
+        for (var index = 0; index < 4; index++)
+        {
+            await using var command = new NpgsqlCommand("""
+                INSERT INTO dbo.registros_acesso
+                    (veiculo_id, pessoa_id, categoria_acesso_id, data_hora_entrada, data_hora_saida,
+                     tipo_encerramento, objetivo, status, criado_por_id, atualizado_por_id, data_criacao)
+                VALUES (@vehicle, @person, @category, '2003-01-01T12:00:00Z',
+                    CASE WHEN @closed THEN '2003-01-01T13:00:00Z'::timestamptz ELSE NULL END,
+                    CASE WHEN @closed THEN 'Regular' ELSE NULL END, 'Legacy fixture',
+                    CASE WHEN @closed THEN 'Encerrado' ELSE 'Aberto' END, @actor, @editor, '2003-01-01T12:00:00Z')
+                RETURNING id;
+                """, connection);
+            command.Parameters.AddWithValue("vehicle", vehicle.Id);
+            command.Parameters.AddWithValue("person", person.Id);
+            command.Parameters.AddWithValue("category", category.Id);
+            command.Parameters.AddWithValue("actor", exitActor.Id);
+            command.Parameters.AddWithValue("editor", editor.Id);
+            command.Parameters.AddWithValue("closed", index != 3);
+            var id = (int)(await command.ExecuteScalarAsync(token))!;
+            ids.Add(id);
+            db.Auditorias.Add(new Auditoria(DateTime.UtcNow, TipoAcaoAuditoria.Alteracao,
+                "RegistroAcesso", id, editor.Id, dadosNovos: "{\"changedFields\":[\"objective\"]}", detalhes: "Descriptive correction."));
+            if (index is 0 or 2)
+                db.Auditorias.Add(new Auditoria(DateTime.UtcNow, TipoAcaoAuditoria.Alteracao,
+                    "RegistroAcesso", id, exitActor.Id, dadosNovos: "{\"status\":\"Encerrado\"}", detalhes: "Vehicle access exit registered."));
+            if (index == 2)
+                db.Auditorias.Add(new Auditoria(DateTime.UtcNow, TipoAcaoAuditoria.Alteracao,
+                    "RegistroAcesso", id, editor.Id, dadosNovos: "{\"status\":\"Encerrado\"}", detalhes: "Vehicle access exit registered."));
+        }
+        await db.SaveChangesAsync(token);
+        return [.. ids, exitActor.Id];
+    }
+
+    private static async Task AssertLegacyClosureEvidenceAsync(ControleAcessoVeiculosDbContext db, int[] ids)
+    {
+        var records = await db.RegistrosAcesso.AsNoTracking().Where(x => ids.Take(4).Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.EncerradoPorId, TestContext.Current.CancellationToken);
+        Assert.Equal(ids[4], records[ids[0]]);
+        Assert.Null(records[ids[1]]); // No closure evidence.
+        Assert.Null(records[ids[2]]); // Conflicting actors must not be guessed.
+        Assert.Null(records[ids[3]]); // An open record has no exit author.
     }
 
     private WebApplicationFactory<Program> ReviewApplication() => factory.WithWebHostBuilder(

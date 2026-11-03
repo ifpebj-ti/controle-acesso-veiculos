@@ -24,6 +24,9 @@ from its first published release.
 
 ### Fixed
 
+- Preserved the original exit author in administrative reports after descriptive
+  corrections; legacy attribution is restored only from unambiguous closure audit
+  evidence, without guessing from the last editor (Refs #609).
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative
   account listings, consistently with account creation and profile changes.
   Preserve pagination and all existing public fields without changing the
