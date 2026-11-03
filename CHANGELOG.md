@@ -10,6 +10,8 @@ from its first published release.
 
 ### Added
 
+- Request Google account selection on each explicit OIDC login attempt on shared
+  workstations, preserving minimal scopes, PKCE and local preauthorization.
 - A read-only public HTTPS/readiness probe with certificate validation,
   bounded responses, sanitized failures and 30/14/7-day expiry states.
   Offline regressions run in infrastructure CI; certificate renewal,
