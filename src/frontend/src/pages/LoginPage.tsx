@@ -258,7 +258,7 @@ export function LoginPage() {
                           </p>
                           <Button
                             aria-busy={isGoogleRedirecting}
-                            className="w-full"
+                            className="login-google-action"
                             disabled={isGoogleRedirecting}
                             id="google-login"
                             onClick={beginGoogleAccess}
@@ -280,7 +280,7 @@ export function LoginPage() {
                         <div>
                           <Button
                             aria-describedby="google-unavailable-message"
-                            className="w-full"
+                            className="login-google-action"
                             disabled
                             id="google-login"
                           >

@@ -19,6 +19,8 @@ from its first published release.
 
 - Balance desktop login content width, heading size and spacing while retaining
   the mobile composition, institutional identity and existing sign-in behavior.
+- Cap the Google sign-in action at 18rem within the available width, retaining
+  its touch-target height and consistent enabled/disabled presentation.
 
 ### Fixed
 

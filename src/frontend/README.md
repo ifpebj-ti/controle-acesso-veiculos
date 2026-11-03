@@ -389,8 +389,10 @@ sucesso, aviso ou indisponibilidade.
 
 A partir de 1024 px, o conteúdo de entrada usa uma coluna de até 28 rem,
 alinhada à marca e à orientação inferior. O título e os espaçamentos são
-ajustados somente nessa faixa; foto, curvas, temas e dimensões dos controles
-permanecem preservados. Em larguras menores, inclusive no reflow causado pelo
+ajustados somente nessa faixa; foto, curvas, temas e altura dos controles
+permanecem preservados. O botão Google usa até 18 rem, limitado à largura
+disponível, em telas grandes e pequenas e nos estados ativo e desabilitado.
+Em larguras menores, inclusive no reflow causado pelo
 zoom, continua valendo a composição móvel existente. A apresentação não altera
 descoberta de provedores, callback, sessão, acesso administrativo ou autorização.
 

@@ -2260,6 +2260,11 @@ body:has(.login-page),
   }
 }
 
+.login-google-action {
+  width: 100%;
+  max-width: 18rem;
+}
+
 @media (min-width: 1024px) {
   .login-form-content,
   .login-form-panel > .login-brand,
