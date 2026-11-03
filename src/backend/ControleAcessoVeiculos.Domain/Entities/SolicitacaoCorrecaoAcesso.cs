@@ -4,6 +4,10 @@ namespace ControleAcessoVeiculos.Domain.Entities;
 
 public sealed class SolicitacaoCorrecaoAcesso
 {
+    private SolicitacaoCorrecaoAcesso()
+    {
+    }
+
     public SolicitacaoCorrecaoAcesso(
         Guid chaveRequisicao,
         int registroAcessoId,
@@ -38,13 +42,14 @@ public sealed class SolicitacaoCorrecaoAcesso
         SolicitadoEmUtc = solicitadoEmUtc;
     }
 
-    public Guid ChaveRequisicao { get; }
-    public int RegistroAcessoId { get; }
-    public int SolicitadoPorId { get; }
-    public ValoresDescritivosAcesso Original { get; }
-    public ValoresDescritivosAcesso Proposto { get; }
-    public string Justificativa { get; }
-    public DateTime SolicitadoEmUtc { get; }
+    public int Id { get; private set; }
+    public Guid ChaveRequisicao { get; private set; }
+    public int RegistroAcessoId { get; private set; }
+    public int SolicitadoPorId { get; private set; }
+    public ValoresDescritivosAcesso Original { get; private set; } = null!;
+    public ValoresDescritivosAcesso Proposto { get; private set; } = null!;
+    public string Justificativa { get; private set; } = null!;
+    public DateTime SolicitadoEmUtc { get; private set; }
     public StatusSolicitacaoCorrecao Status { get; private set; } = StatusSolicitacaoCorrecao.Pendente;
     public int? DecididoPorId { get; private set; }
     public DateTime? DecididoEmUtc { get; private set; }
