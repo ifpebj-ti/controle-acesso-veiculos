@@ -2,10 +2,11 @@
 
 **Data:** 03/11/2026. **Rastreabilidade:** #451, #100 e #162.
 
-**Estado:** direção técnica autorizada; implementação incremental em andamento.
-O primeiro incremento contém somente o modelo de domínio e suas regressões.
-Não existem novos endpoints, migration, persistência ou interface entregues por
-esse incremento. A correção direta atualmente publicada não foi alterada.
+**Estado:** backend candidato em implementação no #607, ainda sem implantação.
+O modelo, os casos de uso, a persistência, os endpoints e a migration foram
+implementados. A interface ainda depende de integração coordenada. A hospedagem
+publicada não foi alterada; uma implantação desse candidato exige revisar o novo
+contrato porque o caminho direto antigo é bloqueado por padrão.
 
 ## Contexto e autorização
 
@@ -55,10 +56,35 @@ O domínio recebe identificadores de atores, não claims HTTP ou permissões. A
 proibição de autoaprovação é uma invariante adicional, não autorização suficiente:
 a Application/API ainda deverão verificar os perfis e o escopo de cada consulta.
 
-## Persistência, aplicação e contrato ainda necessários
+## Persistência e API do candidato
 
-- Mapear solicitações com referências restritas ao acesso e aos atores; definir
-  migration, índices e unicidade de uma proposta pendente por acesso.
+O candidato usa a tabela `dbo.solicitacoes_correcao_acesso`, chave de repetição
+única por solicitante e índice que admite somente uma solicitação pendente por
+acesso. A solicitação compara a base enviada pela tela com os valores canônicos.
+Decisões concorrentes bloqueiam primeiro o acesso e depois a solicitação,
+sempre na mesma ordem. Aprovação, alteração efetiva e auditoria compartilham
+transação; rejeição e cancelamento não alteram os dados efetivos.
+
+Os quatro perfis podem solicitar correções dentro das capacidades descritivas
+já existentes; somente Transporte/Administrador podem revisar. Usuários
+operacionais consultam apenas pedidos próprios. Solicitar como revisor não
+autoriza decidir a própria proposta. Repetições de pedido/decisão iguais são
+idempotentes; reutilização da chave ou decisão com conteúdo divergente gera 409.
+
+O padrão é `AccessCorrections:RequireApproval=true`. Fora de Development/Testing,
+configurar false impede a inicialização. O override false existe para os testes
+explícitos da implementação legada, com suas asserções preservadas. No padrão
+seguro, o antigo PUT retorna 409/`CorrectionApprovalRequired`, sem alterar o
+acesso. Não ativar o novo backend sem preparar a interface correspondente.
+
+A [especificação operacional da API](../../operations/access-correction-review.md)
+detalha contrato, permissões, estados e ordem de implantação. A migration não foi
+aplicada à hospedagem por esse trabalho.
+
+## Verificações obrigatórias e conclusão integrada
+
+- Referências ao acesso, atores e categorias usam restrição de exclusão. Validar
+  a migration em banco limpo, atualização e downgrade antes de implantação.
 - Usar chave de requisição por solicitante para idempotência. A propriedade no
   domínio, sozinha, não deduplica chamadas HTTP nem impede concorrência.
 - Ler a versão atual e aplicar aprovação, alteração efetiva e auditoria na
@@ -66,8 +92,8 @@ a Application/API ainda deverão verificar os perfis e o escopo de cada consulta
   Comparação de snapshots em memória, sozinha, não resolve uma corrida no banco.
 - Preservar os snapshots na solicitação; a auditoria deve apontar pedido, atores,
   ação e campos alterados, evitando duplicar texto livre sensível sem finalidade.
-- Oferecer consulta paginada e filtrada de pedidos próprios para solicitantes e
-  fila de revisão para os perfis autorizados, com autorização no servidor.
+- As consultas paginadas e filtradas preservam escopo próprio/fila revisora no
+  servidor; a interface deve refletir essas permissões sem ampliá-las.
 - Definir respostas de conflito, validação e repetição, sem repetir uma mutação
   automaticamente após resultado de rede incerto.
 - Migrar a correção direta e a interface juntas. Nenhuma ativação poderá deixar

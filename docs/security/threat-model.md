@@ -6,9 +6,9 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 3.9
+**Versão:** 3.10
 
-**Data de referência:** 31 de outubro de 2026
+**Data de referência:** 3 de novembro de 2026
 
 **Rastreabilidade:** Issues #550, #537, #540 e #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #214, #218, #220, #227, #251, #258, #355, #441, #448 e #469
 
@@ -51,7 +51,7 @@ O arquivo
 [`controle-acesso-veiculos-threat-model.json`](controle-acesso-veiculos-threat-model.json)
 é a representação visual versionada deste documento para OWASP Threat Dragon
 2.x. Ele contém o fluxo principal, a cadeia de entrega, as fronteiras de
-confiança e as ameaças `TM-01` a `TM-27` associadas aos elementos relevantes.
+confiança e as ameaças `TM-01` a `TM-28` associadas aos elementos relevantes.
 
 O JSON não substitui esta fonte textual: probabilidades, impactos, riscos
 residuais e decisões institucionais continuam detalhados aqui. Mudanças de
@@ -353,7 +353,10 @@ equivale a uma nova importação visual no aplicativo ou a um teste de seguranç
 
 O [ADR 0007](../architecture/decisions/0007-audited-access-correction-review.md)
 registra a proposta autorizada e os limites do primeiro incremento de domínio.
-O fluxo publicado ainda não mudou; não afirmar que a revisão já protege a API.
+O backend candidato agora implementa solicitação, escopo de leitura, decisão e
+persistência transacional. O runtime publicado ainda não mudou; não afirmar que
+a revisão já protege a API da hospedagem. TM-28 permanece Open no modelo visual
+até a integração e a ativação verificadas.
 
 Riscos a validar antes da integração:
 
@@ -374,3 +377,15 @@ Riscos a validar antes da integração:
 
 O modelo visual será atualizado com os novos fluxos persistidos/endpoints antes
 da ativação; a inclusão deste desenho não representa uma implementação na nuvem.
+
+
+### Estado das mitigações da TM-28 no candidato
+
+O #607 implementa índices de idempotência/pendência, snapshots, restrição de
+exclusão por FK, validação de estado, consulta própria por chave, políticas de
+revisão e transação única. Operadores só consultam os próprios pedidos;
+Transporte/Administrador revisam, sem autoavaliação. O caminho direto antigo é
+bloqueado por padrão e a configuração false é recusada fora de Development/Testing.
+Isso não equivale a provar que o fluxo está implantado: a interface e o ensaio
+HTTPS continuam pendentes. A nova tabela não replica documento ou credencial;
+texto livre fica restrito à solicitação, sem cópia integral na auditoria.
