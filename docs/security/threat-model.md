@@ -347,3 +347,30 @@ TM-23 passou a reconhecer a integração visual já incorporada na #214, mantend
 calibração e homologação na #162. Não foram alterados os escores de nenhuma
 ameaça, a topologia ou as posições do diagrama. Validação de estrutura/IDs não
 equivale a uma nova importação visual no aplicativo ou a um teste de segurança.
+
+
+## Incremento planejado de revisão de correções — #451, 03/11/2026
+
+O [ADR 0007](../architecture/decisions/0007-audited-access-correction-review.md)
+registra a proposta autorizada e os limites do primeiro incremento de domínio.
+O fluxo publicado ainda não mudou; não afirmar que a revisão já protege a API.
+
+Riscos a validar antes da integração:
+
+- **Adulteração:** aplicar proposta sobre base alterada ou permitir que o endpoint
+  antigo contorne a aprovação. Exigir conflito de versão, transação e corte
+  coordenado da correção direta quando o novo fluxo for ativado.
+- **Repúdio:** apagar proposta rejeitada, original, ator ou motivo. Preservar
+  snapshots e decisões e testar rollback conjunto com a auditoria.
+- **Elevação de privilégio:** solicitante decidir a própria proposta ou operador
+  chamar endpoint de revisão. A invariante de domínio impede autoaprovação;
+  perfis, escopo de consulta e revogação continuam exigindo controles no servidor.
+- **Concorrência e disponibilidade:** dois revisores ou reenvios criarem decisões
+  duplicadas. Exigir idempotência e serialização no PostgreSQL; testes unitários
+  em memória não comprovam esses controles persistidos.
+- **Divulgação:** duplicar documentos, tokens ou texto pessoal desnecessário na
+  solicitação e na auditoria. Limitar o primeiro recorte aos dados descritivos,
+  proteger consultas e não registrar payloads íntegros em logs técnicos.
+
+O modelo visual será atualizado com os novos fluxos persistidos/endpoints antes
+da ativação; a inclusão deste desenho não representa uma implementação na nuvem.
