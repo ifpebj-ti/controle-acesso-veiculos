@@ -1,4 +1,5 @@
 import { StrictMode } from "react";
+import { AxiosError } from "axios";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
@@ -531,7 +532,9 @@ describe("authentication flow", () => {
   });
 
   it("presents backend unavailability without confirming a login", async () => {
-    vi.spyOn(api, "post").mockRejectedValue(new Error("connection failed"));
+    vi.spyOn(api, "post").mockRejectedValue(
+      new AxiosError("connection failed", "ERR_NETWORK"),
+    );
 
     renderAuthenticationFlow();
     await submitCredentials();
@@ -617,7 +620,9 @@ describe("authentication flow", () => {
     renderAuthenticationFlow();
     await submitCredentials();
     await screen.findByText("operator@example.test — Administrador");
-    vi.mocked(api.get).mockRejectedValueOnce(new Error("network unavailable"));
+    vi.mocked(api.get).mockRejectedValueOnce(
+      new AxiosError("network unavailable", "ERR_NETWORK"),
+    );
     await userEvent.click(screen.getByRole("button", { name: "Sair" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -637,7 +642,9 @@ describe("authentication flow", () => {
     vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
     try {
-      vi.mocked(api.get).mockRejectedValue(new Error("network unavailable"));
+      vi.mocked(api.get).mockRejectedValue(
+        new AxiosError("network unavailable", "ERR_NETWORK"),
+      );
       vi.spyOn(api, "post").mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));

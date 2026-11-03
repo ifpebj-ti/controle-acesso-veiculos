@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AxiosError } from "axios";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -266,7 +267,7 @@ describe("AccessCorrectionDialog", () => {
 
   it("distinguishes network and response-contract failures", async () => {
     vi.mocked(correctAccessRecord)
-      .mockRejectedValueOnce(new Error("network"))
+      .mockRejectedValueOnce(new AxiosError("network", "ERR_NETWORK"))
       .mockRejectedValueOnce(new AccessRecordsContractError());
     const user = userEvent.setup();
     render(<DialogHarness />);
