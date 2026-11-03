@@ -4,12 +4,21 @@ import { resolve } from "node:path";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionProvider } from "../features/authentication";
 import { AppearanceProvider } from "../features/appearance";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
+import { api } from "../services/api";
 import { LoginPage } from "./LoginPage";
+
+beforeEach(() => {
+  vi.spyOn(api, "get").mockResolvedValue({
+    data: { googleEnabled: true },
+  });
+});
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("LoginPage accessibility", () => {
   it("does not globally scale the login composition", () => {
@@ -36,10 +45,10 @@ describe("LoginPage accessibility", () => {
     const shell = container.querySelector(".login-shell");
     const composition = container.querySelector(".login-composition");
 
-    expect(main).toHaveClass("login-page", "overflow-x-hidden");
+    expect(main).toHaveClass("login-page", "min-h-dvh", "overflow-x-hidden");
     expect(main).not.toHaveClass("overflow-hidden");
-    expect(shell).toHaveClass("min-h-svh", "w-full");
-    expect(composition).toHaveClass("min-h-svh", "w-full");
+    expect(shell).toHaveClass("min-h-dvh", "w-full");
+    expect(composition).toHaveClass("min-h-dvh", "w-full");
     expect(composition).not.toHaveClass("rounded-[1.75rem]", "shadow-2xl");
   });
 
@@ -87,13 +96,18 @@ describe("LoginPage accessibility", () => {
       "order-2",
       "lg:order-1",
     );
-    expect(container.querySelector(".login-visual-divider")).toHaveAttribute(
-      "preserveAspectRatio",
-      "none",
+    const dividers = container.querySelectorAll(".login-visual-divider");
+
+    expect(dividers).toHaveLength(2);
+    expect(dividers[0]).toHaveClass("login-visual-divider--desktop");
+    expect(dividers[1]).toHaveClass("login-visual-divider--mobile");
+    dividers.forEach((divider) => {
+      expect(divider).toHaveAttribute("aria-hidden", "true");
+      expect(divider).toHaveAttribute("preserveAspectRatio", "none");
+    });
+    expect(container.querySelectorAll(".login-visual-road-line")).toHaveLength(
+      2,
     );
-    expect(
-      container.querySelector(".login-visual-road-line"),
-    ).toBeInTheDocument();
   });
 
   it("preserves the semantic structure and keyboard focus order", async () => {
@@ -118,6 +132,18 @@ describe("LoginPage accessibility", () => {
     expect(
       screen.queryByRole("group", { name: "Aparência" }),
     ).not.toBeInTheDocument();
+
+    const google = await screen.findByRole("button", {
+      name: "Continuar com Google",
+    });
+    const administrativeAccess = screen.getByRole("button", {
+      name: "Entrar com usuário e senha",
+    });
+    expect(google.compareDocumentPosition(administrativeAccess)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    await user.click(administrativeAccess);
 
     const email = screen.getByRole("textbox", { name: /e-mail/i });
     const password = screen.getByLabelText("Senha:");
@@ -154,7 +180,7 @@ describe("LoginPage accessibility", () => {
 
     expect(
       await screen.findByText(
-        "Utilize a conta individual cadastrada pelo administrador.",
+        "O acesso é permitido somente a contas previamente autorizadas pelo Administrador.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -163,6 +189,7 @@ describe("LoginPage accessibility", () => {
   });
 
   it("has no serious automated accessibility violations", async () => {
+    const user = userEvent.setup();
     const { container } = render(
       <AppearanceProvider>
         <SessionProvider>
@@ -173,6 +200,12 @@ describe("LoginPage accessibility", () => {
       </AppearanceProvider>,
     );
 
+    await screen.findByRole("button", { name: "Continuar com Google" });
+    await expectNoSeriousAccessibilityViolations(container);
+
+    await user.click(
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+    );
     await expectNoSeriousAccessibilityViolations(container);
   });
 });

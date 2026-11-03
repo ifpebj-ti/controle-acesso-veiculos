@@ -19,6 +19,9 @@ from its first published release.
 
 ### Fixed
 
+- Restore Google sign-in after a cached browser-history return, rechecking
+  provider availability before an explicit retry and preventing overlapping
+  departures or callback restoration. Preserve administrative access and focus.
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative
   account listings, consistently with account creation and profile changes.
   Preserve pagination and all existing public fields without changing the
@@ -42,6 +45,10 @@ from its first published release.
   preauthorized accounts by stable subject, rotates local credential state and
   creates the existing protected application session without exposing provider
   tokens to the browser.
+- The frontend discovers whether Google authentication is enabled, starts the
+  backend-mediated redirect as its primary sign-in action, restores the local
+  session after the callback, and keeps local credentials behind an explicit
+  Administrator-only access action.
 
 - Semantic frontend design tokens and a documented WCAG 2.2 contrast matrix
   for the future light, dark, and system appearance foundation.

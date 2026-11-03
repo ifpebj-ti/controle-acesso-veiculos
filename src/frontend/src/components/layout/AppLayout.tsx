@@ -2,6 +2,7 @@ import { type MouseEvent, useEffect, useId, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import {
+  canShowPasswordChange,
   profileLabels,
   useAuthenticatedSession,
 } from "../../features/authentication";
@@ -37,7 +38,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
   function handleLogout() {
     void logout();
     closeMenu?.();
-    navigate("/login");
+    navigate("/login", { replace: true, state: null });
   }
 
   return (
@@ -153,20 +154,22 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
       <AppearanceSelector className="mt-8" />
 
       <div className="mt-4 border-t border-border pt-4">
-        <NavLink
-          className={({ isActive }) =>
-            `sidebar-primary-item flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left font-semibold ${
-              isActive
-                ? "sidebar-primary-item--active"
-                : "text-text hover:bg-surface"
-            }`
-          }
-          onClick={closeMenu}
-          to="/conta/senha"
-        >
-          <Icon name="shield" size={21} />
-          Alterar senha
-        </NavLink>
+        {canShowPasswordChange(user) && (
+          <NavLink
+            className={({ isActive }) =>
+              `sidebar-primary-item flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left font-semibold ${
+                isActive
+                  ? "sidebar-primary-item--active"
+                  : "text-text hover:bg-surface"
+              }`
+            }
+            onClick={closeMenu}
+            to="/conta/senha"
+          >
+            <Icon name="shield" size={21} />
+            Alterar senha
+          </NavLink>
+        )}
 
         <Button
           className="sidebar-logout mt-1 w-full justify-start"
@@ -348,7 +351,7 @@ function MandatoryPasswordChangeLayout() {
 
   function handleLogout() {
     void logout();
-    navigate("/login", { replace: true });
+    navigate("/login", { replace: true, state: null });
   }
 
   return (
