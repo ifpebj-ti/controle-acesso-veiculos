@@ -55,17 +55,17 @@ institucional, não da equipe de desenvolvimento.
 
 ## Inventário e finalidade
 
-| Grupo             | Exemplos no sistema                                                          | Finalidade do MVP                                       | Acesso esperado                                                    | Decisão de retenção                                                                   |
-| ----------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Identidade        | nome, tipo e número de documento opcional, vínculo e e-mail                  | identificar condutor, motorista institucional e usuário | operação conforme política; gestão por Administrador               | enquanto ativa ou referenciada por registro dentro do prazo de cinco anos             |
-| Credencial        | e-mail da conta, hash de senha, bloqueio e perfil                            | autenticação e autorização individual                   | serviço de autenticação e gestão administrativa                    | conta ativa; identidade mínima vinculada à auditoria pelo prazo do evento relacionado |
-| Veículo           | placa, tipo, identificação de frota, marca, modelo, cor e ano                | identificar veículo e manter catálogo institucional     | operação, Transporte e Administração conforme política             | enquanto ativo ou referenciado por registro dentro do prazo de cinco anos             |
-| Acesso geral      | entrada, saída, objetivo, categoria, observação e autoria                    | controlar e consultar circulação no campus              | Portaria, Vigilância, Transporte e Administração conforme política | cinco anos após o encerramento                                                        |
-| Uso institucional | motorista, veículo, horários, quilometragem, itinerário e autoria            | controlar saída e retorno da frota                      | Transporte e Administração; consulta operacional limitada          | cinco anos após o encerramento                                                        |
-| Evento            | responsável, contato operacional, período, local, estacionamento, pernoite, tipos, quantidades e placas opcionais | antecipar e conferir acessos autorizados | operação, Transporte e Administração conforme política | cinco anos após o encerramento |
-| Auditoria         | ação, entidade, registro, ator, horário e transição de estado                | responsabilização, investigação e integridade           | Administrador                                                      | cinco anos após o evento auditado                                                     |
-| Log técnico       | correlação, rota, status, duração e falha sem corpo ou credenciais           | diagnóstico e segurança operacional                     | equipe técnica autorizada                                          | 90 dias, salvo preservação documentada por incidente                                  |
-| Backup            | cópia integral dos grupos persistidos no PostgreSQL                          | recuperação de desastre                                 | custodiante técnico autorizado                                     | janela móvel de 35 dias; não é arquivo histórico                                      |
+| Grupo             | Exemplos no sistema                                                                                               | Finalidade do MVP                                       | Acesso esperado                                                    | Decisão de retenção                                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Identidade        | nome, tipo e número de documento opcional, vínculo e e-mail                                                       | identificar condutor, motorista institucional e usuário | operação conforme política; gestão por Administrador               | enquanto ativa ou referenciada por registro dentro do prazo de cinco anos             |
+| Credencial        | e-mail da conta, hash de senha, bloqueio e perfil                                                                 | autenticação e autorização individual                   | serviço de autenticação e gestão administrativa                    | conta ativa; identidade mínima vinculada à auditoria pelo prazo do evento relacionado |
+| Veículo           | placa, tipo, identificação de frota, marca, modelo, cor e ano                                                     | identificar veículo e manter catálogo institucional     | operação, Transporte e Administração conforme política             | enquanto ativo ou referenciado por registro dentro do prazo de cinco anos             |
+| Acesso geral      | entrada, saída, objetivo, categoria, observação e autoria                                                         | controlar e consultar circulação no campus              | Portaria, Vigilância, Transporte e Administração conforme política | cinco anos após o encerramento                                                        |
+| Uso institucional | motorista, veículo, horários, quilometragem, itinerário e autoria                                                 | controlar saída e retorno da frota                      | Transporte e Administração; consulta operacional limitada          | cinco anos após o encerramento                                                        |
+| Evento            | responsável, contato operacional, período, local, estacionamento, pernoite, tipos, quantidades e placas opcionais | antecipar e conferir acessos autorizados                | operação, Transporte e Administração conforme política             | cinco anos após o encerramento                                                        |
+| Auditoria         | ação, entidade, registro, ator, horário e transição de estado                                                     | responsabilização, investigação e integridade           | Administrador                                                      | cinco anos após o evento auditado                                                     |
+| Log técnico       | correlação, rota, status, duração e falha sem corpo ou credenciais                                                | diagnóstico e segurança operacional                     | equipe técnica autorizada                                          | 90 dias, salvo preservação documentada por incidente                                  |
+| Backup            | cópia integral dos grupos persistidos no PostgreSQL                                                               | recuperação de desastre                                 | custodiante técnico autorizado                                     | janela móvel de 35 dias; não é arquivo histórico                                      |
 
 Documento pessoal continua opcional no fluxo geral. A homologação deve confirmar
 se ele é realmente necessário em cada categoria antes de ampliar a coleta.
@@ -204,6 +204,16 @@ uma categoria exige documento, a finalidade e o prazo precisam constar na polít
 - não tentar reconstruir o banco diretamente nem usar credenciais compartilhadas.
 
 ## Recuperação e reconciliação
+
+**Definição recebida em 03/11/2026:** Porteiro/Vigilante digitam e Transporte
+confere diariamente, com justificativa para aceitar ou recusar; Administrador
+é a continuidade técnica e quem digitou não confere o próprio lançamento.
+A operação continua sem esperar essa revisão. Veículo ainda dentro deve aparecer
+em aberto com conferência pendente e permitir a saída normal. Recusa preserva
+fatos e papel, encaminhando correção rastreada. A #100 ainda não entrega esse fluxo
+integrado; o [ADR 0008](../architecture/decisions/0008-paper-reconciliation-and-asynchronous-review.md)
+registra o modelo candidato e as proteções ainda necessárias. Essa definição
+não equivale a exercício observado ou aceite de uma interface.
 
 1. A TI confirma saúde da API e do banco e registra o horário de recuperação.
 2. O responsável operacional encerra a contingência e conta as linhas produzidas.
