@@ -6,6 +6,7 @@ import { useConfirmation } from "../../../components/ui/confirmationContext";
 import {
   describeApiError,
   getApiValidationErrors,
+  type ApiErrorDescription,
 } from "../../../services/api-errors";
 import {
   createUserAccount,
@@ -13,6 +14,7 @@ import {
   reactivateUserAccount,
   resetTemporaryCredential,
   searchUserAccounts,
+  UserAccountsContractError,
 } from "../services/userAccountsService";
 import type {
   CredentialResetReason,
@@ -34,6 +36,17 @@ const initialFilters: UserAccountFilters = {
 };
 
 const createFields = ["email", "name", "profileName"] as const;
+
+function describeAccountError(error: unknown): ApiErrorDescription {
+  if (error instanceof UserAccountsContractError) {
+    return {
+      kind: "unexpected",
+      message:
+        "Não foi possível confirmar os dados recebidos. Atualize a lista antes de tentar novamente.",
+    };
+  }
+  return describeApiError(error);
+}
 
 interface CredentialDisclosure {
   accountId?: number;
@@ -101,7 +114,7 @@ export function useUserAccounts() {
         if (persistedMessage) setNotice(persistedMessage);
       } catch (error) {
         if (requestId.current !== currentRequest) return;
-        const description = describeApiError(error);
+        const description = describeAccountError(error);
         const validationErrors = getApiValidationErrors(error);
         if (description.kind === "validation" && validationErrors.search) {
           setFilterError(validationErrors.search);
@@ -130,7 +143,7 @@ export function useUserAccounts() {
       })
       .catch((error: unknown) => {
         if (requestId.current !== currentRequest) return;
-        const description = describeApiError(error);
+        const description = describeAccountError(error);
         setStatus(description.kind === "access-denied" ? "denied" : "error");
         setErrorMessage(description.message);
       });
@@ -228,7 +241,7 @@ export function useUserAccounts() {
           : "Conta criada com sucesso.",
       );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       const fieldErrors = createFieldErrors(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
@@ -296,7 +309,7 @@ export function useUserAccounts() {
         `Credencial de ${account.name} redefinida com sucesso.`,
       );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
         setStatus("denied");
@@ -338,7 +351,7 @@ export function useUserAccounts() {
         `Conta de ${account.name} ${account.active ? "desativada" : "reativada"} com sucesso.`,
       );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
         setStatus("denied");

@@ -7,6 +7,7 @@ import {
   reactivateUserAccount,
   resetTemporaryCredential,
   searchUserAccounts,
+  UserAccountsContractError,
 } from "./userAccountsService";
 
 vi.mock("../../../services/api", () => ({
@@ -30,6 +31,111 @@ const account = {
 
 describe("userAccountsService", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it.each(["Local", "Google"])(
+    "accepts the published %s account fields",
+    async (authenticationMethod) => {
+      const item = {
+        ...account,
+        authenticationMethod,
+        externalIdentityLinked: authenticationMethod === "Google",
+        requiresPasswordChange: false,
+        temporaryCredentialExpiresAtUtc: null,
+      };
+      vi.mocked(api.get).mockResolvedValue({
+        data: {
+          items: [item],
+          page: 1,
+          pageSize: 25,
+          totalCount: 1,
+          totalPages: 1,
+        },
+      });
+      const result = await searchUserAccounts({
+        page: 1,
+        pageSize: 25,
+        search: "",
+      });
+      expect(result.items).toEqual([item]);
+    },
+  );
+
+  it.each([
+    { ...account, authenticationMethod: "Unknown" },
+    { ...account, externalIdentityLinked: "true" },
+    { ...account, unexpectedField: true },
+  ])("keeps account validation strict", async (item) => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        items: [item],
+        page: 1,
+        pageSize: 25,
+        totalCount: 1,
+        totalPages: 1,
+      },
+    });
+    await expect(
+      searchUserAccounts({ page: 1, pageSize: 25, search: "" }),
+    ).rejects.toBeInstanceOf(UserAccountsContractError);
+  });
+
+  it("accepts Google creation with both credential fields null", async () => {
+    const created = {
+      email: account.email,
+      id: 9,
+      profileName: "Porteiro",
+      authenticationMethod: "Google",
+      temporaryCredential: null,
+      temporaryCredentialExpiresAtUtc: null,
+    };
+    vi.mocked(api.post).mockResolvedValueOnce({ data: created });
+    await expect(
+      createUserAccount({
+        email: account.email,
+        name: account.name,
+        profileName: "Porteiro",
+      }),
+    ).resolves.toEqual(created);
+    expect(api.post).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    {
+      authenticationMethod: "Google",
+      temporaryCredential: "fictitious-unexpected",
+      temporaryCredentialExpiresAtUtc: null,
+    },
+    {
+      authenticationMethod: "Google",
+      temporaryCredential: null,
+      temporaryCredentialExpiresAtUtc: "2030-06-10T12:00:00Z",
+    },
+    {
+      authenticationMethod: "Local",
+      temporaryCredential: null,
+      temporaryCredentialExpiresAtUtc: null,
+    },
+  ])(
+    "rejects credential fields inconsistent with the authentication method",
+    async (credential) => {
+      vi.mocked(api.post).mockResolvedValueOnce({
+        data: {
+          email: account.email,
+          id: 9,
+          profileName: "Porteiro",
+          ...credential,
+        },
+      });
+      await expect(
+        createUserAccount({
+          email: account.email,
+          name: account.name,
+          profileName: "Porteiro",
+        }),
+      ).rejects.toBeInstanceOf(UserAccountsContractError);
+      expect(api.post).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("uses the documented account lifecycle endpoints", async () => {
     vi.mocked(api.get).mockResolvedValue({

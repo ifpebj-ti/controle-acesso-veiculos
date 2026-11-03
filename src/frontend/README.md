@@ -232,6 +232,13 @@ Google; a promoção para Administrador mostra a credencial temporária somente
 quando retornada pelo servidor, reutilizando a exibição única em memória. Ela
 não é enviada a logs, URL ou storage e é removida da interface ao fechar.
 
+Respostas de contas incompatíveis com o contrato são recusadas e exibem uma
+orientação para atualizar a lista, sem atribuir o problema à conexão do usuário.
+Falhas reais de transporte mantêm a mensagem de rede. Esse tratamento pertence
+à feature de contas; a revisão da classificação compartilhada nos demais fluxos
+permanece na Issue #603. A aceitação da credencial nula para Google já faz parte
+do schema estrito existente e não dispensa a validação dos demais campos.
+
 O diálogo reutiliza o seletor e os tokens existentes. Mantém o restante da
 página inerte, contém Tab/Shift+Tab, permite Escape fora de uma mutação pendente
 e devolve o foco ao cancelar. Erros recebem anúncio acessível, foco e rolagem

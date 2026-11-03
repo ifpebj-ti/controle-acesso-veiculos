@@ -18,6 +18,7 @@ import {
 } from "../features/user-accounts";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { selectFieldOption } from "../test/selectField";
+import { UserAccountsContractError } from "../features/user-accounts/services/userAccountsService";
 import { AdminPage } from "./AdminPage";
 
 vi.mock("../features/authentication", async (original) => ({
@@ -413,6 +414,65 @@ describe("administrative profile changes", () => {
     await waitFor(() => expect(trigger).toHaveFocus());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(changeAccountProfile).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      new UserAccountsContractError(),
+      "Não foi possível confirmar os dados recebidos.",
+    ],
+    [{ isAxiosError: true, code: "ERR_NETWORK" }, "Verifique a rede"],
+  ])(
+    "distinguishes invalid account responses from transport failures: %s",
+    async (failure, message) => {
+      vi.mocked(searchUserAccounts)
+        .mockRejectedValueOnce(failure)
+        .mockResolvedValue(page);
+      const user = userEvent.setup();
+      renderPage();
+      expect(await screen.findByRole("alert")).toHaveTextContent(message);
+      if (failure instanceof UserAccountsContractError) {
+        expect(screen.queryByText(/Verifique a rede/)).not.toBeInTheDocument();
+      }
+      await user.click(
+        screen.getByRole("button", { name: "Tentar novamente" }),
+      );
+      await screen.findByRole("button", { name: "Nova conta" });
+      expect(searchUserAccounts).toHaveBeenCalledTimes(2);
+      expect(createUserAccount).not.toHaveBeenCalled();
+    },
+  );
+
+  it("preserves the creation fields after an invalid response without repeating the mutation", async () => {
+    vi.mocked(createUserAccount).mockRejectedValue(
+      new UserAccountsContractError(),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole("button", { name: "Nova conta" }));
+    await user.type(screen.getByLabelText("Nome da pessoa"), "Nova Pessoa");
+    await user.type(
+      screen.getByLabelText("E-mail de acesso"),
+      "nova@example.test",
+    );
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Perfil de acesso"),
+      "Porteiro",
+    );
+    await user.click(screen.getByRole("button", { name: "Criar conta" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível confirmar os dados recebidos.",
+    );
+    expect(screen.queryByText(/Verifique a rede/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Nome da pessoa")).toHaveValue("Nova Pessoa");
+    expect(screen.getByLabelText("E-mail de acesso")).toHaveValue(
+      "nova@example.test",
+    );
+    expect(createUserAccount).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("dialog", { name: "Credencial temporária criada" }),
+    ).not.toBeInTheDocument();
   });
 
   it("accepts Google account creation without inventing a local credential", async () => {

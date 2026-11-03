@@ -36,14 +36,20 @@ vi.mock("../features/authentication", () => ({
   profileNames: ["Porteiro", "Vigilante", "SetorTransporte", "Administrador"],
   useAuthenticatedSession: vi.fn(),
 }));
-vi.mock("../features/user-accounts/services/userAccountsService", () => ({
-  changeAccountProfile: vi.fn(),
-  createUserAccount: vi.fn(),
-  deactivateUserAccount: vi.fn(),
-  reactivateUserAccount: vi.fn(),
-  resetTemporaryCredential: vi.fn(),
-  searchUserAccounts: vi.fn(),
-}));
+vi.mock(
+  "../features/user-accounts/services/userAccountsService",
+  async (original) => ({
+    ...(await original<
+      typeof import("../features/user-accounts/services/userAccountsService")
+    >()),
+    changeAccountProfile: vi.fn(),
+    createUserAccount: vi.fn(),
+    deactivateUserAccount: vi.fn(),
+    reactivateUserAccount: vi.fn(),
+    resetTemporaryCredential: vi.fn(),
+    searchUserAccounts: vi.fn(),
+  }),
+);
 vi.mock("../features/audit-trail/services/auditTrailService", () => ({
   searchAuditTrail: vi.fn(),
 }));
