@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AxiosError } from "axios";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -299,7 +300,9 @@ describe("administrative profile changes", () => {
   );
 
   it("requires a list refresh after an uncertain network result without repeating the mutation", async () => {
-    vi.mocked(changeAccountProfile).mockRejectedValue(new Error("offline"));
+    vi.mocked(changeAccountProfile).mockRejectedValue(
+      new AxiosError("offline", "ERR_NETWORK"),
+    );
     const user = userEvent.setup();
     renderPage();
     const { dialog } = await openDialog(user);
@@ -375,7 +378,7 @@ describe("administrative profile changes", () => {
   it("does not repeat a successful mutation when reloading fails", async () => {
     vi.mocked(searchUserAccounts)
       .mockResolvedValueOnce(page)
-      .mockRejectedValueOnce(new Error("offline"))
+      .mockRejectedValueOnce(new AxiosError("offline", "ERR_NETWORK"))
       .mockResolvedValue(page);
     const user = userEvent.setup();
     renderPage();
