@@ -20,12 +20,35 @@ using Npgsql;
 namespace ControleAcessoVeiculos.IntegrationTests;
 
 [Collection(IntegrationTestCollection.Name)]
-public sealed class AccessCorrectionReviewTests(ApiFactory factory)
+public sealed class AccessCorrectionReviewTests(ApiFactory factory) : IAsyncLifetime
 {
+    private readonly List<int> seededAccessIds = [];
     private const string Password = "Test-only-review-451-password-123!";
     private const string Reason = "Correção após conferência dos dados fictícios.";
     private static readonly AccessCorrectionValues Original = new(AccessCategoryNames.Visitor, "Objetivo original", null);
     private static readonly AccessCorrectionValues Proposed = new(AccessCategoryNames.Delivery, "Objetivo corrigido", "Observação fictícia.");
+
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (seededAccessIds.Count == 0) return;
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var token = TestContext.Current.CancellationToken;
+        var requestIds = await db.SolicitacoesCorrecaoAcesso
+            .Where(x => seededAccessIds.Contains(x.RegistroAcessoId))
+            .Select(x => x.Id).ToArrayAsync(token);
+        // Only this test's disposable records are removed. Historical open accesses
+        // otherwise affect carry-over totals in other classes sharing the fixture.
+        await db.Auditorias.Where(x =>
+            (x.Entidade == "SolicitacaoCorrecaoAcesso" && requestIds.Contains(x.RegistroId)) ||
+            (x.Entidade == "RegistroAcesso" && seededAccessIds.Contains(x.RegistroId)))
+            .ExecuteDeleteAsync(token);
+        await db.SolicitacoesCorrecaoAcesso.Where(x => seededAccessIds.Contains(x.RegistroAcessoId))
+            .ExecuteDeleteAsync(token);
+        await db.RegistrosAcesso.Where(x => seededAccessIds.Contains(x.Id)).ExecuteDeleteAsync(token);
+    }
 
     [Fact]
     public async Task RequestAndApprovalAreIdempotentAndPreserveTheOriginal()
@@ -425,6 +448,7 @@ public sealed class AccessCorrectionReviewTests(ApiFactory factory)
         var access = new RegistroAcesso(vehicle.Id, person.Id, category.Id, entryAtUtc, Original.Objective, actorId);
         db.RegistrosAcesso.Add(access);
         await db.SaveChangesAsync(cancellationToken: TestContext.Current.CancellationToken);
+        seededAccessIds.Add(access.Id);
         return access.Id;
     }
 
