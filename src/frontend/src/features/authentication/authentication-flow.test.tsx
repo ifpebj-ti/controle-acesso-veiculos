@@ -680,7 +680,9 @@ describe("authentication flow", () => {
     vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
     try {
-      vi.mocked(api.get).mockRejectedValue(new Error("connection failed"));
+      vi.mocked(api.get).mockRejectedValue(
+        new AxiosError("connection failed", "ERR_NETWORK"),
+      );
       vi.spyOn(api, "post").mockResolvedValue(responseFor("Vigilante", 60_000));
 
       renderAuthenticationFlow();
