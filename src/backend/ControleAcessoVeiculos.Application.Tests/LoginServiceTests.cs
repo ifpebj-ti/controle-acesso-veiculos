@@ -50,10 +50,62 @@ public sealed class LoginServiceTests
         Assert.Equal(ProfileNames.Administrator, result.User?.ProfileName);
     }
 
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task ExactTemporaryTestAccountCanLoginWithItsOriginalProfile(string profile)
+    {
+        var store = new FakeUserStore(new(CreateUser("professor@example.test"), profile, true));
+        var sessions = new FakeSessionStore();
+        var deadline = FixedNow.AddHours(1).UtcDateTime;
+        var policy = new HomologationPasswordAccessPolicy(["professor@example.test"], deadline);
+        var result = await CreateService(store, sessions, true, policy).AuthenticateAsync(
+            "professor@example.test", "valid-password", TestContext.Current.CancellationToken);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(profile, result.User!.ProfileName);
+        Assert.Equal(deadline, sessions.AddedSession!.ExpiraEm);
+    }
+
+    [Theory]
+    [InlineData("other@example.test", 60)]
+    [InlineData("professor@example.test", 0)]
+    [InlineData("professor@example.test", -1)]
+    public async Task MissingOrExpiredExceptionKeepsGoogleBoundary(string email, int minutes)
+    {
+        var store = new FakeUserStore(new(CreateUser(email), ProfileNames.Doorman, true));
+        var sessions = new FakeSessionStore();
+        var policy = new HomologationPasswordAccessPolicy(["professor@example.test"], FixedNow.AddMinutes(minutes).UtcDateTime);
+        var result = await CreateService(store, sessions, true, policy).AuthenticateAsync(
+            email, "valid-password", TestContext.Current.CancellationToken);
+        Assert.False(result.IsSuccess);
+        Assert.Null(sessions.AddedSession);
+        Assert.True(store.DummyVerificationPerformed);
+    }
+
+    [Fact]
+    public async Task WrongPasswordAndInactiveProfileAreNotBypassedByException()
+    {
+        var policy = new HomologationPasswordAccessPolicy(["professor@example.test"], FixedNow.AddHours(1).UtcDateTime);
+        var sessions = new FakeSessionStore();
+        var store = new FakeUserStore(new(CreateUser("professor@example.test"), ProfileNames.Doorman, true))
+        { VerificationResult = PasswordHashVerificationResult.Failed };
+        var result = await CreateService(store, sessions, true, policy).AuthenticateAsync(
+            "professor@example.test", "wrong-password", TestContext.Current.CancellationToken);
+        Assert.False(result.IsSuccess);
+        Assert.Null(sessions.AddedSession);
+        store = new FakeUserStore(new(CreateUser("professor@example.test"), ProfileNames.Doorman, false));
+        result = await CreateService(store, sessions, true, policy).AuthenticateAsync(
+            "professor@example.test", "valid-password", TestContext.Current.CancellationToken);
+        Assert.False(result.IsSuccess);
+        Assert.Null(sessions.AddedSession);
+    }
+
     private static LoginService CreateService(
         FakeUserStore store,
         FakeSessionStore sessions,
-        bool operationalGoogleOnly) =>
+        bool operationalGoogleOnly,
+        HomologationPasswordAccessPolicy? testAccess = null) =>
         new(
             store,
             store,
@@ -63,7 +115,7 @@ public sealed class LoginServiceTests
             new AuthenticationSessionPolicy(
                 TimeSpan.FromMinutes(15),
                 TimeSpan.FromHours(12)),
-            new AuthenticationMethodPolicy(operationalGoogleOnly),
+            new AuthenticationMethodPolicy(operationalGoogleOnly, testAccess),
             new FixedTimeProvider(FixedNow));
 
     private static Usuario CreateUser(string email)
@@ -79,6 +131,7 @@ public sealed class LoginServiceTests
         : IAuthenticationUserStore, IPasswordHashService
     {
         public bool DummyVerificationPerformed { get; private set; }
+        public PasswordHashVerificationResult VerificationResult { get; init; } = PasswordHashVerificationResult.Success;
 
         public Task<AuthenticationUser?> FindByEmailAsync(
             string normalizedEmail,
@@ -105,7 +158,7 @@ public sealed class LoginServiceTests
 
         public PasswordHashVerificationResult Verify(
             string passwordHash,
-            string password) => PasswordHashVerificationResult.Success;
+            string password) => VerificationResult;
 
         public void PerformDummyVerification(string password) =>
             DummyVerificationPerformed = true;
