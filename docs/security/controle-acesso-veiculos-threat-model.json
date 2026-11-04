@@ -57,8 +57,19 @@
               "isTrustBoundary": false,
               "outOfScope": false,
               "reasonOutOfScope": "",
-              "hasOpenThreats": false,
-              "threats": []
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "status": "Open",
+                  "severity": "High",
+                  "title": "TM-24 — Sessão aberta em tablet compartilhado",
+                  "type": "Spoofing / Information disclosure",
+                  "description": "Um tablet permanece autenticado sem o operador e outra pessoa utiliza a sessão para consultar dados ou registrar operações.",
+                  "mitigation": "O servidor aplica inatividade de 15 minutos e duração absoluta de 12 horas, com referência temporal e prazos próprios. O frontend condiciona a renovação à atividade humana, coordena abas e oferece logout explícito, sem permitir que atividade técnica prolongue o acesso. A observação no tablet real da portaria e o aceite institucional permanecem pendentes nas Issues #268 e #162; a ameaça continua aberta para esse risco residual.",
+                  "modelType": "STRIDE",
+                  "id": "10000000-0000-4000-8000-000000000024"
+                }
+              ]
             }
           },
           {
@@ -172,7 +183,7 @@
                   "title": "TM-23 — Enumeração ou adulteração de vínculo recorrente",
                   "type": "Tampering / Information disclosure",
                   "description": "Uma busca irrestrita pode enumerar pessoas, ou um cliente adulterado pode enviar identificadores, placa e nome que não correspondem ao vínculo escolhido.",
-                  "mitigation": "Restringir à política operacional, limitar termo e resultados, aplicar rate limiting, omitir documento, e-mail e histórico, e revalidar no servidor o par ativo usando seus valores canônicos. Integração visual e calibração institucional permanecem nas Issues #214 e #162.",
+                  "mitigation": "Restringir à política operacional, limitar termo e resultados, aplicar rate limiting, omitir documento, e-mail e histórico, e revalidar no servidor o par ativo usando seus valores canônicos. Backend e integração visual foram incorporados pelas Issues #213 e #214; calibração de uso e homologação institucional permanecem pendentes na Issue #162.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000023"
                 }

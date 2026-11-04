@@ -3,9 +3,10 @@
 ## Objetivo
 
 Este documento relaciona o marco acadêmico da Unidade 1 às evidências
-versionadas do projeto. A fotografia foi atualizada em **25 de outubro de 2026**
+versionadas do projeto. A fotografia foi atualizada em **31 de outubro de 2026**
 após a publicação da release técnica `v0.4.0` e a implantação da homologação
-técnica na OCI. Ela deve ser conferida novamente antes da apresentação.
+técnica na OCI. A main auditada é `ad54c41`; as imagens implantadas permanecem
+na release 0.4.0. Ela deve ser conferida novamente antes da apresentação.
 
 As classificações usadas são:
 
@@ -25,10 +26,10 @@ As classificações usadas são:
 
 ## Segurança
 
-| Entrega exigida                                         | Evidência                                                                                                                                                                                                                                      | Estado                                                                                     |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Modelagem de ameaças                                    | [Modelo STRIDE](../security/threat-model.md), [arquivo do OWASP Threat Dragon](../security/controle-acesso-veiculos-threat-model.json) e [visão na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Modelagem-de-Amea%C3%A7as) | Ampliado com riscos, controles, responsáveis e risco residual                              |
-| Guia de boas práticas de desenvolvimento seguro         | [Guia versionado](../security/secure-development-guide.md) e [guia na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Guia-de-Boas-Praticas-de-Desenvolvimento-Seguro)                                                        | Atendido                                                                                   |
+| Entrega exigida                                         | Evidência                                                                                                                                                                                                                                      | Estado                                                                                                        |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Modelagem de ameaças                                    | [Modelo STRIDE](../security/threat-model.md), [arquivo do OWASP Threat Dragon](../security/controle-acesso-veiculos-threat-model.json) e [visão na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Modelagem-de-Amea%C3%A7as) | Ampliado com riscos, controles, responsáveis e risco residual                                                 |
+| Guia de boas práticas de desenvolvimento seguro         | [Guia versionado](../security/secure-development-guide.md) e [guia na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Guia-de-Boas-Praticas-de-Desenvolvimento-Seguro)                                                        | Atendido                                                                                                      |
 | Zero vulnerabilidades críticas aferidas pelo Dependabot | [Dependabot](https://github.com/ifpebj-ti/controle-acesso-veiculos/security/dependabot) e [Dependency Review](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/dependency-review.yml)                                   | Atendido na evidência registrada em 29/09/2026; o inventário deve ser revisto no portal antes da apresentação |
 
 Controles adicionais incluem CodeQL, Trivy para imagens, SBOM SPDX,
@@ -45,8 +46,8 @@ representa liberação para produção.
 
 | Entrega exigida                           | Evidência                                                                                                                                                                                                                                                                                            | Estado                                                                                                          |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Aplicação conteinerizada                  | [Dockerfiles e arquivos Compose](../../infrastructure/docker)                                                                                                                                                                                                                                        | Ampliado com execução local e homologação técnica usando imagens versionadas                                     |
-| Guia de execução, configuração e operação | [README](../../README.md), [deploy versionado](../operations/versioned-container-deployment.md), [banco](../../infrastructure/database/README.md) e [guia na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Guia-de-Execucao-Configuracao-Deploy-e-Operacao)                       | Ampliado; operação institucional e produção continuam pendentes                                                  |
+| Aplicação conteinerizada                  | [Dockerfiles e arquivos Compose](../../infrastructure/docker)                                                                                                                                                                                                                                        | Ampliado com execução local e homologação técnica usando imagens versionadas                                    |
+| Guia de execução, configuração e operação | [README](../../README.md), [deploy versionado](../operations/versioned-container-deployment.md), [banco](../../infrastructure/database/README.md) e [guia na Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Guia-de-Execucao-Configuracao-Deploy-e-Operacao)                       | Ampliado; operação institucional e produção continuam pendentes                                                 |
 | Início da esteira CI/CD                   | [CI backend](../../.github/workflows/ci-backend.yml), [CI frontend](../../.github/workflows/ci-frontend.yml), [containers](../../.github/workflows/ci-containers.yml), [recuperação](../../.github/workflows/ci-database-recovery.yml) e [dados fictícios](../../.github/workflows/ci-demo-data.yml) | Ampliado com lint, build, testes, cobertura, scan, registry, AMD64/ARM64, smoke test, DAST, SBOM e proveniência |
 
 ## Distribuição versionada solicitada pelo professor
@@ -71,16 +72,18 @@ executado.
 
 ## Evidência quantitativa da baseline
 
-| Item na `main`             | Evidência em 25/10/2026                              |
-| -------------------------- | ---------------------------------------------------- |
-| Testes de backend          | 347 aprovados na CI, incluindo integração PostgreSQL |
-| Testes de frontend         | 553 aprovados em 53 arquivos na CI                   |
-| Migrations EF Core         | 16 migrations versionadas                            |
-| Checks de segurança        | Dependency Review e CodeQL aprovados no SHA observado |
-| Release técnica            | `v0.4.0`                                             |
-| Homologação OCI            | VM privada, Load Balancer, WAF, Bastion e stack saudáveis |
+| Item na `main`      | Evidência em 31/10/2026                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| Testes de backend   | 368 aprovados nos TRX da CI 41217458021, SHA a82c75e: 78 Domain, 90 Application, 200 integração |
+| Testes de frontend  | 572 aprovados em 54 arquivos, execução local sequencial na main ad54c41                         |
+| Migrations EF Core  | 20 migrations na main; sem nova aferição/aplicação na VM nesta revisão                          |
+| Checks de segurança | Dependency Review e CodeQL aprovados no SHA observado                                           |
+| Release técnica     | `v0.4.0`                                                                                        |
+| Homologação OCI     | VM privada, Load Balancer, WAF, Bastion e stack saudáveis                                       |
 
-Os números são evidências datadas, não metas fixas. A fonte vigente para
+Os números são evidências datadas, não metas fixas nem medição de cobertura.
+A consulta autenticada ao Dependabot em 31/10 retornou zero alertas abertos,
+sem representar ausência de vulnerabilidades ou aceite institucional. A fonte vigente para
 cada execução é o [GitHub Actions](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions).
 
 ## Conclusão
@@ -91,10 +94,12 @@ solicitado.
 
 Essa conclusão acadêmica não equivale a afirmar que o sistema está pronto para
 produção. A infraestrutura técnica de homologação existe, mas permanecem fora
-desse aceite: DNS e certificado público confiável, gestão definitiva de segredos,
-monitoramento operado, backup externo e restauração exercitada, aplicação do
-descarte por retenção, contingência e homologação final dos fluxos no dispositivo
-de destino.
+desse aceite: domínio e governança definitivos institucionais, renovação automática
+do certificado, promoção da configuração de segredos por arquivo, monitoramento
+operado, backup externo e restauração exercitada, aplicação do descarte por
+retenção, contingência e homologação final dos fluxos no dispositivo de destino.
+O hostname temporário já possui DNS e HTTPS público confiável; esses itens não
+devem ser apresentados como não implementados.
 
 ## Roteiro curto de demonstração
 

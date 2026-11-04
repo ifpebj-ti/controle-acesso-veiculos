@@ -6,11 +6,11 @@
 
 **Método:** diagrama de fluxo de dados e classificação STRIDE
 
-**Versão:** 3.8
+**Versão:** 3.9
 
 **Data de referência:** 31 de outubro de 2026
 
-**Rastreabilidade:** Issues #537, #540 e #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #218, #220, #227, #251, #258, #355, #441, #448 e #469
+**Rastreabilidade:** Issues #550, #537, #540 e #26, #67, #69, #71, #73, #76, #78, #90, #102, #104, #106, #190, #191, #196, #210, #213, #214, #218, #220, #227, #251, #258, #355, #441, #448 e #469
 
 ## Objetivo e limites
 
@@ -176,7 +176,7 @@ frontend melhora usabilidade, mas não é controle de segurança suficiente.
 | TM-20 | Spoofing                           | Refresh token roubado, repetido ou usado depois do logout mantém acesso prolongado                                 |   3 |   3 |     9 | Token opaco de 256 bits em cookie `HttpOnly`, hash no banco, rotação atômica, detecção de reutilização, duração absoluta, inatividade e revogação da família — #190 e #191                                                                                                                                              | Mitigado tecnicamente no servidor e cliente; validação autenticada pelo hostname público permanece pendente — #519                                                                                           |
 | TM-21 | Spoofing / Tampering               | Site externo induz o navegador autenticado a renovar ou encerrar uma sessão por CSRF                               |   2 |   3 |     6 | `SameSite=Strict`, caminho mínimo, token antifalsificação vinculado ao cookie e arquitetura same-origin — #190 e #191                                                                                                                                                                                                   | Mitigado no fluxo integrado; validação autenticada pelo hostname público permanece pendente — #519                                                                                                           |
 | TM-22 | Tampering / Information disclosure | Conteúdo não autorizado é carregado ou a aplicação é incorporada por uma página externa                            |   2 |   3 |     6 | CSP same-origin, bloqueio de frames, MIME sniffing desabilitado, política de referência, permissões mínimas e baseline DAST passiva — #196 e #227                                                                                                                                                                       | HTTPS, HSTS e cabeçalhos foram verificados na superfície pública; fluxos autenticados e nova execução do DAST no hostname permanecem pendentes                                                               |
-| TM-23 | Tampering / Information disclosure | Consulta de recorrentes enumera pessoas ou cliente adultera os identificadores e textos do vínculo selecionado     |   2 |   3 |     6 | Política operacional, termo entre 3 e 80 caracteres, limite fixo de 10 resultados, rate limiting global por usuário, resposta sem documento/e-mail/histórico e revalidação canônica do par no servidor — #213                                                                                                           | Mitigado no backend; calibração com uso real e integração do frontend permanecem pendentes                                                                                                                   |
+| TM-23 | Tampering / Information disclosure | Consulta de recorrentes enumera pessoas ou cliente adultera os identificadores e textos do vínculo selecionado     |   2 |   3 |     6 | Política operacional, termo entre 3 e 80 caracteres, limite fixo de 10 resultados, rate limiting global por usuário, resposta sem documento/e-mail/histórico e revalidação canônica do par no servidor — #213                                                                                                           | Backend e integração do frontend incorporados (#213/#214); calibração com uso real e homologação permanecem pendentes na #162                                                                                |
 | TM-24 | Spoofing / Information disclosure  | Tablet compartilhado permanece autenticado sem operador e permite uso da sessão por outra pessoa                   |   3 |   3 |     9 | Inatividade de 15 minutos, duração absoluta de 12 horas, referência e prazos emitidos pelo servidor, logout explícito, coordenação entre abas e renovação condicionada a atividade humana — #268                                                                                                                        | Política do servidor e integração de inatividade do frontend implementadas; observação no tablet real da portaria e aceite institucional permanecem pendentes                                                |
 | TM-25 | Tampering / Denial of service      | Perda, divergência ou exposição do key ring invalida tokens antifalsificação ou expõe material protegido           |   2 |   3 |     6 | Key ring durável compartilhado, `ApplicationName` estável, XML protegido por certificado X.509 externo, falha fechada de configuração e ensaio de substituição — #355                                                                                                                                                   | Mitigado no Compose e na API; provisionamento definitivo em OCI Vault/File Storage e exercício operacional permanecem pendentes                                                                              |
 | TM-26 | Spoofing / Elevation of privilege  | Uma conta Google é vinculada ao usuário local errado ou recebe perfil apenas por possuir e-mail válido             |   2 |   3 |     6 | Pré-autorização local exata, `email_verified`, vínculo único pelo `sub`, conflito fechado, perfil exclusivamente local, método explícito por conta, separação entre Google operacional e login local administrativo — #448 e #469                                                                                       | Controles de domínio, persistência e governança no backend implementados; integração administrativa candidata no PR #530 e homologação com o provedor real permanecem pendentes                              |
@@ -335,3 +335,15 @@ a decisão dos quatro perfis: Administrador Local e operadores Google, sem quint
 perfil ou conversão emergencial. A reconciliação continua na Issue #100. Nenhuma
 pontuação STRIDE foi reduzida nesta revisão documental e nenhum novo pentest ou
 aceite institucional foi declarado.
+
+### Consistência com o modelo visual — Issue #550
+
+A conferência de 31/10/2026 identificou que o JSON não associava TM-24 a nenhum
+elemento, embora a ameaça já existisse no registro textual. Ela foi associada ao
+Navegador, com severidade alta e estado aberto, preservando a pendência de ensaio
+no tablet real. O risco 9 do registro não foi reduzido.
+
+TM-23 passou a reconhecer a integração visual já incorporada na #214, mantendo
+calibração e homologação na #162. Não foram alterados os escores de nenhuma
+ameaça, a topologia ou as posições do diagrama. Validação de estrutura/IDs não
+equivale a uma nova importação visual no aplicativo ou a um teste de segurança.
