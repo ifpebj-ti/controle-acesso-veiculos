@@ -37,6 +37,7 @@ export function useAccountProfileChange({
   const [returnFocusTo, setReturnFocusTo] = useState<HTMLElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
+  const reconciliationRequired = useRef(false);
   const [requiresReload, setRequiresReload] = useState(false);
 
   function open(account: UserAccount, trigger: HTMLElement) {
@@ -44,6 +45,7 @@ export function useAccountProfileChange({
     setTarget(account);
     setReturnFocusTo(trigger);
     setError(null);
+    reconciliationRequired.current = false;
     setRequiresReload(false);
   }
 
@@ -56,7 +58,14 @@ export function useAccountProfileChange({
   }
 
   async function confirm(input: ChangeAccountProfileInput) {
-    if (!target || pendingAction || inFlight.current || requiresReload) return;
+    if (
+      !target ||
+      pendingAction ||
+      inFlight.current ||
+      requiresReload ||
+      reconciliationRequired.current
+    )
+      return;
     const validated = changeAccountProfileFormSchema.safeParse(input);
     if (!validated.success || input.profileName === target.profileName) return;
     inFlight.current = true;
@@ -77,12 +86,14 @@ export function useAccountProfileChange({
         setReturnFocusTo(null);
         onDenied(description.message);
       } else {
-        setRequiresReload(
+        const uncertain =
           failure instanceof UserAccountsContractError ||
-            description.kind === "network" ||
-            description.kind === "unexpected" ||
-            description.status === 404,
-        );
+          description.status === 404 ||
+          !["validation", "conflict", "rate-limited"].includes(
+            description.kind,
+          );
+        reconciliationRequired.current = uncertain;
+        setRequiresReload(uncertain);
         setError(
           failure instanceof UserAccountsContractError
             ? "Não foi possível confirmar o resultado. Feche esta janela e atualize a lista antes de tentar outra alteração."
@@ -90,7 +101,9 @@ export function useAccountProfileChange({
               ? "A conta não foi encontrada. Feche esta janela e atualize a lista."
               : description.kind === "network"
                 ? "A conexão foi interrompida. Confira o perfil na lista antes de confirmar novamente; a alteração pode ter sido recebida."
-                : description.message,
+                : uncertain
+                  ? "Não foi possível confirmar o resultado; a alteração pode ter sido recebida. Feche esta janela e atualize a lista antes de tentar outra alteração."
+                  : description.message,
         );
       }
     } finally {

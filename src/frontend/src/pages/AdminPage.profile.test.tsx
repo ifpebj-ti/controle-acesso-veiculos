@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AxiosError } from "axios";
+import { AxiosError, CanceledError } from "axios";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -324,6 +324,37 @@ describe("administrative profile changes", () => {
     await waitFor(() => expect(searchUserAccounts).toHaveBeenCalledTimes(2));
     expect(changeAccountProfile).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    new CanceledError("fixture"),
+    new DOMException("fixture", "AbortError"),
+  ])(
+    "requires a read-only list refresh after a cancelled mutation: %s",
+    async (failure) => {
+      vi.mocked(changeAccountProfile).mockRejectedValue(failure);
+      const user = userEvent.setup();
+      renderPage();
+      const { dialog } = await openDialog(user);
+      await user.click(within(dialog).getByRole("checkbox"));
+      const confirm = within(dialog).getByRole("button", {
+        name: "Confirmar alteração de perfil",
+      });
+      await user.click(confirm);
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "pode ter sido recebida",
+      );
+      expect(confirm).toBeDisabled();
+      expect(screen.getByLabelText("Justificativa")).toHaveValue(justification);
+      await user.click(confirm);
+      expect(changeAccountProfile).toHaveBeenCalledTimes(1);
+      await user.click(
+        screen.getByRole("button", { name: "Fechar e atualizar lista" }),
+      );
+      await waitFor(() => expect(searchUserAccounts).toHaveBeenCalledTimes(2));
+      expect(changeAccountProfile).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(/Perfil alterado/)).not.toBeInTheDocument();
+    },
+  );
 
   it.each([401, 403])(
     "closes the form on HTTP %s without exposing a credential",

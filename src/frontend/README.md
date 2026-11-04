@@ -225,6 +225,11 @@ com os filtros e a página aplicados. Uma falha da consulta após sucesso oferec
 somente recarga, sem repetir a alteração. Falhas de validação, conflito e limite
 de tentativas preservam os campos. Resultado incerto por rede, erro inesperado
 ou resposta incompatível exige fechar e atualizar a lista antes de nova tentativa.
+Cancelamento da espera após a confirmação também deixa o resultado incerto:
+`CanceledError`/`AbortError` não comprovam rollback. A confirmação fica bloqueada
+inclusive para callbacks antigos, e fechar exige reconsulta somente por leitura.
+Somente falhas conhecidas de validação, conflito e limite permitem revisar e
+confirmar novamente no mesmo diálogo; consultas canceladas mantêm seus guards.
 
 O método de autenticação e o vínculo externo exibidos vêm da API. Contas Google
 não oferecem redefinição local de senha. A criação aceita credencial nula para
