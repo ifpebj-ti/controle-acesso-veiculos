@@ -347,3 +347,17 @@ TM-23 passou a reconhecer a integração visual já incorporada na #214, mantend
 calibração e homologação na #162. Não foram alterados os escores de nenhuma
 ameaça, a topologia ou as posições do diagrama. Validação de estrutura/IDs não
 equivale a uma nova importação visual no aplicativo ou a um teste de segurança.
+
+### Contingência em papel — incremento candidato #100/#611 (04/11/2026)
+
+A orquestração de aplicação candidata separa importação por Porteiro/Vigilante da
+conferência por Transporte/Administrador. O payload não escolhe ator ou horário
+de digitação. Datas observadas são preservadas e normalizadas; dados inválidos
+não alcançam a porta de persistência. Falha incerta não produz retry automático.
+Esses controles têm testes unitários, mas não estão registrados na API/DI.
+
+Os riscos de falsificação de autoria, replay, corrida, autoaprovação e perda de
+auditoria permanecem abertos para implementação e verificação transacional no
+PostgreSQL. `IPaperReconciliationStore` apenas especifica essas obrigações.
+Não há novo fluxo de dados em execução, nova fronteira implantada, redução de
+pontuação STRIDE ou evidência de importação/backup externo por este incremento.

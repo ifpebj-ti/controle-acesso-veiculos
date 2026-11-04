@@ -276,3 +276,15 @@ homologação e não poderá ser declarado pronto para produção institucional.
 - [OCI — Securing Object Storage](https://docs.oracle.com/en-us/iaas/Content/Security/Reference/objectstorage_security.htm)
 - [OCI — Object Storage retention rules](https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/usingretentionrules.htm)
 - [NIST SP 800-34 Rev. 1 — Contingency Planning Guide](https://csrc.nist.gov/pubs/sp/800/34/r1/final)
+
+### Incremento candidato de aplicação — 04/11/2026, #100/#611
+
+O backend candidato agora possui validação/orquestração do lançamento de papel:
+operação importa; Transporte/Admin confere; horário observado é separado do
+instante de digitação escolhido pelo servidor. Dados de entrada reutilizam a
+validação normal sem conceder horário retroativo aos endpoints existentes.
+O contrato de persistência exige unicidade, transação, auditoria e conferência
+por outra pessoa, mas ainda não tem implementação. Não há botão, endpoint ou
+migração para importar papel no site. Até a entrega integrada, mantenha o papel
+e siga o procedimento de contingência autorizado; não simule uma importação
+usando edição irrestrita de horários. O exercício observado continua pendente.
