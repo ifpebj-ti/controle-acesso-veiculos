@@ -8,6 +8,23 @@ public class RegistroAcessoTests
     private static readonly DateTime Entrada =
         new(2026, 8, 26, 12, 0, 0, DateTimeKind.Utc);
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Correction_ShouldPreserveTheClosureAuthor(bool exceptional)
+    {
+        var record = CreateRegistro();
+        if (exceptional)
+            record.RegistrarEncerramentoExcepcional(MotivoEncerramentoExcepcional.Outro,
+                "Closure confirmed after the event.", null, Entrada.AddHours(2), 2);
+        else
+            record.RegistrarSaida(Entrada.AddHours(2), 2);
+
+        Assert.True(record.CorrigirDados(3, "Corrected objective", null, 4, record.DataCriacao.AddDays(1)));
+        Assert.Equal(2, record.EncerradoPorId);
+        Assert.Equal(4, record.AtualizadoPorId);
+    }
+
     [Fact]
     public void Constructor_ShouldAssociateOptionalEventVehicleRule()
     {

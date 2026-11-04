@@ -10,6 +10,11 @@ from its first published release.
 
 ### Added
 
+- Audited access correction requests with immutable snapshots, reviewer-only
+  decisions, scoped lookup, idempotent reconciliation, PostgreSQL constraints
+  and atomic approval/audit. Direct corrections require review by default;
+  coordinated frontend integration is required before deploying this increment.
+
 - Request Google account selection on each explicit OIDC login attempt on shared
   workstations, preserving minimal scopes, PKCE and local preauthorization.
 - A read-only public HTTPS/readiness probe with certificate validation,
@@ -19,6 +24,9 @@ from its first published release.
 
 ### Fixed
 
+- Preserved the original exit author in administrative reports after descriptive
+  corrections; legacy attribution is restored only from unambiguous closure audit
+  evidence, without guessing from the last editor (Refs #609).
 - Pin the shipped ASP.NET Core runtime to 10.0.14 so cached floating tags do not
   regress homologation to a vulnerable patch during container rebuilds.
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative

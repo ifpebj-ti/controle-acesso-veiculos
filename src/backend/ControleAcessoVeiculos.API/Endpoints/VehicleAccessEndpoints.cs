@@ -1,5 +1,6 @@
 using ControleAcessoVeiculos.API.Security;
 using ControleAcessoVeiculos.Application.AccessRecords;
+using Microsoft.Extensions.Options;
 
 namespace ControleAcessoVeiculos.API.Endpoints;
 
@@ -41,7 +42,9 @@ public static class VehicleAccessEndpoints
         group.MapPut("/{accessRecordId:int}/correction", CorrectAsync)
             .RequireAuthorization(AuthorizationPolicies.CorrectAccessRecords)
             .WithName("CorrectVehicleAccess")
-            .WithSummary("Corrige dados descritivos de um acesso com auditoria");
+            .WithSummary("Correção direta legada; substituída pela solicitação de revisão")
+            .WithDescription("Com revisão obrigatória, retorna 409/CorrectionApprovalRequired sem alterar o registro.")
+            .Produces(StatusCodes.Status409Conflict);
 
         return endpoints;
     }
@@ -207,11 +210,22 @@ public static class VehicleAccessEndpoints
         CorrectVehicleAccessRequest request,
         HttpContext httpContext,
         VehicleAccessService vehicleAccessService,
+        IOptions<AccessCorrectionReviewOptions> reviewOptions,
         CancellationToken cancellationToken)
     {
         if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
         {
             return Results.Unauthorized();
+        }
+
+        if (reviewOptions.Value.RequireApproval)
+        {
+            httpContext.Response.Headers.CacheControl = "no-store";
+            return Results.Conflict(new
+            {
+                Code = "CorrectionApprovalRequired",
+                Message = "Solicite a correção para revisão antes de alterar o registro."
+            });
         }
 
         var result = await vehicleAccessService.CorrectAsync(

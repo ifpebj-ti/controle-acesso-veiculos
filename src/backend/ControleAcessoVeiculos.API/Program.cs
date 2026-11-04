@@ -292,6 +292,9 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.SecurityGuard,
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ReviewAccessCorrections, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ExceptionallyCloseAccessRecords,
         policy => policy.RequireRole(
             ProfileNames.Doorman,
@@ -344,6 +347,14 @@ builder.Services.AddScoped<IAuthenticatedPasswordChangeStore, AuthenticatedPassw
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
 builder.Services.AddScoped<IAccountProfileStore, UserAccountStore>();
 builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
+builder.Services.AddScoped<IAccessCorrectionReviewStore, AccessCorrectionReviewStore>();
+builder.Services.AddScoped<AccessCorrectionReviewService>();
+builder.Services.AddOptions<AccessCorrectionReviewOptions>()
+    .Bind(builder.Configuration.GetSection(AccessCorrectionReviewOptions.SectionName))
+    .Validate(options => options.RequireApproval || builder.Environment.IsDevelopment() ||
+        builder.Environment.IsEnvironment("Testing"),
+        "A revisão de correções não pode ser desabilitada fora de Development/Testing.")
+    .ValidateOnStart();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
 builder.Services.AddScoped<IInstitutionalVehicleCatalogStore, InstitutionalVehicleCatalogStore>();
 builder.Services.AddScoped<IInstitutionalDriverStore, InstitutionalDriverStore>();
@@ -468,6 +479,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     .DisableRateLimiting();
 
 app.MapVehicleAccessEndpoints();
+app.MapAccessCorrectionReviewEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
 app.MapInstitutionalDriverEndpoints();

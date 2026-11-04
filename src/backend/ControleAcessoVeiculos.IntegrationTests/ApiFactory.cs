@@ -54,6 +54,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             "integration-tests-only-signing-key-32-characters");
         builder.UseSetting("RateLimiting:GlobalPermitLimit", "10000");
         builder.UseSetting("RateLimiting:LoginPermitLimit", "10000");
+        // Preserve explicit legacy-path regressions. New review tests override this to true;
+        // the product default is true and never accepts this override from an HTTP payload.
+        builder.UseSetting("AccessCorrections:RequireApproval", "false");
         builder.ConfigureServices(services =>
         {
             services.AddSingleton<ILoggerProvider>(RequestLogs);
