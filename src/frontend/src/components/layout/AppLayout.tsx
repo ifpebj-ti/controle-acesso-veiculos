@@ -1,5 +1,6 @@
 import { type MouseEvent, useEffect, useId, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { CorrectionReviewScope } from "../../features/access-corrections/CorrectionReviewScope";
 
 import {
   profileLabels,
@@ -395,9 +396,13 @@ function MandatoryPasswordChangeLayout() {
 export function AppLayout() {
   const { user } = useAuthenticatedSession();
 
-  return user.requiresPasswordChange ? (
-    <MandatoryPasswordChangeLayout />
-  ) : (
-    <StandardAppLayout />
+  return (
+    <CorrectionReviewScope key={user.id}>
+      {user.requiresPasswordChange ? (
+        <MandatoryPasswordChangeLayout />
+      ) : (
+        <StandardAppLayout />
+      )}
+    </CorrectionReviewScope>
   );
 }

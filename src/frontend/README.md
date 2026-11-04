@@ -491,6 +491,14 @@ src/
 
 ## Validação
 
+### Pedidos de correção do histórico (candidato #610)
+
+O formulário prepara um pedido pendente com original/proposta e justificativa;
+somente aprovação por revisor distinto altera o registro efetivo. A integração
+depende da promoção coordenada do backend #607. O fluxo, a reconciliação somente
+por leitura e os ensaios ainda pendentes estão em
+[docs/access-correction-review.md](docs/access-correction-review.md).
+
 Na pasta `src/frontend`:
 
 ```powershell
