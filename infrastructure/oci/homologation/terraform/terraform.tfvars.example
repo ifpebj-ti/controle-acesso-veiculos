@@ -15,4 +15,10 @@ waf_login_requests_per_minute        = 30
 # Supply only through OCI Resource Manager or a local ignored terraform.tfvars.
 bastion_client_cidr     = "192.0.2.10/32"
 budget_alert_recipients = "responsible@example.invalid"
+enable_observability     = false
+
+# Supply only through OCI Resource Manager or a local ignored terraform.tfvars.
+# Enabling observability without this endpoint creates disabled alarms.
+observability_alert_endpoint = "operations@example.invalid"
+observability_log_retention_days = 30
 load_balancer_certificate_id = "ocid1.certificate.oc1.sa-saopaulo-1.exampleuniqueid"
