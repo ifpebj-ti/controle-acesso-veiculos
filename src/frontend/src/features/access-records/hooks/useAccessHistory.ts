@@ -6,11 +6,7 @@ import {
   countAccessHistoryByCategory,
   searchAccessHistory,
 } from "../services/accessRecordsService";
-import type {
-  AccessHistoryFilters,
-  AccessRecord,
-  PagedAccessRecords,
-} from "../types";
+import type { AccessHistoryFilters, PagedAccessRecords } from "../types";
 
 export type PeriodPreset = "7" | "30" | "90" | "365" | "custom";
 export type AccessHistoryRequestStatus =
@@ -85,6 +81,7 @@ export function useAccessHistory() {
   >("loading");
   const requestSequence = useRef(0);
   const categoryCountSequence = useRef(0);
+  const [countRevision, setCountRevision] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -131,7 +128,7 @@ export function useAccessHistory() {
     return () => {
       active = false;
     };
-  }, [filters]);
+  }, [filters, countRevision]);
 
   function startRequest(nextFilters: AccessHistoryFilters) {
     setRequestStatus("loading");
@@ -178,21 +175,7 @@ export function useAccessHistory() {
     startRequest({ ...filters });
   }
 
-  function replaceRecord(record: AccessRecord) {
-    setResult((current) =>
-      current
-        ? {
-            ...current,
-            items: current.items.map((item) =>
-              item.id === record.id ? record : item,
-            ),
-          }
-        : current,
-    );
-  }
-
-  async function revalidateAfterCorrection(record: AccessRecord) {
-    replaceRecord(record);
+  async function revalidateAfterApproval(recordId: number) {
     setErrorMessage(null);
 
     const appliedFilters = filters;
@@ -210,6 +193,7 @@ export function useAccessHistory() {
 
       setResult(response);
       setRequestStatus("ready");
+      setCountRevision((value) => value + 1);
       return response;
     } catch (error) {
       if (requestId !== requestSequence.current) return null;
@@ -217,7 +201,7 @@ export function useAccessHistory() {
       const description = describeApiError(error);
       setResult(null);
       setErrorMessage(
-        `A correção foi salva, mas não foi possível atualizar o histórico. ${description.message}`,
+        `O pedido foi aprovado, mas não foi possível atualizar o registro #${recordId} no histórico. ${description.message}`,
       );
       setRequestStatus(
         description.kind === "access-denied" ? "denied" : "error",
@@ -235,7 +219,7 @@ export function useAccessHistory() {
     errorMessage,
     goToPage,
     requestStatus,
-    revalidateAfterCorrection,
+    revalidateAfterApproval,
     result,
     retry,
     selectCategory,

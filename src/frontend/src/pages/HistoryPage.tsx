@@ -12,6 +12,10 @@ import { useAccessHistory } from "../features/access-records/hooks/useAccessHist
 import type { AccessRecord } from "../features/access-records";
 import { useAuthenticatedSession } from "../features/authentication";
 import { profileHasCapability } from "../routes/routeMetadata";
+import { CorrectionReviewScope } from "../features/access-corrections/CorrectionReviewScope";
+import { useCorrectionStore } from "../features/access-corrections/correctionIntentContext";
+import { CorrectionQueue } from "../features/access-corrections/CorrectionQueue";
+import type { CorrectionRequest } from "../features/access-corrections/schemas";
 
 interface ActiveCorrection {
   record: AccessRecord;
@@ -23,9 +27,10 @@ interface ActiveDetails {
   trigger: HTMLButtonElement;
 }
 
-export function HistoryPage() {
+function HistoryContent() {
   const { user } = useAuthenticatedSession();
   const history = useAccessHistory();
+  const store = useCorrectionStore();
   const [activeCorrection, setActiveCorrection] =
     useState<ActiveCorrection | null>(null);
   const [activeDetails, setActiveDetails] = useState<ActiveDetails | null>(
@@ -39,6 +44,7 @@ export function HistoryPage() {
   );
 
   function openCorrection(record: AccessRecord, trigger: HTMLButtonElement) {
+    store.begin(record);
     setSuccessNotice(null);
     setSuccessNeedsFocus(false);
     setActiveCorrection({ record, trigger });
@@ -50,25 +56,42 @@ export function HistoryPage() {
 
   function correctFromDetails() {
     if (!activeDetails || !canCorrect) return;
+    store.begin(activeDetails.record);
     setSuccessNotice(null);
     setSuccessNeedsFocus(false);
     setActiveCorrection(activeDetails);
     setActiveDetails(null);
   }
 
-  async function finishCorrection(record: AccessRecord) {
-    const trigger = activeCorrection?.trigger;
-    setActiveCorrection(null);
-    setSuccessNeedsFocus(false);
-    setSuccessNotice(`Registro #${record.id} corrigido com sucesso.`);
-
-    const refreshed = await history.revalidateAfterCorrection(record);
-    if (
-      !trigger?.isConnected ||
-      !refreshed?.items.some(({ id }) => id === record.id)
-    ) {
-      setSuccessNeedsFocus(true);
+  function finishRequest(request: CorrectionRequest) {
+    setActiveCorrection((current) =>
+      current?.record.id === request.accessRecordId ? null : current,
+    );
+    if (request.status === "Aprovada") {
+      void finishApproval(request);
+      return;
     }
+    setSuccessNeedsFocus(false);
+    setSuccessNotice(
+      `Solicitação #${request.id}: ${request.status}. O envio não aplica a correção nem bloqueia a saída normal.`,
+    );
+  }
+  async function finishApproval(request: CorrectionRequest) {
+    setSuccessNeedsFocus(false);
+    setSuccessNotice(
+      `Solicitação #${request.id} aprovada. Atualizando os registros.`,
+    );
+    const refreshed = await history.revalidateAfterApproval(
+      request.accessRecordId,
+    );
+    setSuccessNotice(
+      refreshed
+        ? refreshed.items.some(({ id }) => id === request.accessRecordId)
+          ? `Solicitação #${request.id} aprovada. Registro atualizado a partir da consulta.`
+          : `Solicitação #${request.id} aprovada. O registro não aparece no resultado consultado. Os filtros foram preservados.`
+        : `Solicitação #${request.id} aprovada, mas a consulta dos registros não foi concluída. Atualize sem repetir a decisão.`,
+    );
+    setSuccessNeedsFocus(true);
   }
 
   if (history.requestStatus === "denied") {
@@ -82,6 +105,11 @@ export function HistoryPage() {
         eyebrow="Operação da portaria"
         title="Histórico de acessos"
         variant="prominent"
+      />
+
+      <CorrectionQueue
+        onResume={openCorrection}
+        onApproved={(request) => void finishApproval(request)}
       />
 
       <AccessHistoryCategoryTabs
@@ -141,11 +169,20 @@ export function HistoryPage() {
       {activeCorrection && (
         <AccessCorrectionDialog
           onClose={() => setActiveCorrection(null)}
-          onCorrected={finishCorrection}
+          onRequested={finishRequest}
+          onReload={history.retry}
           record={activeCorrection.record}
           returnFocusTo={activeCorrection.trigger}
         />
       )}
     </div>
+  );
+}
+
+export function HistoryPage() {
+  return (
+    <CorrectionReviewScope>
+      <HistoryContent />
+    </CorrectionReviewScope>
   );
 }

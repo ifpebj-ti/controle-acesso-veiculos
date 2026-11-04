@@ -1,394 +1,254 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-
-import { ActionFeedback } from "../../../components/ui/ActionFeedback";
+import { useEffect, useState, type FormEvent } from "react";
+import { CorrectionFeedback } from "../../access-corrections/CorrectionFeedback";
 import { Button } from "../../../components/ui/Button";
 import { SelectField } from "../../../components/ui/SelectField";
 import { TextArea } from "../../../components/ui/TextField";
-import {
-  describeApiError,
-  getApiValidationErrors,
-} from "../../../services/api-errors";
+import { CorrectionReviewScope } from "../../access-corrections/CorrectionReviewScope";
+import { CorrectionDialog } from "../../access-corrections/CorrectionDialog";
+import { CorrectionComparison } from "../../access-corrections/CorrectionComparison";
+import { useCorrectionSubmission } from "../../access-corrections/useCorrectionSubmission";
+import type { CorrectionRequest } from "../../access-corrections/schemas";
 import { generalAccessCategories } from "../model/accessCategories";
 import {
   accessCorrectionFormSchema,
   type AccessCorrectionFormValues,
 } from "../schemas/accessRecordSchemas";
-import {
-  AccessRecordsContractError,
-  correctAccessRecord,
-} from "../services/accessRecordsService";
 import type { AccessRecord } from "../types";
 
-interface AccessCorrectionDialogProps {
+interface Props {
   onClose: () => void;
-  onCorrected: (record: AccessRecord) => void;
+  onRequested: (request: CorrectionRequest) => void;
+  onReload: () => void;
   record: AccessRecord;
   returnFocusTo: HTMLElement | null;
 }
-
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "short",
-  timeStyle: "short",
-});
-
-function FieldError({ id, message }: { id: string; message?: string }) {
-  if (!message) return null;
-  return (
-    <p className="mt-1 text-sm text-danger-text" id={id}>
-      {message}
-    </p>
-  );
-}
-
-function statusLabel(record: AccessRecord) {
-  return record.exitAtUtc ? "Encerrado" : "Em aberto";
-}
-
-export function AccessCorrectionDialog({
+function ProposalDialog({
   onClose,
-  onCorrected,
+  onRequested,
+  onReload,
   record,
   returnFocusTo,
-}: AccessCorrectionDialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const objectiveRef = useRef<HTMLTextAreaElement | null>(null);
-  const closeRef = useRef(onClose);
-  const submittingRef = useRef(false);
-  const [requestError, setRequestError] = useState<string | null>(null);
-  const {
-    formState: { errors, isSubmitting },
-    control,
-    handleSubmit,
-    register,
-    setError,
-  } = useForm<AccessCorrectionFormValues>({
-    defaultValues: {
-      categoryName: record.categoryName,
-      justification: "",
-      objective: record.objective,
-      observation: record.observation ?? "",
-    },
-    resolver: zodResolver(accessCorrectionFormSchema),
-  });
-  const objectiveRegistration = register("objective");
-
+}: Props) {
+  const submission = useCorrectionSubmission();
+  const { store } = submission;
+  const intent = submission.snapshot.proposals[record.id];
+  const [errors, setErrors] = useState<Record<string, string>>({});
   useEffect(() => {
-    closeRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    submittingRef.current = isSubmitting;
-  }, [isSubmitting]);
-
-  useEffect(() => {
-    objectiveRef.current?.focus();
-
-    function handleDialogKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        if (!submittingRef.current) {
-          event.preventDefault();
-          closeRef.current();
-        }
-        return;
-      }
-
-      if (event.key !== "Tab") return;
-      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+    store.begin(record);
+  }, [store, record]);
+  if (!intent) return null;
+  const values = intent.draft;
+  const locked = intent.phase !== "draft";
+  const original = {
+    categoryName: intent.record.categoryName,
+    objective: intent.record.objective,
+    observation: intent.record.observation,
+  };
+  const proposed = {
+    categoryName: values.categoryName,
+    objective: values.objective,
+    observation: values.observation || null,
+  };
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const parsed = accessCorrectionFormSchema.safeParse(values);
+    if (!parsed.success) {
+      const next = Object.fromEntries(
+        parsed.error.issues.map((issue) => [issue.path[0], issue.message]),
       );
-      if (!focusable?.length) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      setErrors(next);
+      const firstInvalid = [
+        "objective",
+        "categoryName",
+        "observation",
+        "justification",
+      ].find((field) => next[field]);
+      requestAnimationFrame(() =>
+        document
+          .getElementById(
+            `correction-${firstInvalid === "categoryName" ? "category" : firstInvalid}`,
+          )
+          ?.focus(),
+      );
+      return;
     }
-
-    window.addEventListener("keydown", handleDialogKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleDialogKeyDown);
-      returnFocusTo?.focus();
-    };
-  }, [returnFocusTo]);
-
-  async function submit(values: AccessCorrectionFormValues) {
-    setRequestError(null);
-
-    try {
-      const corrected = await correctAccessRecord(record.id, {
-        categoryName: values.categoryName,
-        justification: values.justification.trim(),
-        objective: values.objective.trim(),
-        observation: values.observation.trim() || null,
-      });
-      onCorrected(corrected);
-    } catch (error) {
-      const validationErrors = getApiValidationErrors(error);
-      const fieldNames: Record<string, keyof AccessCorrectionFormValues> = {
-        categoryName: "categoryName",
-        justification: "justification",
-        objective: "objective",
-        observation: "observation",
-      };
-      let hasFieldError = false;
-
-      for (const [apiField, message] of Object.entries(validationErrors)) {
-        const field = fieldNames[apiField];
-        if (!field) continue;
-        setError(field, { message, type: "server" });
-        hasFieldError = true;
-      }
-
-      if (error instanceof AccessRecordsContractError) {
-        setRequestError(
-          "A resposta da correção não pôde ser validada. O registro exibido não foi alterado.",
-        );
-        return;
-      }
-
-      const description = describeApiError(error);
-      const recordError = validationErrors.accessRecord;
-      if (recordError) {
-        setRequestError(recordError);
-      } else if (description.status === 404) {
-        setRequestError(
-          "O registro não existe mais ou não está disponível para correção.",
-        );
-      } else if (hasFieldError) {
-        setRequestError("Revise os campos destacados e tente novamente.");
-      } else {
-        setRequestError(description.message);
-      }
-    }
+    setErrors({});
+    const request = await submission.submit(record.id);
+    if (request) onRequested(request);
   }
-
+  async function reconcile() {
+    const request = await submission.reconcile(record.id);
+    if (request) onRequested(request);
+  }
+  function update(field: keyof AccessCorrectionFormValues, value: string) {
+    submission.updateDraft(record.id, field, value);
+    setErrors((current) => ({ ...current, [field]: "" }));
+  }
   return (
-    <div className="fixed inset-0 z-50 grid items-end bg-overlay p-0 sm:items-center sm:p-6">
-      <div
-        aria-describedby="access-correction-audit-note"
-        aria-labelledby="access-correction-title"
-        aria-modal="true"
-        className="max-h-[100svh] w-full overflow-y-auto rounded-t-xl border border-border bg-surface p-5 shadow-xl sm:mx-auto sm:max-h-[calc(100svh-3rem)] sm:max-w-3xl sm:rounded-xl sm:p-7"
-        ref={dialogRef}
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-dark">
-              Registro #{record.id}
-            </p>
-            <h2
-              className="mt-2 text-3xl font-bold text-text"
-              id="access-correction-title"
-            >
-              Corrigir registro
-            </h2>
-          </div>
-          <Button
-            aria-label="Fechar correção"
-            className="size-12 shrink-0 rounded-full p-0 text-xl"
-            disabled={isSubmitting}
-            onClick={onClose}
-            type="button"
-            variant="secondary"
-          >
-            ×
-          </Button>
-        </div>
-
-        <dl className="mt-6 grid gap-4 rounded-xl border border-border bg-surface-subtle p-4 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="font-bold text-ink-soft">Placa</dt>
-            <dd className="mt-1 text-ink">{record.plate}</dd>
-          </div>
-          <div>
-            <dt className="font-bold text-ink-soft">Condutor</dt>
-            <dd className="mt-1 text-ink">{record.driverName}</dd>
-          </div>
-          <div>
-            <dt className="font-bold text-ink-soft">Entrada</dt>
-            <dd className="mt-1 text-ink">
-              {dateFormatter.format(new Date(record.entryAtUtc))}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold text-ink-soft">Saída</dt>
-            <dd className="mt-1 text-ink">
-              {record.exitAtUtc
-                ? dateFormatter.format(new Date(record.exitAtUtc))
-                : "Ainda não registrada"}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-bold text-ink-soft">Situação</dt>
-            <dd className="mt-1 text-ink">{statusLabel(record)}</dd>
-          </div>
-          <div>
-            <dt className="font-bold text-ink-soft">Autoria original</dt>
-            <dd className="mt-1 text-ink">Usuário #{record.createdById}</dd>
-          </div>
-          {record.eventAuthorizationName?.trim() && (
-            <div className="sm:col-span-2">
-              <dt className="font-bold text-ink-soft">Evento associado</dt>
-              <dd className="mt-1 text-ink">{record.eventAuthorizationName}</dd>
-            </div>
-          )}
-        </dl>
-
-        <p
-          className="mt-5 rounded-xl border border-border bg-surface-subtle p-4 text-sm text-text"
-          id="access-correction-audit-note"
-        >
-          A correção e sua justificativa serão registradas na trilha de
-          auditoria.
+    <CorrectionDialog
+      title="Solicitar correção"
+      onClose={onClose}
+      returnFocusTo={returnFocusTo}
+    >
+      <p className="mt-4 text-sm text-text-muted">
+        Registro #{record.id} · {record.plate} · {record.driverName}
+      </p>
+      <p className="mt-3 rounded-xl border border-border bg-surface-subtle p-4 text-sm text-text">
+        O envio cria um pedido pendente. Somente a aprovação altera o registro.
+        A saída normal continua disponível. Você pode fechar esta janela e
+        continuar a operação. Rascunhos serão perdidos ao recarregar a página ou
+        sair da conta; confira os envios incertos antes disso.
+      </p>
+      {intent.request && (
+        <p role="status" className="mt-4 font-semibold text-text">
+          Solicitação #{intent.request.id}: {intent.request.status}.
         </p>
-
-        <form className="mt-6 space-y-5" onSubmit={handleSubmit(submit)}>
-          <div>
-            <label
-              className="font-bold text-ink"
-              htmlFor="correction-objective"
-            >
-              Objetivo
-            </label>
-            <TextArea
-              {...objectiveRegistration}
-              aria-describedby={
-                errors.objective ? "correction-objective-error" : undefined
-              }
-              aria-invalid={Boolean(errors.objective)}
-              className="mt-2"
-              disabled={isSubmitting}
-              id="correction-objective"
-              maxLength={500}
-              ref={(element) => {
-                objectiveRegistration.ref(element);
-                objectiveRef.current = element;
-              }}
-              rows={3}
-            />
-            <FieldError
-              id="correction-objective-error"
-              message={errors.objective?.message}
-            />
-          </div>
-
-          <div>
-            <label className="font-bold text-ink" htmlFor="correction-category">
-              Categoria
-            </label>
-            <Controller
-              control={control}
-              name="categoryName"
-              render={({ field }) => (
-                <SelectField
-                  aria-describedby={
-                    errors.categoryName
-                      ? "correction-category-error"
-                      : undefined
-                  }
-                  aria-invalid={Boolean(errors.categoryName)}
-                  className="mt-2"
-                  disabled={isSubmitting}
-                  id="correction-category"
-                  name={field.name}
-                  onBlur={field.onBlur}
-                  onValueChange={field.onChange}
-                  options={generalAccessCategories.map((category) => ({
-                    label: category,
-                    value: category,
-                  }))}
-                  value={field.value}
-                />
-              )}
-            />
-            <FieldError
-              id="correction-category-error"
-              message={errors.categoryName?.message}
-            />
-          </div>
-
-          <div>
-            <label
-              className="font-bold text-ink"
-              htmlFor="correction-observation"
-            >
-              Observação{" "}
-              <span className="font-normal text-ink-soft">(opcional)</span>
-            </label>
-            <TextArea
-              {...register("observation")}
-              aria-describedby={
-                errors.observation ? "correction-observation-error" : undefined
-              }
-              aria-invalid={Boolean(errors.observation)}
-              className="mt-2"
-              disabled={isSubmitting}
-              id="correction-observation"
-              maxLength={1000}
-              rows={3}
-            />
-            <FieldError
-              id="correction-observation-error"
-              message={errors.observation?.message}
-            />
-          </div>
-
-          <div>
-            <label
-              className="font-bold text-ink"
-              htmlFor="correction-justification"
-            >
-              Justificativa da correção
-            </label>
-            <TextArea
-              {...register("justification")}
-              aria-describedby={`correction-justification-guidance${
-                errors.justification ? " correction-justification-error" : ""
-              }`}
-              aria-invalid={Boolean(errors.justification)}
-              className="mt-2"
-              disabled={isSubmitting}
-              id="correction-justification"
-              maxLength={500}
-              rows={3}
-            />
-            <p
-              className="mt-1 text-xs text-ink-soft"
-              id="correction-justification-guidance"
-            >
-              Informe entre 10 e 500 caracteres.
-            </p>
-            <FieldError
-              id="correction-justification-error"
-              message={errors.justification?.message}
-            />
-          </div>
-
-          <ActionFeedback message={requestError} tone="error" />
-
-          <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+      )}
+      <CorrectionComparison original={original} proposed={proposed} />
+      <form
+        onSubmit={(event) => void submit(event)}
+        className="space-y-4"
+        noValidate
+      >
+        <div>
+          <label
+            htmlFor="correction-objective"
+            className="font-semibold text-text"
+          >
+            Objetivo
+          </label>
+          <TextArea
+            id="correction-objective"
+            className="mt-2"
+            maxLength={500}
+            disabled={locked}
+            value={values.objective}
+            onChange={(event) => update("objective", event.target.value)}
+            aria-invalid={!!errors.objective}
+            aria-describedby="correction-objective-error"
+          />
+          <p
+            id="correction-objective-error"
+            className="text-sm text-danger-text"
+          >
+            {errors.objective}
+          </p>
+        </div>
+        <div>
+          <label
+            htmlFor="correction-category"
+            className="font-semibold text-text"
+          >
+            Categoria
+          </label>
+          <SelectField
+            id="correction-category"
+            disabled={locked}
+            value={values.categoryName}
+            onValueChange={(value) => update("categoryName", value)}
+            options={generalAccessCategories.map((value) => ({
+              label: value,
+              value,
+            }))}
+            aria-invalid={!!errors.categoryName}
+            aria-describedby="correction-category-error"
+          />
+          <p
+            id="correction-category-error"
+            className="text-sm text-danger-text"
+          >
+            {errors.categoryName}
+          </p>
+        </div>
+        <div>
+          <label
+            htmlFor="correction-observation"
+            className="font-semibold text-text"
+          >
+            Observação (opcional)
+          </label>
+          <TextArea
+            id="correction-observation"
+            maxLength={1000}
+            disabled={locked}
+            value={values.observation}
+            onChange={(event) => update("observation", event.target.value)}
+            aria-invalid={!!errors.observation}
+            aria-describedby="correction-observation-error"
+          />
+          <p
+            id="correction-observation-error"
+            className="text-sm text-danger-text"
+          >
+            {errors.observation}
+          </p>
+        </div>
+        <div>
+          <label
+            htmlFor="correction-justification"
+            className="font-semibold text-text"
+          >
+            Justificativa da correção
+          </label>
+          <TextArea
+            id="correction-justification"
+            maxLength={500}
+            disabled={locked}
+            value={values.justification}
+            onChange={(event) => update("justification", event.target.value)}
+            aria-invalid={!!errors.justification}
+            aria-describedby="correction-justification-help correction-justification-error"
+          />
+          <p
+            id="correction-justification-help"
+            className="text-sm text-text-muted"
+          >
+            Informe de 10 a 500 caracteres.
+          </p>
+          <p
+            id="correction-justification-error"
+            className="text-sm text-danger-text"
+          >
+            {errors.justification}
+          </p>
+        </div>
+        <CorrectionFeedback message={intent.error} tone="error" />
+        <div className="flex flex-wrap gap-3 border-t border-border pt-4">
+          <Button variant="secondary" onClick={onClose}>
+            Fechar
+          </Button>
+          {intent.phase === "draft" ? (
+            <Button type="submit">Enviar solicitação</Button>
+          ) : (
             <Button
-              disabled={isSubmitting}
-              onClick={onClose}
-              type="button"
-              variant="secondary"
+              disabled={intent.reading || intent.phase === "blocked"}
+              onClick={() => void reconcile()}
             >
-              Cancelar
+              {intent.reading ? "Consultando envio…" : "Consultar envio"}
             </Button>
-            <Button disabled={isSubmitting} type="submit">
-              {isSubmitting ? "Salvando correção…" : "Salvar correção"}
+          )}
+          {(intent.rejectedAndAbsent ||
+            (intent.request && intent.request.status !== "Pendente")) && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                store.removeProposal(record.id);
+                onClose();
+                onReload();
+              }}
+            >
+              Encerrar esta intenção e atualizar registros
             </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+          )}
+        </div>
+      </form>
+    </CorrectionDialog>
+  );
+}
+export function AccessCorrectionDialog(props: Props) {
+  return (
+    <CorrectionReviewScope>
+      <ProposalDialog {...props} />
+    </CorrectionReviewScope>
   );
 }
