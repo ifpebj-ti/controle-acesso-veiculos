@@ -32,6 +32,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -254,6 +255,18 @@ if (googleOidcOptions.Enabled)
                     }
 
                     return Task.CompletedTask;
+                },
+                OnAccessDenied = async context =>
+                {
+                    // The OIDC handler validates protected state and correlation
+                    // before raising this event. Invalid callbacks still fail closed.
+                    context.HandleResponse();
+                    context.Response.Headers.CacheControl = "no-store";
+                    await context.HttpContext.SignOutAsync(GoogleOidcOptions.ExternalCookieScheme);
+                    context.Response.Redirect(QueryHelpers.AddQueryString(
+                        googleOidcOptions.FrontendCompletionPath,
+                        "status",
+                        "denied"));
                 },
                 OnRemoteFailure = async context =>
                 {
