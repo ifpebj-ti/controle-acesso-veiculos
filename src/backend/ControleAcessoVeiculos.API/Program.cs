@@ -113,8 +113,13 @@ var googleOidcOptions = builder.Configuration
 googleOidcOptions.Validate();
 builder.Services.Configure<GoogleOidcOptions>(
     builder.Configuration.GetSection(GoogleOidcOptions.SectionName));
+var homologationTestAccess = builder.Configuration
+    .GetSection(HomologationTestAccessOptions.SectionName)
+    .Get<HomologationTestAccessOptions>() ?? new HomologationTestAccessOptions();
+var homologationPasswordPolicy = homologationTestAccess.Validate(
+    builder.Environment.EnvironmentName, DateTimeOffset.UtcNow);
 builder.Services.AddSingleton(
-    new AuthenticationMethodPolicy(googleOidcOptions.Enabled));
+    new AuthenticationMethodPolicy(googleOidcOptions.Enabled, homologationPasswordPolicy));
 
 var temporaryCredentialOptions = builder.Configuration
     .GetSection(TemporaryCredentialOptions.SectionName)
