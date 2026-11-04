@@ -5,6 +5,54 @@ namespace ControleAcessoVeiculos.Domain.Tests;
 
 public sealed class UsuarioTests
 {
+    [Theory]
+    [InlineData("", 1, 1)]
+    [InlineData("user@example.com", 0, 1)]
+    [InlineData("user@example.com", 1, 0)]
+    public void ConstructorRejectsInvalidIdentity(
+        string email,
+        int personId,
+        int profileId)
+    {
+        Assert.ThrowsAny<ArgumentException>(() =>
+            new Usuario(email, "hash", personId, profileId));
+    }
+
+    [Fact]
+    public void ConstructorRequiresPasswordForLocalAccount()
+    {
+        Assert.ThrowsAny<ArgumentException>(() => new Usuario(
+            "local@example.com",
+            null,
+            1,
+            1));
+    }
+
+    [Fact]
+    public void ConstructorRejectsInconsistentTemporaryCredentialState()
+    {
+        var now = DateTime.UtcNow;
+
+        Assert.Throws<ArgumentException>(() => new Usuario(
+            "temporary@example.com",
+            "hash",
+            1,
+            1,
+            trocaSenhaObrigatoria: true));
+        Assert.Throws<ArgumentException>(() => new Usuario(
+            "permanent@example.com",
+            "hash",
+            1,
+            1,
+            credencialTemporariaExpiraEm: now.AddMinutes(30)));
+        Assert.Throws<ArgumentException>(() => new Usuario(
+            "permanent@example.com",
+            "hash",
+            1,
+            1,
+            credencialTemporariaUtilizadaEm: now));
+    }
+
     [Fact]
     public void ConstructorNormalizesEmail()
     {
@@ -27,6 +75,55 @@ public sealed class UsuarioTests
 
         Assert.False(usuario.PodeAutenticar(now.AddMinutes(14)));
         Assert.True(usuario.PodeAutenticar(now.AddMinutes(16)));
+    }
+
+    [Fact]
+    public void FailedAttemptValidatesPolicyAndResetsExpiredLockout()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("user@example.com", "hash", 1, 1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            usuario.RegistrarTentativaFalha(now, 0, TimeSpan.FromMinutes(1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            usuario.RegistrarTentativaFalha(now, 1, TimeSpan.Zero));
+
+        usuario.RegistrarTentativaFalha(now, 1, TimeSpan.FromMinutes(1));
+        usuario.RegistrarTentativaFalha(now.AddMinutes(2), 2, TimeSpan.FromMinutes(1));
+
+        Assert.Equal(1, usuario.TentativasFalhas);
+        Assert.Null(usuario.BloqueadoAte);
+    }
+
+    [Fact]
+    public void InactiveAccountCannotAuthenticate()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("user@example.com", "hash", 1, 1);
+
+        usuario.Desativar(now);
+
+        Assert.False(usuario.PodeAutenticar(now));
+        Assert.Equal(now, usuario.DataAlteracao);
+    }
+
+    [Fact]
+    public void AuthenticationMethodChecksStillHonorAccountState()
+    {
+        var now = DateTime.UtcNow;
+        var local = new Usuario("local@example.com", "hash", 1, 1);
+        var google = new Usuario(
+            "google@example.com",
+            null,
+            1,
+            1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
+
+        local.RegistrarTentativaFalha(now, 1, TimeSpan.FromMinutes(5));
+        google.Desativar(now);
+
+        Assert.False(local.PodeAutenticarComSenha(now.AddMinutes(1)));
+        Assert.False(google.PodeAutenticarComGoogle(now));
     }
 
     [Fact]
@@ -77,6 +174,25 @@ public sealed class UsuarioTests
 
         Assert.Throws<ArgumentException>(() =>
             usuario.AtualizarSenhaHash(" ", DateTime.UtcNow));
+    }
+
+    [Fact]
+    public void GoogleAccountRejectsLocalPasswordOperations()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario(
+            "google@example.com",
+            null,
+            1,
+            1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            usuario.AtualizarSenhaHash("hash", now));
+        Assert.Throws<InvalidOperationException>(() =>
+            usuario.TrocarSenhaHash("hash", now));
+        Assert.Throws<InvalidOperationException>(() =>
+            usuario.DefinirCredencialTemporaria("hash", now.AddMinutes(1), now));
     }
 
     [Fact]
@@ -145,6 +261,25 @@ public sealed class UsuarioTests
     }
 
     [Fact]
+    public void PermanentAndExpiredCredentialsCannotBeConsumed()
+    {
+        var now = DateTime.UtcNow;
+        var permanent = new Usuario("permanent@example.com", "hash", 1, 1);
+        var expired = new Usuario(
+            "expired@example.com",
+            "hash",
+            1,
+            1,
+            trocaSenhaObrigatoria: true,
+            credencialTemporariaExpiraEm: now);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            permanent.ConsumirCredencialTemporaria(now));
+        Assert.Throws<InvalidOperationException>(() =>
+            expired.ConsumirCredencialTemporaria(now));
+    }
+
+    [Fact]
     public void PasswordChangeCompletesTemporaryCredentialSetup()
     {
         var now = DateTime.UtcNow;
@@ -183,6 +318,18 @@ public sealed class UsuarioTests
         Assert.Null(usuario.CredencialTemporariaUtilizadaEm);
         Assert.Equal(0, usuario.TentativasFalhas);
         Assert.Null(usuario.BloqueadoAte);
+    }
+
+    [Fact]
+    public void AdministrativeResetValidatesPasswordAndExpiration()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("user@example.com", "hash", 1, 1);
+
+        Assert.Throws<ArgumentException>(() =>
+            usuario.DefinirCredencialTemporaria(" ", now.AddMinutes(1), now));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            usuario.DefinirCredencialTemporaria("new-hash", now, now));
     }
 
     [Fact]
@@ -225,6 +372,22 @@ public sealed class UsuarioTests
             usuario.VincularIdentidadeGoogle(
                 "different-google-subject",
                 now.AddMinutes(2)));
+    }
+
+    [Fact]
+    public void GoogleLinkValidatesSubject()
+    {
+        var usuario = new Usuario(
+            "google@example.com",
+            null,
+            1,
+            1,
+            metodoAutenticacao: MetodoAutenticacao.Google);
+
+        Assert.Throws<ArgumentException>(() =>
+            usuario.VincularIdentidadeGoogle(" ", DateTime.UtcNow));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            usuario.VincularIdentidadeGoogle(new string('S', 256), DateTime.UtcNow));
     }
 
     [Fact]
@@ -336,5 +499,43 @@ public sealed class UsuarioTests
         Assert.False(usuario.TrocaSenhaObrigatoria);
         Assert.Null(usuario.CredencialTemporariaExpiraEm);
         Assert.False(usuario.PodeAutenticarComSenha(now));
+    }
+
+    [Fact]
+    public void ProfileChangeValidatesAuthenticationSpecificArguments()
+    {
+        var now = DateTime.UtcNow;
+        var usuario = new Usuario("admin@example.com", "hash", 1, 1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            usuario.AlterarPerfilEAutenticacao(0, MetodoAutenticacao.Google, now));
+        Assert.ThrowsAny<ArgumentException>(() =>
+            usuario.AlterarPerfilEAutenticacao(2, MetodoAutenticacao.Local, now));
+        Assert.Throws<ArgumentException>(() =>
+            usuario.AlterarPerfilEAutenticacao(
+                2,
+                MetodoAutenticacao.Local,
+                now,
+                " ",
+                now.AddMinutes(1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            usuario.AlterarPerfilEAutenticacao(
+                2,
+                MetodoAutenticacao.Local,
+                now,
+                "temporary-hash",
+                now));
+        Assert.Throws<ArgumentException>(() =>
+            usuario.AlterarPerfilEAutenticacao(
+                2,
+                MetodoAutenticacao.Google,
+                now,
+                "unexpected-hash"));
+        Assert.Throws<ArgumentException>(() =>
+            usuario.AlterarPerfilEAutenticacao(
+                2,
+                MetodoAutenticacao.Google,
+                now,
+                credencialTemporariaExpiraEm: now.AddMinutes(1)));
     }
 }

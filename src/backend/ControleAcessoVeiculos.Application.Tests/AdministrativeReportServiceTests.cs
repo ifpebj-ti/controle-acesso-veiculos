@@ -135,8 +135,113 @@ public sealed class AdministrativeReportServiceTests
         Assert.Equal((7, "VehicleMovements", false), store.LastExportAudit);
     }
 
+    [Fact]
+    public async Task InstitutionalFleetExportUsesDedicatedRendererAndFileName()
+    {
+        var store = new FakeStore();
+        var renderer = new FakePdfRenderer();
+        var service = CreateService(store, renderer: renderer);
+
+        var result = await service.ExportInstitutionalFleetAsync(
+            new(
+                new DateOnly(2026, 10, 1),
+                new DateOnly(2026, 10, 2),
+                VehicleIdentification: " van-01 "),
+            7,
+            "Current-test-password-123!",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(AdministrativeReportExportStatus.Success, result.Status);
+        Assert.Equal(
+            "utilizacoes-frota-2026-10-01-a-2026-10-02.pdf",
+            result.Report!.FileName);
+        Assert.Equal(
+            "van-01",
+            renderer.LastInstitutionalFleetReport!.Filters["vehicleIdentification"]);
+        Assert.Equal((7, "InstitutionalFleet", true), store.LastExportAudit);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public async Task ExportRequiresCurrentPasswordBeforeCallingSecurity(string? password)
+    {
+        var store = new FakeStore();
+        var security = new FakeExportSecurity();
+        var service = CreateService(store, security);
+
+        var result = await service.ExportVehicleMovementsAsync(
+            new(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 1)),
+            7,
+            password,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(AdministrativeReportExportStatus.Invalid, result.Status);
+        Assert.Contains("currentPassword", result.Errors.Keys);
+        Assert.Null(security.Password);
+        Assert.Null(store.Criteria);
+        Assert.Null(store.LastExportAudit);
+    }
+
+    [Fact]
+    public async Task ExportRejectsResultAboveMaximumAndAuditsFailure()
+    {
+        var store = new FakeStore { TotalCount = 1001 };
+        var service = CreateService(store);
+
+        var result = await service.ExportVehicleMovementsAsync(
+            new(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 1)),
+            7,
+            "Current-test-password-123!",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(AdministrativeReportExportStatus.TooLarge, result.Status);
+        Assert.Contains("report", result.Errors.Keys);
+        Assert.Equal((7, "VehicleMovements", false), store.LastExportAudit);
+    }
+
+    [Fact]
+    public async Task ExportConvertsUnexpectedRenderingFailureIntoAuditedResult()
+    {
+        var store = new FakeStore();
+        var renderer = new FakePdfRenderer { ThrowOnRender = true };
+        var service = CreateService(store, renderer: renderer);
+
+        var result = await service.ExportVehicleMovementsAsync(
+            new(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 1)),
+            7,
+            "Current-test-password-123!",
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(AdministrativeReportExportStatus.GenerationFailed, result.Status);
+        Assert.Equal((7, "VehicleMovements", false), store.LastExportAudit);
+    }
+
+    [Fact]
+    public async Task SearchRejectsOversizedFilterAndPageOffsetOverflow()
+    {
+        var store = new FakeStore();
+        var service = CreateService(store);
+
+        var result = await service.SearchVehicleMovementsAsync(
+            new(
+                new DateOnly(2026, 10, 1),
+                new DateOnly(2026, 10, 1),
+                Plate: new string('A', 11),
+                Page: int.MaxValue,
+                PageSize: 2),
+            7,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(AdministrativeReportStatus.Invalid, result.Status);
+        Assert.Contains("plate", result.Errors.Keys);
+        Assert.Contains("page", result.Errors.Keys);
+        Assert.Null(store.Criteria);
+    }
+
     private sealed class FakeStore : IAdministrativeReportStore
     {
+        public int TotalCount { get; init; }
         public AdministrativeReportCriteria? Criteria { get; private set; }
         public (int ActorId, string ReportType)? LastAudit { get; private set; }
         public (int ActorId, string ReportType, bool Succeeded)? LastExportAudit
@@ -150,7 +255,7 @@ public sealed class AdministrativeReportServiceTests
         {
             Criteria = criteria;
             return Task.FromResult(new PagedAdministrativeReport<VehicleMovementReportItem>(
-                [], criteria.Page, criteria.PageSize, 0, 0,
+                [], criteria.Page, criteria.PageSize, TotalCount, 0,
                 criteria.From, criteria.To, timeZoneId));
         }
 
@@ -162,7 +267,7 @@ public sealed class AdministrativeReportServiceTests
         {
             Criteria = criteria;
             return Task.FromResult(new PagedAdministrativeReport<InstitutionalFleetReportItem>(
-                [], criteria.Page, criteria.PageSize, 0, 0,
+                [], criteria.Page, criteria.PageSize, TotalCount, 0,
                 criteria.From, criteria.To, timeZoneId));
         }
 
@@ -221,17 +326,30 @@ public sealed class AdministrativeReportServiceTests
 
     private sealed class FakePdfRenderer : IAdministrativeReportPdfRenderer
     {
+        public bool ThrowOnRender { get; init; }
         public AdministrativeReportExport<VehicleMovementReportItem>? LastVehicleReport
+        { get; private set; }
+        public AdministrativeReportExport<InstitutionalFleetReportItem>?
+            LastInstitutionalFleetReport
         { get; private set; }
 
         public byte[] RenderVehicleMovements(
             AdministrativeReportExport<VehicleMovementReportItem> report)
         {
+            if (ThrowOnRender)
+            {
+                throw new InvalidOperationException("Simulated rendering failure.");
+            }
+
             LastVehicleReport = report;
             return [1];
         }
 
         public byte[] RenderInstitutionalFleet(
-            AdministrativeReportExport<InstitutionalFleetReportItem> report) => [1];
+            AdministrativeReportExport<InstitutionalFleetReportItem> report)
+        {
+            LastInstitutionalFleetReport = report;
+            return [1];
+        }
     }
 }

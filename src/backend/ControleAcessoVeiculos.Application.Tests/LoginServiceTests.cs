@@ -50,6 +50,119 @@ public sealed class LoginServiceTests
         Assert.Equal(ProfileNames.Administrator, result.User?.ProfileName);
     }
 
+    [Fact]
+    public async Task UnknownAndInactiveProfilesUseDummyVerification()
+    {
+        var missingStore = new FakeUserStore(null);
+        var inactiveStore = new FakeUserStore(new AuthenticationUser(
+            CreateUser("inactive@example.test"),
+            ProfileNames.Administrator,
+            ProfileIsActive: false));
+
+        var missing = await CreateService(
+            missingStore,
+            new FakeSessionStore(),
+            operationalGoogleOnly: false).AuthenticateAsync(
+                "missing@example.test",
+                "password",
+                TestContext.Current.CancellationToken);
+        var inactive = await CreateService(
+            inactiveStore,
+            new FakeSessionStore(),
+            operationalGoogleOnly: false).AuthenticateAsync(
+                "inactive@example.test",
+                "password",
+                TestContext.Current.CancellationToken);
+
+        Assert.False(missing.IsSuccess);
+        Assert.False(inactive.IsSuccess);
+        Assert.True(missingStore.DummyVerificationPerformed);
+        Assert.True(inactiveStore.DummyVerificationPerformed);
+    }
+
+    [Fact]
+    public async Task FailedPasswordPersistsFailureWithoutLockingEarly()
+    {
+        var user = CreateUser("operator@example.test");
+        var store = new FakeUserStore(new AuthenticationUser(
+            user,
+            ProfileNames.Doorman,
+            ProfileIsActive: true))
+        {
+            VerificationResult = PasswordHashVerificationResult.Failed
+        };
+
+        var result = await CreateService(
+            store,
+            new FakeSessionStore(),
+            operationalGoogleOnly: false).AuthenticateAsync(
+                user.Email,
+                "wrong-password",
+                TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(1, user.TentativasFalhas);
+        Assert.Null(store.SavedAudit);
+    }
+
+    [Fact]
+    public async Task FifthFailedPasswordPersistsLockoutAudit()
+    {
+        var user = CreateUser("operator@example.test");
+        for (var attempt = 0; attempt < LoginService.MaximumFailedAttempts - 1; attempt++)
+        {
+            user.RegistrarTentativaFalha(
+                FixedNow.UtcDateTime,
+                LoginService.MaximumFailedAttempts,
+                LoginService.LockoutDuration);
+        }
+
+        var store = new FakeUserStore(new AuthenticationUser(
+            user,
+            ProfileNames.Doorman,
+            ProfileIsActive: true))
+        {
+            VerificationResult = PasswordHashVerificationResult.Failed
+        };
+
+        await CreateService(
+            store,
+            new FakeSessionStore(),
+            operationalGoogleOnly: false).AuthenticateAsync(
+                user.Email,
+                "wrong-password",
+                TestContext.Current.CancellationToken);
+
+        Assert.NotNull(user.BloqueadoAte);
+        Assert.Equal(AuthenticationAuditOutcome.AccountLocked, store.SavedAudit?.Outcome);
+    }
+
+    [Fact]
+    public async Task SuccessfulLoginRehashesPasswordWhenRequired()
+    {
+        var user = CreateUser("admin@example.test");
+        var store = new FakeUserStore(new AuthenticationUser(
+            user,
+            ProfileNames.Administrator,
+            ProfileIsActive: true))
+        {
+            VerificationResult = PasswordHashVerificationResult.SuccessRehashNeeded
+        };
+
+        var result = await CreateService(
+            store,
+            new FakeSessionStore(),
+            operationalGoogleOnly: false).AuthenticateAsync(
+                user.Email,
+                "valid-password",
+                TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("rehash", user.SenhaHash);
+        Assert.Equal(1, store.HashCalls);
+        Assert.Equal(AuthenticationAuditOutcome.LoginSucceeded, store.SavedAudit?.Outcome);
+    }
+
     private static LoginService CreateService(
         FakeUserStore store,
         FakeSessionStore sessions,
@@ -75,10 +188,14 @@ public sealed class LoginServiceTests
         return user;
     }
 
-    private sealed class FakeUserStore(AuthenticationUser user)
+    private sealed class FakeUserStore(AuthenticationUser? user)
         : IAuthenticationUserStore, IPasswordHashService
     {
         public bool DummyVerificationPerformed { get; private set; }
+        public int HashCalls { get; private set; }
+        public AuthenticationAudit? SavedAudit { get; private set; }
+        public PasswordHashVerificationResult VerificationResult { get; init; } =
+            PasswordHashVerificationResult.Success;
 
         public Task<AuthenticationUser?> FindByEmailAsync(
             string normalizedEmail,
@@ -99,13 +216,21 @@ public sealed class LoginServiceTests
 
         public Task SaveChangesAsync(
             AuthenticationAudit? audit,
-            CancellationToken cancellationToken) => Task.CompletedTask;
+            CancellationToken cancellationToken)
+        {
+            SavedAudit = audit;
+            return Task.CompletedTask;
+        }
 
-        public string Hash(string password) => "hash";
+        public string Hash(string password)
+        {
+            HashCalls++;
+            return "rehash";
+        }
 
         public PasswordHashVerificationResult Verify(
             string passwordHash,
-            string password) => PasswordHashVerificationResult.Success;
+            string password) => VerificationResult;
 
         public void PerformDummyVerification(string password) =>
             DummyVerificationPerformed = true;
