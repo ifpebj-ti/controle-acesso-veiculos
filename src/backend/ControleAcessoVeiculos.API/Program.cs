@@ -222,6 +222,8 @@ if (googleOidcOptions.Enabled)
             options.Authority = "https://accounts.google.com";
             options.ClientId = googleOidcOptions.ClientId;
             options.ClientSecret = googleOidcOptions.ClientSecret;
+            // Shared workstations must offer identity choice on each explicit login.
+            options.Prompt = OpenIdConnectPrompt.SelectAccount;
             options.CallbackPath = googleOidcOptions.CallbackPath;
             options.ResponseType = OpenIdConnectResponseType.Code;
             options.UsePkce = true;

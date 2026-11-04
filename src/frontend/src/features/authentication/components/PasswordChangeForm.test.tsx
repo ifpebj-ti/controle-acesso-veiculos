@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AxiosError } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoSeriousAccessibilityViolations } from "../../../test/accessibility";
@@ -133,7 +134,9 @@ describe("PasswordChangeForm", () => {
     "announces a safe recoverable failure for status %s",
     async (status, message) => {
       vi.mocked(changeAuthenticatedPassword).mockRejectedValue(
-        status === undefined ? new Error("network") : axiosError(status),
+        status === undefined
+          ? new AxiosError("network", "ERR_NETWORK")
+          : axiosError(status),
       );
       const user = userEvent.setup();
       render(<PasswordChangeForm onSuccess={vi.fn()} />);
