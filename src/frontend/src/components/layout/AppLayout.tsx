@@ -6,12 +6,23 @@ import {
   useAuthenticatedSession,
 } from "../../features/authentication";
 import { AppearanceSelector } from "../../features/appearance";
+import {
+  FullscreenControl,
+  useFullscreen,
+  type FullscreenController,
+} from "../../features/fullscreen";
 import { getProfileNavigation } from "../../routes/routeMetadata";
 import { Brand } from "../ui/Brand";
 import { Button } from "../ui/Button";
 import { Icon } from "../ui/Icon";
 
-function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
+function SidebarContent({
+  closeMenu,
+  fullscreen,
+}: {
+  closeMenu?: () => void;
+  fullscreen: FullscreenController;
+}) {
   const { logout, user } = useAuthenticatedSession();
   const navigate = useNavigate();
   const navigation = getProfileNavigation(user.profileName);
@@ -151,6 +162,7 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
       </nav>
 
       <AppearanceSelector className="mt-8" />
+      <FullscreenControl fullscreen={fullscreen} className="mt-3" />
 
       <div className="mt-4 border-t border-border pt-4">
         <NavLink
@@ -189,7 +201,11 @@ function SidebarContent({ closeMenu }: { closeMenu?: () => void }) {
   );
 }
 
-function StandardAppLayout() {
+function StandardAppLayout({
+  fullscreen,
+}: {
+  fullscreen: FullscreenController;
+}) {
   const { sessionNotice } = useAuthenticatedSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuDialogRef = useRef<HTMLElement>(null);
@@ -218,7 +234,6 @@ function StandardAppLayout() {
 
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        event.preventDefault();
         setMenuOpen(false);
         return;
       }
@@ -267,7 +282,7 @@ function StandardAppLayout() {
       </a>
 
       <aside className="sidebar-scroll fixed inset-y-0 left-0 z-30 hidden w-72 overflow-y-auto overflow-x-hidden border-r border-border bg-navigation-surface xl:block">
-        <SidebarContent />
+        <SidebarContent fullscreen={fullscreen} />
       </aside>
 
       <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b border-border bg-surface px-4 xl:hidden">
@@ -314,7 +329,10 @@ function StandardAppLayout() {
               <Icon name="x" size={18} />
               Recolher
             </Button>
-            <SidebarContent closeMenu={() => setMenuOpen(false)} />
+            <SidebarContent
+              fullscreen={fullscreen}
+              closeMenu={() => setMenuOpen(false)}
+            />
           </aside>
         </div>
       )}
@@ -342,7 +360,11 @@ function StandardAppLayout() {
   );
 }
 
-function MandatoryPasswordChangeLayout() {
+function MandatoryPasswordChangeLayout({
+  fullscreen,
+}: {
+  fullscreen: FullscreenController;
+}) {
   const { logout, sessionNotice } = useAuthenticatedSession();
   const navigate = useNavigate();
 
@@ -358,6 +380,10 @@ function MandatoryPasswordChangeLayout() {
           <Brand className="min-w-0 max-w-[17rem]" />
           <div className="flex w-full flex-wrap items-end justify-end gap-3 sm:w-auto sm:flex-nowrap">
             <AppearanceSelector className="w-full sm:w-72" />
+            <FullscreenControl
+              fullscreen={fullscreen}
+              className="w-full sm:w-auto"
+            />
             <Button
               className="shrink-0"
               variant="secondary"
@@ -394,10 +420,11 @@ function MandatoryPasswordChangeLayout() {
 
 export function AppLayout() {
   const { user } = useAuthenticatedSession();
+  const fullscreen = useFullscreen();
 
   return user.requiresPasswordChange ? (
-    <MandatoryPasswordChangeLayout />
+    <MandatoryPasswordChangeLayout fullscreen={fullscreen} />
   ) : (
-    <StandardAppLayout />
+    <StandardAppLayout fullscreen={fullscreen} />
   );
 }

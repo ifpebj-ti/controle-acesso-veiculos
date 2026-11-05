@@ -37,6 +37,16 @@ institucional fica reservado principalmente às ações. Lógica de sessão, coo
 API, capacidades e armazenamento permanecem inalterados. A ativação de temas e a
 migração das páginas operacionais e administrativas continuam nas etapas seguintes.
 
+## Tela cheia opcional (candidato #620)
+
+A área autenticada oferece, quando suportado, “Entrar em tela cheia” junto aos
+ajustes de aparência. O modo usa a API nativa e só inicia por ação explícita;
+Escape/saída do navegador continuam disponíveis. Alvo, foco, portais, fallback,
+limites de zoom móvel e roteiro de validação estão em
+[`docs/fullscreen.md`](docs/fullscreen.md). Não é modo quiosque nem requisito
+para usar o sistema; a implementação candidata não implica implantação ou
+homologação em tablet físico.
+
 ## Estado atual
 
 A aplicação de produção não inclui provedor de demonstração nem registros
