@@ -19,6 +19,10 @@ Datas, commits e classificação de cada evidência devem ser preservados.
 
 ## Evidência técnica recente
 
+- [Prontidão funcional em 06/11](validation/project-readiness-2026-11-06.md) e
+  [matriz da Unidade 2](validation/unit-2-readiness.md): critérios e percentuais
+  mantidos separados de aceite e implantação.
+
 - [Balanço da homologação de 04/11/2026](validation/homologation-test-balance-2026-11-04.md):
   verificações HTTPS dos quatro perfis, limpeza fictícia autorizada e limites de
   integração dos candidatos. Não equivale a aceite institucional.
