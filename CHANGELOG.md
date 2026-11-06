@@ -17,10 +17,12 @@ from its first published release.
 
 ### Changed
 
-- Balance desktop login content width, heading size and spacing while retaining
-  the mobile composition, institutional identity and existing sign-in behavior.
+- Increase spacing between sign-in guidance and administrative access while
+  retaining the established login alignment, typography and panel composition.
 - Cap the Google sign-in action at 18rem within the available width, retaining
   its touch-target height and consistent enabled/disabled presentation.
+  Add a detached sage contour, shorten introductory copy and align the separate
+  administrative action without changing authentication behavior.
 
 ### Fixed
 

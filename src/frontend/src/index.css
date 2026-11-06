@@ -2001,6 +2001,8 @@ body:has(.login-page),
 }
 
 .login-page {
+  --login-google-border: var(--palette-ifpe-green-soft);
+
   isolation: isolate;
   background: var(--ui-background);
 }
@@ -2265,43 +2267,57 @@ body:has(.login-page),
   max-width: 18rem;
 }
 
+.login-google-action:not(:disabled):not(:focus-visible) {
+  outline: 2px solid var(--login-google-border);
+  outline-offset: 4px;
+}
+
+.login-form-content:has(.login-provider-options) {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  margin-block: 0;
+  padding-top: 2rem;
+  padding-bottom: 1rem;
+}
+
+.login-form-content:has(.login-provider-options)::before {
+  flex: 1 0 0;
+  content: "";
+}
+
+.login-provider-options {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  margin-top: 0;
+}
+
+.login-provider-options:has(.login-google-action) > div {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 3.125rem;
+}
+
+.login-provider-options .login-google-action {
+  flex-shrink: 0;
+  margin-block: auto;
+}
+
+.login-provider-options .login-google-action + p {
+  margin-top: 1.25rem;
+  margin-bottom: 1.875rem;
+}
+
+.login-administrative-entry {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  padding-top: 1.5rem;
+}
+
 @media (min-width: 1024px) {
-  .login-form-content,
-  .login-form-panel > .login-brand,
-  .login-form-panel > .login-support {
-    width: 100%;
-    max-width: 28rem;
-    margin-inline: auto;
-  }
-
-  .login-form-content {
-    padding-block: 1.5rem;
-  }
-
-  .login-view-title {
-    font-size: 2.5rem;
-    line-height: 1.15;
-  }
-
-  .login-eyebrow {
-    margin-bottom: 0.5rem;
-  }
-
-  .login-introduction {
-    margin-top: 0.75rem;
-    line-height: 1.6;
-  }
-
-  .login-provider-options,
-  .login-administrative-entry {
-    margin-top: 1.25rem;
-  }
-
-  .login-administrative-entry,
-  .login-form-panel > .login-support {
-    padding-top: 1rem;
-  }
-
   .login-visual {
     min-height: 100vh;
     min-height: 100dvh;

@@ -385,16 +385,25 @@ creme do sistema. Em superfícies coloridas, o componente deve usar a combinaç�
 com contraste medido, sem substituir as cores semânticas próprias de erro,
 sucesso, aviso ou indisponibilidade.
 
-## Composição do login em desktop
+## Apresentação da ação de login
 
-A partir de 1024 px, o conteúdo de entrada usa uma coluna de até 28 rem,
-alinhada à marca e à orientação inferior. O título e os espaçamentos são
-ajustados somente nessa faixa; foto, curvas, temas e altura dos controles
-permanecem preservados. O botão Google usa até 18 rem, limitado à largura
-disponível, em telas grandes e pequenas e nos estados ativo e desabilitado.
-Em larguras menores, inclusive no reflow causado pelo
-zoom, continua valendo a composição móvel existente. A apresentação não altera
-descoberta de provedores, callback, sessão, acesso administrativo ou autorização.
+O botão Google usa até 18 rem, limitado à largura disponível, com alvo de toque
+preservado. Seu contorno verde-sálvia tem afastamento de 4 px; o foco do teclado
+continua usando o indicador semântico próprio, e o estado desabilitado mantém a
+aparência de indisponibilidade. A posição da marca, a largura do painel e a
+tipografia anteriores são preservadas, conforme a revisão visual da solicitante.
+
+A introdução inicial usa “Entre para acompanhar os acessos ao campus.”. A lista
+redundante dos perfis foi retirada; a orientação sobre a conta pessoal ou
+institucional previamente autorizada permanece. O grupo Google usa espaço flexível
+para separar introdução e ação, com a orientação próxima do botão. O acesso
+administrativo fica acima da orientação inferior de segurança, com rótulo e link
+alinhados. Textos de sessão, erro, loading e descoberta continuam presentes.
+
+Foto, curvas, temas, foco, alvos de toque e rolagem natural são mantidos. A mudança
+é de apresentação e texto; não altera descoberta de provedores, HTTP, callback,
+sessão, armazenamento, acesso administrativo ou autorização. Esta branch continua
+empilhada sobre a #494; correções #592/#567 devem ser compostas explicitamente.
 
 ## Testes e acessibilidade
 
