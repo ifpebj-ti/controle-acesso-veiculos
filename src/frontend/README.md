@@ -374,6 +374,10 @@ as fixtures e os ensaios locais não substituem a validação autenticada no HTT
 
 ## Testes e acessibilidade
 
+O [roteiro de homologação dos relatórios](../../docs/validation/administrative-report-homologation.md)
+separa o contrato já implementado, as verificações automatizadas e os cenários
+manuais ainda pendentes da Issue #443. O novo PDF paisagem segue na Issue #496.
+
 ### Transições de rota
 
 Os títulos das páginas e as permissões necessárias para identificar um acesso
