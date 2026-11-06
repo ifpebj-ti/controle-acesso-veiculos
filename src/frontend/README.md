@@ -49,6 +49,17 @@ homologação em tablet físico.
 
 ## Estado atual
 
+O histórico oferece as nove categorias existentes na mesma faixa horizontal,
+com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
+O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
+do total validado da consulta de histórico; falhas mostram indisponibilidade,
+sem inventar zero. O contrato atual exige nove leituras de contagem, em lotes
+de até três, além da consulta de resultados. Trocar somente a categoria ou a
+página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
+correção salva atualizam as contagens, mesmo sem mudar o período, a placa,
+o condutor ou a situação. Isso não cria um endpoint agregado nem mede
+desempenho em produção.
+
 A aplicação de produção não inclui provedor de demonstração nem registros
 fictícios embutidos. As telas integradas exibem somente respostas validadas da
 API. Em testes automatizados, fixtures e respostas simuladas permanecem nos
