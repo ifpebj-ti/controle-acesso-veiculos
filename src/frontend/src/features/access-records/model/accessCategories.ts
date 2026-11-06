@@ -10,6 +10,4 @@ export const generalAccessCategories = [
   "Outro acesso autorizado",
 ] as const;
 
-export const featuredAccessCategories = generalAccessCategories.slice(0, 5);
-
 export type GeneralAccessCategory = (typeof generalAccessCategories)[number];
