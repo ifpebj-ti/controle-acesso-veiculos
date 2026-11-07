@@ -1,6 +1,6 @@
 # Configuração do Google OIDC em homologação
 
-**Rastreabilidade:** Issues #448, #529 e #573; frontend #461 e #493.
+**Rastreabilidade:** Issues #448, #529, #573 e #576; frontend #461 e #493.
 
 ## Estado e pré-requisitos
 
@@ -77,8 +77,12 @@ segredo durante compartilhamento de tela. Não use a senha da conta Google como
 segredo do aplicativo.
 
 Na VM, o arquivo do segredo deve ficar fora do repositório, com caminho
-absoluto, proprietário e permissões restritas. Registre somente os caminhos no
-ambiente protegido:
+absoluto, proprietário e permissões restritas, incluindo a leitura pelo UID
+efetivo do backend não root. `root:root 0600` sozinho não atende esse requisito
+em uma montagem local por arquivo. Siga a
+[verificação de acesso do serviço](versioned-container-deployment.md) antes de
+recriar o contêiner; não use `chmod` de leitura pública para corrigir a falha.
+Registre somente os caminhos no ambiente protegido:
 
 ```dotenv
 GOOGLE_CLIENT_ID=ID_DO_CLIENTE_WEB.apps.googleusercontent.com
@@ -100,8 +104,10 @@ sudo docker compose --project-name cav-hml \
   -f docker-compose.production.yml -f docker-compose.google.yml config --quiet
 ```
 
-Depois de conferir release, contas Administrador, pré-autorização dos operadores
-e rollback, aplique os mesmos argumentos com `up --detach --wait backend`.
+Depois de conferir release, acesso Administrador, identidades consentidas para
+pré-autorização e rollback, aplique os mesmos argumentos com
+`up --detach --wait backend`. Para novas contas, siga a ordem abaixo: a política
+de criação acompanha o estado habilitado do provedor.
 Preserve os dois arquivos `-f` em todos os comandos de manutenção: um comando
 somente com a base pode recriar o backend sem a configuração Google. Registre o
 conjunto de arquivos usado no inventário restrito da implantação.
@@ -130,8 +136,15 @@ tiver sido alterada independentemente, confira o estado efetivo em
 
 1. Confirme HTTPS confiável e readiness saudável pela borda.
 2. Confirme o login de um Administrador local e seu acesso à gestão de contas.
-3. Cadastre uma conta Google de teste autorizada para um perfil operacional.
-4. Confira `GET /api/auth/providers` com `googleEnabled=true`.
+3. Confira `GET /api/auth/providers` com `googleEnabled=true` no backend candidato
+   compatível. Não inicie a criação de novas contas operacionais enquanto ele
+   informar `false`.
+4. Pelo Administrador e pela API, cadastre a identidade consentida exata para um
+   perfil operacional de teste com o menor privilégio necessário. Confira
+   `authenticationMethod=Google` e ausência de credencial temporária na resposta.
+   Se a conta já existir, confira estado e método; não a converta nem duplique
+   silenciosamente. Uma conta Google ainda não vinculada será vinculada somente
+   no primeiro login autorizado, após a validação do provedor.
 5. Inicie pelo botão Google do frontend candidato; o backend usa
    `/api/auth/google/start` e o retorno do provedor usa `/signin-google`.
 6. O titular conclui a autenticação e eventual consentimento no Google. O
@@ -148,6 +161,46 @@ tiver sido alterada independentemente, confira o estado efetivo em
 Uma chamada manual ao callback sem o estado emitido pelo middleware não é um
 teste válido de login. Replay, correlação e nonce exigem também os testes de
 segurança pertinentes; não marque esses critérios apenas por observar sucesso.
+
+### Contas locais legadas e janela do ensaio
+
+`Program.cs` configura `AuthenticationMethodPolicy` com `Google.Enabled`.
+`CreateUserAccountService` usa essa política para criar operadores Google e
+`LoginService` restringe novos logins por senha ao Administrador quando ela está
+ativa. Criar um operador com o provedor desabilitado gera uma conta Local;
+habilitar Google depois não converte automaticamente essa conta.
+
+As contas fictícias locais do professor pertencem ao ensaio legado da 0.4.0.
+Combine a janela do candidato antes de trocar o site: os novos logins locais
+dos perfis operacionais serão negados com Google habilitado. Não exclua essas
+contas, altere suas senhas ou force conversão para tentar manter os dois ensaios
+no mesmo fluxo. O Administrador local deve continuar acessível. Planeje o
+acesso Google consentido do professor ou uma alternância de ambiente controlada,
+com restauração conjunta da imagem e configuração anteriores quando necessária.
+Isso não é prova de revogação imediata de toda sessão previamente emitida.
+
+A [evidência de preparação de 02/11/2026](../validation/google-candidate-preflight-2026-11-02.md)
+registra o estágio de configuração e o snapshot restaurado, sem declarar
+implantação do candidato ou conclusão do backup institucional.
+
+### Escolha da conta na estação compartilhada
+
+A Issue #600 acrescenta `prompt=select_account` ao desafio iniciado pelo
+backend. Isso solicita ao Google a seleção da identidade, incluindo uma nova
+tentativa depois de escolher a conta incorreta. Não utiliza `prompt=consent`,
+não exige uma nova senha Google e não altera os escopos mínimos. O Google
+continua responsável por suas telas e políticas; não se simula o seletor no
+frontend nem se força uma tela de cancelamento.
+
+Não são enviados `login_hint` ou `hd`. A escolha de uma identidade não concede
+acesso: conta ativa, pré-autorização exata e perfil continuam verificados pela
+API. O login administrativo local permanece separado. Cada início cria estado,
+nonce e PKCE novos, sem reiniciar automaticamente o fluxo ao voltar ou falhar.
+
+Os testes de protocolo comprovam a emissão do parâmetro; a apresentação no
+Google real e a troca de perfis devem ser observadas no candidato identificado
+da #581. O candidato precisa incluir explicitamente a #600; merge não atualiza
+a hospedagem. Referência: [parâmetros OIDC do Google](https://developers.google.com/identity/openid-connect/openid-connect#authenticationuriparameters).
 
 ## Rollback
 

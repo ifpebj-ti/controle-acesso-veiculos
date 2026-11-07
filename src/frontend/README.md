@@ -37,6 +37,16 @@ institucional fica reservado principalmente às ações. Lógica de sessão, coo
 API, capacidades e armazenamento permanecem inalterados. A ativação de temas e a
 migração das páginas operacionais e administrativas continuam nas etapas seguintes.
 
+## Tela cheia opcional (candidato #620)
+
+A área autenticada oferece, quando suportado, “Entrar em tela cheia” junto aos
+ajustes de aparência. O modo usa a API nativa e só inicia por ação explícita;
+Escape/saída do navegador continuam disponíveis. Alvo, foco, portais, fallback,
+limites de zoom móvel e roteiro de validação estão em
+[`docs/fullscreen.md`](docs/fullscreen.md). Não é modo quiosque nem requisito
+para usar o sistema; a implementação candidata não implica implantação ou
+homologação em tablet físico.
+
 ## Estado atual
 
 A aplicação de produção não inclui provedor de demonstração nem registros
@@ -404,6 +414,28 @@ Foto, curvas, temas, foco, alvos de toque e rolagem natural são mantidos. A mud
 é de apresentação e texto; não altera descoberta de provedores, HTTP, callback,
 sessão, armazenamento, acesso administrativo ou autorização. Esta branch continua
 empilhada sobre a #494; correções #592/#567 devem ser compostas explicitamente.
+
+## Classificação de falhas — Issue #603
+
+`describeApiError` diferencia erros de resposta/execução de falhas reais de
+transporte e de cancelamento. Erros comuns, inclusive os de contrato, recebem
+mensagem genérica sem atribuir o problema à rede ou expor conteúdo da resposta.
+Axios sem resposta é tratado como transporte quando existe código de conexão
+ou timeout reconhecido, ou uma requisição enviada sem código. Falhas de
+configuração do Axios continuam sendo erros inesperados. As mensagens e os
+estados dos códigos HTTP 400/401/403/409/429/5xx são preservados.
+
+Cancelamentos Axios e AbortError têm classificação própria e mensagem curta,
+sem afirmar que uma operação já recebida pelo servidor foi desfeita. A busca
+recorrente continua descartando o cancelamento deliberado de consultas
+obsoletas; as sequências de requisição protegem resultados mais recentes.
+Não há repetição automática de mutações nem mudança de sessão ou autorização.
+
+A adequação dos campos de autenticação e da credencial nula para contas Google
+pertence ao PR #530. Esse PR mantém seu feedback específico de contas; a #603
+não copia schemas nem depende da incorporação do login para testes locais.
+Testes com listas vazias não representam aprovação visual de itens populados;
+as fixtures e os ensaios locais não substituem a validação autenticada no HTTPS.
 
 ## Testes e acessibilidade
 

@@ -10,6 +10,8 @@ from its first published release.
 
 ### Added
 
+- Request Google account selection on each explicit OIDC login attempt on shared
+  workstations, preserving minimal scopes, PKCE and local preauthorization.
 - A read-only public HTTPS/readiness probe with certificate validation,
   bounded responses, sanitized failures and 30/14/7-day expiry states.
   Offline regressions run in infrastructure CI; certificate renewal,
@@ -26,6 +28,8 @@ from its first published release.
 
 ### Fixed
 
+- Pin the shipped ASP.NET Core runtime to 10.0.14 so cached floating tags do not
+  regress homologation to a vulnerable patch during container rebuilds.
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative
   account listings, consistently with account creation and profile changes.
   Preserve pagination and all existing public fields without changing the
