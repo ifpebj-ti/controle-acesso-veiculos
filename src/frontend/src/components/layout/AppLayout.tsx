@@ -49,7 +49,7 @@ function SidebarContent({
   function handleLogout() {
     void logout();
     closeMenu?.();
-    navigate("/login");
+    navigate("/login", { replace: true, state: null });
   }
 
   return (
@@ -373,7 +373,7 @@ function MandatoryPasswordChangeLayout({
 
   function handleLogout() {
     void logout();
-    navigate("/login", { replace: true });
+    navigate("/login", { replace: true, state: null });
   }
 
   return (

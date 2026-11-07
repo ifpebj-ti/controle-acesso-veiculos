@@ -8,7 +8,14 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
+import {
+  MemoryRouter,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const humanActivityHarness = vi.hoisted(() => ({
@@ -114,6 +121,7 @@ function deferred<T>() {
 
 function renderRestrictedApplication(
   initialEntry: string | { pathname: string; state?: unknown } = "/login",
+  rehearseAccountSwitch = false,
 ) {
   return render(
     <AppearanceProvider>
@@ -121,10 +129,26 @@ function renderRestrictedApplication(
         <MemoryRouter initialEntries={[initialEntry]}>
           <Routes>
             <Route element={<RouteTransitionManager />}>
-              <Route element={<LoginPage />} path="/login" />
+              <Route
+                element={
+                  <>
+                    <LoginPage />
+                    {rehearseAccountSwitch && <CallbackRehearsal />}
+                  </>
+                }
+                path="/login"
+              />
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route element={<ProfileRoute />}>
+                    <Route
+                      element={<h1>Relatórios fictícios</h1>}
+                      path="/relatorios"
+                    />
+                    <Route
+                      element={<h1>Usuários fictícios</h1>}
+                      path="/administracao"
+                    />
                     <Route
                       element={<h1>Painel operacional fictício</h1>}
                       path="/visao-geral"
@@ -145,6 +169,21 @@ function renderRestrictedApplication(
         </MemoryRouter>
       </SessionProvider>
     </AppearanceProvider>,
+  );
+}
+
+function CallbackRehearsal() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  return (
+    <>
+      <output aria-label="Intenção de retorno">
+        {JSON.stringify(location.state)}
+      </output>
+      <button type="button" onClick={() => navigate("/login?status=success")}>
+        Retorno Google fictício
+      </button>
+    </>
   );
 }
 
@@ -263,6 +302,54 @@ function seedRestorableSession() {
 }
 
 describe("authentication flow", () => {
+  it.each(["/relatorios", "/administracao"])(
+    "clears the previous account destination on logout from %s",
+    async (pathname) => {
+      seedRestorableSession();
+      vi.mocked(api.get).mockImplementation(async (url) => ({
+        data:
+          url === "/auth/providers"
+            ? { googleEnabled: true }
+            : { requestToken: "test-only-csrf-token" },
+      }));
+      let refreshes = 0;
+      const post = vi.spyOn(api, "post").mockImplementation(async (url) => {
+        if (url === "/auth/refresh")
+          return responseFor(refreshes++ === 0 ? "Administrador" : "Porteiro");
+        if (url === "/auth/logout") return { data: null };
+        throw new Error("Unexpected test request");
+      });
+      const keyboard = userEvent.setup();
+      renderRestrictedApplication(pathname, true);
+      await screen.findByRole("heading", {
+        name:
+          pathname === "/relatorios"
+            ? "Relatórios fictícios"
+            : "Usuários fictícios",
+      });
+      await keyboard.click(screen.getByRole("button", { name: "Sair" }));
+      await screen.findByRole("heading", { name: "Bem-vindo(a)!" });
+      expect(screen.getByLabelText("Intenção de retorno")).toHaveTextContent(
+        "null",
+      );
+      await keyboard.click(
+        screen.getByRole("button", { name: "Retorno Google fictício" }),
+      );
+      const heading = await screen.findByRole("heading", {
+        name: "Painel operacional fictício",
+      });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(
+        screen.queryByRole("heading", { name: /Acesso negado/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        post.mock.calls.filter(([url]) => url === "/auth/logout"),
+      ).toHaveLength(1);
+      expect(
+        post.mock.calls.filter(([url]) => url === "/auth/refresh"),
+      ).toHaveLength(2);
+    },
+  );
   it.each<ProfileName>(["Porteiro", "Vigilante", "SetorTransporte"])(
     "restores %s at a direct password URL without exposing or submitting the form",
     async (profileName) => {
@@ -624,7 +711,7 @@ describe("authentication flow", () => {
     expect(window.localStorage).toHaveLength(0);
   });
 
-  it("shows an explicit access denied state for an incompatible profile", async () => {
+  it("discards an incompatible return destination after login", async () => {
     vi.spyOn(api, "post").mockResolvedValue(responseFor("SetorTransporte"));
 
     renderAuthenticationFlow({
@@ -633,6 +720,22 @@ describe("authentication flow", () => {
     });
     await submitCredentials();
 
+    expect(
+      await screen.findByText("operator@example.test — SetorTransporte"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Acesso negado" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Administração")).not.toBeInTheDocument();
+  });
+
+  it("still denies a direct authenticated visit to an incompatible route", async () => {
+    seedRestorableSession();
+    vi.mocked(api.get).mockResolvedValue({
+      data: { requestToken: "test-only-csrf-token" },
+    });
+    vi.spyOn(api, "post").mockResolvedValue(responseFor("SetorTransporte"));
+    renderAuthenticationFlow("/administracao");
     expect(
       await screen.findByRole("heading", { name: "Acesso negado" }),
     ).toBeInTheDocument();

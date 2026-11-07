@@ -79,6 +79,12 @@ rota, e posiciona o foco no e-mail. “Voltar” desmonta o formulário, apaga a
 e devolve o foco à ação que o abriu. Contas Google podem ser pessoais ou
 institucionais, desde que estejam ativas e previamente autorizadas pelo
 Administrador; identidade Google não concede acesso nem perfil.
+No logout explícito, a navegação de entrada é substituída sem intenção de retorno.
+Login local, restauração e callback Google conferem o destino pela matriz de
+rotas e pelo perfil recebido da API: páginas incompatíveis, desconhecidas ou
+externas levam à Visão geral. A troca obrigatória de senha tem prioridade.
+Isso não persiste uma última página por pessoa nem substitui a autorização
+do servidor.
 O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
