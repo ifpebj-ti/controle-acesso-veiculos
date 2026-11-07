@@ -17,6 +17,15 @@ from its first published release.
   Offline regressions run in infrastructure CI; certificate renewal,
   scheduling and operational alert delivery remain separate work.
 
+### Changed
+
+- Increase spacing between sign-in guidance and administrative access while
+  retaining the established login alignment, typography and panel composition.
+- Cap the Google sign-in action at 18rem within the available width, retaining
+  its touch-target height and consistent enabled/disabled presentation.
+  Add a detached sage contour, shorten introductory copy and align the separate
+  administrative action without changing authentication behavior.
+
 ### Fixed
 
 - Pin the shipped ASP.NET Core runtime to 10.0.14 so cached floating tags do not
