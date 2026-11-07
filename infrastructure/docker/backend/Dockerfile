@@ -3,12 +3,17 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS base
 WORKDIR /app
 EXPOSE 8080
 
-# Apply published Ubuntu security fixes even when the upstream .NET tag has not
-# yet been rebuilt. Keep the upgrade narrow and remove package metadata.
-RUN apt-get update \
-    && apt-get install --only-upgrade --no-install-recommends -y \
+# Protect the first APT download too: the inherited client may predate USN-8996-1.
+# Keep archive signature/TLS verification enabled and upgrade only affected packages.
+RUN sed -i 's|http://|https://|g' /etc/apt/sources.list.d/ubuntu.sources \
+    && apt-get -o Acquire::Retries=0 update \
+    && apt-get -o Acquire::Retries=0 install --only-upgrade --no-install-recommends -y \
+        apt \
+        libapt-pkg6.0t64 \
         libssl3t64 \
         openssl \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' apt)" ge 2.8.4ubuntu0.1 \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libapt-pkg6.0t64)" ge 2.8.4ubuntu0.1 \
     && rm -rf /var/lib/apt/lists/*
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
