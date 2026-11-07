@@ -15,7 +15,7 @@ import type { FullscreenController } from "./useFullscreen";
 import { useGuidanceTimeout } from "./useGuidanceTimeout";
 
 const menuGuidance =
-  "Você pode ativar a tela cheia a qualquer momento pelo menu lateral, abaixo de Aparência.";
+  "Use o ícone no canto inferior direito ou o menu lateral, abaixo de Aparência.";
 
 function Invitation({
   session,

@@ -136,6 +136,9 @@ describe("authenticated layout fullscreen scope (mocked API)", () => {
     expect(
       screen.getByRole("heading", { name: "Histórico fictício" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Desativar tela cheia" }),
+    ).toBeInTheDocument();
     expect(mock.request).toHaveBeenCalledOnce();
     expect(mock.exit).not.toHaveBeenCalled();
     expect(

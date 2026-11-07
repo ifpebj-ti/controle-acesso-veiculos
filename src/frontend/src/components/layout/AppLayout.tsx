@@ -9,6 +9,7 @@ import { AppearanceSelector } from "../../features/appearance";
 import {
   FullscreenControl,
   FullscreenInvitation,
+  FullscreenShortcut,
   useFullscreen,
   type FullscreenController,
 } from "../../features/fullscreen";
@@ -163,7 +164,11 @@ function SidebarContent({
       </nav>
 
       <AppearanceSelector className="mt-8" />
-      <FullscreenControl fullscreen={fullscreen} className="mt-3" />
+      <FullscreenControl
+        fullscreen={fullscreen}
+        className="mt-3"
+        showError={!!closeMenu}
+      />
 
       <div className="mt-4 border-t border-border pt-4">
         <NavLink
@@ -339,7 +344,7 @@ function StandardAppLayout({
       )}
 
       <main
-        className="min-h-svh min-w-0 max-w-full bg-background xl:pl-72"
+        className="min-h-svh min-w-0 max-w-full bg-background pb-24 xl:pl-72"
         id="conteudo-principal"
         tabIndex={-1}
       >
@@ -388,6 +393,7 @@ function MandatoryPasswordChangeLayout({
             <FullscreenControl
               fullscreen={fullscreen}
               className="w-full sm:w-auto"
+              showError={false}
             />
             <Button
               className="shrink-0"
@@ -403,7 +409,7 @@ function MandatoryPasswordChangeLayout({
       </header>
 
       <main
-        className="mx-auto min-h-[calc(100svh-5rem)] w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-10"
+        className="mx-auto min-h-[calc(100svh-5rem)] w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6 lg:pt-10"
         id="conteudo-principal"
         tabIndex={-1}
       >
@@ -427,9 +433,14 @@ export function AppLayout() {
   const { user } = useAuthenticatedSession();
   const fullscreen = useFullscreen();
 
-  return user.requiresPasswordChange ? (
-    <MandatoryPasswordChangeLayout fullscreen={fullscreen} />
-  ) : (
-    <StandardAppLayout fullscreen={fullscreen} />
+  return (
+    <>
+      {user.requiresPasswordChange ? (
+        <MandatoryPasswordChangeLayout fullscreen={fullscreen} />
+      ) : (
+        <StandardAppLayout fullscreen={fullscreen} />
+      )}
+      <FullscreenShortcut fullscreen={fullscreen} />
+    </>
   );
 }

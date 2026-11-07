@@ -11,7 +11,8 @@ from its first published release.
 ### Added
 
 - Offer an optional fullscreen invitation on the authenticated overview, with
-  contextual sidebar guidance after dismissal and a non-sensitive per-tab flag.
+  temporary contextual guidance after dismissal, a persistent corner shortcut
+  and a non-sensitive per-tab flag.
   Reuse the existing native control without changing authentication or forms.
 
 - Request Google account selection on each explicit OIDC login attempt on shared

@@ -26,7 +26,7 @@ import { AppearanceProvider } from "../appearance";
 
 const inviteName = "Quer usar o sistema em tela cheia?";
 const guide =
-  "Você pode ativar a tela cheia a qualquer momento pelo menu lateral, abaixo de Aparência.";
+  "Use o ícone no canto inferior direito ou o menu lateral, abaixo de Aparência.";
 
 function Probe({
   initialDialog = false,

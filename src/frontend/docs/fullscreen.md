@@ -7,6 +7,20 @@ autenticado. No mobile, é acessado ao abrir o menu; na troca obrigatória de se
 fica no cabeçalho junto aos ajustes existentes. Não integra o formulário de
 entrada de veículos, não aparece no login e não é requisito para operar.
 
+Na revisão da #622, a solicitante pediu também um ícone sempre acessível fora do
+menu. Um atalho de 48×48 CSS px fica no canto inferior direito de todas as páginas
+autenticadas, respeitando as áreas seguras do dispositivo. O nome acessível alterna
+entre “Ativar tela cheia” e “Desativar tela cheia”; o título do botão também informa
+a ação. Menu, atalho e convite usam a mesma instância do controlador, sem chamadas
+concorrentes. Não há controle adicional no login.
+
+Há espaço reservado no fim do conteúdo para as últimas ações não ficarem atrás do
+atalho. Durante um diálogo/menu móvel ou mensagem flutuante visível, o atalho é
+recolhido temporariamente e volta ao fechar essa camada; não sobrepõe a mensagem ou
+intercepta o foco do diálogo. Camadas ocultas pelo breakpoint não o bloqueiam.
+Falhas de tela cheia aparecem uma única vez no atalho, ou no controle do menu
+móvel aberto, mantendo o retorno legível sem depender de abrir o menu.
+
 O alvo é `document.documentElement` (o elemento `html`). Isso inclui a navegação,
 o conteúdo, as mensagens e portais anexados ao `body`, como seletores e diálogos.
 Colocar somente o `main` ou a raiz React em tela cheia poderia deixar portais
@@ -64,8 +78,8 @@ sessão, autorização, formulários ou a Fullscreen API existente. Não usa mod
 timer para ativar tela cheia, ativação automática ou bloqueio de Escape/zoom.
 
 O convite não recebe foco ao aparecer. “Agora não” mostra uma orientação
-temporária no próprio contexto: “Você pode ativar a tela cheia a qualquer momento
-pelo menu lateral, abaixo de Aparência.” A região tem anúncio educado e funciona
+temporária no próprio contexto: “Use o ícone no canto inferior direito ou o menu
+lateral, abaixo de Aparência.” A região tem anúncio educado e funciona
 com o menu móvel recolhido, sem abri-lo automaticamente. Aceitar também devolve
 foco ao contexto após a transição quando a pessoa continua na ação; não captura
 foco de outro campo. Após aceitar/dispensar, o foco vai ao título estável da página,
