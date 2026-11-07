@@ -1,4 +1,11 @@
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
@@ -92,6 +99,7 @@ describe("optional fullscreen invitation (simulated native API)", () => {
   afterEach(() => {
     cleanup();
     mock.restore();
+    vi.useRealTimers();
   });
 
   it("offers on overview without requesting fullscreen or stealing focus", () => {
@@ -103,14 +111,16 @@ describe("optional fullscreen invitation (simulated native API)", () => {
     expect(document.activeElement).toBe(document.body);
   });
 
-  it("dismisses by keyboard and focuses persistent, announced menu guidance", async () => {
+  it("dismisses by keyboard, announces guidance and focuses a stable page heading", async () => {
     render(tree());
     const user = userEvent.setup();
     const dismiss = screen.getByRole("button", { name: "Agora não" });
     dismiss.focus();
     await user.keyboard("{Enter}");
     const hint = screen.getByText(guide);
-    expect(hint).toHaveFocus();
+    expect(
+      screen.getByRole("heading", { name: "Página fictícia" }),
+    ).toHaveFocus();
     expect(hint).toHaveAttribute("role", "status");
     expect(hint).toHaveAttribute("aria-live", "polite");
     expect(
@@ -144,7 +154,7 @@ describe("optional fullscreen invitation (simulated native API)", () => {
     ).toBeInTheDocument();
   });
 
-  it("accepts the invitation once and returns focus to the contextual guidance", async () => {
+  it("accepts the invitation once and returns focus to the stable page heading", async () => {
     render(tree());
     const user = userEvent.setup();
     await user.click(
@@ -155,7 +165,10 @@ describe("optional fullscreen invitation (simulated native API)", () => {
     );
     expect(mock.request).toHaveBeenCalledOnce();
     expect(document.fullscreenElement).toBe(document.documentElement);
-    expect(await screen.findByText(guide)).toHaveFocus();
+    expect(await screen.findByText(guide)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Página fictícia" }),
+    ).toHaveFocus();
     act(() => mock.change(null));
     expect(
       screen.queryByRole("region", { name: inviteName }),
@@ -344,6 +357,83 @@ describe("optional fullscreen invitation (simulated native API)", () => {
       screen.queryByRole("region", { name: inviteName }),
     ).not.toBeInTheDocument();
     expect(sessionStorage.getItem(fullscreenInvitationKey)).toBeNull();
+    expect(mock.request).not.toHaveBeenCalled();
+  });
+
+  it("removes only the optional guidance after twelve seconds without losing focus", () => {
+    vi.useFakeTimers();
+    render(tree());
+    fireEvent.click(screen.getByRole("button", { name: "Agora não" }));
+    const heading = screen.getByRole("heading", { name: "Página fictícia" });
+    expect(heading).toHaveFocus();
+    act(() => vi.advanceTimersByTime(11_999));
+    expect(screen.getByText(guide)).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByText(guide)).not.toBeInTheDocument();
+    expect(heading).toHaveFocus();
+    expect(
+      screen.getByRole("button", { name: "Entrar em tela cheia" }),
+    ).toBeInTheDocument();
+    expect(sessionStorage.getItem(fullscreenInvitationKey)).toBe("handled");
+    expect(mock.request).not.toHaveBeenCalled();
+  });
+
+  it("gives a fresh reading interval after the pointer leaves the guidance", () => {
+    vi.useFakeTimers();
+    render(tree());
+    fireEvent.click(screen.getByRole("button", { name: "Agora não" }));
+    const region = screen.getByRole("region", {
+      name: "Tela cheia pelo menu lateral",
+    });
+    fireEvent.mouseEnter(region);
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(screen.getByText(guide)).toBeInTheDocument();
+    fireEvent.mouseLeave(region);
+    act(() => vi.advanceTimersByTime(12_000));
+    expect(screen.queryByText(guide)).not.toBeInTheDocument();
+  });
+
+  it("never removes the guidance while keyboard focus is inside it", () => {
+    vi.useFakeTimers();
+    render(tree());
+    fireEvent.click(screen.getByRole("button", { name: "Agora não" }));
+    act(() => screen.getByText(guide).focus());
+    act(() => vi.advanceTimersByTime(30_000));
+    expect(screen.getByText(guide)).toHaveFocus();
+    act(() => screen.getByRole("heading", { name: "Página fictícia" }).focus());
+    act(() => vi.advanceTimersByTime(12_000));
+    expect(screen.queryByText(guide)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Página fictícia" }),
+    ).toHaveFocus();
+  });
+
+  it("does not count background time as a chance to read the guidance", () => {
+    vi.useFakeTimers();
+    render(tree());
+    fireEvent.click(screen.getByRole("button", { name: "Agora não" }));
+    const visibility = vi.spyOn(document, "visibilityState", "get");
+    try {
+      visibility.mockReturnValue("hidden");
+      fireEvent(document, new Event("visibilitychange"));
+      act(() => vi.advanceTimersByTime(30_000));
+      expect(screen.getByText(guide)).toBeInTheDocument();
+      visibility.mockReturnValue("visible");
+      fireEvent(document, new Event("visibilitychange"));
+      act(() => vi.advanceTimersByTime(12_000));
+      expect(screen.queryByText(guide)).not.toBeInTheDocument();
+    } finally {
+      visibility.mockRestore();
+    }
+  });
+
+  it("does not apply the guidance timeout to the invitation itself", () => {
+    vi.useFakeTimers();
+    render(tree());
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(
+      screen.getByRole("region", { name: inviteName }),
+    ).toBeInTheDocument();
     expect(mock.request).not.toHaveBeenCalled();
   });
 });

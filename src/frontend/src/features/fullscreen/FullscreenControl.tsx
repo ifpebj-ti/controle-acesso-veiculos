@@ -28,7 +28,9 @@ export function FullscreenControl({
         {fullscreen.active ? "Sair da tela cheia" : "Entrar em tela cheia"}
       </Button>
       <p id={hintId} className="mt-2 text-xs text-text-muted">
-        Opcional. Para sair, use também a saída do navegador ou Escape.
+        {fullscreen.active
+          ? "Para voltar, use este botão ou Esc."
+          : "Use toda a tela para trabalhar com mais espaço."}
       </p>
       <ActionFeedback
         className="mt-2 text-sm"

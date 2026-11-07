@@ -61,14 +61,20 @@ Na Visão geral, depois da autenticação e fora da troca obrigatória de senha,
 convite discreto oferece “Entrar em tela cheia” e “Agora não”. Usa o mesmo
 controlador do menu e o mesmo alvo `document.documentElement`; não altera HTTP,
 sessão, autorização, formulários ou a Fullscreen API existente. Não usa modal,
-timer, ativação automática ou bloqueio de Escape/zoom.
+timer para ativar tela cheia, ativação automática ou bloqueio de Escape/zoom.
 
-O convite não recebe foco ao aparecer. “Agora não” mostra e focaliza uma orientação
-persistente no próprio contexto: “Você pode ativar a tela cheia a qualquer momento
+O convite não recebe foco ao aparecer. “Agora não” mostra uma orientação
+temporária no próprio contexto: “Você pode ativar a tela cheia a qualquer momento
 pelo menu lateral, abaixo de Aparência.” A região tem anúncio educado e funciona
 com o menu móvel recolhido, sem abri-lo automaticamente. Aceitar também devolve
 foco ao contexto após a transição quando a pessoa continua na ação; não captura
-foco de outro campo. Rejeição preserva a visualização normal, apresenta a mensagem
+foco de outro campo. Após aceitar/dispensar, o foco vai ao título estável da página,
+sem rolar a orientação para fora da tela. O aviso some após 12 segundos, com
+contagem reiniciada depois de hover/foco no aviso ou retorno de uma aba em segundo
+plano. Não remove um elemento focado nem temporiza o convite ou mensagens de erro.
+A orientação pode ser reencontrada no controle permanente do menu. Essa alteração
+foi solicitada na revisão local da #622; substitui a orientação persistente inicial.
+Rejeição preserva a visualização normal, apresenta a mensagem
 do controlador e permite somente nova tentativa explícita.
 
 Avisos de sessão, menu/diálogos e alertas críticos têm prioridade. O convite é

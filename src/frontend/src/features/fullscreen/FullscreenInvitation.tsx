@@ -3,6 +3,7 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   useSyncExternalStore,
 } from "react";
 import { useLocation } from "react-router-dom";
@@ -11,6 +12,7 @@ import { Icon } from "../../components/ui/Icon";
 import { InvitationContext } from "./invitationContext";
 import type { InvitationSession } from "./invitationSession";
 import type { FullscreenController } from "./useFullscreen";
+import { useGuidanceTimeout } from "./useGuidanceTimeout";
 
 const menuGuidance =
   "Você pode ativar a tela cheia a qualquer momento pelo menu lateral, abaixo de Aparência.";
@@ -30,7 +32,15 @@ function Invitation({
   const feedbackRef = useRef<HTMLParagraphElement>(null);
   const attempting = useRef(false);
   const focusFeedback = useRef(false);
+  const [pointerInside, setPointerInside] = useState(false);
+  const [focusInside, setFocusInside] = useState(false);
   const onOverview = pathname.replace(/\/+$/, "") === "/visao-geral";
+
+  useGuidanceTimeout({
+    enabled: phase === "guidance" && onOverview && !blocked,
+    paused: pointerInside || focusInside,
+    finish: session.finish,
+  });
 
   useEffect(() => {
     if (phase !== "available" && phase !== "inviting") return;
@@ -95,7 +105,16 @@ function Invitation({
       (phase === "guidance" || fullscreen.error)
     ) {
       focusFeedback.current = false;
-      feedbackRef.current?.focus();
+      const pageHeading = document.querySelector<HTMLElement>(
+        "#conteudo-principal h1, h1",
+      );
+      if (phase === "guidance" && pageHeading) {
+        // Keep keyboard focus on a stable target when this optional hint expires.
+        pageHeading.tabIndex = -1;
+        pageHeading.focus({ preventScroll: true });
+      } else {
+        feedbackRef.current?.focus();
+      }
     }
   }, [phase, fullscreen.pending, fullscreen.error]);
 
@@ -129,6 +148,17 @@ function Invitation({
     <section
       aria-labelledby={headingId}
       className="mb-5 rounded-2xl border border-border bg-surface p-4 text-text sm:p-5"
+      onMouseEnter={() => {
+        if (phase === "guidance") setPointerInside(true);
+      }}
+      onMouseLeave={() => setPointerInside(false)}
+      onFocusCapture={() => {
+        if (phase === "guidance") setFocusInside(true);
+      }}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          setFocusInside(false);
+      }}
     >
       <h2
         className="flex items-center gap-2 text-base font-semibold"

@@ -45,6 +45,8 @@ menu lateral abaixo de Aparência. O convite não abre o menu, não ativa tela c
 automaticamente e não é exibido nos formulários operacionais. Os critérios de
 validação e o ciclo de vida da marca não sensível por aba estão em
 [`docs/fullscreen.md`](docs/fullscreen.md#convite-opcional--issue-622).
+A orientação após a dispensa é temporária: desaparece após 12 segundos, com pausa
+por mouse/foco no aviso ou aba em segundo plano. O controle permanece no menu.
 
 A área autenticada oferece, quando suportado, “Entrar em tela cheia” junto aos
 ajustes de aparência. O modo usa a API nativa e só inicia por ação explícita;
