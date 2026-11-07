@@ -8,6 +8,7 @@ import {
 import { AppearanceSelector } from "../../features/appearance";
 import {
   FullscreenControl,
+  FullscreenInvitation,
   useFullscreen,
   type FullscreenController,
 } from "../../features/fullscreen";
@@ -353,6 +354,10 @@ function StandardAppLayout({
               mantidos; verifique a conexão antes de continuar.
             </div>
           )}
+          <FullscreenInvitation
+            fullscreen={fullscreen}
+            blocked={menuOpen || !!sessionNotice}
+          />
           <Outlet />
         </div>
       </main>

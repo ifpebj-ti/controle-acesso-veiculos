@@ -55,6 +55,50 @@ não comprova o comportamento do Android/iPad. Se houver limitação nativa, sai
 para a visualização normal continua disponível. Não contornar a política do
 navegador nem reduzir cabeçalhos de segurança para habilitar a função.
 
+## Convite opcional — Issue #622
+
+Na Visão geral, depois da autenticação e fora da troca obrigatória de senha, um
+convite discreto oferece “Entrar em tela cheia” e “Agora não”. Usa o mesmo
+controlador do menu e o mesmo alvo `document.documentElement`; não altera HTTP,
+sessão, autorização, formulários ou a Fullscreen API existente. Não usa modal,
+timer, ativação automática ou bloqueio de Escape/zoom.
+
+O convite não recebe foco ao aparecer. “Agora não” mostra e focaliza uma orientação
+persistente no próprio contexto: “Você pode ativar a tela cheia a qualquer momento
+pelo menu lateral, abaixo de Aparência.” A região tem anúncio educado e funciona
+com o menu móvel recolhido, sem abri-lo automaticamente. Aceitar também devolve
+foco ao contexto após a transição quando a pessoa continua na ação; não captura
+foco de outro campo. Rejeição preserva a visualização normal, apresenta a mensagem
+do controlador e permite somente nova tentativa explícita.
+
+Avisos de sessão, menu/diálogos e alertas críticos têm prioridade. O convite é
+adiado se um diálogo/alerta já existe; se a pessoa começa a editar, navega para
+outra página ou abre o menu depois da apresentação, o convite é encerrado sem
+reaparecer durante o trabalho. Não aparece no cadastro de entrada, no login ou
+durante a troca obrigatória de senha. A orientação não é uma confirmação de que
+o navegador aceitou entrar; somente `fullscreenElement` confirma o estado.
+
+O ciclo de vida usa uma única marca não sensível `handled` no `sessionStorage`,
+na chave `ifpe.vehicle-access.fullscreen-invitation.v1`. Isso registra somente que
+o convite já foi apresentado naquela aba: nunca ID, e-mail, perfil, token,
+credencial, formulário ou preferência de tela cheia. Recarga e navegação não
+repetem o convite. Uma nova aba tem seu próprio armazenamento (o navegador pode
+copiar a marca ao duplicar uma aba). Não há sincronização de preferências entre
+abas. Se não é possível ler ou gravar a marca, o convite não é exibido; o controle
+manual continua disponível.
+
+Um observador de apresentação acompanha o estado público do contexto de sessão
+sem modificar o provedor de autenticação. Restauração preserva a marca; logout,
+ausência de sessão ou nova tentativa de login a limpam. Uma troca direta de conta
+também reinicia a apresentação, usando apenas a identidade já disponível em
+memória, sem persistir essa identidade. Encerrar a aba encerra a marca. A dispensa
+não interfere no prazo, renovação ou revogação da sessão.
+
+Testes de DOM simulam API nativa e ciclo de sessão; não comprovam o modo físico
+do monitor/tablet ou uma leitura humana. Ensaios novos da #622 devem registrar seu
+próprio snapshot e ambiente. Resultados físicos anteriores da #620 não homologam
+este convite. Manter draft/Refs #622 enquanto os critérios novos estiverem pendentes.
+
 ## Validação e limites
 
 Os testes jsdom simulam API/eventos: ausência/desabilitação, entrada/saída,

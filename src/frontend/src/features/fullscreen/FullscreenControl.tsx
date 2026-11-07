@@ -14,7 +14,7 @@ export function FullscreenControl({
   const hintId = useId();
   if (!fullscreen.available) return null;
   return (
-    <div className={className}>
+    <div className={className} data-fullscreen-control="">
       <Button
         aria-describedby={hintId}
         aria-pressed={fullscreen.active}

@@ -10,6 +10,10 @@ from its first published release.
 
 ### Added
 
+- Offer an optional fullscreen invitation on the authenticated overview, with
+  contextual sidebar guidance after dismissal and a non-sensitive per-tab flag.
+  Reuse the existing native control without changing authentication or forms.
+
 - Request Google account selection on each explicit OIDC login attempt on shared
   workstations, preserving minimal scopes, PKCE and local preauthorization.
 - A read-only public HTTPS/readiness probe with certificate validation,
