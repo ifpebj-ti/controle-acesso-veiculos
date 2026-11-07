@@ -53,18 +53,46 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
         Assert.Equal(2, auditCount);
     }
 
-    [Fact]
-    public async Task NonAdministratorCannotReadReports()
+    [Theory]
+    [InlineData(ProfileNames.Doorman, "GET", "vehicle-movements")]
+    [InlineData(ProfileNames.Doorman, "GET", "institutional-fleet")]
+    [InlineData(ProfileNames.Doorman, "POST", "vehicle-movements/pdf")]
+    [InlineData(ProfileNames.Doorman, "POST", "institutional-fleet/pdf")]
+    [InlineData(ProfileNames.SecurityGuard, "GET", "vehicle-movements")]
+    [InlineData(ProfileNames.SecurityGuard, "GET", "institutional-fleet")]
+    [InlineData(ProfileNames.SecurityGuard, "POST", "vehicle-movements/pdf")]
+    [InlineData(ProfileNames.SecurityGuard, "POST", "institutional-fleet/pdf")]
+    [InlineData(ProfileNames.TransportationDepartment, "GET", "vehicle-movements")]
+    [InlineData(ProfileNames.TransportationDepartment, "GET", "institutional-fleet")]
+    [InlineData(ProfileNames.TransportationDepartment, "POST", "vehicle-movements/pdf")]
+    [InlineData(ProfileNames.TransportationDepartment, "POST", "institutional-fleet/pdf")]
+    public async Task NonAdministratorCannotReadOrExportReports(
+        string profileName,
+        string method,
+        string endpoint)
     {
-        var (_, email) = await CreateUserAsync(ProfileNames.TransportationDepartment);
+        var (_, email) = await CreateUserAsync(profileName);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email);
+        using var request = new HttpRequestMessage(
+            new HttpMethod(method),
+            $"/reports/{endpoint}?from=2001-01-01&to=2001-01-02");
+        if (method == "POST")
+        {
+            request.Content = JsonContent.Create(new
+            {
+                from = "2001-01-01",
+                to = "2001-01-02",
+                currentPassword = Password
+            });
+        }
 
-        var response = await client.GetAsync(
-            "/reports/vehicle-movements?from=2001-01-01&to=2001-01-02",
+        using var response = await client.SendAsync(
+            request,
             TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.NotEqual("application/pdf", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]

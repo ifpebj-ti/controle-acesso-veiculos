@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AxiosError } from "axios";
 import { useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -312,7 +313,9 @@ describe("ExceptionalClosureDialog", () => {
   );
 
   it("presents a network failure without clearing values", async () => {
-    const onConfirm = vi.fn().mockRejectedValue(new Error("network"));
+    const onConfirm = vi
+      .fn()
+      .mockRejectedValue(new AxiosError("network", "ERR_NETWORK"));
     const user = userEvent.setup();
     render(<DialogHarness onConfirm={onConfirm} />);
     await openDialog(user);

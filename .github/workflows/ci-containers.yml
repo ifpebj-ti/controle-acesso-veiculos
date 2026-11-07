@@ -330,28 +330,30 @@ jobs:
           backend_body="${RUNNER_TEMP}/google-callback-backend.txt"
           frontend_body="${RUNNER_TEMP}/google-callback-frontend.txt"
 
-          backend_status="$(curl \
-            --silent \
-            --show-error \
-            --output "${backend_body}" \
-            --write-out '%{http_code}' \
-            "http://127.0.0.1:${api_port}/signin-google")"
-          frontend_status="$(curl \
-            --silent \
-            --show-error \
-            --output "${frontend_body}" \
-            --write-out '%{http_code}' \
-            "http://127.0.0.1:${frontend_port}/signin-google")"
+          for google_path in /signin-google /auth/google/complete; do
+            backend_status="$(curl \
+              --silent \
+              --show-error \
+              --output "${backend_body}" \
+              --write-out '%{http_code}' \
+              "http://127.0.0.1:${api_port}${google_path}")"
+            frontend_status="$(curl \
+              --silent \
+              --show-error \
+              --output "${frontend_body}" \
+              --write-out '%{http_code}' \
+              "http://127.0.0.1:${frontend_port}${google_path}")"
 
-          if [[ "${frontend_status}" != "${backend_status}" ]]; then
-            echo "The public callback did not preserve the backend status." >&2
-            exit 1
-          fi
+            if [[ "${frontend_status}" != "${backend_status}" ]]; then
+              echo "The public callback did not preserve the backend status." >&2
+              exit 1
+            fi
 
-          if grep --fixed-strings --quiet '<div id="root"></div>' "${frontend_body}"; then
-            echo "The Google callback was incorrectly handled by the SPA." >&2
-            exit 1
-          fi
+            if grep --fixed-strings --quiet '<div id="root"></div>' "${frontend_body}"; then
+              echo "The Google callback was incorrectly handled by the SPA." >&2
+              exit 1
+            fi
+          done
 
       - name: Verify Data Protection survives backend replacement
         working-directory: infrastructure/docker
