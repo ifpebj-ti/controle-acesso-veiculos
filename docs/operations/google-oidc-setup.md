@@ -183,6 +183,25 @@ A [evidência de preparação de 02/11/2026](../validation/google-candidate-pref
 registra o estágio de configuração e o snapshot restaurado, sem declarar
 implantação do candidato ou conclusão do backup institucional.
 
+### Escolha da conta na estação compartilhada
+
+A Issue #600 acrescenta `prompt=select_account` ao desafio iniciado pelo
+backend. Isso solicita ao Google a seleção da identidade, incluindo uma nova
+tentativa depois de escolher a conta incorreta. Não utiliza `prompt=consent`,
+não exige uma nova senha Google e não altera os escopos mínimos. O Google
+continua responsável por suas telas e políticas; não se simula o seletor no
+frontend nem se força uma tela de cancelamento.
+
+Não são enviados `login_hint` ou `hd`. A escolha de uma identidade não concede
+acesso: conta ativa, pré-autorização exata e perfil continuam verificados pela
+API. O login administrativo local permanece separado. Cada início cria estado,
+nonce e PKCE novos, sem reiniciar automaticamente o fluxo ao voltar ou falhar.
+
+Os testes de protocolo comprovam a emissão do parâmetro; a apresentação no
+Google real e a troca de perfis devem ser observadas no candidato identificado
+da #581. O candidato precisa incluir explicitamente a #600; merge não atualiza
+a hospedagem. Referência: [parâmetros OIDC do Google](https://developers.google.com/identity/openid-connect/openid-connect#authenticationuriparameters).
+
 ## Rollback
 
 Se o candidato falhar, restaure conjuntamente a configuração e a release

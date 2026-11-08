@@ -2,6 +2,15 @@
 
 **Rastreabilidade:** #591, #581 e #588. **Base:** main `e0156b1`.
 
+## Entrega das regressões — 08/11/2026
+
+A incorporação dos testes é acompanhada separadamente na #630, pelo PR #595.
+A #591 continua responsável pela atribuição da causa do incidente real.
+Os relatos e a auditoria delimitada abaixo não identificam qual interrupção,
+aba ou recarga reapresentou cada credencial; essa pendência não foi encerrada.
+Receber estes testes na main não muda a política de replay nem representa uma
+correção do incidente real ou novo aceite do fluxo Google.
+
 ## Separação dos problemas
 
 O titular relatou sucesso Google e acesso ao perfil Porteiro no candidato HTTPS
