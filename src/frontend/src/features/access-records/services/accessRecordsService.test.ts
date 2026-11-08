@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "../../../services/api";
+import { generalAccessCategories } from "../model/accessCategories";
 import {
   closeAccessRecord,
   countAccessHistoryByCategory,
@@ -260,6 +261,36 @@ describe("accessRecordsService", () => {
       "Prestador de serviço": 2,
       Visitante: 3,
     });
+  });
+
+  it("limits category totals to three concurrent real history reads", async () => {
+    const pending: (() => void)[] = [];
+    let active = 0;
+    let maximum = 0;
+    vi.mocked(api.get).mockImplementation(async () => {
+      active++;
+      maximum = Math.max(maximum, active);
+      await new Promise<void>((resolve) => pending.push(resolve));
+      active--;
+      return {
+        data: { items: [], page: 1, pageSize: 1, totalCount: 0, totalPages: 0 },
+      };
+    });
+    const counts = countAccessHistoryByCategory(
+      { page: 1, pageSize: 25 },
+      generalAccessCategories,
+    );
+    for (const expected of [3, 6, 9]) {
+      await vi.waitFor(() => expect(api.get).toHaveBeenCalledTimes(expected));
+      pending.splice(0).forEach((resolve) => resolve());
+    }
+    expect(await counts).toEqual(
+      Object.fromEntries(
+        generalAccessCategories.map((category) => [category, 0]),
+      ),
+    );
+    expect(maximum).toBe(3);
+    vi.mocked(api.get).mockReset();
   });
 
   it("rejects an invalid response instead of presenting false data", async () => {

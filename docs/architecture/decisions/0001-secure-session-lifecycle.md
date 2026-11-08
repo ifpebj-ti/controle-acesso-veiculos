@@ -98,6 +98,21 @@ Protection persistente, criptografado e compartilhado entre réplicas.
 - a proteção completa do tablet depende da integração do cliente e de validação
   humana no dispositivo usado pela portaria.
 
+## Esclarecimento operacional — Issue #591
+
+Uma resposta de renovação pode se perder depois que a transação de rotação foi
+confirmada. Nesse caso, se o navegador não receber o novo cookie e reapresentar
+o anterior, o servidor identifica reutilização e revoga o sucessor ativo. O
+protocolo não distingue esse caso de uma credencial antiga reapresentada por
+terceiro. A recuperação é uma autenticação nova, com outra família de sessão;
+não se deve repetir indefinidamente o cookie antigo nem aceitar o token
+consumido por uma tolerância genérica.
+
+A [investigação de recargas](../../validation/session-reload-investigation-2026-11-02.md)
+separa essa reprodução controlada do incidente real e do bloqueio 429 do WAF.
+Não há mudança da política aceita nem comprovação de que esse mecanismo causou
+todas as saídas de sessão observadas.
+
 ## Referências
 
 - [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
