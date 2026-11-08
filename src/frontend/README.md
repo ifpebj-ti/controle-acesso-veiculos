@@ -37,7 +37,39 @@ institucional fica reservado principalmente às ações. Lógica de sessão, coo
 API, capacidades e armazenamento permanecem inalterados. A ativação de temas e a
 migração das páginas operacionais e administrativas continuam nas etapas seguintes.
 
+## Tela cheia opcional (candidato #620)
+
+A melhoria #622 acrescenta um convite não bloqueante na Visão geral, depois da
+autenticação. “Agora não” informa, no próprio local, que o controle permanece no
+menu lateral abaixo de Aparência e no atalho do canto inferior direito. O convite não abre o menu, não ativa tela cheia
+automaticamente e não é exibido nos formulários operacionais. Os critérios de
+validação e o ciclo de vida da marca não sensível por aba estão em
+[`docs/fullscreen.md`](docs/fullscreen.md#convite-opcional--issue-622).
+A orientação após a dispensa é temporária: desaparece após 12 segundos, com pausa
+por mouse/foco no aviso ou aba em segundo plano. O controle permanece no menu.
+O ícone fixo aparece nas páginas autenticadas, com nome acessível e estado real
+compartilhado com o menu. Diálogos e mensagens flutuantes têm prioridade sobre ele.
+
+A área autenticada oferece, quando suportado, “Entrar em tela cheia” junto aos
+ajustes de aparência. O modo usa a API nativa e só inicia por ação explícita;
+Escape/saída do navegador continuam disponíveis. Alvo, foco, portais, fallback,
+limites de zoom móvel e roteiro de validação estão em
+[`docs/fullscreen.md`](docs/fullscreen.md). Não é modo quiosque nem requisito
+para usar o sistema; a implementação candidata não implica implantação ou
+homologação em tablet físico.
+
 ## Estado atual
+
+O histórico oferece as nove categorias existentes na mesma faixa horizontal,
+com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
+O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
+do total validado da consulta de histórico; falhas mostram indisponibilidade,
+sem inventar zero. O contrato atual exige nove leituras de contagem, em lotes
+de até três, além da consulta de resultados. Trocar somente a categoria ou a
+página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
+correção salva atualizam as contagens, mesmo sem mudar o período, a placa,
+o condutor ou a situação. Isso não cria um endpoint agregado nem mede
+desempenho em produção.
 
 A aplicação de produção não inclui provedor de demonstração nem registros
 fictícios embutidos. As telas integradas exibem somente respostas validadas da
@@ -363,6 +395,10 @@ Testes com listas vazias não representam aprovação visual de itens populados;
 as fixtures e os ensaios locais não substituem a validação autenticada no HTTPS.
 
 ## Testes e acessibilidade
+
+O [roteiro de homologação dos relatórios](../../docs/validation/administrative-report-homologation.md)
+separa o contrato já implementado, as verificações automatizadas e os cenários
+manuais ainda pendentes da Issue #443. O novo PDF paisagem segue na Issue #496.
 
 ### Transições de rota
 

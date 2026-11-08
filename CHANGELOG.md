@@ -10,6 +10,11 @@ from its first published release.
 
 ### Added
 
+- Offer an optional fullscreen invitation on the authenticated overview, with
+  temporary contextual guidance after dismissal, a persistent corner shortcut
+  and a non-sensitive per-tab flag.
+  Reuse the existing native control without changing authentication or forms.
+
 - Audited access correction requests with immutable snapshots, reviewer-only
   decisions, scoped lookup, idempotent reconciliation, PostgreSQL constraints
   and atomic approval/audit. Direct corrections require review by default;
@@ -23,6 +28,10 @@ from its first published release.
   scheduling and operational alert delivery remain separate work.
 
 ### Fixed
+
+- Upgrade APT and libapt in the backend runtime image for USN-8996-1, use HTTPS
+  archives and disable retries during bootstrap, rejecting vulnerable package
+  versions without relaxing the container security gates.
 
 - Preserved the original exit author in administrative reports after descriptive
   corrections; legacy attribution is restored only from unambiguous closure audit

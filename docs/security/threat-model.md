@@ -348,6 +348,21 @@ calibração e homologação na #162. Não foram alterados os escores de nenhuma
 ameaça, a topologia ou as posições do diagrama. Validação de estrutura/IDs não
 equivale a uma nova importação visual no aplicativo ou a um teste de segurança.
 
+### Cadeia de pacotes do runtime — Issue #626
+
+O achado CVE-2026-109518 em APT pertence à ameaça TM-05: um atacante no caminho
+de um download HTTP pode interferir na instalação de pacotes. A correção candidata
+usa arquivos de repositório com HTTPS, desabilita retries no bootstrap e atualiza
+`apt`/`libapt-pkg6.0t64`, exigindo no mínimo `2.8.4ubuntu0.1` no Ubuntu 24.04.
+Assinaturas e validação TLS continuam habilitadas; não há exceção de CVE ou
+redução dos gates do scanner. O procedimento está no
+[runbook de imagens](../operations/versioned-container-deployment.md#pacotes-da-imagem-e-atualização-do-runtime).
+
+Uma tag de runtime .NET fixa não comprova atualização de todos os pacotes do
+sistema. Build, inventário e scan precisam identificar a arquitetura e a imagem
+examinada; a implantação e a verificação do servidor permanecem etapas distintas.
+Este incremento não muda atores ou fronteiras do modelo, não reduz o escore
+residual de TM-05 e não significa que toda a cadeia de suprimentos esteja segura.
 
 ## Incremento planejado de revisão de correções — #451, 03/11/2026
 
