@@ -211,6 +211,7 @@ export function useAccessHistory() {
   }
 
   async function revalidateAfterApproval(recordId: number) {
+    refreshCategoryCounts();
     setErrorMessage(null);
 
     const appliedFilters = filters;
@@ -228,7 +229,6 @@ export function useAccessHistory() {
 
       setResult(response);
       setRequestStatus("ready");
-      refreshCategoryCounts();
       return response;
     } catch (error) {
       if (requestId !== requestSequence.current) return null;

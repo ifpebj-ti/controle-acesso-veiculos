@@ -836,6 +836,9 @@ describe("HistoryPage", () => {
     );
     expect(await screen.findByText("Página 1 de 1")).toBeInTheDocument();
     expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2),
+    );
   });
   it("reports a failed read after approval without repeating the decision", async () => {
     vi.mocked(searchAccessHistory)
@@ -850,6 +853,9 @@ describe("HistoryPage", () => {
       await screen.findByText(/consulta dos registros não foi concluída/),
     ).toBeInTheDocument();
     expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2),
+    );
   });
 
   it("has no serious accessibility violations in the empty state", async () => {
