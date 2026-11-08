@@ -6,10 +6,12 @@ Implementação de frontend baseada no contrato candidato do PR #607,
 `b220177118af5e76bf63b18293fda7ab450ad468`, e em
 `docs/operations/access-correction-review.md` nessa branch. A base deste trabalho
 foi sincronizada por merge regular com a main
-`5db10221966a816a882b19ccaf4cf69a99054728`. O backend candidato não foi
-incorporado a esta branch: nenhum arquivo de backend ou infraestrutura faz parte
-do diff. A promoção das duas partes precisa ser coordenada por José. O frontend
-antigo de PUT direto não é compatível com o bloqueio padrão da API candidata.
+`202a9133696109e317cd20e1a12e3d80ebed7a0a`, que contém a base informada
+`5db10221966a816a882b19ccaf4cf69a99054728` e a incorporação do #599. O backend
+candidato não foi incorporado a esta branch: nenhum arquivo de backend ou
+infraestrutura faz parte do diff. A promoção das duas partes precisa ser
+coordenada por José. O frontend antigo de PUT direto não é compatível com o
+bloqueio padrão da API candidata.
 
 ## Fluxo
 
