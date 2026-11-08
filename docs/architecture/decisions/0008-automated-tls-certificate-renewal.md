@@ -3,6 +3,7 @@
 - **Estado:** proposta para validação operacional
 - **Data:** 26/10/2026
 - **Issue:** [#509](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/509)
+- **Preparação documental:** #632; a automação e a validação operada permanecem na #509.
 
 ## Contexto
 

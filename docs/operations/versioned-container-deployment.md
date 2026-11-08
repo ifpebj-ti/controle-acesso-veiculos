@@ -155,7 +155,39 @@ CHAVE_ALEATORIA
 ```
 
 No Linux, aplique `chmod 600` e mantenha o diretório inacessível para outros
-usuários. O backend falha no startup quando um caminho é relativo, o arquivo não
+usuários. O proprietário dos arquivos lidos pelo backend deve permitir acesso
+ao UID efetivo da imagem não root. Um arquivo `root:root` em modo `0600` não
+fica legível para a aplicação apenas por ser declarado como secret no Compose.
+Confira o UID da imagem escolhida e ajuste somente os arquivos destinados a
+esse serviço, sem trocar o conteúdo nem conceder leitura a todos.
+
+Exemplo para **um arquivo do backend**, com imagem já obtida e caminho absoluto
+protegido; repita a verificação para connection string, chave JWT, PFX, senha do
+PFX e, quando habilitado, segredo Google:
+
+```bash
+candidate_image=ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:VERSAO_REVISADA
+runtime_uid=$(docker run --rm --network none --read-only --cap-drop ALL \
+  --security-opt no-new-privileges --entrypoint /bin/sh "$candidate_image" -ec 'id -u')
+case "$runtime_uid" in ''|*[!0-9]*|0) exit 1 ;; esac
+sudo chown "$runtime_uid" /CAMINHO_ABSOLUTO/segredo-do-backend
+sudo chmod 600 /CAMINHO_ABSOLUTO/segredo-do-backend
+docker run --rm --network none --read-only --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --mount type=bind,source=/CAMINHO_ABSOLUTO/segredo-do-backend,target=/run/secrets/probe,readonly \
+  --entrypoint /bin/sh "$candidate_image" -ec 'test -r /run/secrets/probe'
+```
+
+O comando verifica permissão sem imprimir o conteúdo e não inicia a API. Não
+use esse exemplo para alterar indiscriminadamente arquivos de PostgreSQL ou de
+outros serviços: cada imagem tem seu próprio processo de inicialização.
+Preserve o acesso do operador pela administração do host. `config --quiet`
+valida o modelo, mas não comprova que o usuário do contêiner consegue ler cada
+arquivo. Em secrets locais por arquivo, não presuma remapeamento de proprietário
+por `uid`, `gid` ou `mode`; confira a [documentação do Compose](https://docs.docker.com/reference/compose-file/services/#secrets)
+e teste o acesso efetivo. Rastreabilidade: #583, reprodução com conteúdo fictício.
+
+O backend falha no startup quando um caminho é relativo, o arquivo não
 existe, está vazio, excede 16 KiB ou quando valor direto e arquivo são fornecidos
 ao mesmo tempo. O conteúdo nunca integra a mensagem de erro.
 
@@ -168,7 +200,8 @@ docker volume create controle-acesso-veiculos-data-protection
 ```
 
 O caminho informado em `DATA_PROTECTION_CERTIFICATE_FILE` deve existir no host,
-ser legível somente pelo operador autorizado e conter um PFX com chave privada.
+permitir leitura pelo processo backend e administração somente pelos operadores
+autorizados, sem leitura pública, e conter um PFX com chave privada.
 O Compose o monta como secret somente leitura. Não coloque PFX, senha ou XML do
 key ring junto das imagens, do repositório ou dos artefatos de CI.
 
@@ -303,6 +336,28 @@ isolado. Em caso de comprometimento da chave privada, substitua certificado e ke
 ring de forma controlada e encerre as sessões de maneira conservadora.
 
 ## Atualização e rollback
+
+### Pacotes da imagem e atualização do runtime
+
+Fixar o runtime .NET não atualiza, por si só, os pacotes Ubuntu de uma imagem
+armazenada em cache. A correção da Issue #626 trata separadamente `apt` e
+`libapt-pkg6.0t64`, conforme o
+[USN-8996-1 da Canonical](https://ubuntu.com/security/notices/USN-8996-1).
+No Ubuntu 24.04, ambos devem estar em `2.8.4ubuntu0.1` ou versão posterior.
+O Dockerfile usa HTTPS nos arquivos oficiais de repositório, desabilita novas
+tentativas no bootstrap e valida as versões instaladas antes de concluir a
+camada. Assinaturas de pacotes e validação TLS permanecem habilitadas.
+
+Reconstrua com `--pull` e confira as versões com `dpkg-query`, o inventário SBOM
+e os scans de ambas as arquiteturas na imagem final. Os gates CRITICAL e HIGH
+corrigível permanecem ativos; não crie exceção de CVE para fazer o CI passar.
+O resultado pertence ao digest e à base do scanner daquela execução.
+
+Um PR corrigido não atualiza a VM. A promoção exige imagem identificada, backup
+e rollback compatíveis, preservando os arquivos externos, a configuração
+Google, a janela explícita de testes locais e o banco. A checagem da imagem
+hospedada é uma evidência separada; não declare que ela foi corrigida apenas
+porque o Dockerfile ou uma execução de CI mudou.
 
 ### Primeira promoção após os ajustes de HTTPS
 

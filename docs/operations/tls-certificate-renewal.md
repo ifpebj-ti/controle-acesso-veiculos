@@ -129,6 +129,12 @@ PEMs, conta ACME, OCIDs, endereços, token, chave, configuração OCI e saída b
 
 ## Referências
 
+Este documento é a preparação acompanhada na #632. Os checklists de execução,
+aprovações, custos, emissão de staging, renovação e rollback permanecem pendentes
+na #509; a incorporação do runbook não liga um timer nem modifica DNS/IAM.
+O suporte do provedor a `OCI_AUTH_TYPE=instance_principal` foi reconferido na
+documentação oficial do lego; isso não comprova a configuração da tenancy.
+
 - [ADR 0008](../architecture/decisions/0008-automated-tls-certificate-renewal.md)
 - [Issue #509](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/509)
 - [OCI: importar certificado](https://docs.oracle.com/en-us/iaas/Content/certificates/importing-certificate.htm)
