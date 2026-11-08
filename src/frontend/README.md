@@ -37,7 +37,49 @@ institucional fica reservado principalmente às ações. Lógica de sessão, coo
 API, capacidades e armazenamento permanecem inalterados. A ativação de temas e a
 migração das páginas operacionais e administrativas continuam nas etapas seguintes.
 
+## Tela cheia opcional (candidato #620)
+
+A melhoria #622 acrescenta um convite não bloqueante na Visão geral, depois da
+autenticação. “Agora não” informa, no próprio local, que o controle permanece no
+menu lateral abaixo de Aparência e no atalho do canto inferior direito. O convite não abre o menu, não ativa tela cheia
+automaticamente e não é exibido nos formulários operacionais. Os critérios de
+validação e o ciclo de vida da marca não sensível por aba estão em
+[`docs/fullscreen.md`](docs/fullscreen.md#convite-opcional--issue-622).
+A orientação após a dispensa é temporária: desaparece após 12 segundos, com pausa
+por mouse/foco no aviso ou aba em segundo plano. O controle permanece no menu.
+O ícone fixo aparece nas páginas autenticadas, com nome acessível e estado real
+compartilhado com o menu. Diálogos e mensagens flutuantes têm prioridade sobre ele.
+
+A área autenticada oferece, quando suportado, “Entrar em tela cheia” junto aos
+ajustes de aparência. O modo usa a API nativa e só inicia por ação explícita;
+Escape/saída do navegador continuam disponíveis. Alvo, foco, portais, fallback,
+limites de zoom móvel e roteiro de validação estão em
+[`docs/fullscreen.md`](docs/fullscreen.md). Não é modo quiosque nem requisito
+para usar o sistema; a implementação candidata não implica implantação ou
+homologação em tablet físico.
+
 ## Estado atual
+
+O histórico oferece as nove categorias existentes na mesma faixa horizontal,
+com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
+O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
+do total validado da consulta de histórico; falhas mostram indisponibilidade,
+sem inventar zero. O contrato atual exige nove leituras de contagem, em lotes
+de até três, além da consulta de resultados. Trocar somente a categoria ou a
+página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
+correção salva atualizam as contagens, mesmo sem mudar o período, a placa,
+o condutor ou a situação. Isso não cria um endpoint agregado nem mede
+desempenho em produção.
+
+A aplicação de produção não inclui provedor de demonstração nem registros
+fictícios embutidos. As telas integradas exibem somente respostas validadas da
+API. Em testes automatizados, fixtures e respostas simuladas permanecem nos
+arquivos de teste. Para homologação isolada, os dados fictícios são preparados
+explicitamente pelos contratos reais, conforme
+[`infrastructure/demo/README.md`](../../infrastructure/demo/README.md).
+Esses dados de homologação não representam registros institucionais nem
+homologação para produção. Exemplos e placeholders dos campos são instruções
+de preenchimento, não registros de negócio.
 
 A versão atual integra autenticação e sessão em memória ao endpoint
 `POST /auth/login`. O fluxo geral de veículos também consome a API para registrar
@@ -330,6 +372,28 @@ creme do sistema. Em superfícies coloridas, o componente deve usar a combinaç�
 com contraste medido, sem substituir as cores semânticas próprias de erro,
 sucesso, aviso ou indisponibilidade.
 
+## Classificação de falhas — Issue #603
+
+`describeApiError` diferencia erros de resposta/execução de falhas reais de
+transporte e de cancelamento. Erros comuns, inclusive os de contrato, recebem
+mensagem genérica sem atribuir o problema à rede ou expor conteúdo da resposta.
+Axios sem resposta é tratado como transporte quando existe código de conexão
+ou timeout reconhecido, ou uma requisição enviada sem código. Falhas de
+configuração do Axios continuam sendo erros inesperados. As mensagens e os
+estados dos códigos HTTP 400/401/403/409/429/5xx são preservados.
+
+Cancelamentos Axios e AbortError têm classificação própria e mensagem curta,
+sem afirmar que uma operação já recebida pelo servidor foi desfeita. A busca
+recorrente continua descartando o cancelamento deliberado de consultas
+obsoletas; as sequências de requisição protegem resultados mais recentes.
+Não há repetição automática de mutações nem mudança de sessão ou autorização.
+
+A adequação dos campos de autenticação e da credencial nula para contas Google
+pertence ao PR #530. Esse PR mantém seu feedback específico de contas; a #603
+não copia schemas nem depende da incorporação do login para testes locais.
+Testes com listas vazias não representam aprovação visual de itens populados;
+as fixtures e os ensaios locais não substituem a validação autenticada no HTTPS.
+
 ## Testes e acessibilidade
 
 ### Transições de rota
@@ -431,7 +495,6 @@ src/
 ├── components/
 │   ├── layout/       # Layouts compartilhados.
 │   └── ui/           # Componentes visuais reutilizáveis.
-├── demo/             # Estado e dados exclusivamente demonstrativos.
 ├── features/
 │   ├── access-records/ # Contratos, validação e serviços do fluxo geral.
 │   ├── administrative-reports/ # Contratos e serviços dos relatórios administrativos.
@@ -477,8 +540,6 @@ src/
 - definição institucional do canal usado para repassar credenciais temporárias
   criadas ou redefinidas pelo Administrador;
 - suporte à renovação transparente em navegadores sem Web Locks API;
-- persistência dos dados demonstrativos;
-- integração com PostgreSQL;
 - garantia de autorização baseada somente na interface;
 - homologação do cliente ou prontidão para produção.
 

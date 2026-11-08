@@ -1,8 +1,10 @@
-# ADR 0009 — Gestão protegida dos contêineres da homologação
+# ADR 0010 — Gestão protegida dos contêineres da homologação
 
 - Estado: proposto
 - Data: 2026-10-26
 - Issue: #501
+- Preparação documental: #633; implantação e aceitação do risco permanecem na #501.
+- Numeração revista em 08/11/2026: ADR 0009 já pertence ao acesso sintético temporário na main.
 - Dependência de segurança: #516, concluída pelo PR #518 em 27/10/2026
 
 ## Contexto
@@ -30,6 +32,14 @@ Foram consideradas três alternativas:
 3. **Portainer CE LTS:** possui interface, contas individuais e controle de
    propriedade dos recursos. Ainda exige acesso poderoso ao Docker e não oferece
    o RBAC detalhado da edição Business.
+
+A documentação oficial reconferida em 08/11/2026 confirma que os papéis
+granulares de operador/helpdesk/somente leitura pertencem à edição Business.
+Não prometer na CE uma barreira técnica de "somente consultar e reiniciar um
+serviço" com base em procedimentos humanos. Se esse isolamento for obrigatório,
+a escolha deve ser revista antes da implantação, com custo e privilégios
+explícitos. Na proposta atual, o público é somente o mantenedor já autorizado
+a administrar o host; nunca os quatro perfis funcionais da aplicação.
 
 ## Decisão proposta
 

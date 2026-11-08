@@ -4,7 +4,13 @@
 
 Este runbook descreve a implantação **proposta**, ainda não executada, da Issue
 #501. A decisão e os riscos estão no
-[ADR 0009](../architecture/decisions/0009-protected-container-management.md).
+[ADR 0010](../architecture/decisions/0010-protected-container-management.md).
+
+Este runbook é a preparação documental da #633. A #501 continua responsável
+por decisão de implantação, aprovação de risco, imagem/digest, acesso efetivo
+e evidências operacionais. Registrar a proposta na main não instala o painel.
+Os papéis granulares da edição Business não devem ser atribuídos à CE; regras
+procedimentais não substituem uma barreira de autorização técnica.
 Não copie comandos genéricos da internet para a VM: a versão e o digest devem
 ser revisados no PR de implantação.
 

@@ -20,10 +20,12 @@ IFPE — Campus Belo Jardim.
 
 > [!IMPORTANT]
 > O MVP técnico está integrado e pode ser demonstrado com dados fictícios. Ele
-> possui uma homologação técnica na OCI com borda HTTPS, WAF e origem privada,
-> mas ainda não está autorizado para operação institucional. Certificado público
-> confiável e DNS, gestão definitiva de segredos, monitoramento operado, backup
-> protegido, exercício de recuperação e homologação formal permanecem pendentes.
+> possui uma homologação técnica na OCI com borda HTTPS, WAF, origem privada
+> e certificado público confiável, validado pelo hostname temporário de
+> homologação. Gestão definitiva de segredos, renovação automática do certificado,
+> monitoramento operado, backup protegido, exercício de recuperação e homologação
+> formal permanecem pendentes. O ambiente ainda não está autorizado para operação
+> institucional.
 
 ## Visão geral
 

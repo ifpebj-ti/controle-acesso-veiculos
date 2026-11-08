@@ -101,6 +101,49 @@ puder ser executada, registre o motivo e não declare aprovação inexistente.
 
 ## Revisão e entrega
 
+### Backlog e organização do trabalho
+
+Use as prioridades do backlog para ordenar a próxima entrega, sem confundi-las
+com severidade de vulnerabilidade ou prazo institucional:
+
+- `priority:P1`: próximo piloto e dependências operacionais prioritárias;
+- `priority:P2`: incremento da Unidade 2 ou implementação após uma dependência;
+- `priority:P3`: evolução futura, decisão de produto ou revisão de toolchain.
+
+Uma issue pode continuar aberta com código integrado quando inclui exercício,
+validação institucional ou operação ainda não comprovados. Registre o PR, o
+estado real e o próximo passo. Encerre uma decisão substituída como **não
+planejada**, com o vínculo sucessor, sem marcar implementação inexistente.
+Idade da issue, por si só, não comprova atraso; confira compromissos, dependências
+e critérios antes de atribuir esse estado. Faça a triagem antes da revisão
+semanal e após mudanças relevantes de escopo.
+
+A [revisão datada do backlog](docs/development/backlog-review-2026-11-02.md)
+registra a fotografia de 02/11/2026. Issues e PRs atuais prevalecem sobre essa
+fotografia.
+
+| Conteúdo                                              | Local                                            |
+| ----------------------------------------------------- | ------------------------------------------------ |
+| Código da aplicação e testes                          | `src/`                                           |
+| Arquitetura, contratos, validações e operação         | `docs/`                                          |
+| Containers, infraestrutura e ferramentas operacionais | `infrastructure/`                                |
+| Workflows e instruções de colaboração                 | `.github/`                                       |
+| Relatórios e notas temporárias de trabalho            | `artifacts/<tarefa-ou-data>/`, ignorado pelo Git |
+| Credenciais e configurações efetivas                  | Canal protegido fora do checkout                 |
+
+Mantenha na raiz apenas as entradas e configurações compartilhadas do projeto.
+Novos worktrees devem ficar fora do checkout principal, por exemplo sob
+`%USERPROFILE%\cav-workspaces\controle-acesso-veiculos\active` no Windows.
+Arquive um checkout já integrado com `git worktree move`, preservando o registro
+do Git, em vez de mover seu diretório diretamente. Confira alterações locais,
+PRs abertos, processos, caches e montagens antes de qualquer movimentação.
+
+Worktrees com trabalho ativo ou uso em execução incerto permanecem no caminho
+atual até revisão específica. `tmp/`, `.tmp/` e `TestResults/` legados continuam
+ignorados; relatórios novos devem preferir `artifacts/`. Notas arquivadas não
+podem conter segredos em conteúdo destinado à publicação. Não apague evidências
+apenas para reduzir o número de pastas.
+
 Antes de solicitar revisão:
 
 - revise o diff completo e faça stage direcionado;

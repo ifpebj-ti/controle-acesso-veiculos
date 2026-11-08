@@ -17,11 +17,22 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
 {
     private const string Password = "Test-only-password-123!";
 
-    [Fact]
-    public async Task AdministratorCanSearchPaginatedAccountsWithoutPasswordHashes()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AdministratorCanSearchPaginatedAccountsWithoutPasswordHashes(bool googleLinked)
     {
         var administrator = await CreateUserAsync(ProfileNames.Administrator);
         var target = await CreateUserAsync(ProfileNames.Doorman);
+        if (googleLinked)
+        {
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var user = await db.Usuarios.SingleAsync(item => item.Id == target.Id,
+                TestContext.Current.CancellationToken);
+            user.VincularIdentidadeGoogle($"fictional-subject-{Guid.NewGuid():N}", DateTime.UtcNow);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, administrator.Email);
 
@@ -37,15 +48,33 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         Assert.Equal(ProfileNames.Doorman, account.ProfileName);
         Assert.True(account.Active);
         Assert.Equal(1, result.TotalCount);
+        using var document = JsonDocument.Parse(json);
+        var item = Assert.Single(document.RootElement.GetProperty("items").EnumerateArray());
+        Assert.Equal(JsonValueKind.String, item.GetProperty("authenticationMethod").ValueKind);
+        Assert.Equal(googleLinked ? "Google" : "Local", item.GetProperty("authenticationMethod").GetString());
+        Assert.Equal(googleLinked, item.GetProperty("externalIdentityLinked").GetBoolean());
+        Assert.Equal(1, document.RootElement.GetProperty("page").GetInt32());
+        Assert.Equal(10, document.RootElement.GetProperty("pageSize").GetInt32());
+        Assert.Equal(1, document.RootElement.GetProperty("totalPages").GetInt32());
+        Assert.Equal(new[]
+        {
+            "active", "authenticationMethod", "createdAtUtc", "email", "externalIdentityLinked",
+            "id", "lockedUntilUtc", "name", "profileName", "requiresPasswordChange",
+            "temporaryCredentialExpiresAtUtc", "updatedAtUtc"
+        }.Order(), item.EnumerateObject().Select(property => property.Name).Order());
+        Assert.DoesNotContain("googleSubject", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("senhaHash", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("passwordHash", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("hash", json, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task NonAdministratorCannotSearchAccounts()
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task NonAdministratorCannotSearchAccounts(string profileName)
     {
-        var user = await CreateUserAsync(ProfileNames.Doorman);
+        var user = await CreateUserAsync(profileName);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, user.Email);
 
@@ -272,10 +301,13 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         Assert.Contains("Promoção autorizada", audit.DadosNovos!);
     }
 
-    [Fact]
-    public async Task OperationalUserCannotChangeAnotherAccountProfile()
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task OperationalUserCannotChangeAnotherAccountProfile(string operatorProfileName)
     {
-        var operatorUser = await CreateUserAsync(ProfileNames.Doorman);
+        var operatorUser = await CreateUserAsync(operatorProfileName);
         var target = await CreateUserAsync(ProfileNames.SecurityGuard);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, operatorUser.Email);
