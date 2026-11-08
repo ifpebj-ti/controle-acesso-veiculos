@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { CanceledError } from "axios";
+import { AxiosError, CanceledError } from "axios";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { expectNoSeriousAccessibilityViolations } from "../../../test/accessibility";
@@ -12,6 +12,7 @@ import {
 } from "../../../test/correctionReviewFixtures";
 import { CorrectionReviewScope } from "../../access-corrections/CorrectionReviewScope";
 import {
+  CorrectionReviewContractError,
   findOwnCorrectionRequest,
   submitCorrectionRequest,
 } from "../../access-corrections/service";
@@ -166,6 +167,8 @@ describe("correction proposal dialog", () => {
     },
   );
   it.each([
+    new AxiosError("network", "ERR_NETWORK"),
+    new CorrectionReviewContractError(),
     new CanceledError("fixture"),
     new DOMException("fixture", "AbortError"),
   ])(

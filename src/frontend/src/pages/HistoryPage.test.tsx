@@ -19,6 +19,7 @@ import {
 import { describeApiError } from "../services/api-errors";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { selectFieldOption } from "../test/selectField";
+import { generalAccessCategories } from "../features/access-records/model/accessCategories";
 import { HistoryPage } from "./HistoryPage";
 import {
   correctionKey,
@@ -187,6 +188,10 @@ describe("HistoryPage", () => {
       "Prestador de serviço": 2,
       "Treino ou jogo": 0,
       Visitante: 3,
+      "Caminhada com veículo": 4,
+      Mototáxi: 5,
+      "Permanência excepcional": 0,
+      "Outro acesso autorizado": 0,
     });
     vi.mocked(correctAccessRecord).mockReset();
     vi.mocked(searchAccessHistory).mockReset();
@@ -416,15 +421,108 @@ describe("HistoryPage", () => {
     expect(visitorShortcut).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("moves focus to the complete category selector from more categories", async () => {
+  it("exposes all nine categories and preserves the alternative selector", async () => {
     vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("Nenhum registro encontrado");
 
-    await user.click(screen.getByRole("button", { name: "Mais categorias" }));
+    for (const category of generalAccessCategories) {
+      expect(
+        screen.getByRole("button", { name: category }),
+      ).toBeInTheDocument();
+    }
+    expect(
+      screen.queryByRole("button", { name: "Mais categorias" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Categoria")).toBeInTheDocument();
+    const category = screen.getByRole("button", { name: "Mototáxi" });
+    category.focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(searchAccessHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ categoryName: "Mototáxi", page: 1 }),
+      ),
+    );
+    expect(category).toHaveAttribute("aria-pressed", "true");
+    expect(category).toHaveFocus();
+    await user.keyboard("{End}");
+    expect(
+      screen.getByRole("button", { name: "Outro acesso autorizado" }),
+    ).toHaveFocus();
+    await user.keyboard("{Home}");
+    expect(screen.getByRole("button", { name: "Visitante" })).toHaveFocus();
+  });
 
-    expect(screen.getByLabelText("Categoria")).toHaveFocus();
+  it("reuses real totals when only category or page changes and refreshes them for other filters", async () => {
+    vi.mocked(searchAccessHistory).mockImplementation(async (filters) =>
+      pageResult([record], filters.page, 2),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText("DEM1A23");
+    await waitFor(() =>
+      expect(countAccessHistoryByCategory).toHaveBeenCalledOnce(),
+    );
+    expect(countAccessHistoryByCategory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, pageSize: 1 }),
+      generalAccessCategories,
+    );
+    await user.click(screen.getByRole("button", { name: "Mototáxi" }));
+    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
+    await user.click(screen.getByRole("button", { name: "2" }));
+    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(3));
+    expect(countAccessHistoryByCategory).toHaveBeenCalledOnce();
+    await user.type(screen.getByLabelText("Condutor"), "Fictício");
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    await waitFor(() =>
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2),
+    );
+  });
+
+  it("announces unavailable totals without showing fabricated zeroes and keeps category filtering usable", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
+    vi.mocked(countAccessHistoryByCategory).mockRejectedValue(
+      new Error("unavailable"),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(
+      "As contagens estão indisponíveis. Você ainda pode filtrar por categoria.",
+    );
+    const category = screen.getByRole("button", { name: "Mototáxi" });
+    expect(category).toHaveAccessibleDescription("Contagem indisponível.");
+    expect(within(category).queryByText("0")).not.toBeInTheDocument();
+    await user.click(category);
+    await waitFor(() =>
+      expect(searchAccessHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ categoryName: "Mototáxi" }),
+      ),
+    );
+  });
+
+  it("refreshes unavailable counts when explicitly reapplying unchanged filters", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
+    vi.mocked(countAccessHistoryByCategory)
+      .mockRejectedValueOnce(new Error("unavailable"))
+      .mockResolvedValue({ Visitante: 3 });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(
+      "As contagens estão indisponíveis. Você ainda pode filtrar por categoria.",
+    );
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Visitante" }),
+      ).toHaveAccessibleDescription("3 registros no período e filtros atuais."),
+    );
+    expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2);
+    expect(
+      screen.queryByText(
+        "As contagens estão indisponíveis. Você ainda pode filtrar por categoria.",
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps filter submission focus while the request is pending", async () => {
@@ -618,6 +716,7 @@ describe("HistoryPage", () => {
         justification: pendingCorrection.justification,
       });
       expect(correctAccessRecord).not.toHaveBeenCalled();
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(1);
     },
   );
   it("offers requests for both open and closed records", async () => {
@@ -738,6 +837,9 @@ describe("HistoryPage", () => {
     );
     expect(await screen.findByText("Página 1 de 1")).toBeInTheDocument();
     expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2),
+    );
   });
   it("reports a failed read after approval without repeating the decision", async () => {
     vi.mocked(searchAccessHistory)
@@ -752,6 +854,9 @@ describe("HistoryPage", () => {
       await screen.findByText(/consulta dos registros não foi concluída/),
     ).toBeInTheDocument();
     expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2),
+    );
   });
 
   it("has no serious accessibility violations in the empty state", async () => {

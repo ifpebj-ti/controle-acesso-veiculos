@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { describeApiError } from "../../../services/api-errors";
-import { featuredAccessCategories } from "../model/accessCategories";
+import { generalAccessCategories } from "../model/accessCategories";
 import {
   countAccessHistoryByCategory,
   searchAccessHistory,
@@ -81,7 +81,25 @@ export function useAccessHistory() {
   >("loading");
   const requestSequence = useRef(0);
   const categoryCountSequence = useRef(0);
-  const [countRevision, setCountRevision] = useState(0);
+  const [categoryCountRetry, setCategoryCountRetry] = useState(0);
+  const categoryCountFilters = useMemo(
+    () => ({
+      from: filters.from,
+      to: filters.to,
+      plate: filters.plate,
+      driverName: filters.driverName,
+      status: filters.status,
+      page: 1,
+      pageSize: 1,
+    }),
+    [
+      filters.from,
+      filters.to,
+      filters.plate,
+      filters.driverName,
+      filters.status,
+    ],
+  );
 
   useEffect(() => {
     let active = true;
@@ -113,7 +131,10 @@ export function useAccessHistory() {
     let active = true;
     const requestId = ++categoryCountSequence.current;
 
-    void countAccessHistoryByCategory(filters, featuredAccessCategories)
+    void countAccessHistoryByCategory(
+      categoryCountFilters,
+      generalAccessCategories,
+    )
       .then((counts) => {
         if (!active || requestId !== categoryCountSequence.current) return;
         setCategoryCounts(counts);
@@ -128,11 +149,17 @@ export function useAccessHistory() {
     return () => {
       active = false;
     };
-  }, [filters, countRevision]);
+  }, [categoryCountFilters, categoryCountRetry]);
 
   function startRequest(nextFilters: AccessHistoryFilters) {
     setRequestStatus("loading");
-    setCategoryCountsStatus("loading");
+    if (
+      (["from", "to", "plate", "driverName", "status"] as const).some(
+        (key) => nextFilters[key] !== filters[key],
+      )
+    ) {
+      setCategoryCountsStatus("loading");
+    }
     setResult(null);
     setErrorMessage(null);
     setFilters(nextFilters);
@@ -152,7 +179,9 @@ export function useAccessHistory() {
   }
 
   function applyFilters() {
-    startRequest(toApiFilters(draft, 1));
+    const nextFilters = toApiFilters(draft, 1);
+    refreshCategoryCounts();
+    startRequest(nextFilters);
   }
 
   function clearFilters() {
@@ -171,11 +200,18 @@ export function useAccessHistory() {
     startRequest({ ...filters, page });
   }
 
+  function refreshCategoryCounts() {
+    setCategoryCountsStatus("loading");
+    setCategoryCountRetry((current) => current + 1);
+  }
+
   function retry() {
+    refreshCategoryCounts();
     startRequest({ ...filters });
   }
 
   async function revalidateAfterApproval(recordId: number) {
+    refreshCategoryCounts();
     setErrorMessage(null);
 
     const appliedFilters = filters;
@@ -193,7 +229,6 @@ export function useAccessHistory() {
 
       setResult(response);
       setRequestStatus("ready");
-      setCountRevision((value) => value + 1);
       return response;
     } catch (error) {
       if (requestId !== requestSequence.current) return null;

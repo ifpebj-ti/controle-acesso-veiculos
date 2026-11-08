@@ -3,9 +3,10 @@
 ## Fonte e limite da integração
 
 Implementação de frontend baseada no contrato candidato do PR #607,
-`17519604f97e5770226c833031ab03dfcee930ae`, e em
+`b220177118af5e76bf63b18293fda7ab450ad468`, e em
 `docs/operations/access-correction-review.md` nessa branch. A base deste trabalho
-é a main `4b5a39e2d0af83ef8f33884706a7f5ca7258c340`. O backend candidato não foi
+foi sincronizada por merge regular com a main
+`5db10221966a816a882b19ccaf4cf69a99054728`. O backend candidato não foi
 incorporado a esta branch: nenhum arquivo de backend ou infraestrutura faz parte
 do diff. A promoção das duas partes precisa ser coordenada por José. O frontend
 antigo de PUT direto não é compatível com o bloqueio padrão da API candidata.
@@ -28,6 +29,11 @@ antigo de PUT direto não é compatível com o bloqueio padrão da API candidata
   quando válida, consulta a última página válida quando necessário e apresenta
   aviso com foco quando o registro deixa do resultado. Recusa/cancelamento não
   alteram localmente o acesso efetivo.
+- A aprovação confirmada também revalida as contagens de categorias antes da
+  consulta do histórico, inclusive quando a página deixa de existir ou a consulta
+  falha. Enviar uma proposta pendente, apenas trocar categoria ou paginar não
+  dispara essa recontagem. Os filtros das contagens continuam independentes da
+  categoria e da página selecionadas.
 
 ## Resultado incerto
 
