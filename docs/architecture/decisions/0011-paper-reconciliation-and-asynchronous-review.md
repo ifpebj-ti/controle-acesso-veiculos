@@ -1,4 +1,4 @@
-# ADR 0008 — Reconciliação do papel com conferência assíncrona
+# ADR 0011 — Reconciliação do papel com conferência assíncrona
 
 - **Estado:** direção autorizada; domínio e orquestração de aplicação candidatos, sem persistência/API.
 - **Data:** 03/11/2026.

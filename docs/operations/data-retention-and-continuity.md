@@ -211,7 +211,7 @@ confere diariamente, com justificativa para aceitar ou recusar; Administrador
 A operação continua sem esperar essa revisão. Veículo ainda dentro deve aparecer
 em aberto com conferência pendente e permitir a saída normal. Recusa preserva
 fatos e papel, encaminhando correção rastreada. A #100 ainda não entrega esse fluxo
-integrado; o [ADR 0008](../architecture/decisions/0008-paper-reconciliation-and-asynchronous-review.md)
+integrado; o [ADR 0011](../architecture/decisions/0011-paper-reconciliation-and-asynchronous-review.md)
 registra o modelo candidato e as proteções ainda necessárias. Essa definição
 não equivale a exercício observado ou aceite de uma interface.
 
