@@ -164,7 +164,7 @@ segurança pertinentes; não marque esses critérios apenas por observar sucesso
 
 ### Cancelamento do consentimento
 
-A Issue #593 trata `access_denied` somente no evento `OnAccessDenied` do
+A entrega técnica #636 trata `access_denied` somente no evento `OnAccessDenied` do
 middleware OIDC, depois da validação de estado protegido e correlação. Um
 cancelamento válido limpa a identidade externa temporária e retorna ao caminho
 local configurado com `status=denied`, sem expor a descrição do provedor nem
@@ -181,6 +181,10 @@ Os testes usam um provedor fictício com o middleware real e mantêm as
 regressões de assinatura, issuer, audience, expiração e nonce. Eles não
 substituem Cancelar e tentar novamente no Google real com o titular, depois da
 implantação de um backend candidato identificado. Fazer merge não atualiza a VM.
+A experiência com o titular permanece na #593: mensagem, foco e nova tentativa
+precisam de observação própria. Se o Google não oferecer Cancelar, registrar a
+limitação, sem remover autorizações da conta ou fabricar evidência. A integração
+técnica do backend não encerra essa homologação.
 
 ### Contas locais legadas e janela do ensaio
 
