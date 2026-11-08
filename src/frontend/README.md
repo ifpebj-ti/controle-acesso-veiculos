@@ -39,6 +39,17 @@ migração das páginas operacionais e administrativas continuam nas etapas segu
 
 ## Tela cheia opcional (candidato #620)
 
+A melhoria #622 acrescenta um convite não bloqueante na Visão geral, depois da
+autenticação. “Agora não” informa, no próprio local, que o controle permanece no
+menu lateral abaixo de Aparência e no atalho do canto inferior direito. O convite não abre o menu, não ativa tela cheia
+automaticamente e não é exibido nos formulários operacionais. Os critérios de
+validação e o ciclo de vida da marca não sensível por aba estão em
+[`docs/fullscreen.md`](docs/fullscreen.md#convite-opcional--issue-622).
+A orientação após a dispensa é temporária: desaparece após 12 segundos, com pausa
+por mouse/foco no aviso ou aba em segundo plano. O controle permanece no menu.
+O ícone fixo aparece nas páginas autenticadas, com nome acessível e estado real
+compartilhado com o menu. Diálogos e mensagens flutuantes têm prioridade sobre ele.
+
 A área autenticada oferece, quando suportado, “Entrar em tela cheia” junto aos
 ajustes de aparência. O modo usa a API nativa e só inicia por ação explícita;
 Escape/saída do navegador continuam disponíveis. Alvo, foco, portais, fallback,
