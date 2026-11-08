@@ -6,6 +6,7 @@ Esta pasta contém a fonte versionada dos documentos de segurança do projeto.
 - [Modelagem de ameaças](threat-model.md)
 - [Modelo visual para OWASP Threat Dragon](controle-acesso-veiculos-threat-model.json)
 - [Guia de desenvolvimento seguro](secure-development-guide.md)
+- [Mapa de SAST, DAST e análise de componentes](security-analysis.md)
 - [Análise dinâmica com OWASP ZAP](dynamic-application-security-testing.md)
 - [Contingência de identidade Google](../operations/google-identity-contingency.md)
 - [Amostra histórica do baseline passivo do ZAP](evidence/zap-baseline-2026-09-16/README.md)

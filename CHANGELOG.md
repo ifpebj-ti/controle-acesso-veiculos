@@ -10,6 +10,13 @@ from its first published release.
 
 ### Added
 
+- Offer an optional fullscreen invitation on the authenticated overview, with
+  temporary contextual guidance after dismissal, a persistent corner shortcut
+  and a non-sensitive per-tab flag.
+  Reuse the existing native control without changing authentication or forms.
+
+- Request Google account selection on each explicit OIDC login attempt on shared
+  workstations, preserving minimal scopes, PKCE and local preauthorization.
 - A read-only public HTTPS/readiness probe with certificate validation,
   bounded responses, sanitized failures and 30/14/7-day expiry states.
   Offline regressions run in infrastructure CI; certificate renewal,
@@ -17,6 +24,11 @@ from its first published release.
 
 ### Fixed
 
+- Upgrade APT and libapt in the backend runtime image for USN-8996-1, use HTTPS
+  archives and disable retries during bootstrap, rejecting vulnerable package
+  versions without relaxing the container security gates.
+- Pin the shipped ASP.NET Core runtime to 10.0.14 so cached floating tags do not
+  regress homologation to a vulnerable patch during container rebuilds.
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative
   account listings, consistently with account creation and profile changes.
   Preserve pagination and all existing public fields without changing the

@@ -114,8 +114,13 @@ var googleOidcOptions = builder.Configuration
 googleOidcOptions.Validate();
 builder.Services.Configure<GoogleOidcOptions>(
     builder.Configuration.GetSection(GoogleOidcOptions.SectionName));
+var homologationTestAccess = builder.Configuration
+    .GetSection(HomologationTestAccessOptions.SectionName)
+    .Get<HomologationTestAccessOptions>() ?? new HomologationTestAccessOptions();
+var homologationPasswordPolicy = homologationTestAccess.Validate(
+    builder.Environment.EnvironmentName, DateTimeOffset.UtcNow);
 builder.Services.AddSingleton(
-    new AuthenticationMethodPolicy(googleOidcOptions.Enabled));
+    new AuthenticationMethodPolicy(googleOidcOptions.Enabled, homologationPasswordPolicy));
 
 var temporaryCredentialOptions = builder.Configuration
     .GetSection(TemporaryCredentialOptions.SectionName)
@@ -223,6 +228,8 @@ if (googleOidcOptions.Enabled)
             options.Authority = "https://accounts.google.com";
             options.ClientId = googleOidcOptions.ClientId;
             options.ClientSecret = googleOidcOptions.ClientSecret;
+            // Shared workstations must offer identity choice on each explicit login.
+            options.Prompt = OpenIdConnectPrompt.SelectAccount;
             options.CallbackPath = googleOidcOptions.CallbackPath;
             options.ResponseType = OpenIdConnectResponseType.Code;
             options.UsePkce = true;

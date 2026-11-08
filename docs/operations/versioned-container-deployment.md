@@ -337,6 +337,28 @@ ring de forma controlada e encerre as sessões de maneira conservadora.
 
 ## Atualização e rollback
 
+### Pacotes da imagem e atualização do runtime
+
+Fixar o runtime .NET não atualiza, por si só, os pacotes Ubuntu de uma imagem
+armazenada em cache. A correção da Issue #626 trata separadamente `apt` e
+`libapt-pkg6.0t64`, conforme o
+[USN-8996-1 da Canonical](https://ubuntu.com/security/notices/USN-8996-1).
+No Ubuntu 24.04, ambos devem estar em `2.8.4ubuntu0.1` ou versão posterior.
+O Dockerfile usa HTTPS nos arquivos oficiais de repositório, desabilita novas
+tentativas no bootstrap e valida as versões instaladas antes de concluir a
+camada. Assinaturas de pacotes e validação TLS permanecem habilitadas.
+
+Reconstrua com `--pull` e confira as versões com `dpkg-query`, o inventário SBOM
+e os scans de ambas as arquiteturas na imagem final. Os gates CRITICAL e HIGH
+corrigível permanecem ativos; não crie exceção de CVE para fazer o CI passar.
+O resultado pertence ao digest e à base do scanner daquela execução.
+
+Um PR corrigido não atualiza a VM. A promoção exige imagem identificada, backup
+e rollback compatíveis, preservando os arquivos externos, a configuração
+Google, a janela explícita de testes locais e o banco. A checagem da imagem
+hospedada é uma evidência separada; não declare que ela foi corrigida apenas
+porque o Dockerfile ou uma execução de CI mudou.
+
 ### Primeira promoção após os ajustes de HTTPS
 
 Antes de aplicar o Compose atual à VM que ainda executa `0.4.0`:

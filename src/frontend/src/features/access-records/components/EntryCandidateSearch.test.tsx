@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { CanceledError } from "axios";
 import { type FormEvent, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -271,6 +272,31 @@ describe("EntryCandidateSearch", () => {
       ),
     );
     expect(screen.queryByText("REC1A23")).not.toBeInTheDocument();
+  });
+
+  it("ignores a late cancellation without replacing newer populated results", async () => {
+    const first = deferred<AccessEntryCandidate[]>();
+    vi.mocked(searchAccessEntryCandidates)
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValueOnce([candidate]);
+    const user = userEvent.setup();
+    render(<Harness />);
+    const search = screen.getByRole("combobox");
+    await user.type(search, "ANT");
+    await waitFor(() =>
+      expect(searchAccessEntryCandidates).toHaveBeenCalledTimes(1),
+    );
+    const signal = vi.mocked(searchAccessEntryCandidates).mock.calls[0][1];
+    await user.clear(search);
+    await user.type(search, "REC");
+    await screen.findByRole("option", { name: /REC1A23/ });
+    expect(signal?.aborted).toBe(true);
+    await act(async () =>
+      first.reject(new CanceledError("obsolete fixture request")),
+    );
+    expect(screen.getByRole("option", { name: /REC1A23/ })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(searchAccessEntryCandidates).toHaveBeenCalledTimes(2);
   });
 
   it("has no serious automated accessibility violations", async () => {
