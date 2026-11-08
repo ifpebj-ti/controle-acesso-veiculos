@@ -24,6 +24,9 @@ from its first published release.
 
 ### Fixed
 
+- Upgrade APT and libapt in the backend runtime image for USN-8996-1, use HTTPS
+  archives and disable retries during bootstrap, rejecting vulnerable package
+  versions without relaxing the container security gates.
 - Pin the shipped ASP.NET Core runtime to 10.0.14 so cached floating tags do not
   regress homologation to a vulnerable patch during container rebuilds.
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative
