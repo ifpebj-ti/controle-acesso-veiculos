@@ -113,8 +113,13 @@ var googleOidcOptions = builder.Configuration
 googleOidcOptions.Validate();
 builder.Services.Configure<GoogleOidcOptions>(
     builder.Configuration.GetSection(GoogleOidcOptions.SectionName));
+var homologationTestAccess = builder.Configuration
+    .GetSection(HomologationTestAccessOptions.SectionName)
+    .Get<HomologationTestAccessOptions>() ?? new HomologationTestAccessOptions();
+var homologationPasswordPolicy = homologationTestAccess.Validate(
+    builder.Environment.EnvironmentName, DateTimeOffset.UtcNow);
 builder.Services.AddSingleton(
-    new AuthenticationMethodPolicy(googleOidcOptions.Enabled));
+    new AuthenticationMethodPolicy(googleOidcOptions.Enabled, homologationPasswordPolicy));
 
 var temporaryCredentialOptions = builder.Configuration
     .GetSection(TemporaryCredentialOptions.SectionName)
@@ -222,6 +227,8 @@ if (googleOidcOptions.Enabled)
             options.Authority = "https://accounts.google.com";
             options.ClientId = googleOidcOptions.ClientId;
             options.ClientSecret = googleOidcOptions.ClientSecret;
+            // Shared workstations must offer identity choice on each explicit login.
+            options.Prompt = OpenIdConnectPrompt.SelectAccount;
             options.CallbackPath = googleOidcOptions.CallbackPath;
             options.ResponseType = OpenIdConnectResponseType.Code;
             options.UsePkce = true;
@@ -260,7 +267,7 @@ if (googleOidcOptions.Enabled)
                     context.Response.Headers.CacheControl = "no-store";
                     await context.Response.WriteAsJsonAsync(new
                     {
-                        Message = "NÃ£o foi possÃ­vel concluir a autenticaÃ§Ã£o pelo Google."
+                        Message = "Não foi possível concluir a autenticação pelo Google."
                     });
                 }
             };
@@ -489,7 +496,7 @@ app.MapGet("/auth/google/start", (HttpContext httpContext) =>
     {
         return Results.NotFound(new
         {
-            Message = "A autenticaÃ§Ã£o pelo Google nÃ£o estÃ¡ habilitada."
+            Message = "A autenticação pelo Google não está habilitada."
         });
     }
 
@@ -503,7 +510,7 @@ app.MapGet("/auth/google/start", (HttpContext httpContext) =>
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
 .WithTags("Authentication")
 .WithName("StartGoogleAuthentication")
-.WithSummary("Inicia a autenticaÃ§Ã£o Google de uma conta previamente autorizada")
+.WithSummary("Inicia a autenticação Google de uma conta previamente autorizada")
 .Produces(StatusCodes.Status302Found)
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status429TooManyRequests);
@@ -571,7 +578,7 @@ app.MapGet("/auth/google/complete", async (
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
 .WithTags("Authentication")
 .WithName("CompleteGoogleAuthentication")
-.WithSummary("Conclui o vÃ­nculo Google e cria a sessÃ£o local protegida")
+.WithSummary("Conclui o vínculo Google e cria a sessão local protegida")
 .Produces(StatusCodes.Status302Found)
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status429TooManyRequests);

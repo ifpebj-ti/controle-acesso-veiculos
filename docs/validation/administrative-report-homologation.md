@@ -1,9 +1,19 @@
 # Homologação dos relatórios administrativos
 
-Rastreabilidade: Issue #443; definição #272; backend #441/PR #454;
+Rastreabilidade: preparação #631; homologação #443; definição #272; backend #441/PR #454;
 frontend #442/PR #462; apresentação #480. O PDF em paisagem pertence à #496.
 
 ## Estado e limite desta evidência
+
+A entrega documental da #631 prepara este roteiro. A execução observada,
+conferência visual do PDF e aceitação continuam na #443. A matriz abaixo não
+foi preenchida por inferência de testes, código ou checks verdes.
+
+Revisão de preparação em 08/11/2026: base main `58670be`, após #627/#568/#629;
+contratos e referências conferidos. A hospedagem não muda automaticamente por
+merge; sua última referência identificada é frontend 7dd02a6/backend 04d102b,
+sujeita à confirmação operacional antes da sessão. As verificações históricas
+descritas a seguir conservam a própria data e não são uma execução nova.
 
 Em 29/10/2026, este roteiro foi preparado a partir da `main` em `4567e73`.
 Ele descreve o comportamento implementado e os resultados esperados para a
@@ -28,6 +38,10 @@ viewport como tablet físico, emulação como zoom real ou axe como leitor de te
    homologação não autoriza mudança de infraestrutura, migrations ou contratos.
 3. Usar uma conta fictícia de Administrador local e contas fictícias dos três
    perfis operacionais para verificar a negação de acesso.
+   O fluxo padrão dos operadores usa Google previamente autorizado; acesso
+   local operacional só pode usar a exceção sintética e a janela explicitamente
+   preparadas pelo responsável. Não converter conta real nem ampliar a janela
+   para executar este roteiro. Credenciais permanecem no canal privado.
 4. Preparar, pelos fluxos reais, movimentações gerais e utilizações da frota em
    mais de uma página, além de um período vazio. Incluir identificação interna
    sem placa quando permitida pelo contrato, sem inventar correspondência.
