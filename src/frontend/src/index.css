@@ -205,7 +205,9 @@ button:disabled {
   position: relative;
   isolation: isolate;
   display: flex;
-  min-width: 10.5rem;
+  width: 11rem;
+  min-width: 11rem;
+  flex-shrink: 0;
   min-height: 6.5rem;
   flex-direction: column;
   align-items: flex-start;
@@ -256,7 +258,7 @@ button:disabled {
 }
 
 .history-category-card > svg:not(.history-category-shape),
-.history-category-card > span:not(.history-category-count) {
+.history-category-card > span:not(.history-category-count):not(.sr-only) {
   position: relative;
   z-index: 1;
 }
@@ -310,8 +312,9 @@ button:disabled {
   opacity: 1;
 }
 
-.history-category-card:disabled {
+.history-category-card[aria-disabled="true"] {
   opacity: 0.62;
+  cursor: not-allowed;
 }
 
 .history-category-tabs {

@@ -292,7 +292,120 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
             .GetRequiredService<ControleAcessoVeiculosDbContext>();
         var activeSuccessors = await dbContext.SessoesAutenticacao.CountAsync(item =>
             item.UsuarioId == userId && item.RevogadaEm == null, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True(activeSuccessors <= 1);
+        Assert.Equal(0, activeSuccessors);
+
+        var winningResponse = Assert.Single(responses, response =>
+            response.StatusCode == HttpStatusCode.OK);
+        using var winningTokenAfterReuse = await SendSessionRequestAsync(
+            client,
+            "/auth/refresh",
+            csrf.RequestToken,
+            csrfCookie,
+            GetCookie(winningResponse, "cav_refresh"));
+        Assert.Equal(HttpStatusCode.Unauthorized, winningTokenAfterReuse.StatusCode);
+        foreach (var response in responses)
+        {
+            response.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task LostCommittedRefreshResponseRevokesStaleFamilyAndFreshLoginRecovers()
+    {
+        const string password = "Test-only-password-123!";
+        var email = await CreateUserAsync(password);
+        var userId = await GetUserIdAsync(email);
+        using var transport = new DiscardFirstRefreshResponseHandler(factory.Server.CreateHandler());
+        using var client = new HttpClient(transport)
+        {
+            BaseAddress = new Uri("http://localhost")
+        };
+        using var csrfResponse = await client.GetAsync("/auth/csrf", TestContext.Current.CancellationToken);
+        csrfResponse.EnsureSuccessStatusCode();
+        var csrf = await csrfResponse.Content.ReadFromJsonAsync<CsrfResponse>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(csrf);
+        var csrfCookie = GetCookie(csrfResponse, "cav_csrf");
+        using var login = await client.PostAsJsonAsync("/auth/login", new { email, password }, cancellationToken: TestContext.Current.CancellationToken);
+        login.EnsureSuccessStatusCode();
+        var originalToken = GetCookie(login, "cav_refresh");
+
+        // The server commits rotation, but this test transport discards the
+        // response before HttpClient can observe or apply its Set-Cookie.
+        await Assert.ThrowsAsync<HttpRequestException>(() => SendSessionRequestAsync(
+            client, "/auth/refresh", csrf.RequestToken, csrfCookie, originalToken));
+        Assert.True(transport.ResponseDiscardedAfterSuccess);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var committedFamily = await db.SessoesAutenticacao.AsNoTracking()
+                .Where(item => item.UsuarioId == userId)
+                .ToListAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(2, committedFamily.Count);
+            Assert.Equal(1, committedFamily.Count(item => item.ConsumidaEm is not null));
+            var rotated = Assert.Single(committedFamily, item => item.ConsumidaEm is not null);
+            Assert.NotNull(rotated.RevogadaEm);
+            Assert.Equal(MotivoRevogacaoSessao.Rotacao, rotated.MotivoRevogacao);
+            Assert.Single(committedFamily, item => item.RevogadaEm is null);
+        }
+
+        using var staleRetry = await SendSessionRequestAsync(
+            client, "/auth/refresh", csrf.RequestToken, csrfCookie, originalToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, staleRetry.StatusCode);
+
+        Guid revokedFamily;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var sessions = await db.SessoesAutenticacao.AsNoTracking()
+                .Where(item => item.UsuarioId == userId)
+                .ToListAsync(TestContext.Current.CancellationToken);
+            revokedFamily = Assert.Single(sessions.Select(item => item.FamiliaId).Distinct());
+            Assert.All(sessions, item => Assert.NotNull(item.RevogadaEm));
+            Assert.Contains(sessions, item => item.MotivoRevogacao == MotivoRevogacaoSessao.Rotacao);
+            Assert.Contains(sessions, item => item.MotivoRevogacao == MotivoRevogacaoSessao.ReutilizacaoDetectada);
+            var audits = await db.Auditorias.AsNoTracking()
+                .Where(item => item.RegistroId == userId)
+                .ToListAsync(TestContext.Current.CancellationToken);
+            Assert.Contains(audits, item => item.DadosNovos != null &&
+                item.DadosNovos.Contains("TokenReuseDetected", StringComparison.Ordinal));
+        }
+
+        using var freshLogin = await client.PostAsJsonAsync("/auth/login", new { email, password }, cancellationToken: TestContext.Current.CancellationToken);
+        freshLogin.EnsureSuccessStatusCode();
+        using var freshRefresh = await SendSessionRequestAsync(
+            client, "/auth/refresh", csrf.RequestToken, csrfCookie, GetCookie(freshLogin, "cav_refresh"));
+        freshRefresh.EnsureSuccessStatusCode();
+        using var recoveryScope = factory.Services.CreateScope();
+        var recoveryDb = recoveryScope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var activeFamily = await recoveryDb.SessoesAutenticacao.AsNoTracking()
+            .Where(item => item.UsuarioId == userId && item.RevogadaEm == null && item.ConsumidaEm == null)
+            .Select(item => item.FamiliaId)
+            .SingleAsync(TestContext.Current.CancellationToken);
+        Assert.NotEqual(revokedFamily, activeFamily);
+    }
+
+    private sealed class DiscardFirstRefreshResponseHandler(HttpMessageHandler innerHandler)
+        : DelegatingHandler(innerHandler)
+    {
+        public bool ResponseDiscardedAfterSuccess { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+            if (!ResponseDiscardedAfterSuccess &&
+                request.RequestUri?.AbsolutePath == "/auth/refresh" &&
+                response.IsSuccessStatusCode)
+            {
+                ResponseDiscardedAfterSuccess = true;
+                response.Dispose();
+                throw new HttpRequestException("Simulated response loss after committed rotation.");
+            }
+
+            return response;
+        }
     }
 
     private static async Task<HttpResponseMessage> SendSessionRequestAsync(
