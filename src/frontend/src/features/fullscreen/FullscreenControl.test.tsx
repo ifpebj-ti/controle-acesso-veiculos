@@ -76,6 +76,9 @@ describe("optional fullscreen controller (mocked API)", () => {
     );
     expect(mock.request).not.toHaveBeenCalled();
     const enter = screen.getByRole("button", { name: "Entrar em tela cheia" });
+    expect(enter).toHaveAccessibleDescription(
+      "Use toda a tela para trabalhar com mais espaço.",
+    );
     enter.focus();
     await user.keyboard("{Enter}");
     const exit = await screen.findByRole("button", {
@@ -84,6 +87,9 @@ describe("optional fullscreen controller (mocked API)", () => {
     expect(mock.request).toHaveBeenCalledOnce();
     expect(mock.request.mock.contexts[0]).toBe(document.documentElement);
     expect(exit).toHaveAttribute("aria-pressed", "true");
+    expect(exit).toHaveAccessibleDescription(
+      "Para voltar, use este botão ou Esc.",
+    );
     expect(exit).toHaveFocus();
     expect(screen.getByLabelText("Rascunho fictício")).toHaveValue(
       "Não apagar",
