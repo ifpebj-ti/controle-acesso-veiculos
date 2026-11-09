@@ -363,3 +363,17 @@ sistema. Build, inventário e scan precisam identificar a arquitetura e a imagem
 examinada; a implantação e a verificação do servidor permanecem etapas distintas.
 Este incremento não muda atores ou fronteiras do modelo, não reduz o escore
 residual de TM-05 e não significa que toda a cadeia de suprimentos esteja segura.
+
+### Contingência em papel — incremento candidato #100/#611 (04/11/2026)
+
+A orquestração de aplicação candidata separa importação por Porteiro/Vigilante da
+conferência por Transporte/Administrador. O payload não escolhe ator ou horário
+de digitação. Datas observadas são preservadas e normalizadas; dados inválidos
+não alcançam a porta de persistência. Falha incerta não produz retry automático.
+Esses controles têm testes unitários, mas não estão registrados na API/DI.
+
+Os riscos de falsificação de autoria, replay, corrida, autoaprovação e perda de
+auditoria permanecem abertos para implementação e verificação transacional no
+PostgreSQL. `IPaperReconciliationStore` apenas especifica essas obrigações.
+Não há novo fluxo de dados em execução, nova fronteira implantada, redução de
+pontuação STRIDE ou evidência de importação/backup externo por este incremento.

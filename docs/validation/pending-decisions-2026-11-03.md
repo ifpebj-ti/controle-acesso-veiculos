@@ -44,7 +44,8 @@ Não permitir autoaprovação. O aceite da experiência final permanece na #162.
 Foi confirmado o uso do papel durante indisponibilidade e lançamento posterior.
 Será um fluxo separado com horário observado e horário da digitação distintos,
 identificação do autor do papel, digitador e conferência. Isso não libera a edição
-livre do horário nos endpoints normais. Falta somente o detalhe de papéis em Q3.
+livre do horário nos endpoints normais. Papéis e continuidade foram definidos no
+complemento da Q3 abaixo; o fluxo integrado ainda não foi implementado.
 
 ### Nome — #453/#495
 
@@ -81,6 +82,14 @@ Cancelar não aparece na tela Google desse titular: permanece uma limitação,
 sem exigir remover consentimentos ou forçar uma tela do provedor.
 
 ## Q3 — Quem digita e quem confere o papel?
+
+**Resposta recebida em 03/11/2026:** Porteiro/Vigilante digitam e Transporte
+confere diariamente, com aceite/recusa justificados e sem bloquear atendimentos.
+Administrador é a continuidade técnica; conferência exige outra pessoa.
+Se o veículo ainda estiver dentro, aparece em aberto com conferência pendente
+e permite saída normal. Recusa preserva fatos e evidencia a correção necessária.
+O texto interrogativo abaixo é histórico da pergunta, não bloqueio de definição
+a ser repetido. O exercício e a interface permanecem sob validação.
 
 Issues #30/#100. O procedimento geral já foi confirmado.
 

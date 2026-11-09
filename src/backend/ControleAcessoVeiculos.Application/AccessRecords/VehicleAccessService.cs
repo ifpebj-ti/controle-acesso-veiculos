@@ -249,7 +249,7 @@ public sealed class VehicleAccessService(
         };
     }
 
-    private static Dictionary<string, string[]> Validate(
+    internal static Dictionary<string, string[]> Validate(
         RegisterVehicleEntryCommand command,
         int currentYear)
     {
