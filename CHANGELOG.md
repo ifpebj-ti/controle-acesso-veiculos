@@ -8,6 +8,14 @@ from its first published release.
 
 ## [Unreleased]
 
+### Audit presentation — Refs #638
+
+- Present administrative audit summaries and known account-state fields in
+  Portuguese using canonical structured data, keeping free descriptions and
+  unknown values available in explicit original-data disclosures.
+- Keep long audit descriptions and JSON inside responsive cards, with native
+  keyboard-operable disclosures and visible focus for scrollable original data.
+
 ### Added
 
 - Offer an optional fullscreen invitation on the authenticated overview, with
