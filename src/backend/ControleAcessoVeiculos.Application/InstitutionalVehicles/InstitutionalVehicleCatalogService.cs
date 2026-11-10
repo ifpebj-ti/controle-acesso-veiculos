@@ -95,6 +95,13 @@ public sealed class InstitutionalVehicleCatalogService(
                     EmptyErrors()),
             InstitutionalVehicleStoreUpdateStatus.NotFound =>
                 new(UpdateInstitutionalVehicleStatus.NotFound, null, EmptyErrors()),
+            InstitutionalVehicleStoreUpdateStatus.ReferencedIdentity =>
+                new(UpdateInstitutionalVehicleStatus.Conflict, null,
+                    new Dictionary<string, string[]>
+                    {
+                        ["vehicle"] =
+                            ["A placa e a identificação não podem ser alteradas porque o veículo possui registros vinculados. Os demais dados podem ser atualizados."]
+                    }),
             _ => new(UpdateInstitutionalVehicleStatus.Conflict, null,
                 new Dictionary<string, string[]>
                 {
