@@ -75,7 +75,8 @@ locais do perfil Administrador depois da transição.
   réplicas e protegido por certificado X.509 externo ao repositório. Produção e
   containers locais falham ao iniciar se volume, certificado ou senha não forem
   configurados, evitando fallback silencioso para chaves efêmeras.
-- O token contém apenas identificador do usuário, e-mail, perfil e identificador único do token.
+- O token contém identificador do usuário, e-mail, perfil, versão da credencial,
+  exigência de troca de senha, identificador único do token e família de sessão.
 - A política global exige autenticação. Login, health checks e OpenAPI em desenvolvimento são exceções explícitas.
 - OpenAPI não é publicado fora do ambiente `Development`.
 - O primeiro administrador é criado somente por comando explícito, fora da superfície HTTP.
@@ -92,7 +93,20 @@ locais do perfil Administrador depois da transição.
 - Desativação e reativação são auditadas atomicamente sem duplicar nome ou e-mail.
 - Criação administrativa registra o Administrador como ator; o bootstrap registra origem `Bootstrap` com ator nulo, pois ainda não existe usuário autenticado.
 
-O servidor possui renovação, rotação, revogação e logout, mas não mantém uma lista de JWTs: o access token continua curto e a API confirma conta, perfil e versão da credencial em cada requisição. A família persistida controla a renovação, enquanto a versão invalida em conjunto os JWTs anteriores após troca de senha. Não armazenar JWT ou refresh token em `localStorage`, `sessionStorage`, logs ou mensagens de erro. A identidade retornada ajuda a montar a interface, mas o frontend não decide autorização: cada operação continua sendo validada pelas políticas da API. A auditoria de autenticação não guarda e-mail, senha, JWT, refresh token, hash, cookie, IP ou tentativas para usuário inexistente. Se a persistência obrigatória de sessão e auditoria de um login válido falhar, a API não emite credencial.
+O access token continua curto e inclui `sid`, o identificador estável da família
+de sessão. A API confirma conta, perfil, versão da credencial e sucessor ativo
+daquela família em cada requisição. Logout e revogação por reuso impedem também
+o uso dos access tokens da família, sem aguardar seu TTL. Rotação normal mantém
+a família válida; sessões independentes são preservadas. A versão da credencial
+continua invalidando todas as famílias após uma troca de senha. Tokens legados
+sem `sid` são recusados; consultar a [ADR 0001](../architecture/decisions/0001-secure-session-lifecycle.md)
+para compatibilidade e implantação.
+
+Não armazenar JWT ou refresh token em `localStorage`, `sessionStorage`, logs ou
+mensagens de erro. A identidade retornada ajuda a montar a interface, mas o
+frontend não decide autorização. A auditoria não guarda e-mail, senha, JWT,
+refresh token, hash, cookie, IP ou tentativas de usuário inexistente. Falha na
+persistência obrigatória de sessão e auditoria impede emitir a credencial.
 
 O procedimento de armazenamento, rotação, resposta a comprometimento, backup e
 restauração do key ring está registrado na
