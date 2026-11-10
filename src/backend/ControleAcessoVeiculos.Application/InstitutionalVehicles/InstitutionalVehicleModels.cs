@@ -98,7 +98,8 @@ public enum InstitutionalVehicleStoreUpdateStatus
 {
     Success,
     NotFound,
-    Conflict
+    Conflict,
+    ReferencedIdentity
 }
 
 public sealed record InstitutionalVehicleStoreUpdate(
