@@ -22,7 +22,17 @@ public static class OperationalSummaryEndpoints
         OperationalSummaryService service,
         CancellationToken cancellationToken)
     {
-        var summary = await service.GetAsync(date, cancellationToken);
-        return Results.Ok(summary);
+        try
+        {
+            var summary = await service.GetAsync(date, cancellationToken);
+            return Results.Ok(summary);
+        }
+        catch (ArgumentOutOfRangeException exception) when (exception.ParamName == "localDate")
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["date"] = ["Informe uma data entre 0001-01-14 e 9999-12-30."]
+            });
+        }
     }
 }
