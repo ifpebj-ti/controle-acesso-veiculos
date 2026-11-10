@@ -23,3 +23,15 @@ que a entrada recusada não foi criada. Entrega, implantação e reteste continu
 sendo estados distintos.
 
 Referência: [OWASP — Input Validation](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html).
+
+## Buscas administrativas de contas e eventos
+
+O filtro `search` de contas e o filtro `name` de consulta de eventos também
+recusam NUL antes de chamar o store. Isso inclui o caractere recebido por
+percent-encoding na query string. A resposta é validação HTTP 400 por campo,
+sem refletir o filtro rejeitado. Unicode, acentos, apóstrofos e a normalização
+já existente são preservados. A autorização dos endpoints permanece igual.
+
+As regressões de aplicação verificam que o store não é chamado, e os testes
+HTTP autenticados usam PostgreSQL descartável. Não constituem reteste do site
+hospedado nem cobertura de todo cadastro, justificativa ou filtro do sistema.

@@ -53,7 +53,11 @@ public sealed class EventAuthorizationService(
                 ["O período deve ter início anterior ao fim e possuir no máximo 366 dias."];
         }
 
-        if (command.Name?.Trim().Length > 200)
+        if (command.Name?.Contains('\0') == true)
+        {
+            errors["name"] = ["O filtro não pode conter o caractere NUL."];
+        }
+        else if (command.Name?.Trim().Length > 200)
         {
             errors["name"] = ["O nome deve possuir até 200 caracteres."];
         }
