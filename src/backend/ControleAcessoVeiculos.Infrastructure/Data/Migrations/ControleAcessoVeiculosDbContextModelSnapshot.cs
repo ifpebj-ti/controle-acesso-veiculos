@@ -18,7 +18,7 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("dbo")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -569,6 +569,10 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("data_hora_saida");
 
+                    b.Property<int?>("EncerradoPorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("encerrado_por_id");
+
                     b.Property<string>("MotivoEncerramentoExcepcional")
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
@@ -629,6 +633,9 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
 
                     b.HasIndex("DataHoraRegularizacao")
                         .HasDatabaseName("ix_registros_acesso_data_regularizacao");
+
+                    b.HasIndex("EncerradoPorId")
+                        .HasDatabaseName("ix_registros_acesso_encerrado_por_id");
 
                     b.HasIndex("PessoaId")
                         .HasDatabaseName("ix_registros_acesso_pessoa_id");
@@ -733,6 +740,79 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                             t.HasCheckConstraint("ck_sessoes_autenticacao_token_hash", "token_hash ~ '^[0-9a-f]{64}$'");
 
                             t.HasCheckConstraint("ck_sessoes_autenticacao_token_substituto_hash", "token_substituto_hash IS NULL OR token_substituto_hash ~ '^[0-9a-f]{64}$'");
+                        });
+                });
+
+            modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.SolicitacaoCorrecaoAcesso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("ChaveRequisicao")
+                        .HasColumnType("uuid")
+                        .HasColumnName("chave_requisicao");
+
+                    b.Property<DateTime?>("DecididoEmUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decidido_em_utc");
+
+                    b.Property<int?>("DecididoPorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("decidido_por_id");
+
+                    b.Property<string>("Justificativa")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("justificativa");
+
+                    b.Property<string>("MotivoDecisao")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_decisao");
+
+                    b.Property<int>("RegistroAcessoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("registro_acesso_id");
+
+                    b.Property<DateTime>("SolicitadoEmUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("solicitado_em_utc");
+
+                    b.Property<int>("SolicitadoPorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("solicitado_por_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecididoPorId");
+
+                    b.HasIndex("RegistroAcessoId")
+                        .IsUnique()
+                        .HasFilter("status = 'Pendente'");
+
+                    b.HasIndex("SolicitadoPorId", "ChaveRequisicao")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "SolicitadoEmUtc", "Id");
+
+                    b.ToTable("solicitacoes_correcao_acesso", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("ck_solicitacao_correcao_chave", "chave_requisicao <> '00000000-0000-0000-0000-000000000000'::uuid");
+
+                            t.HasCheckConstraint("ck_solicitacao_correcao_estado", "(status = 'Pendente' AND decidido_por_id IS NULL AND decidido_em_utc IS NULL AND motivo_decisao IS NULL) OR (status IN ('Aprovada', 'Rejeitada', 'Cancelada') AND decidido_por_id IS NOT NULL AND decidido_em_utc IS NOT NULL AND decidido_em_utc >= solicitado_em_utc AND motivo_decisao IS NOT NULL AND ((status = 'Cancelada' AND decidido_por_id = solicitado_por_id) OR (status <> 'Cancelada' AND decidido_por_id <> solicitado_por_id)))");
+
+                            t.HasCheckConstraint("ck_solicitacao_correcao_motivos", "length(btrim(justificativa)) BETWEEN 10 AND 500 AND (motivo_decisao IS NULL OR length(btrim(motivo_decisao)) BETWEEN 10 AND 500)");
                         });
                 });
 
@@ -1150,6 +1230,12 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_registros_acesso_usuarios_criado_por_id");
 
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("EncerradoPorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_registros_acesso_usuarios_encerrado_por_id");
+
                     b.HasOne("ControleAcessoVeiculos.Domain.Entities.Pessoa", null)
                         .WithMany()
                         .HasForeignKey("PessoaId")
@@ -1173,6 +1259,104 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_sessoes_autenticacao_usuarios_usuario_id");
+                });
+
+            modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.SolicitacaoCorrecaoAcesso", b =>
+                {
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("DecididoPorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.RegistroAcesso", null)
+                        .WithMany()
+                        .HasForeignKey("RegistroAcessoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("SolicitadoPorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsOne("ControleAcessoVeiculos.Domain.Entities.ValoresDescritivosAcesso", "Original", b1 =>
+                        {
+                            b1.Property<int>("SolicitacaoCorrecaoAcessoId")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("CategoriaAcessoId")
+                                .HasColumnType("integer")
+                                .HasColumnName("original_categoria_id");
+
+                            b1.Property<string>("Objetivo")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("original_objetivo");
+
+                            b1.Property<string>("Observacao")
+                                .HasMaxLength(1000)
+                                .HasColumnType("character varying(1000)")
+                                .HasColumnName("original_observacao");
+
+                            b1.HasKey("SolicitacaoCorrecaoAcessoId");
+
+                            b1.HasIndex("CategoriaAcessoId");
+
+                            b1.ToTable("solicitacoes_correcao_acesso", "dbo");
+
+                            b1.HasOne("ControleAcessoVeiculos.Domain.Entities.CategoriaAcesso", null)
+                                .WithMany()
+                                .HasForeignKey("CategoriaAcessoId")
+                                .OnDelete(DeleteBehavior.Restrict)
+                                .IsRequired();
+
+                            b1.WithOwner()
+                                .HasForeignKey("SolicitacaoCorrecaoAcessoId");
+                        });
+
+                    b.OwnsOne("ControleAcessoVeiculos.Domain.Entities.ValoresDescritivosAcesso", "Proposto", b1 =>
+                        {
+                            b1.Property<int>("SolicitacaoCorrecaoAcessoId")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("CategoriaAcessoId")
+                                .HasColumnType("integer")
+                                .HasColumnName("proposto_categoria_id");
+
+                            b1.Property<string>("Objetivo")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("proposto_objetivo");
+
+                            b1.Property<string>("Observacao")
+                                .HasMaxLength(1000)
+                                .HasColumnType("character varying(1000)")
+                                .HasColumnName("proposto_observacao");
+
+                            b1.HasKey("SolicitacaoCorrecaoAcessoId");
+
+                            b1.HasIndex("CategoriaAcessoId");
+
+                            b1.ToTable("solicitacoes_correcao_acesso", "dbo");
+
+                            b1.HasOne("ControleAcessoVeiculos.Domain.Entities.CategoriaAcesso", null)
+                                .WithMany()
+                                .HasForeignKey("CategoriaAcessoId")
+                                .OnDelete(DeleteBehavior.Restrict)
+                                .IsRequired();
+
+                            b1.WithOwner()
+                                .HasForeignKey("SolicitacaoCorrecaoAcessoId");
+                        });
+
+                    b.Navigation("Original")
+                        .IsRequired();
+
+                    b.Navigation("Proposto")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.UsoVeiculoInstitucional", b =>

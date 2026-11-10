@@ -186,7 +186,8 @@
                   "mitigation": "Restringir à política operacional, limitar termo e resultados, aplicar rate limiting, omitir documento, e-mail e histórico, e revalidar no servidor o par ativo usando seus valores canônicos. Backend e integração visual foram incorporados pelas Issues #213 e #214; calibração de uso e homologação institucional permanecem pendentes na Issue #162.",
                   "modelType": "STRIDE",
                   "id": "10000000-0000-4000-8000-000000000023"
-                }
+                },
+                {"status": "Open", "severity": "High", "title": "TM-28 — Autoaprovação, sobrescrita ou repetição de correção", "type": "Tampering", "description": "Uma solicitação pode ser aprovada pelo próprio autor, aplicada sobre dados já alterados ou repetida após resultado de rede incerto; o caminho legado pode contornar a revisão.", "mitigation": "Candidato #607/#451: snapshots imutáveis, revisão por Transporte/Administrador sem autoavaliação, escopo próprio, chave idempotente, consulta por chave, unicidade de pendência, ordem de bloqueios e transação com auditoria. PUT direto bloqueado por padrão; desabilitar revisão é recusado fora de Development/Testing. Integração frontend e implantação ainda pendentes; não declarar mitigação na hospedagem.", "modelType": "STRIDE", "id": "10000000-0000-4000-8000-000000000028"}
               ]
             }
           },
@@ -739,7 +740,7 @@
     ],
     "diagramTop": 1,
     "reviewer": "Professor responsável por Segurança",
-    "threatTop": 23
+    "threatTop": 28
   },
   "version": "2.0"
 }

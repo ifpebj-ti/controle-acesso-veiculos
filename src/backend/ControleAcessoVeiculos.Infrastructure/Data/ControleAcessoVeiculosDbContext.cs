@@ -15,6 +15,7 @@ public class ControleAcessoVeiculosDbContext(
     public DbSet<SessaoAutenticacao> SessoesAutenticacao =>
         Set<SessaoAutenticacao>();
     public DbSet<RegistroAcesso> RegistrosAcesso => Set<RegistroAcesso>();
+    public DbSet<SolicitacaoCorrecaoAcesso> SolicitacoesCorrecaoAcesso => Set<SolicitacaoCorrecaoAcesso>();
     public DbSet<UsoVeiculoInstitucional> UsosVeiculosInstitucionais =>
         Set<UsoVeiculoInstitucional>();
     public DbSet<MotoristaInstitucional> MotoristasInstitucionais =>

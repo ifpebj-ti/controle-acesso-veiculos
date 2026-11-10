@@ -5,6 +5,7 @@ public static class AuthorizationPolicies
     public const string OperateAccess = "access:operate";
     public const string ReviewAccessRecords = "access-records:review";
     public const string CorrectAccessRecords = "access-records:correct";
+    public const string ReviewAccessCorrections = "access-corrections:review";
     public const string ExceptionallyCloseAccessRecords =
         "access-records:exceptionally-close";
     public const string ReviewTransportationRecords = "transportation:review";

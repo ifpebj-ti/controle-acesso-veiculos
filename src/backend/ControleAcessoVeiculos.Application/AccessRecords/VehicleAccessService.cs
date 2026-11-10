@@ -375,7 +375,7 @@ public sealed class VehicleAccessService(
         return errors;
     }
 
-    private static Dictionary<string, string[]> ValidateCorrection(
+    internal static Dictionary<string, string[]> ValidateCorrection(
         CorrectVehicleAccessCommand command)
     {
         var errors = new Dictionary<string, string[]>();
