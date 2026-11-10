@@ -18,6 +18,18 @@ public sealed class AuditTrailTests(ApiFactory factory)
     private const string Password = "Test-only-password-123!";
 
     [Fact]
+    public async Task NullCharacterInEntityReturnsFieldValidation()
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, administrator.Email);
+        using var response = await client.GetAsync("/audits?entity=Usuario%00", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.True(body.RootElement.GetProperty("errors").TryGetProperty("entity", out _));
+    }
+
+    [Fact]
     public async Task AdministratorCanFilterSystemEventsAndReadStructuredState()
     {
         var administrator = await CreateUserAsync(ProfileNames.Administrator);
