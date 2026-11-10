@@ -432,6 +432,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<SensitiveResponseHeadersMiddleware>();
 app.UseMiddleware<RequestSafetyMiddleware>();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();

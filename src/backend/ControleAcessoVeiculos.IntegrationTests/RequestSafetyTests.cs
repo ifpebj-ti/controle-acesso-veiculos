@@ -15,6 +15,41 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class RequestSafetyTests(ApiFactory factory)
 {
+    [Theory]
+    [InlineData("/users", HttpStatusCode.OK)]
+    [InlineData("/audits", HttpStatusCode.OK)]
+    [InlineData("/access-records/open", HttpStatusCode.OK)]
+    [InlineData("/reports/vehicle-movements?from=2001-01-01&to=2001-01-01", HttpStatusCode.OK)]
+    [InlineData("/not-a-real-endpoint", HttpStatusCode.NotFound)]
+    public async Task AuthenticatedResponsesPreventHttpStorage(string path, HttpStatusCode expectedStatus)
+    {
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", await CreateAccessTokenAsync());
+        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+        Assert.Equal(expectedStatus, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+    }
+
+    [Fact]
+    public async Task RejectedBearerResponsePreventsHttpStorage()
+    {
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "invalid-test-token");
+        using var response = await client.GetAsync("/users", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+    }
+
+    [Fact]
+    public async Task AnonymousHealthPreservesItsExistingNoStorePolicy()
+    {
+        using var client = factory.CreateClient();
+        using var response = await client.GetAsync("/health", TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        Assert.True(response.Headers.CacheControl?.NoStore);
+    }
+
     [Fact]
     public async Task ResponseShouldContainServerGeneratedCorrelationId()
     {
