@@ -30,8 +30,10 @@ segredos, firewall, backup protegido, monitoramento e autorização instituciona
 O backend foi promovido à fonte `2689402`, com artefato AMD64 identificado,
 scan/SBOM, backup restaurado em banco temporário e rollback preparado. O frontend
 permaneceu `7dd02a6`; configuração e banco foram preservados. Passaram 162
-verificações HTTPS nos três perfis locais disponíveis, sem novo ensaio Google
-manual. A conta fictícia de Porteiro já estava indisponível antes da promoção.
+verificações HTTPS nos três perfis locais disponíveis. José também relatou
+login Google autorizado e continuidade como Porteiro após uma recarga, sem
+observação independente do agente. A conta fictícia de Porteiro com senha já
+estava indisponível antes da promoção.
 
 Não houve nova release estável, migration ou movimentação da tag `0.4.0`. A
 promoção usa imagem candidata explícita e overlay operacional; não se deve

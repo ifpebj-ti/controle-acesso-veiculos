@@ -72,8 +72,13 @@ em consonância com o incidente relatado pelo avaliador. Não foi reparada nem
 contada como perfil aprovado. Paridade de policies e testes locais não
 substituem esse login hospedado pendente.
 
-Não houve novo login Google com titular, ensaio de tablet/Narrador, carga ou
-aceite institucional. A contenção de identidade histórica não foi reexecutada
+O ensaio automatizado não executou login Google com titular, tablet/Narrador,
+carga ou aceite institucional. Após a promoção, José relatou entrada com sua
+conta Google previamente autorizada e permanência no perfil Porteiro após uma
+recarga. É relato do titular, não observação independente do agente, teste de
+carga ou conclusão de todo o roteiro Google.
+
+A contenção de identidade histórica não foi reexecutada
 com mutação de catálogo no host: há regressões PostgreSQL locais, mas o reteste
 dinâmico desse cenário permanece necessário. Snapshots completos não foram
 implementados por essa contenção.
