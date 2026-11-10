@@ -348,6 +348,20 @@ calibração e homologação na #162. Não foram alterados os escores de nenhuma
 ameaça, a topologia ou as posições do diagrama. Validação de estrutura/IDs não
 equivale a uma nova importação visual no aplicativo ou a um teste de segurança.
 
+### Validade do token vinculada à sessão — Issue #647
+
+A validação do JWT usa a família persistida (`sid`) além da conta, perfil e
+versão. O token exige sucessor ativo da mesma família e usuário, respeitando
+expiração absoluta e inatividade. Rotação normal mantém essa família válida;
+logout e reuso revogam os sucessores e fazem a próxima autenticação falhar.
+Não se usa apenas o estado da linha antiga, pois ela é consumida na rotação.
+Não há nova lista paralela de bloqueio nem ampliação do prazo de sessão.
+
+Os testes cobrem revogação, rotação, isolamento entre famílias e vínculos
+ausentes/inválidos. Requisições já autorizadas não são canceladas; implantação
+e reteste HTTPS continuam necessários. Os escores de risco não são reduzidos
+apenas pela entrega do candidato.
+
 ### Cadeia de pacotes do runtime — Issue #626
 
 O achado CVE-2026-109518 em APT pertence à ameaça TM-05: um atacante no caminho

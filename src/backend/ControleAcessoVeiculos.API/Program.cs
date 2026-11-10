@@ -32,6 +32,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -192,11 +193,20 @@ var authenticationBuilder = builder.Services
                     return;
                 }
 
+                if (!Guid.TryParseExact(
+                        context.Principal.FindFirst(AuthenticationClaimTypes.SessionFamilyId)?.Value,
+                        "D", out var sessionFamilyId) || sessionFamilyId == Guid.Empty)
+                {
+                    context.Fail("Invalid session family.");
+                    return;
+                }
+
                 var userStore = context.HttpContext.RequestServices
                     .GetRequiredService<IAuthenticationUserStore>();
                 if (!await userStore.IsAuthenticationStateValidAsync(
                         userId,
                         credentialVersion,
+                        sessionFamilyId,
                         context.HttpContext.RequestAborted))
                 {
                     context.Fail("Inactive user account.");
@@ -259,6 +269,18 @@ if (googleOidcOptions.Enabled)
                     }
 
                     return Task.CompletedTask;
+                },
+                OnAccessDenied = async context =>
+                {
+                    // The OIDC handler validates protected state and correlation
+                    // before raising this event. Invalid callbacks still fail closed.
+                    context.HandleResponse();
+                    context.Response.Headers.CacheControl = "no-store";
+                    await context.HttpContext.SignOutAsync(GoogleOidcOptions.ExternalCookieScheme);
+                    context.Response.Redirect(QueryHelpers.AddQueryString(
+                        googleOidcOptions.FrontendCompletionPath,
+                        "status",
+                        "denied"));
                 },
                 OnRemoteFailure = async context =>
                 {
@@ -421,6 +443,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<SensitiveResponseHeadersMiddleware>();
 app.UseMiddleware<RequestSafetyMiddleware>();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();

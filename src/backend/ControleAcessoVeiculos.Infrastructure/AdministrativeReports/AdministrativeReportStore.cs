@@ -1,3 +1,4 @@
+using ControleAcessoVeiculos.Infrastructure.Search;
 using System.Text.Json;
 using ControleAcessoVeiculos.Application.AdministrativeReports;
 using ControleAcessoVeiculos.Domain.Entities;
@@ -44,19 +45,19 @@ public sealed class AdministrativeReportStore(ControleAcessoVeiculosDbContext db
         if (criteria.Plate is not null)
         {
             query = query.Where(row => row.Vehicle.Placa != null &&
-                EF.Functions.ILike(row.Vehicle.Placa, $"%{criteria.Plate}%"));
+                EF.Functions.ILike(row.Vehicle.Placa, LiteralLikePattern.Contains(criteria.Plate), "\\"));
         }
 
         if (criteria.DriverName is not null)
         {
             query = query.Where(row =>
-                EF.Functions.ILike(row.Person.Nome, $"%{criteria.DriverName}%"));
+                EF.Functions.ILike(row.Person.Nome, LiteralLikePattern.Contains(criteria.DriverName), "\\"));
         }
 
         if (criteria.CategoryName is not null)
         {
             query = query.Where(row =>
-                EF.Functions.ILike(row.Category.Nome, $"%{criteria.CategoryName}%"));
+                EF.Functions.ILike(row.Category.Nome, LiteralLikePattern.Contains(criteria.CategoryName), "\\"));
         }
 
         if (criteria.Status is not null)
@@ -139,7 +140,7 @@ public sealed class AdministrativeReportStore(ControleAcessoVeiculosDbContext db
         if (criteria.Plate is not null)
         {
             query = query.Where(row => row.Vehicle.Placa != null &&
-                EF.Functions.ILike(row.Vehicle.Placa, $"%{criteria.Plate}%"));
+                EF.Functions.ILike(row.Vehicle.Placa, LiteralLikePattern.Contains(criteria.Plate), "\\"));
         }
 
         if (criteria.VehicleIdentification is not null)
@@ -147,13 +148,13 @@ public sealed class AdministrativeReportStore(ControleAcessoVeiculosDbContext db
             query = query.Where(row => row.Vehicle.IdentificacaoVeiculo != null &&
                 EF.Functions.ILike(
                     row.Vehicle.IdentificacaoVeiculo,
-                    $"%{criteria.VehicleIdentification}%"));
+                    LiteralLikePattern.Contains(criteria.VehicleIdentification), "\\"));
         }
 
         if (criteria.DriverName is not null)
         {
             query = query.Where(row =>
-                EF.Functions.ILike(row.Driver.Nome, $"%{criteria.DriverName}%"));
+                EF.Functions.ILike(row.Driver.Nome, LiteralLikePattern.Contains(criteria.DriverName), "\\"));
         }
 
         if (criteria.Status is not null)

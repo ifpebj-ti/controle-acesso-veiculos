@@ -104,7 +104,8 @@ public sealed class AuthenticationSessionService(
                     authenticationSession.User.Email,
                     authenticationSession.ProfileName,
                     authenticationSession.User.VersaoCredencial,
-                    authenticationSession.User.TrocaSenhaObrigatoria);
+                    authenticationSession.User.TrocaSenhaObrigatoria,
+                    nextSession.FamiliaId);
 
                 return RenewSessionResult.Success(
                     accessToken,
