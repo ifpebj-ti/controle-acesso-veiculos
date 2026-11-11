@@ -25,6 +25,24 @@ segredos, firewall, backup protegido, monitoramento e autorização instituciona
 
 ## Estado observado na homologação
 
+### Atualização de 10/11/2026 — Issue #657
+
+O backend foi promovido à fonte `2689402`, com artefato AMD64 identificado,
+scan/SBOM, backup restaurado em banco temporário e rollback preparado. O frontend
+permaneceu `7dd02a6`; configuração e banco foram preservados. Passaram 162
+verificações HTTPS nos três perfis locais disponíveis. José também relatou
+login Google autorizado e continuidade como Porteiro após uma recarga, sem
+observação independente do agente. A conta fictícia de Porteiro com senha já
+estava indisponível antes da promoção.
+
+Não houve nova release estável, migration ou movimentação da tag `0.4.0`. A
+promoção usa imagem candidata explícita e overlay operacional; não se deve
+confundi-la com as imagens da release descritas abaixo. A fonte do código não
+atualiza automaticamente a VM. Identidades, resultados e limites estão na
+[evidência da promoção](../validation/backend-security-rollout-2026-11-10.md).
+
+### Registro histórico de 25–28/10/2026
+
 Em 25 de outubro de 2026, a homologação técnica executava frontend, API e
 PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF. A
 promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que

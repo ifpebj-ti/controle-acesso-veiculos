@@ -16,6 +16,33 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class VehicleAccessTests(ApiFactory factory)
 {
+    [Theory]
+    [InlineData("driverName")]
+    [InlineData("observation")]
+    public async Task NullTextReturnsValidationWithoutCreatingAccess(string field)
+    {
+        const string password = "Test-only-password-123!";
+        var ct = TestContext.Current.CancellationToken;
+        var (actorId, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var request = new Dictionary<string, object?>
+        {
+            ["driverName"] = "QA driver",
+            ["plate"] = TestPlate.From(Guid.NewGuid().ToString("N")),
+            ["objective"] = "Visita",
+            ["categoryName"] = AccessCategoryNames.Visitor,
+            [field] = "QA\0text"
+        };
+        using var response = await client.PostAsJsonAsync("/access-records/entries", request, ct);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        Assert.True(body.RootElement.GetProperty("errors").TryGetProperty(field, out _));
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.False(await db.RegistrosAcesso.AnyAsync(access => access.CriadoPorId == actorId, ct));
+    }
+
     [Fact]
     public async Task EntryRejectsNumericOnlyPlate()
     {
