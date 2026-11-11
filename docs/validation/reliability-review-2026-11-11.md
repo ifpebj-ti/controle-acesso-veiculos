@@ -30,8 +30,9 @@ um catch protetor apenas para melhorar o indicador não é uma correção segura
 
 Warnings mantêm Fair; somente notes permitem Good. Depois da incorporação,
 conferir um novo scan completo da branch padrão, os dois warnings, possíveis
-findings novos e o rating efetivo. A Issue #680 aguarda essa conferência; não
-declarar Good ou segurança integral antecipadamente.
+findings novos e o rating efetivo. Essa conferência posterior pertence à
+Issue #684; a correção de código fica na #680. Não declarar Good ou segurança
+integral antecipadamente.
 
 Referências:
 
