@@ -1,41 +1,39 @@
-# Reliability ? revis?o de 11/11/2026
+# Reliability — revisão de 11/11/2026
 
-## Fonte e diagn?stico
+## Diagnóstico
 
-A consulta autenticada ? API oficial `code-quality/findings` encontrou 11
-findings abertos de Reliability na main de refer?ncia `3306b8e`: dois warnings
-`cs/local-not-disposed` e nove notes. O endpoint de alertas de seguran?a de
-code scanning ? separado e n?o substitui esse invent?rio.
+A API oficial `code-quality/findings` retornou 11 findings abertos de Reliability
+na main de referência `3306b8e`: dois warnings `cs/local-not-disposed` e nove
+notes. Alertas de segurança de code scanning são uma consulta separada.
 
-Os warnings #25 e #26 apontam para `GoogleOidcProtocolTests.cs` e
-`GoogleOidcSignedTokenTests.cs`. A express?o que criava uma f?brica e derivava
-outra com `WithWebHostBuilder` deixava a f?brica original sem descarte expl?cito.
+Os warnings #25 e #26 estão em `GoogleOidcProtocolTests.cs` e
+`GoogleOidcSignedTokenTests.cs`. Criar uma fábrica e derivar outra por
+`WithWebHostBuilder` deixava a fábrica original sem descarte explícito.
 
-## Corre??o candidata ? Issue #680
+## Correção candidata — Issue #680
 
-Cada helper passa a criar diretamente uma subclasse privada de
-`WebApplicationFactory<Program>`, configurada por `ConfigureWebHost`. Os callers
-continuam donos da inst?ncia via `using`. A configura??o, os asserts, PKCE,
+Cada helper cria diretamente uma subclasse privada de
+`WebApplicationFactory<Program>`, configurada por `ConfigureWebHost`. O caller
+continua dono da instância por `using`. Configurações, asserts, PKCE,
 state/nonce, tokens assinados e isolamento do banco foram preservados.
 
-Build Release com warnings como erros passou. Os 21 testes existentes das duas
-su?tes Google passaram, sem skips. Isso verifica o comportamento local; n?o ?
-resultado de uma nova execu??o do CodeQL na main nem autentica??o Google real.
+O build Release com warnings como erros passou. Os 21 testes existentes das
+duas suítes passaram, sem skips. Isso é evidência local, não uma nova análise
+CodeQL da main nem autenticação Google real.
 
-## Findings restantes e aceite
+## Triagem e aceite
 
 As nove notes incluem sete usos de `Path.Combine` em fixtures com caminhos
-controlados e dois catches amplos em fronteiras de relat?rio e health check.
-A presen?a de uma note n?o prova exposi??o de dados nem justifica remover uma
-prote??o. A triagem n?o suprimiu regras, descartou findings ou alterou gates.
+controlados e dois catches amplos em fronteiras de relatório e health check.
+Não foram suprimidas regras, descartados findings ou reduzidos gates. Remover
+um catch protetor apenas para melhorar o indicador não é uma correção segura.
 
-Segundo a documenta??o oficial, warnings mant?m Fair; somente notes permitem
-Good. Ap?s incorporar a corre??o, conferir um novo scan completo da branch
-padr?o: verificar os dois warnings, poss?veis findings novos e o rating efetivo.
-N?o declarar Good antecipadamente. A conclus?o da Issue #680 depende dessa
-confer?ncia; a melhoria n?o significa seguran?a integral do sistema.
+Warnings mantêm Fair; somente notes permitem Good. Depois da incorporação,
+conferir um novo scan completo da branch padrão, os dois warnings, possíveis
+findings novos e o rating efetivo. A Issue #680 aguarda essa conferência; não
+declarar Good ou segurança integral antecipadamente.
 
-Refer?ncias:
+Referências:
 
-- [M?tricas e ratings do GitHub](https://docs.github.com/en/code-security/reference/code-quality/metrics-and-ratings).
+- [Métricas e ratings do GitHub](https://docs.github.com/en/code-security/reference/code-quality/metrics-and-ratings).
 - [API de Code Quality](https://docs.github.com/en/rest/code-quality/code-quality?apiVersion=2026-03-10).
