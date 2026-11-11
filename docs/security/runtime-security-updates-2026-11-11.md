@@ -1,5 +1,11 @@
 # Atualização de runtime — 11/11/2026
 
+> **Complemento após a promoção #677:** backend `812b71e` instalado e runtime
+> 10.0.15 conferido na VM. Scanner zero HIGH/CRITICAL e 162/162 verificações
+> HTTPS nos três perfis locais disponíveis; frontend e banco preservados.
+> [Evidência e limites](../validation/backend-runtime-rollout-2026-11-11.md).
+> Os trechos seguintes preservam a fotografia inicial, anterior à promoção.
+
 ## Motivo e evidência
 
 O scanner Trivy 0.76.1 encontrou três achados HIGH no runtime ASP.NET Core
