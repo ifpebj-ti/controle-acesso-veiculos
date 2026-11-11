@@ -14,6 +14,25 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class EventAuthorizationTests(ApiFactory factory)
 {
+    [Theory]
+    [InlineData("%00")]
+    [InlineData("Evento%00Teste")]
+    public async Task EventSearchRejectsNullCharacter(string encodedName)
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Administrator, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+
+        var response = await client.GetAsync(
+            $"/event-authorizations?name={encodedName}", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("name", json);
+        Assert.DoesNotContain("Evento", json);
+    }
+
     [Fact]
     public async Task AdministratorCanManageAndDoormanCanReadEvent()
     {

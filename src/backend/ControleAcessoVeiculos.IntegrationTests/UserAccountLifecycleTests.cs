@@ -69,6 +69,24 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
     }
 
     [Theory]
+    [InlineData("%00")]
+    [InlineData("Conta%00Teste")]
+    public async Task AccountSearchRejectsNullCharacter(string encodedSearch)
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, administrator.Email);
+
+        var response = await client.GetAsync(
+            $"/users?search={encodedSearch}", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("search", json);
+        Assert.DoesNotContain("Conta", json);
+    }
+
+    [Theory]
     [InlineData(ProfileNames.Doorman)]
     [InlineData(ProfileNames.SecurityGuard)]
     [InlineData(ProfileNames.TransportationDepartment)]

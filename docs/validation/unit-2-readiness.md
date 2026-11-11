@@ -4,9 +4,10 @@
 
 Esta matriz relaciona as 17 entregas consolidadas da Unidade 2 às evidências
 atuais, mantendo a régua de peso igual (1 atendido, 0,5 parcial, 0 pendente).
-A revisão de **06/11/2026** usa main `c170f9b`, após #616/#614/#608/#619.
+A revisão de **08/11/2026** usa main `202a913`, após #599 e os cinco merges
+de testes/documentação #595/#635/#532/#512/#517.
 A release estável continua `v0.4.0`. A última composição identificada instalada
-é frontend `83492f7` e backend `04d102b`; PRs e novos merges não alteram o site
+é frontend `7dd02a6` e backend `5fa21bb`; PRs e novos merges não alteram o site
 automaticamente.
 
 O [balanço de 04/11](homologation-test-balance-2026-11-04.md) registra 111/111
@@ -22,11 +23,18 @@ e zero alertas abertos no endpoint de code scanning. Isso não estabelece os
 indicadores Maintainability/Reliability do portal Code Quality nem comprova
 inexistência de bugs. Esses critérios não foram promovidos por inferência.
 
-#621 traz tela cheia opcional em candidato; #530 foi atualizado em `9a037c2`,
-com checks publicados sem falhas, mas mantém critérios de homologação. #607
-(`c13155d`) passou 448 testes completos com PostgreSQL e continua candidato.
-#611 (`dab9d96`) tem domínio e aplicação, ainda sem store/API/DI. Esses PRs
-não são contados como novas entregas de operação institucional.
+#621/#629 estão na main; a tela cheia ainda não está no frontend hospedado.
+#530 mantém critérios de homologação. #607/b220177 passou 449 testes completos;
+#613/3a5b00f recebeu revisão independente com 82 testes focados, lint/build.
+A composição local anterior validou solicitação/aprovação contra API real,
+mas não substitui o ensaio HTTPS final e as pessoas. #611/1aad5fb passou 467
+testes e tem domínio/aplicação, ainda sem store/API/DI. Esses candidatos não
+foram contados como entregas adicionais de operação institucional.
+
+O [rollout #628](backend-runtime-security-2026-11-08.md) foi verificado no host:
+APT corrigido, frontend/banco preservados, backup restaurável no mesmo host e
+111 verificações HTTPS aprovadas. Nenhum registro operacional foi criado/excluído.
+Backup externo/PITR, RPO/RTO e homologação humana continuam pendentes.
 
 O inventário e as decisões de [03/11](pending-decisions-2026-11-03.md) permanecem
 referência histórica. Backup externo/recuperação pontual, observabilidade
@@ -67,15 +75,15 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 
 ## Infraestrutura e operação
 
-| Entrega                                     | Evidência atual                                                                                                     | Estado                                                                              | Próxima comprovação                                                                                               |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| VM IaaS em nuvem pública                    | VM privada provisionada na OCI                                                                                      | Atendido                                                                            | manter custo, acesso e configuração sob revisão                                                                   |
-| Aplicação conteinerizada na VM              | frontend `83492f7`, API `04d102b` e PostgreSQL em homologação; estável `0.4.0` preservada                           | Atendido                                                                            | promover uma nova versão somente por release revisada                                                             |
-| Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                                      | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado                    |
-| Plataforma de gerenciamento de contêineres  | não provisionada                                                                                                    | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação                     |
-| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não                             | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas                  |
-| Teste de carga com k6 e análise de gargalos | script preparado no candidato #515; nenhuma execução observada foi comprovada                                       | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias                  |
-| Software implantado, acessível e utilizável | candidato HTTPS com 111 verificações técnicas; lista de contas corrigida, tarefas humanas/aceite completo pendentes | Parcial                                                                             | observar tarefas com perfis autorizados; a janela sintética anterior expirou, nova janela é tarefa explícita #623 |
+| Entrega                                     | Evidência atual                                                                                                     | Estado                                                                              | Próxima comprovação                                                                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| VM IaaS em nuvem pública                    | VM privada provisionada na OCI                                                                                      | Atendido                                                                            | manter custo, acesso e configuração sob revisão                                                                                   |
+| Aplicação conteinerizada na VM              | frontend `7dd02a6`, API `5fa21bb` e PostgreSQL em homologação; estável `0.4.0` preservada                           | Atendido                                                                            | promover uma nova versão somente por release revisada                                                                             |
+| Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                                      | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado                                    |
+| Plataforma de gerenciamento de contêineres  | não provisionada                                                                                                    | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação                                     |
+| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não                             | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas                                  |
+| Teste de carga com k6 e análise de gargalos | script preparado no candidato #515; nenhuma execução observada foi comprovada                                       | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias                                  |
+| Software implantado, acessível e utilizável | candidato HTTPS com 111 verificações técnicas; lista de contas corrigida, tarefas humanas/aceite completo pendentes | Parcial                                                                             | observar tarefas com perfis autorizados; janela sintética explícita até 12/11 às 23h59 de Brasília; Google real continua distinto |
 
 ## Estimativa auditável
 
@@ -85,7 +93,7 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na reavaliação de **06/11/2026**, a classificação continua com **8 itens
+Na reavaliação de **08/11/2026**, a classificação continua com **8 itens
 atendidos, 6 parciais e 3 pendentes**: `(8 + 6 × 0,5) / 17 = 64,7%`, cerca de
 **65% concluído e 35% restante**, com incerteza de **±5 pontos**. O número é igual
 à estimativa anterior, agora com evidências atualizadas. Correções de integração
