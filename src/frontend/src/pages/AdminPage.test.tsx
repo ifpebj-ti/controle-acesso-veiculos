@@ -348,7 +348,10 @@ describe("AdminPage", () => {
     await user.click(
       screen.getByRole("button", { name: "Trilha de auditoria" }),
     );
-    await screen.findByText(unsafeValue);
+    await screen.findByRole("heading", { name: "Alteração" });
+    expect(screen.getByText(unsafeValue)).not.toBeVisible();
+    await user.click(screen.getByText("Detalhes técnicos originais"));
+    expect(screen.getByText(unsafeValue)).toBeVisible();
     expect(document.querySelector("img[src='x']")).toBeNull();
     await user.type(screen.getByLabelText("Entidade"), "Usuario");
     await selectFieldOption(user, screen.getByLabelText("Ação"), "Alteracao");

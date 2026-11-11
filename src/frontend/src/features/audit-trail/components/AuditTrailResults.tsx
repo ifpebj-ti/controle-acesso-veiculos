@@ -1,21 +1,18 @@
 import { ContentState } from "../../../components/ui/ContentState";
 import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
-import type { AuditEntry, AuditTrailPage, JsonValue } from "../types";
+import type { AuditEntry, AuditTrailPage } from "../types";
+import {
+  auditActionLabels,
+  auditEntityLabel,
+  auditSummary,
+} from "../model/auditPresentation";
+import { AuditStateDetails } from "./AuditStateDetails";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "medium",
 });
-
-const actionLabels = {
-  Alteracao: "Alteração",
-  Consulta: "Consulta",
-  Exclusao: "Exclusão",
-  Inclusao: "Inclusão",
-  Login: "Login",
-  Logout: "Logout",
-} as const;
 
 interface AuditTrailResultsProps {
   onPageChange: (page: number) => void;
@@ -104,7 +101,8 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
         : `Usuário #${entry.actorUserId}`;
   return (
     <article
-      className="audit-entry-card grid min-w-0 gap-4 rounded-2xl border border-border bg-surface p-4 xl:grid-cols-[minmax(12rem,1.1fr)_minmax(11rem,.8fr)_minmax(14rem,1.1fr)_minmax(18rem,1.5fr)] xl:items-center"
+      aria-labelledby={`audit-entry-${entry.id}`}
+      className="audit-entry-card grid min-w-0 gap-4 rounded-2xl border border-border bg-surface p-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)]"
       data-audit-action={entry.action.toLocaleLowerCase("pt-BR")}
     >
       <div className="flex min-w-0 items-start gap-3">
@@ -116,14 +114,17 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
         </span>
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-dark">
-            {entry.entity} · registro #{entry.recordId}
+            {auditEntityLabel(entry.entity)} · registro #{entry.recordId}
           </p>
-          <h3 className="mt-1 text-lg font-bold text-ink">
-            {actionLabels[entry.action]}
+          <h3
+            className="mt-1 text-lg font-bold text-ink"
+            id={`audit-entry-${entry.id}`}
+          >
+            {auditActionLabels[entry.action]}
           </h3>
         </div>
       </div>
-      <div className="border-border xl:border-l xl:pl-4">
+      <div className="min-w-0 border-border xl:border-l xl:pl-4">
         <time
           className="flex items-center gap-2 text-sm font-semibold text-ink-soft"
           dateTime={entry.occurredAtUtc}
@@ -136,43 +137,47 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
           <span>{actor}</span>
         </p>
       </div>
-      <dl className="grid gap-2 border-border text-sm xl:border-l xl:pl-4">
-        <div>
-          <dt className="text-ink-soft">Evento</dt>
-          <dd className="font-semibold">#{entry.id}</dd>
-        </div>
-        <div>
-          <dt className="text-ink-soft">Detalhes</dt>
-          <dd className="break-words">{entry.details ?? "Não informado"}</dd>
-        </div>
-      </dl>
-      <div className="grid gap-2 border-border sm:grid-cols-2 xl:border-l xl:pl-4">
-        <StateDetails label="Estado anterior" value={entry.previousState} />
-        <StateDetails label="Novo estado" value={entry.newState} />
+      <div className="min-w-0 border-border md:col-span-2 xl:col-span-1 xl:border-l xl:pl-4">
+        <dl className="grid min-w-0 gap-2 text-sm">
+          <div>
+            <dt className="text-ink-soft">Evento</dt>
+            <dd className="font-semibold">#{entry.id}</dd>
+          </div>
+          <div>
+            <dt className="text-ink-soft">Resumo</dt>
+            <dd>{auditSummary(entry)}</dd>
+          </div>
+        </dl>
+        <details className="audit-entry-card__disclosure mt-3 rounded-xl border border-border p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-primary">
+            Detalhes técnicos originais
+          </summary>
+          <dl className="mt-3 grid gap-2 text-sm">
+            <div>
+              <dt className="font-semibold">Entidade original</dt>
+              <dd>{entry.entity}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold">Descrição original</dt>
+              <dd className="whitespace-pre-wrap">
+                {entry.details ?? "Não informado"}
+              </dd>
+            </div>
+          </dl>
+        </details>
+      </div>
+      <div className="grid min-w-0 gap-3 border-t border-border pt-4 sm:grid-cols-2 md:col-span-2 xl:col-span-3">
+        <AuditStateDetails
+          entity={entry.entity}
+          label="Estado anterior"
+          value={entry.previousState}
+        />
+        <AuditStateDetails
+          entity={entry.entity}
+          label="Novo estado"
+          value={entry.newState}
+        />
       </div>
     </article>
-  );
-}
-
-function StateDetails({
-  label,
-  value,
-}: {
-  label: string;
-  value: JsonValue | null;
-}) {
-  return (
-    <details className="rounded-xl border border-border bg-surface p-3">
-      <summary className="cursor-pointer text-sm font-bold text-primary">
-        {label}
-      </summary>
-      {value === null ? (
-        <p className="mt-3 text-sm text-ink-soft">Não informado</p>
-      ) : (
-        <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-text p-3 text-xs text-background">
-          {JSON.stringify(value, null, 2)}
-        </pre>
-      )}
-    </details>
   );
 }
