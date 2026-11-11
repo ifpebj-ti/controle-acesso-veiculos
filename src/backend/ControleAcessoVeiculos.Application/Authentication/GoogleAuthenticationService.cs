@@ -102,7 +102,8 @@ public sealed class GoogleAuthenticationService(
             authenticationUser.User.Email,
             authenticationUser.ProfileName,
             authenticationUser.User.VersaoCredencial,
-            requiresPasswordChange: false);
+            requiresPasswordChange: false,
+            sessionFamilyId: session.FamiliaId);
 
         return LoginResult.Success(
             token,

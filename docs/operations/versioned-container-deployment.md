@@ -25,6 +25,37 @@ segredos, firewall, backup protegido, monitoramento e autorização instituciona
 
 ## Estado observado na homologação
 
+### Atualização de 11/11/2026 — Issue #677
+
+Backend promovido à main `812b71e`, runtime 10.0.15 confirmado no container,
+frontend `7dd02a6` e PostgreSQL preservados. Backup restaurado em banco temporário,
+rollback e configuração conferidos; 162/162 testes HTTPS passaram nos três perfis
+locais disponíveis. Não foi nova release GHCR nem aplicação de migrations.
+José confirmou a continuidade como Porteiro após login Google e uma recarga;
+é relato do titular, separado da descoberta do provedor e dos ensaios do agente.
+Consulte [identidades, verificações e limites](../validation/backend-runtime-rollout-2026-11-11.md).
+
+A release `0.5.0` está somente em draft, acompanhada na #686. A promoção urgente
+não autoriza substituir o frontend candidato pela main sem composição revisada.
+
+### Atualização de 10/11/2026 — Issue #657
+
+O backend foi promovido à fonte `2689402`, com artefato AMD64 identificado,
+scan/SBOM, backup restaurado em banco temporário e rollback preparado. O frontend
+permaneceu `7dd02a6`; configuração e banco foram preservados. Passaram 162
+verificações HTTPS nos três perfis locais disponíveis. José também relatou
+login Google autorizado e continuidade como Porteiro após uma recarga, sem
+observação independente do agente. A conta fictícia de Porteiro com senha já
+estava indisponível antes da promoção.
+
+Não houve nova release estável, migration ou movimentação da tag `0.4.0`. A
+promoção usa imagem candidata explícita e overlay operacional; não se deve
+confundi-la com as imagens da release descritas abaixo. A fonte do código não
+atualiza automaticamente a VM. Identidades, resultados e limites estão na
+[evidência da promoção](../validation/backend-security-rollout-2026-11-10.md).
+
+### Registro histórico de 25–28/10/2026
+
 Em 25 de outubro de 2026, a homologação técnica executava frontend, API e
 PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF. A
 promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
@@ -412,3 +443,24 @@ docker compose \
 Não acrescente `--volumes` em ambiente com dados que precisem ser preservados.
 Consulte também o
 [`procedimento de continuidade`](data-retention-and-continuity.md).
+
+## Falha transitória de rede no refresh APT (#673)
+
+O build mantém HTTPS e `Acquire::Retries=0` durante o bootstrap protegido do
+cliente APT. O refresh usa `--error-on=any`: falha ao baixar qualquer índice,
+inclusive por DNS, impede avançar para a instalação. São feitas no máximo três
+invocações explícitas, com esperas de um e dois segundos e timeout HTTPS de 15
+segundos. Não é garantia de sucesso em indisponibilidade prolongada.
+
+O padrão anterior do APT podia emitir warnings e terminar `update` sem falha,
+mesmo sem índices novos. A comparação mínima de versões já recusava o pacote
+vulnerável; a mudança torna a causa explícita e evita a tentativa de instalação
+com metadados incompletos. Versões mínimas, assinaturas, TLS e gates Trivy não
+foram reduzidos, nem foi adotado fallback HTTP ou outro mirror.
+
+Quando o CI falhar com DNS comprovado, pode-se repetir uma vez o job falho no
+mesmo SHA. Esse resultado não deve ser atribuído a outro commit e não substitui
+a revisão de uma falha persistente ou de scanner. O log não precisa expor
+configuração ou credenciais para distinguir a etapa de build da aplicação.
+
+Referência: [APT — error-on=any](https://manpages.ubuntu.com/manpages/noble/man8/apt-get.8.html).

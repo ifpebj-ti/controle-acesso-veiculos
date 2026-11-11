@@ -244,6 +244,13 @@ somente veículos ativos. Embora o backend possua uma operação de reativação
 frontend não oferece essa ação enquanto não existir contrato para consultar os
 veículos inativos. A desativação preserva viagens e histórico no servidor.
 
+Na edição, um HTTP 409 com orientação pública em `errors.vehicle` mostra esse
+texto no feedback acessível do formulário. Os campos permanecem preenchidos e
+não há reenvio automático. Sem orientação válida, a mensagem genérica é mantida;
+os demais códigos de erro conservam seu tratamento. A interface não tenta prever
+ou liberar a edição da identidade: o servidor decide o conflito, e uma atualização
+descritiva posterior exige nova ação explícita. Refs #665.
+
 O catálogo de motoristas usa `GET`, `POST` e `DELETE` em
 `/institutional-drivers`. Os quatro perfis autenticados consultam os motoristas
 ativos; somente Setor de Transporte e Administrador autorizam ou desativam. Nome
