@@ -58,6 +58,8 @@ export function useAccountReactivation(
     const next = credentialResetReasons.find((item) => item === value) ?? "";
     currentReason.current = next;
     setReason(next);
+    if (reasonError)
+      setMessage((previous) => (previous === reasonError ? null : previous));
     setReasonError(null);
   }
 

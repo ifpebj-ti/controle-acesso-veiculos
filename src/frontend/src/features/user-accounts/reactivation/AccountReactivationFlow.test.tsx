@@ -181,6 +181,18 @@ describe("standalone reactivation dialog, not wired into administration", () => 
     );
     expect(api.post).toHaveBeenCalledTimes(1);
     await chooseReason(user, "ProvisionamentoCorretivo");
+    expect(
+      screen.queryByText("Motivo fictício recusado."),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Motivo da reativação")).toHaveAttribute(
+      "aria-invalid",
+      "false",
+    );
+    expect(screen.getByLabelText("Motivo da reativação")).toHaveTextContent(
+      "Provisionamento corretivo",
+    );
+    expect(api.post).toHaveBeenCalledTimes(1);
     await user.click(
       screen.getByRole("button", {
         name: "Confirmar reativação com nova credencial",
@@ -223,6 +235,12 @@ describe("standalone reactivation dialog, not wired into administration", () => 
             name: "Confirmar reativação com nova credencial",
           }),
         ).not.toBeInTheDocument();
+      if (status === 429) {
+        const rateLimitMessage = screen.getByRole("alert").textContent;
+        await chooseReason(user, "SuspeitaComprometimento");
+        expect(screen.getByRole("alert")).toHaveTextContent(rateLimitMessage!);
+        expect(api.post).toHaveBeenCalledTimes(1);
+      }
     },
   );
   it.each([
