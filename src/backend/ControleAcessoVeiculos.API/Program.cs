@@ -193,11 +193,20 @@ var authenticationBuilder = builder.Services
                     return;
                 }
 
+                if (!Guid.TryParseExact(
+                        context.Principal.FindFirst(AuthenticationClaimTypes.SessionFamilyId)?.Value,
+                        "D", out var sessionFamilyId) || sessionFamilyId == Guid.Empty)
+                {
+                    context.Fail("Invalid session family.");
+                    return;
+                }
+
                 var userStore = context.HttpContext.RequestServices
                     .GetRequiredService<IAuthenticationUserStore>();
                 if (!await userStore.IsAuthenticationStateValidAsync(
                         userId,
                         credentialVersion,
+                        sessionFamilyId,
                         context.HttpContext.RequestAborted))
                 {
                     context.Fail("Inactive user account.");
@@ -423,6 +432,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<SensitiveResponseHeadersMiddleware>();
 app.UseMiddleware<RequestSafetyMiddleware>();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
