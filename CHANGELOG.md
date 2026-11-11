@@ -8,6 +8,12 @@ from its first published release.
 
 ## [Unreleased]
 
+### Vehicle conflict feedback — Refs #665
+
+- Show the server's public vehicle-conflict guidance when an institutional
+  vehicle edit returns HTTP 409, preserving form values, generic fallbacks and
+  explicit submission without adding automatic retries or local identity rules.
+
 ### Added
 
 - Offer an optional fullscreen invitation on the authenticated overview, with
