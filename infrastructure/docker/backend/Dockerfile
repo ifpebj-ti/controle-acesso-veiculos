@@ -1,5 +1,5 @@
 # Keep the shipped runtime explicit; a cached floating tag can retain a vulnerable patch.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.15 AS base
 WORKDIR /app
 EXPOSE 8080
 
