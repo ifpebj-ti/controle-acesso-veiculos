@@ -2,32 +2,45 @@
 
 ## Objetivo e critério
 
-Esta matriz relaciona as entregas obrigatórias da Unidade 2, conforme o documento
-acadêmico recebido em 23 de outubro de 2026, às evidências atuais do projeto. A
-fotografia documental foi reconciliada em **3 de novembro de 2026** após os merges
-#601 e #604. A contagem acadêmica histórica abaixo não foi recalculada apenas
-pela organização do backlog.
+Esta matriz relaciona as 17 entregas consolidadas da Unidade 2 às evidências
+atuais, mantendo a régua de peso igual (1 atendido, 0,5 parcial, 0 pendente).
+A revisão de **08/11/2026** usa main `202a913`, após #599 e os cinco merges
+de testes/documentação #595/#635/#532/#512/#517.
+A release estável continua `v0.4.0`. A última composição identificada instalada
+é frontend `7dd02a6` e backend `5fa21bb`; PRs e novos merges não alteram o site
+automaticamente.
 
-A main auditada é `8322961`. A release publicada continua `0.4.0`, mas a
-hospedagem conhecida executa frontend candidato `d5a7ba5` e backend candidato
-`0ca897d`, com Google habilitado. O #601 adiciona seleção explícita de conta na
-main, sem implantação automática; o #604 incorpora a auditoria e a ampliação
-dos testes de autorização. Não confundir essas fontes ou inferir nova release.
+O [balanço de 04/11](homologation-test-balance-2026-11-04.md) registra 111/111
+verificações HTTPS/contrato antes e depois da limpeza autorizada, sem somar
+como casos distintos. A lista de contas foi corrigida na composição hospedada;
+José confirmou lista/botões e houve exercício de criação/perfil/desativação pela
+API com cadastro fictício separado. Isso não comprova todas as tarefas pela UI.
+Negação Google com outro titular, troca de conta, tablet e leitor de tela ainda
+precisam do roteiro observado de cada fluxo.
 
-A [auditoria de 02/11](integrated-candidate-audit-2026-11-02.md) registra 631
-testes do frontend candidato e 381 do backend candidato aprovados, além de
-consultas e PDFs reais pela API. A lista de usuários falha no frontend hospedado
-por incompatibilidade de schema, tratada no #530; o erro é classificado
-incorretamente como rede (#603). Seis consultas vazias não comprovam itens
-populados. Sucesso Google e login administrativo pela interface foram relatados
-por José; negação com outro titular e troca de conta permanecem pendentes.
+Em 06/11, consultas autenticadas retornaram zero alertas abertos no Dependabot
+e zero alertas abertos no endpoint de code scanning. Isso não estabelece os
+indicadores Maintainability/Reliability do portal Code Quality nem comprova
+inexistência de bugs. Esses critérios não foram promovidos por inferência.
 
-O [inventário completo](backlog-inventory-2026-11-03.md) separa estabilização,
-Unidade 2 e futuro; o [roteiro de decisões](pending-decisions-2026-11-03.md) evita
-solicitar novamente definições já comunicadas. Backup externo, observabilidade
-operada, renovação automática de TLS, carga limitada e aceite observado continuam
-pendentes. O ensaio de restauração no mesmo host não comprova backup externo,
-RPO de uma hora ou RTO institucional.
+#621/#629 estão na main; a tela cheia ainda não está no frontend hospedado.
+#530 mantém critérios de homologação. #607/b220177 passou 449 testes completos;
+#613/3a5b00f recebeu revisão independente com 82 testes focados, lint/build.
+A composição local anterior validou solicitação/aprovação contra API real,
+mas não substitui o ensaio HTTPS final e as pessoas. #611/1aad5fb passou 467
+testes e tem domínio/aplicação, ainda sem store/API/DI. Esses candidatos não
+foram contados como entregas adicionais de operação institucional.
+
+O [rollout #628](backend-runtime-security-2026-11-08.md) foi verificado no host:
+APT corrigido, frontend/banco preservados, backup restaurável no mesmo host e
+111 verificações HTTPS aprovadas. Nenhum registro operacional foi criado/excluído.
+Backup externo/PITR, RPO/RTO e homologação humana continuam pendentes.
+
+O inventário e as decisões de [03/11](pending-decisions-2026-11-03.md) permanecem
+referência histórica. Backup externo/recuperação pontual, observabilidade
+operada, gestão protegida dos containers, renovação automática de TLS e carga
+com medição ainda não têm evidências completas. Restauração no mesmo host não
+comprova backup externo, RPO de uma hora ou RTO institucional.
 
 As classificações são:
 
@@ -56,21 +69,21 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Cobertura mínima de 90% nos componentes e fluxos críticos | a [Issue #499](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/499) e o PR #507 registram medição reproduzível, testes adicionais e gates progressivos     | Parcial                     | concluir 90% no recorte aprovado; trabalho aberto ou draft não é contado como entrega incorporada                            |
 | Zero bugs críticos                                        | builds, testes, lint e CodeQL da `main` estão verdes no SHA observado                                                                                                   | Parcial / validação externa | conferir a classificação vigente no portal de qualidade e registrar evidência datada                                         |
-| Zero vulnerabilidades altas e críticas no Dependabot      | consulta autenticada à API GitHub em 31/10/2026 registrou zero alertas abertos no Dependabot; Dependency Review, Trivy e CodeQL permanecem ativos                       | Atendido na fotografia      | repetir a consulta antes da entrega; ausência de alerta conhecido não significa risco zero                                   |
+| Zero vulnerabilidades altas e críticas no Dependabot      | consulta autenticada em 06/11/2026 retornou zero alertas abertos no Dependabot; Trivy anterior e pipelines têm seus próprios snapshots                                  | Atendido na fotografia      | repetir a consulta antes da entrega; ausência de alerta conhecido não significa risco zero                                   |
 | SSL válido, domínio e proxy reverso                       | DNS, certificado público confiável, Load Balancer HTTPS, WAF e Caddy foram validados em 26/10/2026                                                                      | Atendido                    | automatizar renovação, alerta e rollback pela [Issue #509](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/509) |
 | Guia de Segurança e Privacidade                           | [central de segurança](../security/README.md), [guia seguro](../security/secure-development-guide.md), [STRIDE](../security/threat-model.md) e documentação de retenção | Atendido                    | sincronizar a Wiki após os merges e anexar a validação de LGPD aplicável ao piloto                                           |
 
 ## Infraestrutura e operação
 
-| Entrega                                     | Evidência atual                                                                                                     | Estado                                                                              | Próxima comprovação                                                                                                             |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| VM IaaS em nuvem pública                    | VM privada provisionada na OCI                                                                                      | Atendido                                                                            | manter custo, acesso e configuração sob revisão                                                                                 |
-| Aplicação conteinerizada na VM              | frontend `d5a7ba5`, API `0ca897d` e PostgreSQL em homologação; estável `0.4.0` preservada                           | Atendido                                                                            | promover uma nova versão somente por release revisada                                                                           |
-| Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                                      | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado                                  |
-| Plataforma de gerenciamento de contêineres  | não provisionada                                                                                                    | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação                                   |
-| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não                             | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas                                |
-| Teste de carga com k6 e análise de gargalos | script preparado no candidato #515; nenhuma execução observada foi comprovada                                       | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias                                |
-| Software implantado, acessível e utilizável | candidato responde por HTTPS; houve login relatado e probes técnicos, com bug de contas e aceite completo pendentes | Parcial                                                                             | quatro contas fictícias já preparadas e verificadas; promover release compatível e observar o roteiro com os perfis autorizados |
+| Entrega                                     | Evidência atual                                                                                                     | Estado                                                                              | Próxima comprovação                                                                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| VM IaaS em nuvem pública                    | VM privada provisionada na OCI                                                                                      | Atendido                                                                            | manter custo, acesso e configuração sob revisão                                                                                   |
+| Aplicação conteinerizada na VM              | frontend `7dd02a6`, API `5fa21bb` e PostgreSQL em homologação; estável `0.4.0` preservada                           | Atendido                                                                            | promover uma nova versão somente por release revisada                                                                             |
+| Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                                      | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado                                    |
+| Plataforma de gerenciamento de contêineres  | não provisionada                                                                                                    | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação                                     |
+| Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não                             | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas                                  |
+| Teste de carga com k6 e análise de gargalos | script preparado no candidato #515; nenhuma execução observada foi comprovada                                       | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias                                  |
+| Software implantado, acessível e utilizável | candidato HTTPS com 111 verificações técnicas; lista de contas corrigida, tarefas humanas/aceite completo pendentes | Parcial                                                                             | observar tarefas com perfis autorizados; janela sintética explícita até 12/11 às 23h59 de Brasília; Google real continua distinto |
 
 ## Estimativa auditável
 
@@ -80,17 +93,30 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na contagem histórica de 26/10/2026, preservada em 31/10 e ainda não recalculada
-nesta revisão de 03/11/2026, existem
-**8 itens atendidos, 6 parciais e 3
-pendentes**, resultando em **11 / 17 = 64,7%**. A incerteza estimada é de **±5
-pontos percentuais**, principalmente porque os indicadores do portal, a cobertura
-real e as validações humanas ainda precisam ser aferidos.
+Na reavaliação de **08/11/2026**, a classificação continua com **8 itens
+atendidos, 6 parciais e 3 pendentes**: `(8 + 6 × 0,5) / 17 = 64,7%`, cerca de
+**65% concluído e 35% restante**, com incerteza de **±5 pontos**. O número é igual
+à estimativa anterior, agora com evidências atualizadas. Correções de integração
+e testes ampliados melhoram a base, mas não concluem requisitos ainda dependentes
+de operação, cobertura ou validação externa.
 
-Essa é a última estimativa histórica, não uma medição nova de 03/11. Ela mede o
-marco acadêmico da Unidade 2, não o volume de código nem a
-prontidão para produção. Revisão documental, novas contas de teste e PRs draft
-não recebem pontos adicionais enquanto persistir um critério obrigatório.
+Essa régua mede critérios consolidados da matéria, não esforço, linhas de código,
+segurança absoluta ou nota garantida. Os 17 itens e pesos foram mantidos para não
+inflar o indicador. Aprovação da apresentação não substitui evidência de um item
+específico. Pedestres, leitura de placa por câmera e nome comercial futuro não
+foram incluídos silenciosamente no denominador.
+
+## Caminho para fechar a Unidade 2
+
+Os principais blocos restantes são: comprovar cobertura de 90% no recorte crítico;
+obter a evidência dos indicadores de qualidade; concluir manual/homologação;
+implantar gestão protegida e observabilidade; executar carga e interpretar seus
+resultados. Uma proposta em draft não vale como implantação. Os testes com
+professores ajudam a descobrir defeitos, mas não substituem métricas de operação.
+
+Backup externo, recuperação, contingência, acesso administrativo e renovação TLS
+são gates adicionais de segurança/continuidade da operação institucional, mesmo
+quando não aparecem como uma linha independente no cálculo acadêmico.
 
 ## Evidências adicionais de 31/10/2026
 
@@ -108,7 +134,7 @@ não recebem pontos adicionais enquanto persistir um critério obrigatório.
 O [resumo das entregas recentes](weekly-review-2026-10-31.md) explica o impacto
 prático e a sequência de dependências. A auditoria ampla da Wiki está na #545.
 
-## Ordem recomendada
+## Ordem histórica recomendada (reavaliar dependências atuais)
 
 1. automatizar a renovação e a recuperação do certificado confiável;
 2. concluir 90% de cobertura no recorte crítico e incorporar os gates revisados;

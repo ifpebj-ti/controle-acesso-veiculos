@@ -8,7 +8,18 @@ from its first published release.
 
 ## [Unreleased]
 
+### Vehicle conflict feedback — Refs #665
+
+- Show the server's public vehicle-conflict guidance when an institutional
+  vehicle edit returns HTTP 409, preserving form values, generic fallbacks and
+  explicit submission without adding automatic retries or local identity rules.
+
 ### Added
+
+- Offer an optional fullscreen invitation on the authenticated overview, with
+  temporary contextual guidance after dismissal, a persistent corner shortcut
+  and a non-sensitive per-tab flag.
+  Reuse the existing native control without changing authentication or forms.
 
 - Request Google account selection on each explicit OIDC login attempt on shared
   workstations, preserving minimal scopes, PKCE and local preauthorization.
@@ -19,6 +30,9 @@ from its first published release.
 
 ### Fixed
 
+- Upgrade APT and libapt in the backend runtime image for USN-8996-1, use HTTPS
+  archives and disable retries during bootstrap, rejecting vulnerable package
+  versions without relaxing the container security gates.
 - Pin the shipped ASP.NET Core runtime to 10.0.14 so cached floating tags do not
   regress homologation to a vulnerable patch during container rebuilds.
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative

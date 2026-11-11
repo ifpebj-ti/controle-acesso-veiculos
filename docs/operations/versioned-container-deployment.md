@@ -25,6 +25,24 @@ segredos, firewall, backup protegido, monitoramento e autorização instituciona
 
 ## Estado observado na homologação
 
+### Atualização de 10/11/2026 — Issue #657
+
+O backend foi promovido à fonte `2689402`, com artefato AMD64 identificado,
+scan/SBOM, backup restaurado em banco temporário e rollback preparado. O frontend
+permaneceu `7dd02a6`; configuração e banco foram preservados. Passaram 162
+verificações HTTPS nos três perfis locais disponíveis. José também relatou
+login Google autorizado e continuidade como Porteiro após uma recarga, sem
+observação independente do agente. A conta fictícia de Porteiro com senha já
+estava indisponível antes da promoção.
+
+Não houve nova release estável, migration ou movimentação da tag `0.4.0`. A
+promoção usa imagem candidata explícita e overlay operacional; não se deve
+confundi-la com as imagens da release descritas abaixo. A fonte do código não
+atualiza automaticamente a VM. Identidades, resultados e limites estão na
+[evidência da promoção](../validation/backend-security-rollout-2026-11-10.md).
+
+### Registro histórico de 25–28/10/2026
+
 Em 25 de outubro de 2026, a homologação técnica executava frontend, API e
 PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF. A
 promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
@@ -336,6 +354,28 @@ isolado. Em caso de comprometimento da chave privada, substitua certificado e ke
 ring de forma controlada e encerre as sessões de maneira conservadora.
 
 ## Atualização e rollback
+
+### Pacotes da imagem e atualização do runtime
+
+Fixar o runtime .NET não atualiza, por si só, os pacotes Ubuntu de uma imagem
+armazenada em cache. A correção da Issue #626 trata separadamente `apt` e
+`libapt-pkg6.0t64`, conforme o
+[USN-8996-1 da Canonical](https://ubuntu.com/security/notices/USN-8996-1).
+No Ubuntu 24.04, ambos devem estar em `2.8.4ubuntu0.1` ou versão posterior.
+O Dockerfile usa HTTPS nos arquivos oficiais de repositório, desabilita novas
+tentativas no bootstrap e valida as versões instaladas antes de concluir a
+camada. Assinaturas de pacotes e validação TLS permanecem habilitadas.
+
+Reconstrua com `--pull` e confira as versões com `dpkg-query`, o inventário SBOM
+e os scans de ambas as arquiteturas na imagem final. Os gates CRITICAL e HIGH
+corrigível permanecem ativos; não crie exceção de CVE para fazer o CI passar.
+O resultado pertence ao digest e à base do scanner daquela execução.
+
+Um PR corrigido não atualiza a VM. A promoção exige imagem identificada, backup
+e rollback compatíveis, preservando os arquivos externos, a configuração
+Google, a janela explícita de testes locais e o banco. A checagem da imagem
+hospedada é uma evidência separada; não declare que ela foi corrigida apenas
+porque o Dockerfile ou uma execução de CI mudou.
 
 ### Primeira promoção após os ajustes de HTTPS
 

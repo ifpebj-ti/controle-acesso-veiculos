@@ -347,3 +347,33 @@ TM-23 passou a reconhecer a integração visual já incorporada na #214, mantend
 calibração e homologação na #162. Não foram alterados os escores de nenhuma
 ameaça, a topologia ou as posições do diagrama. Validação de estrutura/IDs não
 equivale a uma nova importação visual no aplicativo ou a um teste de segurança.
+
+### Validade do token vinculada à sessão — Issue #647
+
+A validação do JWT usa a família persistida (`sid`) além da conta, perfil e
+versão. O token exige sucessor ativo da mesma família e usuário, respeitando
+expiração absoluta e inatividade. Rotação normal mantém essa família válida;
+logout e reuso revogam os sucessores e fazem a próxima autenticação falhar.
+Não se usa apenas o estado da linha antiga, pois ela é consumida na rotação.
+Não há nova lista paralela de bloqueio nem ampliação do prazo de sessão.
+
+Os testes cobrem revogação, rotação, isolamento entre famílias e vínculos
+ausentes/inválidos. Requisições já autorizadas não são canceladas; implantação
+e reteste HTTPS continuam necessários. Os escores de risco não são reduzidos
+apenas pela entrega do candidato.
+
+### Cadeia de pacotes do runtime — Issue #626
+
+O achado CVE-2026-109518 em APT pertence à ameaça TM-05: um atacante no caminho
+de um download HTTP pode interferir na instalação de pacotes. A correção candidata
+usa arquivos de repositório com HTTPS, desabilita retries no bootstrap e atualiza
+`apt`/`libapt-pkg6.0t64`, exigindo no mínimo `2.8.4ubuntu0.1` no Ubuntu 24.04.
+Assinaturas e validação TLS continuam habilitadas; não há exceção de CVE ou
+redução dos gates do scanner. O procedimento está no
+[runbook de imagens](../operations/versioned-container-deployment.md#pacotes-da-imagem-e-atualização-do-runtime).
+
+Uma tag de runtime .NET fixa não comprova atualização de todos os pacotes do
+sistema. Build, inventário e scan precisam identificar a arquitetura e a imagem
+examinada; a implantação e a verificação do servidor permanecem etapas distintas.
+Este incremento não muda atores ou fronteiras do modelo, não reduz o escore
+residual de TM-05 e não significa que toda a cadeia de suprimentos esteja segura.
