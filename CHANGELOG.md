@@ -8,6 +8,14 @@ from its first published release.
 
 ## [Unreleased]
 
+### Account reactivation preparation — Refs #669
+
+- Prepare standalone reactivation services, dialog and behavior tests for the
+  #668 contract, reusing temporary credential disclosure and read-only
+  reconciliation after uncertain outcomes. Account-page integration remains
+  pending the canonical Local/Google account contract from #530 and an
+  identified integrated candidate; no existing account flow is replaced yet.
+
 ### Vehicle conflict feedback — Refs #665
 
 - Show the server's public vehicle-conflict guidance when an institutional
