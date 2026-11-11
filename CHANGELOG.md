@@ -48,7 +48,8 @@ See the [release policy](docs/operations/release-cadence.md).
   (#570, #492), and reject invalid full vehicle plates in the frontend (#458).
 - Upgrade backend APT/libapt for USN-8996-1 and pin runtime 10.0.14 to prevent
   vulnerable cached floating tags (#627, #616). The subsequent 10.0.15 security
-  patch is still a candidate in #675 and is not claimed as delivered here.
+  patch is incorporated in #675, together with strict APT index refresh and
+  bounded explicit attempts (#676). VM promotion remains separate.
 
 ### Changed
 

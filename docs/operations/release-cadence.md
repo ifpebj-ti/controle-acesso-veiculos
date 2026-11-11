@@ -70,11 +70,13 @@ merge, sincronizar a Wiki em tarefa separada baseada na main atualizada.
 
 A release estável continua `0.4.0`. A hospedagem identificada usa frontend
 `7dd02a6` e backend `2689402`, composições candidatas diferentes da tag. A main
-`3306b8e` não contém a interface Google de #474 nem toda a gestão candidata de
+`3481afa` não contém a interface Google de #474 nem toda a gestão candidata de
 contas: substituir o frontend hospedado por ela seria regressão.
 
-O #676 foi incorporado à branch do #675, não à main. A publicação aguarda o
-#675 atualizado, gates no novo SHA e composição frontend/backend aprovada.
+Os PRs #675 e #676 já estão incorporados à main `3481afa`, incluindo runtime
+10.0.15 e atualização APT com tentativas limitadas e falha explícita. Publicar
+uma release ainda exige gates no SHA liberado e composição frontend/backend
+aprovada.
 A promoção de runtime continua na #677 e pode ser tratada separadamente para
 não bloquear correção urgente por aceite de nova interface. Nenhuma tag,
 release ou atualização da VM é comprovada por este documento.
