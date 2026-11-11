@@ -31,7 +31,8 @@ Backend promovido à main `812b71e`, runtime 10.0.15 confirmado no container,
 frontend `7dd02a6` e PostgreSQL preservados. Backup restaurado em banco temporário,
 rollback e configuração conferidos; 162/162 testes HTTPS passaram nos três perfis
 locais disponíveis. Não foi nova release GHCR nem aplicação de migrations.
-O Google manual pós-promoção continua separado da descoberta do provedor.
+José confirmou a continuidade como Porteiro após login Google e uma recarga;
+é relato do titular, separado da descoberta do provedor e dos ensaios do agente.
 Consulte [identidades, verificações e limites](../validation/backend-runtime-rollout-2026-11-11.md).
 
 A release `0.5.0` está somente em draft, acompanhada na #686. A promoção urgente

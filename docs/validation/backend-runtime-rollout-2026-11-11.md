@@ -73,8 +73,11 @@ reparado silenciosamente. O ensaio não representa os quatro perfis locais.
 
 Não houve nova observação de tablet, Narrador ou autenticação Google pelo agente.
 A configuração Google preservada e a resposta do provedor não comprovam login
-real. A confirmação manual pós-promoção foi solicitada ao titular e permanece
-separada enquanto não houver resposta.
+real. José confirmou em 11/11, após a promoção, que entrou com sua conta Google
+já autorizada e continuou como Porteiro depois de uma recarga. Esse resultado
+é relato do titular, vinculado ao frontend `7dd02a6` e backend `812b71e`; não é
+observação independente do agente, teste de carga ou validação de outros fluxos
+OAuth. Não substitui a correlação ainda pendente do cenário de conta não autorizada.
 
 ## Release e limites
 
