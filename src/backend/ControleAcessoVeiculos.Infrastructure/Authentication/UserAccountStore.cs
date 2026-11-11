@@ -10,7 +10,7 @@ using Npgsql;
 namespace ControleAcessoVeiculos.Infrastructure.Authentication;
 
 public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
-    : IUserAccountStore, IAccountProfileStore
+    : IUserAccountStore, IAccountProfileStore, IUserAccountReactivationStore
 {
     public Task<bool> HasAnyUserAsync(CancellationToken cancellationToken) =>
         dbContext.Usuarios.AnyAsync(cancellationToken);
@@ -222,6 +222,11 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             }
         }
 
+        if (active && user.MetodoAutenticacao == MetodoAutenticacao.Local)
+        {
+            return UserAccountStoreStateStatus.CredentialResetRequired;
+        }
+
         var previousActive = user.Ativo;
         if (active)
         {
@@ -264,13 +269,21 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
         return UserAccountStoreStateStatus.Success;
     }
 
-    public async Task<AdministrativeCredentialResetStoreResult> TryResetCredentialAsync(
-        int userId,
-        int actorUserId,
-        string passwordHash,
-        DateTime occurredAtUtc,
-        DateTime expiresAtUtc,
-        string reason,
+    public Task<AdministrativeCredentialResetStoreResult> TryResetCredentialAsync(
+        int userId, int actorUserId, string passwordHash, DateTime occurredAtUtc,
+        DateTime expiresAtUtc, string reason, CancellationToken cancellationToken) =>
+        ResetCredentialCoreAsync(userId, actorUserId, passwordHash, occurredAtUtc,
+            expiresAtUtc, reason, reactivate: false, cancellationToken);
+
+    public Task<AdministrativeCredentialResetStoreResult> TryReactivateWithCredentialAsync(
+        int userId, int actorUserId, string passwordHash, DateTime occurredAtUtc,
+        DateTime expiresAtUtc, string reason, CancellationToken cancellationToken) =>
+        ResetCredentialCoreAsync(userId, actorUserId, passwordHash, occurredAtUtc,
+            expiresAtUtc, reason, reactivate: true, cancellationToken);
+
+    private async Task<AdministrativeCredentialResetStoreResult> ResetCredentialCoreAsync(
+        int userId, int actorUserId, string passwordHash, DateTime occurredAtUtc,
+        DateTime expiresAtUtc, string reason, bool reactivate,
         CancellationToken cancellationToken)
     {
         if (userId == actorUserId)
@@ -286,7 +299,11 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             return new(AdministrativeCredentialResetStoreStatus.NotFound);
         }
 
-        if (!user.Ativo)
+        if (reactivate && user.Ativo)
+        {
+            return new(AdministrativeCredentialResetStoreStatus.AlreadyActive);
+        }
+        if (!reactivate && !user.Ativo)
         {
             return new(AdministrativeCredentialResetStoreStatus.Inactive);
         }
@@ -302,6 +319,11 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
         var previousExpiresAtUtc = user.CredencialTemporariaExpiraEm;
         var previousCredentialWasUsed =
             user.CredencialTemporariaUtilizadaEm.HasValue;
+        var previousActive = user.Ativo;
+        if (reactivate)
+        {
+            user.Reativar(occurredAtUtc);
+        }
         user.DefinirCredencialTemporaria(passwordHash, expiresAtUtc, occurredAtUtc);
 
         var sessions = await dbContext.SessoesAutenticacao
@@ -327,6 +349,7 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             actorUserId,
             dadosAnteriores: JsonSerializer.Serialize(new
             {
+                active = previousActive,
                 credentialVersion = previousCredentialVersion,
                 requiresPasswordChange = previousRequiresPasswordChange,
                 temporaryCredentialExpiresAtUtc = previousExpiresAtUtc,
@@ -334,13 +357,16 @@ public sealed class UserAccountStore(ControleAcessoVeiculosDbContext dbContext)
             }),
             dadosNovos: JsonSerializer.Serialize(new
             {
+                active = user.Ativo,
                 credentialVersion = user.VersaoCredencial,
                 requiresPasswordChange = true,
                 temporaryCredentialExpiresAtUtc = expiresAtUtc,
                 temporaryCredentialWasUsed = false,
                 reason
             }),
-            detalhes: "Administrator issued a temporary credential."));
+            detalhes: reactivate
+                ? "Administrator reactivated a local account with a new temporary credential."
+                : "Administrator issued a temporary credential."));
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

@@ -84,7 +84,7 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task DeactivationRevokesExistingTokenAndReactivationRestoresLogin()
+    public async Task DeactivationAndSecureReactivationNeverRestoreThePreviousPassword()
     {
         var administrator = await CreateUserAsync(ProfileNames.Administrator);
         var target = await CreateUserAsync(ProfileNames.Doorman);
@@ -121,14 +121,41 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Unauthorized, inactiveLogin.StatusCode);
 
         var reactivation = await administratorClient.PostAsync($"/users/{target.Id}/reactivation", content: null, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.NoContent, reactivation.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, reactivation.StatusCode);
+        Assert.False(await IsUserActiveAsync(target.Id));
+        var secureReactivation = await administratorClient.PostAsJsonAsync(
+            $"/users/{target.Id}/reactivation-with-reset",
+            new { reason = "SuspeitaComprometimento" }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, secureReactivation.StatusCode);
+        Assert.True(secureReactivation.Headers.CacheControl?.NoStore);
+        var credentialBody = await secureReactivation.Content.ReadFromJsonAsync<JsonElement>(
+            TestContext.Current.CancellationToken);
+        var temporaryCredential = credentialBody.GetProperty("temporaryCredential").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(temporaryCredential));
+        Assert.True(credentialBody.GetProperty("temporaryCredentialExpiresAtUtc").GetDateTime() > DateTime.UtcNow);
 
         var restoredLogin = await loginClient.PostAsJsonAsync("/auth/login", new
         {
             email = target.Email,
             password = Password
         }, cancellationToken: TestContext.Current.CancellationToken);
-        restoredLogin.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Unauthorized, restoredLogin.StatusCode);
+        var staleAccess = await targetClient.GetAsync("/access-records/open", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, staleAccess.StatusCode);
+        var temporaryLogin = await loginClient.PostAsJsonAsync("/auth/login", new
+        {
+            email = target.Email,
+            password = temporaryCredential
+        }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, temporaryLogin.StatusCode);
+        var restricted = await temporaryLogin.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
+        Assert.True(restricted.GetProperty("user").GetProperty("requiresPasswordChange").GetBoolean());
+        var secondUse = await loginClient.PostAsJsonAsync("/auth/login", new
+        {
+            email = target.Email,
+            password = temporaryCredential
+        }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, secondUse.StatusCode);
 
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
@@ -153,8 +180,15 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
             Assert.True(reactivationState.RootElement.GetProperty("active").GetBoolean());
         }
 
-        Assert.DoesNotContain(target.Email, string.Join(' ', audits.SelectMany(audit =>
-            new[] { audit.DadosAnteriores, audit.DadosNovos, audit.Detalhes })));
+        var auditText = string.Join(' ', audits.SelectMany(audit =>
+            new[] { audit.DadosAnteriores, audit.DadosNovos, audit.Detalhes }));
+        Assert.DoesNotContain(target.Email, auditText);
+        Assert.DoesNotContain(temporaryCredential!, auditText);
+        Assert.DoesNotContain("passwordHash", auditText, StringComparison.OrdinalIgnoreCase);
+        using var oldState = JsonDocument.Parse(audits[1].DadosAnteriores!);
+        using var newState = JsonDocument.Parse(audits[1].DadosNovos!);
+        Assert.Equal(oldState.RootElement.GetProperty("credentialVersion").GetInt32() + 1,
+            newState.RootElement.GetProperty("credentialVersion").GetInt32());
     }
 
     [Fact]
@@ -334,6 +368,144 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
                 (_, profile) => profile.Nome)
             .SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(ProfileNames.SecurityGuard, profileName);
+    }
+
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task OperationalRolesCannotReactivateWithCredential(string profile)
+    {
+        var actor = await CreateUserAsync(profile);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, actor.Email);
+        var response = await client.PostAsJsonAsync("/users/999/reactivation-with-reset",
+            new { reason = "SuspeitaComprometimento" }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SecureReactivationValidatesReasonAndAccountStateWithoutMutation()
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var target = await CreateUserAsync(ProfileNames.Doorman);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, administrator.Email);
+        var active = await client.PostAsJsonAsync($"/users/{target.Id}/reactivation-with-reset",
+            new { reason = "SuspeitaComprometimento" }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Conflict, active.StatusCode);
+        var self = await client.PostAsJsonAsync($"/users/{administrator.Id}/reactivation-with-reset",
+            new { reason = "SuspeitaComprometimento" }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Conflict, self.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await client.DeleteAsync($"/users/{target.Id}", TestContext.Current.CancellationToken)).StatusCode);
+        var invalid = await client.PostAsJsonAsync($"/users/{target.Id}/reactivation-with-reset",
+            new { reason = "não catalogado" }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        Assert.False(await IsUserActiveAsync(target.Id));
+        using var anonymous = factory.CreateClient();
+        var unauthenticated = await anonymous.PostAsJsonAsync($"/users/{target.Id}/reactivation-with-reset",
+            new { reason = "SuspeitaComprometimento" }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, unauthenticated.StatusCode);
+    }
+
+    [Fact]
+    public async Task ConcurrentSecureReactivationsIssueOnlyOneCredential()
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var target = await CreateUserAsync(ProfileNames.Doorman);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, administrator.Email);
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await client.DeleteAsync($"/users/{target.Id}", TestContext.Current.CancellationToken)).StatusCode);
+        var responses = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ =>
+            client.PostAsJsonAsync($"/users/{target.Id}/reactivation-with-reset",
+                new { reason = "SuspeitaComprometimento" }, TestContext.Current.CancellationToken)));
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.OK);
+        Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Conflict);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.Equal(1, await db.Auditorias.CountAsync(audit => audit.RegistroId == target.Id &&
+            audit.Entidade == nameof(Usuario) &&
+            audit.Detalhes == "Administrator reactivated a local account with a new temporary credential.",
+            TestContext.Current.CancellationToken));
+        foreach (var response in responses) response.Dispose();
+    }
+
+    [Fact]
+    public async Task FailedReactivationAuditRollsBackAccountAndCredential()
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var target = await CreateUserAsync(ProfileNames.Doorman);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, administrator.Email);
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await client.DeleteAsync($"/users/{target.Id}", TestContext.Current.CancellationToken)).StatusCode);
+        int previousVersion;
+        string? previousHash;
+        using (var failureScope = factory.Services.CreateScope())
+        {
+            var db = failureScope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            Assert.False(await db.Usuarios.AnyAsync(u => u.Id == int.MaxValue,
+                TestContext.Current.CancellationToken));
+            var before = await db.Usuarios.AsNoTracking().SingleAsync(u => u.Id == target.Id,
+                TestContext.Current.CancellationToken);
+            previousVersion = before.VersaoCredencial;
+            previousHash = before.SenhaHash;
+            var store = failureScope.ServiceProvider.GetRequiredService<
+                ControleAcessoVeiculos.Application.Accounts.IUserAccountReactivationStore>();
+            var hasher = failureScope.ServiceProvider.GetRequiredService<IPasswordHashService>();
+            var now = DateTime.UtcNow;
+            // Missing audit actor intentionally forces a foreign-key failure at SaveChanges.
+            await Assert.ThrowsAsync<DbUpdateException>(() => store.TryReactivateWithCredentialAsync(
+                target.Id, int.MaxValue, hasher.Hash("Test-only-new-credential-123!"),
+                now, now.AddMinutes(30), "SuspeitaComprometimento",
+                TestContext.Current.CancellationToken));
+        }
+        using var verification = factory.Services.CreateScope();
+        var context = verification.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var after = await context.Usuarios.AsNoTracking().SingleAsync(u => u.Id == target.Id,
+            TestContext.Current.CancellationToken);
+        Assert.False(after.Ativo);
+        Assert.Equal(previousVersion, after.VersaoCredencial);
+        Assert.Equal(previousHash, after.SenhaHash);
+        Assert.Equal(1, await context.Auditorias.CountAsync(a => a.Entidade == nameof(Usuario) &&
+            a.RegistroId == target.Id && a.TipoAcao == TipoAcaoAuditoria.Alteracao,
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task GoogleReactivationPreservesIdentityAndDoesNotCreateLocalPassword()
+    {
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        var target = await CreateUserAsync(ProfileNames.Doorman);
+        var subject = $"qa-{Guid.NewGuid():N}";
+        using (var setup = factory.Services.CreateScope())
+        {
+            var db = setup.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var user = await db.Usuarios.SingleAsync(u => u.Id == target.Id, TestContext.Current.CancellationToken);
+            user.AlterarPerfilEAutenticacao(user.PerfilId, MetodoAutenticacao.Google, DateTime.UtcNow);
+            user.VincularIdentidadeGoogle(subject, DateTime.UtcNow);
+            user.Desativar(DateTime.UtcNow);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, administrator.Email);
+        var invalidReset = await client.PostAsJsonAsync($"/users/{target.Id}/reactivation-with-reset",
+            new { reason = "SuspeitaComprometimento" }, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Conflict, invalidReset.StatusCode);
+        Assert.False(await IsUserActiveAsync(target.Id));
+        var reactivation = await client.PostAsync($"/users/{target.Id}/reactivation",
+            null, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.NoContent, reactivation.StatusCode);
+        using var verification = factory.Services.CreateScope();
+        var context = verification.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var restored = await context.Usuarios.AsNoTracking().SingleAsync(u => u.Id == target.Id,
+            TestContext.Current.CancellationToken);
+        Assert.True(restored.Ativo);
+        Assert.Equal(MetodoAutenticacao.Google, restored.MetodoAutenticacao);
+        Assert.Equal(subject, restored.GoogleSubject);
+        Assert.Null(restored.SenhaHash);
     }
 
     private async Task<TestUser> CreateUserAsync(string profileName)
