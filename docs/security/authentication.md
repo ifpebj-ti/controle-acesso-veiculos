@@ -112,11 +112,14 @@ O procedimento de armazenamento, rotação, resposta a comprometimento, backup e
 restauração do key ring está registrado na
 [ADR 0003](../architecture/decisions/0003-protected-data-protection-key-ring.md).
 
-A integração Google ainda não é declarada homologada: faltam credenciais OAuth
-separadas por ambiente, callback HTTPS real, gestão administrativa da pré-autorização
-e testes observados com o provedor. Enquanto `Authentication:Google:Enabled`
-for `false`, os endpoints de início e conclusão respondem como indisponíveis e o
-frontend não apresenta a ação Google.
+A homologação completa do Google mantém os critérios e as fontes dos ensaios
+registrados, sem confundir configuração com aceite. A
+[promoção de 11/11](../validation/backend-runtime-rollout-2026-11-11.md)
+identifica frontend `7dd02a6` e backend `812b71e`, com sucesso e uma recarga
+relatados por José como Porteiro; não é observação independente do agente nem
+validação de todos os cenários. Enquanto `Authentication:Google:Enabled` for
+`false`, os endpoints de início e conclusão respondem como indisponíveis e o
+frontend mantém a ação Google visível e desabilitada.
 
 O procedimento planejado para indisponibilidade do provedor, uso individual de
 contas de emergência, retorno ao serviço e preservação de evidências está no
@@ -161,8 +164,10 @@ No retorno `/login?status=success`, o frontend remove o parâmetro e restaura a
 sessão local pelo ciclo CSRF e refresh existente. `status=denied`, descoberta
 indisponível e retorno sem sessão válida produzem mensagens genéricas e
 acessíveis. Nenhum parâmetro concede perfil, e-mail e domínio não são usados
-para inferir autorização. A homologação real desse fluxo ainda depende de HTTPS,
-domínio e cliente OAuth configurados fora do repositório.
+para inferir autorização. HTTPS, domínio e cliente OAuth são configuração externa;
+sua disponibilidade já registrada não encerra os critérios pendentes. A correlação
+do cenário de conta não pré-autorizada continua limitada pelas evidências existentes:
+uma mensagem genérica não comprova retrospectivamente o ramo interno da negação.
 
 O access token fica em uma variável de módulo e no contexto React apenas durante
 a aba aberta. Ele é anexado pelo interceptor do Axios, nunca é colocado em URL,
