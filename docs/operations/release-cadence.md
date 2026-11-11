@@ -69,16 +69,17 @@ merge, sincronizar a Wiki em tarefa separada baseada na main atualizada.
 ## Situação verificada em 11/11/2026
 
 A release estável continua `0.4.0`. A hospedagem identificada usa frontend
-`7dd02a6` e backend `2689402`, composições candidatas diferentes da tag. A main
-`3481afa` não contém a interface Google de #474 nem toda a gestão candidata de
+`7dd02a6` e backend `812b71e`, após a promoção isolada #677, diferentes da tag. A main
+`812b71e` não contém a interface Google de #474 nem toda a gestão candidata de
 contas: substituir o frontend hospedado por ela seria regressão.
 
 Os PRs #675 e #676 já estão incorporados à main `3481afa`, incluindo runtime
 10.0.15 e atualização APT com tentativas limitadas e falha explícita. Publicar
 uma release ainda exige gates no SHA liberado e composição frontend/backend
 aprovada.
-A promoção de runtime continua na #677 e pode ser tratada separadamente para
-não bloquear correção urgente por aceite de nova interface. Nenhuma tag,
-release ou atualização da VM é comprovada por este documento.
+A promoção de runtime foi verificada na #677 e permanece separada da release
+conjunta: [evidência](../validation/backend-runtime-rollout-2026-11-11.md).
+A proposta 0.5.0 está somente em draft na #686, sem tag publicada. A conclusão
+dos fluxos candidatos não foi presumida para publicar uma release antecipada.
 
 Referência: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

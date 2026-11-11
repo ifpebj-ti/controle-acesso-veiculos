@@ -25,6 +25,18 @@ segredos, firewall, backup protegido, monitoramento e autorização instituciona
 
 ## Estado observado na homologação
 
+### Atualização de 11/11/2026 — Issue #677
+
+Backend promovido à main `812b71e`, runtime 10.0.15 confirmado no container,
+frontend `7dd02a6` e PostgreSQL preservados. Backup restaurado em banco temporário,
+rollback e configuração conferidos; 162/162 testes HTTPS passaram nos três perfis
+locais disponíveis. Não foi nova release GHCR nem aplicação de migrations.
+O Google manual pós-promoção continua separado da descoberta do provedor.
+Consulte [identidades, verificações e limites](../validation/backend-runtime-rollout-2026-11-11.md).
+
+A release `0.5.0` está somente em draft, acompanhada na #686. A promoção urgente
+não autoriza substituir o frontend candidato pela main sem composição revisada.
+
 ### Atualização de 10/11/2026 — Issue #657
 
 O backend foi promovido à fonte `2689402`, com artefato AMD64 identificado,
