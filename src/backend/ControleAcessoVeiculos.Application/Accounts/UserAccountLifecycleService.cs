@@ -94,7 +94,11 @@ public sealed class UserAccountLifecycleService(
     {
         var errors = new Dictionary<string, string[]>();
 
-        if (command.Search?.Trim().Length > 254)
+        if (command.Search?.Contains('\0') == true)
+        {
+            errors["search"] = ["O filtro não pode conter o caractere NUL."];
+        }
+        else if (command.Search?.Trim().Length > 254)
         {
             errors["search"] = ["A busca deve possuir até 254 caracteres."];
         }
