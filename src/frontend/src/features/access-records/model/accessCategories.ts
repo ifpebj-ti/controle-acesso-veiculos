@@ -8,6 +8,9 @@ export const generalAccessCategories = [
   "Mototáxi",
   "Permanência excepcional",
   "Outro acesso autorizado",
+  "Aluno",
+  "Terceirizado",
+  "Federal",
 ] as const;
 
 export type GeneralAccessCategory = (typeof generalAccessCategories)[number];

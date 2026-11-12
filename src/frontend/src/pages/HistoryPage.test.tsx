@@ -103,6 +103,9 @@ describe("HistoryPage", () => {
       Mototáxi: 5,
       "Permanência excepcional": 0,
       "Outro acesso autorizado": 0,
+      Aluno: 6,
+      Terceirizado: 7,
+      Federal: 6,
     });
     vi.mocked(correctAccessRecord).mockReset();
     vi.mocked(searchAccessHistory).mockReset();
@@ -332,7 +335,7 @@ describe("HistoryPage", () => {
     expect(visitorShortcut).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("exposes all nine categories and preserves the alternative selector", async () => {
+  it("exposes all twelve categories and preserves the alternative selector", async () => {
     vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
     const user = userEvent.setup();
     renderPage();
@@ -358,12 +361,45 @@ describe("HistoryPage", () => {
     expect(category).toHaveAttribute("aria-pressed", "true");
     expect(category).toHaveFocus();
     await user.keyboard("{End}");
-    expect(
-      screen.getByRole("button", { name: "Outro acesso autorizado" }),
-    ).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Federal" })).toHaveFocus();
     await user.keyboard("{Home}");
     expect(screen.getByRole("button", { name: "Visitante" })).toHaveFocus();
   });
+
+  it.each(["Aluno", "Terceirizado", "Federal"])(
+    "filters %s by keyboard without refreshing the category totals",
+    async (categoryName) => {
+      vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([]));
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Nenhum registro encontrado");
+      await waitFor(() =>
+        expect(countAccessHistoryByCategory).toHaveBeenCalledOnce(),
+      );
+      const shortcut = screen.getByRole("button", { name: categoryName });
+      expect(shortcut).toHaveAccessibleDescription(
+        /\d+ registros no período e filtros atuais/,
+      );
+      shortcut.focus();
+      await user.keyboard("{Enter}");
+      await waitFor(() =>
+        expect(searchAccessHistory).toHaveBeenLastCalledWith(
+          expect.objectContaining({ categoryName, page: 1 }),
+        ),
+      );
+      expect(shortcut).toHaveAttribute("aria-pressed", "true");
+      expect(shortcut).toHaveFocus();
+      expect(countAccessHistoryByCategory).toHaveBeenCalledOnce();
+      await selectFieldOption(
+        user,
+        screen.getByLabelText("Categoria"),
+        categoryName,
+      );
+      expect(screen.getByLabelText("Categoria")).toHaveTextContent(
+        categoryName,
+      );
+    },
+  );
 
   it("reuses real totals when only category or page changes and refreshes them for other filters", async () => {
     vi.mocked(searchAccessHistory).mockImplementation(async (filters) =>

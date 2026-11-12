@@ -17,6 +17,9 @@ interface AccessHistoryCategoryTabsProps {
 }
 
 const categoryIcons: Record<GeneralAccessCategory, IconName> = {
+  Aluno: "user",
+  Terceirizado: "wrench",
+  Federal: "user",
   "Caminhada com veículo": "vehicle",
   Mototáxi: "motorcycle",
   "Permanência excepcional": "clock",

@@ -60,11 +60,16 @@ homologação em tablet físico.
 
 ## Estado atual
 
-O histórico oferece as nove categorias existentes na mesma faixa horizontal,
+O candidato da #688 acrescenta Aluno, Terceirizado e Federal às nove categorias
+anteriores. Depende da ampliação do catálogo aceito pela API antes de incorporar
+ou implantar este frontend. Detalhes e limites estão em
+[`docs/access-categories.md`](docs/access-categories.md).
+O histórico oferece as doze opções na mesma faixa horizontal,
 com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
 O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
 do total validado da consulta de histórico; falhas mostram indisponibilidade,
-sem inventar zero. O contrato atual exige nove leituras de contagem, em lotes
+sem inventar zero. O contrato atual exige uma leitura de contagem por categoria
+(doze neste candidato), em lotes
 de até três, além da consulta de resultados. Trocar somente a categoria ou a
 página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
 correção salva atualizam as contagens, mesmo sem mudar o período, a placa,

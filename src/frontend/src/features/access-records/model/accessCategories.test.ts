@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { generalAccessCategories } from "./accessCategories";
 
 describe("generalAccessCategories", () => {
-  it("matches the nine canonical categories accepted by the backend", () => {
+  it("preserves the existing categories and appends the three requested options", () => {
     expect(generalAccessCategories).toEqual([
       "Visitante",
       "Prestador de serviço",
@@ -14,6 +14,9 @@ describe("generalAccessCategories", () => {
       "Mototáxi",
       "Permanência excepcional",
       "Outro acesso autorizado",
+      "Aluno",
+      "Terceirizado",
+      "Federal",
     ]);
   });
 
