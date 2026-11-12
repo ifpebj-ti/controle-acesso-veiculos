@@ -60,6 +60,11 @@ homologação em tablet físico.
 
 ## Estado atual
 
+A #689 prepara componentes não montados de pré-cadastro de pessoas: nome completo
+e classificação (Aluno, Terceirizado ou Federal), sem veículo nesta etapa. Não há
+API integrada ou nova rota/menu. Decisão, modelos provisórios e dependências estão
+em [`docs/person-preregistration.md`](docs/person-preregistration.md).
+
 O histórico oferece as nove categorias existentes na mesma faixa horizontal,
 com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
 O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
