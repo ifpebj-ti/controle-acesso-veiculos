@@ -377,3 +377,22 @@ sistema. Build, inventário e scan precisam identificar a arquitetura e a imagem
 examinada; a implantação e a verificação do servidor permanecem etapas distintas.
 Este incremento não muda atores ou fronteiras do modelo, não reduz o escore
 residual de TM-05 e não significa que toda a cadeia de suprimentos esteja segura.
+
+## Complemento candidato — pré-cadastro e retorno diário (#690, 12/11/2026)
+
+O fluxo usa as mesmas fronteiras API/PostgreSQL do modelo: nasce um dado pessoal
+adicional (nascimento) para conferência de maioridade, restrito ao cadastro por
+Transporte/Administrador. Não acrescenta provedor de CPF, armazenamento no
+navegador ou leitura de imagem. Ver [contrato e limites](../development/campus-driver-registry-contract.md).
+
+| Risco                                              | Controle candidato                                                                               | Limite residual                                                                   |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Divulgação de nascimento/documentos                | DTOs de listagem e sugestão omitem esses dados; no-store; sem DOB no payload de auditoria        | Banco/backup e retenção ainda exigem governança institucional                     |
+| Placa tomada como identidade/autorização           | Seleção explícita da pessoa; vínculo ativo revalidado por IDs; sem liberação automática          | A portaria confere o condutor físico e eventuais irregularidades                  |
+| Reutilização de visita de outra conta ou outro dia | Filtro servidor por ator autenticado e janela institucional exclusiva                            | Interface precisa limpar estado e descartar respostas antigas ao trocar conta/dia |
+| Declaração falsa ou desatualizada                  | Papel responsável identificado, idade validada no servidor e auditoria transacional              | Data informada não comprova documento nem habilitação                             |
+| Cadastro parcial ou desativação incorreta          | Rollback de auditoria testado; cadastro de condução desativado sem apagar pessoa/conta/histórico | UI/ambiente real ainda precisam de integração identificada                        |
+
+Esse complemento não declara nova homologação, retenção aprovada para nascimento
+ou validação visual do diagrama. A base histórica 3.9 continua identificada; o
+novo recorte deve acompanhar a revisão institucional antes de dados reais.
