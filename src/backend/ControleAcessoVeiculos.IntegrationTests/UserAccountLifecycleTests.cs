@@ -68,10 +68,31 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         Assert.DoesNotContain("hash", json, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task NonAdministratorCannotSearchAccounts()
+    [Theory]
+    [InlineData("%00")]
+    [InlineData("Conta%00Teste")]
+    public async Task AccountSearchRejectsNullCharacter(string encodedSearch)
     {
-        var user = await CreateUserAsync(ProfileNames.Doorman);
+        var administrator = await CreateUserAsync(ProfileNames.Administrator);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, administrator.Email);
+
+        var response = await client.GetAsync(
+            $"/users?search={encodedSearch}", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("search", json);
+        Assert.DoesNotContain("Conta", json);
+    }
+
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task NonAdministratorCannotSearchAccounts(string profileName)
+    {
+        var user = await CreateUserAsync(profileName);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, user.Email);
 
@@ -298,10 +319,13 @@ public sealed class UserAccountLifecycleTests(ApiFactory factory)
         Assert.Contains("Promoção autorizada", audit.DadosNovos!);
     }
 
-    [Fact]
-    public async Task OperationalUserCannotChangeAnotherAccountProfile()
+    [Theory]
+    [InlineData(ProfileNames.Doorman)]
+    [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task OperationalUserCannotChangeAnotherAccountProfile(string operatorProfileName)
     {
-        var operatorUser = await CreateUserAsync(ProfileNames.Doorman);
+        var operatorUser = await CreateUserAsync(operatorProfileName);
         var target = await CreateUserAsync(ProfileNames.SecurityGuard);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, operatorUser.Email);

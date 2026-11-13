@@ -4,9 +4,6 @@ obj/
 *.user
 *.suo
 *.userosscache
-*.suo
-*.user
-*.log
 
 # Node
 node_modules/
@@ -16,7 +13,6 @@ dist/
 build/
 
 # Docker
-*.log
 *.tmp
 *.temp
 
@@ -41,6 +37,8 @@ Thumbs.db
 coverage/
 artifacts/
 tmp/
+/.tmp/
+TestResults/
 *.cover
 *.coverage
 
@@ -68,3 +66,7 @@ crash.*.log
 # Logs
 logs/
 *.log
+
+# Python QA helper bytecode
+__pycache__/
+*.py[cod]
