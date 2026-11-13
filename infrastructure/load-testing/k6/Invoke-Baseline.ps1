@@ -64,7 +64,7 @@ try {
     $env:K6_TARGET_APPROVED = if ($isLocalTarget) { 'no' } else { 'yes' }
 
     $scriptDirectory = (Resolve-Path $PSScriptRoot).Path
-    $resultsPath = $resultDirectory.Path
+    $resultsPath = $resultDirectory.FullName
     $k6Image = 'grafana/k6:2.3.0@sha256:2dd4756ec6e14e62778916e1eb850108e4b499304c02df56760fa0bdb0fba0b8'
 
     if ($useNativeK6) {

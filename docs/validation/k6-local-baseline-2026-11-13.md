@@ -41,7 +41,11 @@ atendimento do pico real. Não houve carga contra o site hospedado.
 O problema prático encontrado foi o uso de localhost dentro de Docker, que
 aponta para o próprio contêiner. O invocador agora usa k6 nativo para loopback,
 rejeita URLs com credenciais/query/fragmento antes do login e separa diretórios
-por execução. A CI confere esses guardas sem autenticar ou gerar carga.
+por execução. Também corrige a obtenção do caminho da pasta (`FullName` de
+`DirectoryInfo`). Depois dessa correção, o invocador PowerShell completo passou
+com o perfil `low`, autenticação fictícia local, escrita do resumo e limpeza da
+variável de token. Essa verificação adicional não foi somada à tabela dos três
+perfis. A CI confere os guardas sem autenticar ou gerar carga.
 
 A próxima etapa é uma janela identificada na OCI, após composição da release e
 observabilidade, com limites de custo, recursos medidos e critérios de parada.
