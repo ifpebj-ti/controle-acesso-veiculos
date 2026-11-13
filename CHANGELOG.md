@@ -62,6 +62,8 @@ See the [release policy](docs/operations/release-cadence.md).
 
 - Expand Google protocol/signed-token and session-response-loss regressions,
   keeping controlled tests distinct from real OAuth acceptance (#538, #563, #595).
+- Prepare reviewed version/changelog proposals and publish immutable release
+  tags and GitHub Releases after gated container publication (#698).
 - Document security analysis, threat-model consistency, protected operations,
   TLS renewal, deployment evidence and readiness limits (#635, #552, #517, #512,
   #637, #660, #670). Documentation does not prove operational completion.
