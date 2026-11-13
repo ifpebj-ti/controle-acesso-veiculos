@@ -414,6 +414,11 @@ export function LoginPage() {
                 <button
                   className="mt-1 inline-flex min-h-11 items-center rounded-lg pr-2 text-sm font-semibold text-primary underline underline-offset-4 focus:outline-none focus-visible:ring-3 focus-visible:ring-focus"
                   id="administrative-access-toggle"
+                  disabled={
+                    isGoogleRedirecting ||
+                    status === "authenticating" ||
+                    isGoogleCallbackReturn
+                  }
                   onClick={openAdministrativeAccess}
                   ref={administrativeAccessRef}
                   type="button"
