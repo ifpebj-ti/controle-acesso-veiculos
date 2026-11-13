@@ -18,9 +18,15 @@ public sealed class JwtAccessTokenService(
         string email,
         string profileName,
         int credentialVersion,
-        bool requiresPasswordChange)
+        bool requiresPasswordChange,
+        Guid sessionFamilyId)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(credentialVersion);
+
+        if (sessionFamilyId == Guid.Empty)
+        {
+            throw new ArgumentException("A session family is required.", nameof(sessionFamilyId));
+        }
 
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var expiresAt = now.AddMinutes(_options.ExpirationMinutes);
@@ -36,6 +42,7 @@ public sealed class JwtAccessTokenService(
             new Claim(
                 AuthenticationClaimTypes.RequiresPasswordChange,
                 requiresPasswordChange ? bool.TrueString : bool.FalseString),
+            new Claim(AuthenticationClaimTypes.SessionFamilyId, sessionFamilyId.ToString("D")),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
         var token = new JwtSecurityToken(

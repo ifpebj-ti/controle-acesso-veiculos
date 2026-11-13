@@ -1,5 +1,12 @@
 import { StrictMode } from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { AxiosError } from "axios";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -202,6 +209,9 @@ function renderAuthenticationFlow(
 
 async function submitCredentials() {
   const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", { name: "Entrar com usuário e senha" }),
+  );
   await user.type(
     await screen.findByLabelText("E-mail:"),
     "operator@example.test",
@@ -224,9 +234,14 @@ beforeEach(() => {
       ),
     },
   });
-  vi.spyOn(api, "get").mockRejectedValue({
-    isAxiosError: true,
-    response: { status: 401 },
+  vi.spyOn(api, "get").mockImplementation(async (url) => {
+    if (url === "/auth/providers") {
+      return { data: { googleEnabled: true } };
+    }
+    return Promise.reject({
+      isAxiosError: true,
+      response: { status: 401 },
+    });
   });
 });
 
@@ -248,6 +263,30 @@ function seedRestorableSession() {
 }
 
 describe("authentication flow", () => {
+  it.each<ProfileName>(["Porteiro", "Vigilante", "SetorTransporte"])(
+    "restores %s at a direct password URL without exposing or submitting the form",
+    async (profileName) => {
+      seedRestorableSession();
+      vi.mocked(api.get).mockResolvedValue({
+        data: { requestToken: "test-only-csrf-token" },
+      });
+      const post = vi
+        .spyOn(api, "post")
+        .mockResolvedValue(responseFor(profileName));
+
+      renderRestrictedApplication("/conta/senha");
+
+      const heading = await screen.findByRole("heading", {
+        name: "Painel operacional fictício",
+      });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Alterar senha" }),
+      ).not.toBeInTheDocument();
+      expect(post.mock.calls.map(([url]) => url)).toEqual(["/auth/refresh"]);
+    },
+  );
   it("restores a renewable session before rendering protected content", async () => {
     seedRestorableSession();
     vi.mocked(api.get).mockResolvedValue({
@@ -306,6 +345,36 @@ describe("authentication flow", () => {
     expect(post.mock.calls.some(([url]) => url === "/auth/refresh")).toBe(
       false,
     );
+  });
+
+  it("restores a Google callback session without preexisting browser continuity", async () => {
+    vi.mocked(api.get).mockImplementation(async (url) => {
+      if (url === "/auth/providers") {
+        return { data: { googleEnabled: true } };
+      }
+      if (url === "/auth/csrf") {
+        return { data: { requestToken: "google-callback-csrf-token" } };
+      }
+      return Promise.reject(new Error("unexpected request"));
+    });
+    const post = vi
+      .spyOn(api, "post")
+      .mockResolvedValue(responseFor("Vigilante"));
+
+    renderAuthenticationFlow("/login?status=success");
+
+    expect(
+      await screen.findByText("operator@example.test — Vigilante"),
+    ).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith("/auth/refresh", null, {
+      headers: { "X-CSRF-TOKEN": "google-callback-csrf-token" },
+      skipSessionRefresh: true,
+    });
+    expect(post.mock.calls.some(([url]) => url === "/auth/login")).toBe(false);
+    expect(window.sessionStorage).toHaveLength(0);
+    const continuity = window.localStorage.getItem(sessionContinuityStorageKey);
+    expect(continuity).not.toBeNull();
+    expect(continuity).not.toMatch(/token|email|profile|password|user/i);
   });
 
   it("does not request refresh with expired continuity metadata", async () => {
@@ -531,7 +600,9 @@ describe("authentication flow", () => {
   });
 
   it("presents backend unavailability without confirming a login", async () => {
-    vi.spyOn(api, "post").mockRejectedValue(new Error("connection failed"));
+    vi.spyOn(api, "post").mockRejectedValue(
+      new AxiosError("connection failed", "ERR_NETWORK"),
+    );
 
     renderAuthenticationFlow();
     await submitCredentials();
@@ -602,6 +673,9 @@ describe("authentication flow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Senha alterada com segurança. Entre novamente usando a nova senha.",
     );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+    );
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-describedby",
       "login-status-message",
@@ -617,11 +691,16 @@ describe("authentication flow", () => {
     renderAuthenticationFlow();
     await submitCredentials();
     await screen.findByText("operator@example.test — Administrador");
-    vi.mocked(api.get).mockRejectedValueOnce(new Error("network unavailable"));
+    vi.mocked(api.get).mockRejectedValueOnce(
+      new AxiosError("network unavailable", "ERR_NETWORK"),
+    );
     await userEvent.click(screen.getByRole("button", { name: "Sair" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
     );
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-describedby",
@@ -637,10 +716,15 @@ describe("authentication flow", () => {
     vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
     try {
-      vi.mocked(api.get).mockRejectedValue(new Error("network unavailable"));
+      vi.mocked(api.get).mockRejectedValue(
+        new AxiosError("network unavailable", "ERR_NETWORK"),
+      );
       vi.spyOn(api, "post").mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -673,13 +757,18 @@ describe("authentication flow", () => {
     vi.setSystemTime(new Date("2030-06-10T12:00:00Z"));
 
     try {
-      vi.mocked(api.get).mockRejectedValue(new Error("connection failed"));
+      vi.mocked(api.get).mockRejectedValue(
+        new AxiosError("connection failed", "ERR_NETWORK"),
+      );
       vi.spyOn(api, "post").mockResolvedValue(responseFor("Vigilante", 60_000));
 
       renderAuthenticationFlow();
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
       });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       const email = screen.getByLabelText("E-mail:");
       fireEvent.change(email, {
         target: { value: "operator@example.test" },
@@ -723,6 +812,9 @@ describe("authentication flow", () => {
         .mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -786,6 +878,9 @@ describe("authentication flow", () => {
       );
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -850,6 +945,9 @@ describe("authentication flow", () => {
         .mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -922,6 +1020,9 @@ describe("authentication flow", () => {
         );
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -994,6 +1095,9 @@ describe("authentication flow", () => {
 
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -1017,8 +1121,13 @@ describe("authentication flow", () => {
         await vi.advanceTimersByTimeAsync(15 * 60_000);
       });
 
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+      expect(
+        screen.getByText(
+          "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+        ),
+      ).toHaveAttribute("role", "alert");
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
         "aria-describedby",
@@ -1060,6 +1169,9 @@ describe("authentication flow", () => {
 
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -1084,9 +1196,11 @@ describe("authentication flow", () => {
       refreshResponse.resolve(responseFor("Vigilante", 15 * 60_000));
       await act(async () => vi.advanceTimersByTimeAsync(0));
 
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Sua sessão terminou por inatividade. Entre novamente para continuar.",
-      );
+      expect(
+        screen.getByText(
+          "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+        ),
+      ).toHaveAttribute("role", "alert");
       expect(
         screen.queryByText("operator@example.test — Vigilante"),
       ).not.toBeInTheDocument();

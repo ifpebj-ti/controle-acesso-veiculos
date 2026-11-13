@@ -217,6 +217,7 @@ public sealed class GoogleAuthenticationServiceTests
         public Task<bool> IsAuthenticationStateValidAsync(
             int userId,
             int credentialVersion,
+            Guid sessionFamilyId,
             CancellationToken cancellationToken) =>
             Task.FromResult(false);
 
@@ -269,7 +270,8 @@ public sealed class GoogleAuthenticationServiceTests
             string email,
             string profileName,
             int credentialVersion,
-            bool requiresPasswordChange) =>
+            bool requiresPasswordChange,
+        Guid sessionFamilyId) =>
             new("test-access-token", FixedNow.UtcDateTime.AddMinutes(15));
     }
 

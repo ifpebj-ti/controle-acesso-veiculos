@@ -226,12 +226,19 @@ public sealed class RateLimitingTests(ApiFactory factory)
         dbContext.Usuarios.Add(user);
         await dbContext.SaveChangesAsync();
 
+        var now = DateTime.UtcNow;
+        var familyId = Guid.NewGuid();
+        dbContext.SessoesAutenticacao.Add(new SessaoAutenticacao(
+            user.Id, familyId, Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)).ToLowerInvariant(), now, now.AddHours(1)));
+        await dbContext.SaveChangesAsync();
+
         return tokenService.Issue(
             user.Id,
             email,
             ProfileNames.Administrator,
             user.VersaoCredencial,
-            requiresPasswordChange: false).Value;
+            requiresPasswordChange: false,
+            sessionFamilyId: familyId).Value;
     }
 
     private static HttpClient CreateAuthenticatedClient(

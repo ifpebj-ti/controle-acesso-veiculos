@@ -88,7 +88,8 @@ Protection persistente, criptografado e compartilhado entre réplicas.
 ## Consequências
 
 - a sessão sobrevive a recarregamentos sem persistir JWT no navegador;
-- roubo do access token continua limitado à sua validade curta;
+- uso de access token roubado depende de sua validade curta e da família ativa
+  no servidor, conforme a extensão da Issue #647;
 - replay, logout e desativação passam a ter estado revogável no servidor;
 - cada renovação grava uma nova linha e exige política posterior de retenção e
   limpeza alinhada à Issue #30;
@@ -97,6 +98,40 @@ Protection persistente, criptografado e compartilhado entre réplicas.
   de ociosidade compartilhada e retomada do dispositivo pertence à Issue #268;
 - a proteção completa do tablet depende da integração do cliente e de validação
   humana no dispositivo usado pela portaria.
+
+## Esclarecimento operacional — Issue #591
+
+Uma resposta de renovação pode se perder depois que a transação de rotação foi
+confirmada. Nesse caso, se o navegador não receber o novo cookie e reapresentar
+o anterior, o servidor identifica reutilização e revoga o sucessor ativo. O
+protocolo não distingue esse caso de uma credencial antiga reapresentada por
+terceiro. A recuperação é uma autenticação nova, com outra família de sessão;
+não se deve repetir indefinidamente o cookie antigo nem aceitar o token
+consumido por uma tolerância genérica.
+
+A [investigação de recargas](../../validation/session-reload-investigation-2026-11-02.md)
+separa essa reprodução controlada do incidente real e do bloqueio 429 do WAF.
+Não há mudança da política aceita nem comprovação de que esse mecanismo causou
+todas as saídas de sessão observadas.
+
+## Validação da família no token de acesso — Issue #647
+
+O JWT passa a incluir `sid`, com o UUID estável da família persistida. A
+validação por requisição combina conta/perfil/versão de credencial com a
+existência de um sucessor ativo da mesma família e do mesmo usuário, dentro
+dos prazos absoluto e de inatividade. Não há cache positivo dessa decisão.
+
+Uma linha consumida por rotação não encerra a família: o sucessor válido mantém
+os access tokens ainda não expirados utilizáveis. Logout e reuso revogam todos
+os sucessores; a próxima autenticação após a conclusão da transação recusa os
+tokens dessa família. Uma sessão independente do mesmo usuário não é revogada.
+Requisições já autorizadas e em execução não são canceladas retroativamente.
+
+Não é necessária migration: o UUID e os índices da família já existem. Tokens
+emitidos antes desta mudança, sem `sid`, são recusados. A implantação exige
+reautenticação ou renovação pelo backend atualizado; coordenar atualização,
+rollback e testes de Google/local sem misturar instâncias com contratos de
+emissão distintos. Código e testes locais não comprovam implantação.
 
 ## Referências
 

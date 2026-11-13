@@ -200,6 +200,7 @@ async function fillObservation(user: TestUser, value: string) {
   return field;
 }
 
+// Only debounce timeouts are controlled; jsdom animation-frame intervals stay real.
 async function advanceCandidateSearchDebounce() {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(350);
@@ -380,7 +381,7 @@ describe("NewAccessPage", () => {
     });
 
     await user.click(search);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     fireEvent.change(search, { target: { value: "REC" } });
     await advanceCandidateSearchDebounce();
     vi.useRealTimers();
@@ -388,7 +389,7 @@ describe("NewAccessPage", () => {
     expect(screen.getByText(/REC1A23 · Condutor recorrente/)).toBeVisible();
 
     await user.click(search);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     fireEvent.change(search, { target: { value: "ALT" } });
     await advanceCandidateSearchDebounce();
     vi.useRealTimers();
@@ -430,7 +431,7 @@ describe("NewAccessPage", () => {
       name: "Buscar por placa ou nome do condutor",
     });
     await user.click(search);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     fireEvent.change(search, { target: { value: "SEM" } });
     await advanceCandidateSearchDebounce();
     vi.useRealTimers();

@@ -6,14 +6,15 @@ Esta pasta contém a fonte versionada dos documentos de segurança do projeto.
 - [Modelagem de ameaças](threat-model.md)
 - [Modelo visual para OWASP Threat Dragon](controle-acesso-veiculos-threat-model.json)
 - [Guia de desenvolvimento seguro](secure-development-guide.md)
+- [Mapa de SAST, DAST e análise de componentes](security-analysis.md)
 - [Análise dinâmica com OWASP ZAP](dynamic-application-security-testing.md)
 - [Contingência de identidade Google](../operations/google-identity-contingency.md)
 - [Amostra histórica do baseline passivo do ZAP](evidence/zap-baseline-2026-09-16/README.md)
 - [ADR 0001 — ciclo de vida seguro de sessões](../architecture/decisions/0001-secure-session-lifecycle.md)
 - [ADR 0002 — retenção de dados e backup protegido na OCI](../architecture/decisions/0002-data-retention-and-oci-backup.md)
 - [ADR 0003 — key ring persistente e protegido](../architecture/decisions/0003-protected-data-protection-key-ring.md)
-- [ADR 0004 — topologia segura e econômica da homologação na OCI](../architecture/decisions/0004-oci-homologation-topology.md)
-- [ADR 0005 — Google OIDC com autorização local e acesso de emergência](../architecture/decisions/0005-google-oidc-and-emergency-access.md)
+- [ADR 0004 — proposta original de topologia, substituída pela ADR 0006](../architecture/decisions/0004-oci-homologation-topology.md)
+- [ADR 0005 — Google OIDC com autorização local e acesso administrativo separado](../architecture/decisions/0005-google-oidc-and-emergency-access.md)
 - [ADR 0006 — borda de homologação protegida pelo OCI WAF](../architecture/decisions/0006-oci-waf-protected-homologation-edge.md)
 
 A Wiki apresenta cópias de leitura e contexto acadêmico, mas mudanças nestes
@@ -47,8 +48,15 @@ Antes da apresentação, confira se o relatório contém:
 - as ameaças `TM-01` a `TM-27` sem duplicidade;
 - distinção entre controles mitigados e riscos ainda abertos;
 - homologação técnica OCI como implantada com origem privada, Load Balancer e WAF,
-  sem confundi-la com produção; DNS e certificado confiável, backup externo,
+  conforme a ADR 0006, sem confundi-la com produção; o hostname temporário já tem
+  DNS e certificado público confiável. Renovação automática, backup externo,
   observabilidade operada e homologação institucional continuam pendentes.
+
+Em 31/10/2026, a conferência entre o registro textual e o arquivo visual encontrou
+a ausência de TM-24 no JSON. A correção está isolada na Issue #550: até sua
+incorporação, a lista acima é o conteúdo esperado, não uma afirmação de que o
+modelo visual já contém todas as ameaças. Não declarar importação ou relatório
+conferidos apenas porque o JSON é sintaticamente válido.
 
 Não inclua credenciais, endereços internos, dados pessoais, capturas de produção
 ou segredos no modelo ou no PDF exportado.

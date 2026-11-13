@@ -14,7 +14,9 @@ public static class UserAccountEndpoints
 
         group.MapGet(string.Empty, SearchAsync)
             .WithName("SearchUsers")
-            .WithSummary("Consulta contas de usuário");
+            .WithSummary("Consulta contas de usuário")
+            .Produces<UserAccountPageResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest);
         group.MapPost(string.Empty, CreateAsync)
             .WithName("CreateUser")
             .WithSummary("Cria uma conta com credencial temporária");
@@ -59,9 +61,30 @@ public static class UserAccountEndpoints
                 request.PageSize),
             cancellationToken);
 
-        return result.Status == SearchUserAccountsStatus.Success
-            ? Results.Ok(result.Result)
-            : Results.ValidationProblem(result.Errors);
+        if (result.Status != SearchUserAccountsStatus.Success)
+        {
+            return Results.ValidationProblem(result.Errors);
+        }
+
+        var page = result.Result!;
+        return Results.Ok(new UserAccountPageResponse(
+            page.Items.Select(account => new UserAccountResponse(
+                account.Id,
+                account.Name,
+                account.Email,
+                account.ProfileName,
+                account.Active,
+                account.CreatedAtUtc,
+                account.UpdatedAtUtc,
+                account.LockedUntilUtc,
+                account.RequiresPasswordChange,
+                account.TemporaryCredentialExpiresAtUtc,
+                account.AuthenticationMethod.ToString(),
+                account.ExternalIdentityLinked)).ToArray(),
+            page.Page,
+            page.PageSize,
+            page.TotalCount,
+            page.TotalPages));
     }
 
     private static async Task<IResult> CreateAsync(
@@ -277,6 +300,27 @@ public static class UserAccountEndpoints
         };
     }
 }
+
+public sealed record UserAccountResponse(
+    int Id,
+    string Name,
+    string Email,
+    string ProfileName,
+    bool Active,
+    DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc,
+    DateTime? LockedUntilUtc,
+    bool RequiresPasswordChange,
+    DateTime? TemporaryCredentialExpiresAtUtc,
+    string AuthenticationMethod,
+    bool ExternalIdentityLinked);
+
+public sealed record UserAccountPageResponse(
+    IReadOnlyList<UserAccountResponse> Items,
+    int Page,
+    int PageSize,
+    int TotalCount,
+    int TotalPages);
 
 public sealed record SearchUserAccountsRequest(
     string? Search = null,

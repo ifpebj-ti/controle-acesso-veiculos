@@ -1,42 +1,28 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useForm, useWatch } from "react-hook-form";
+import { useEffect, useRef, useState } from "react";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 
 import { Brand } from "../components/ui/Brand";
 import { Button } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
-import { TextField } from "../components/ui/TextField";
 import { SessionLoadingState } from "../components/ui/SessionLoadingState";
 import {
-  AuthenticationContractError,
+  startGoogleAuthentication,
   type SessionEndReason,
   useSession,
 } from "../features/authentication";
-import {
-  loginSchema,
-  type LoginFormValues,
-} from "../features/authentication/schemas/loginSchema";
-import { describeApiError } from "../services/api-errors";
+import { AdministrativeLoginForm } from "../features/authentication/components/AdministrativeLoginForm";
+import { GoogleBrandIcon } from "../features/authentication/components/GoogleBrandIcon";
+import { useAuthenticationProviders } from "../features/authentication/hooks/useAuthenticationProviders";
 
 interface LoginLocationState {
   from?: {
     pathname?: string;
   };
-}
-
-function loginErrorMessage(error: unknown) {
-  if (error instanceof AuthenticationContractError) {
-    return "A resposta de autenticação não pôde ser validada. Tente novamente mais tarde.";
-  }
-
-  const apiError = describeApiError(error);
-
-  if (apiError.status === 401) {
-    return "E-mail ou senha incorretos.";
-  }
-
-  return apiError.message;
 }
 
 function sessionEndMessage(reason: SessionEndReason) {
@@ -59,27 +45,119 @@ function sessionEndMessage(reason: SessionEndReason) {
 }
 
 export function LoginPage() {
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [callbackError, setCallbackError] = useState<string | null>(null);
+  const [isAdministrativeAccessOpen, setIsAdministrativeAccessOpen] =
+    useState(false);
+  const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
+  const callbackHandled = useRef(false);
+  const administrativeAccessRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreAdministrativeFocus = useRef(false);
+  const statusMessageRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, sessionEndReason, status, user } = useSession();
-  const {
-    control,
-    formState: { errors, isSubmitting },
-    handleSubmit,
-    register,
-    setError,
-  } = useForm<LoginFormValues>({
-    defaultValues: { email: "", password: "" },
-    resolver: zodResolver(loginSchema),
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { retry, state: providersState } = useAuthenticationProviders();
+  const { restoreExternalSession, sessionEndReason, status, user } =
+    useSession();
   const locationState = location.state as LoginLocationState | null;
   const redirectTo = locationState?.from?.pathname ?? "/visao-geral";
-  const emailValue = useWatch({ control, name: "email" });
-  const passwordValue = useWatch({ control, name: "password" });
+  const authenticationReturnStatus = searchParams.get("status");
+
+  useEffect(() => {
+    if (
+      callbackHandled.current ||
+      status === "restoring" ||
+      (authenticationReturnStatus !== "success" &&
+        authenticationReturnStatus !== "denied")
+    ) {
+      return;
+    }
+
+    callbackHandled.current = true;
+    const remainingSearchParams = new URLSearchParams(searchParams);
+    remainingSearchParams.delete("status");
+    setSearchParams(remainingSearchParams, { replace: true });
+
+    if (authenticationReturnStatus === "denied") {
+      queueMicrotask(() => {
+        setCallbackError(
+          "Não foi possível concluir o acesso. Verifique sua conta autorizada e tente novamente.",
+        );
+        window.setTimeout(() => statusMessageRef.current?.focus());
+      });
+      return;
+    }
+
+    if (status === "authenticated") return;
+
+    void restoreExternalSession()
+      .then((authenticatedUser) => {
+        navigate(
+          authenticatedUser.requiresPasswordChange
+            ? "/conta/senha"
+            : redirectTo,
+          { replace: true },
+        );
+      })
+      .catch(() => {
+        setCallbackError(
+          "Não foi possível confirmar uma sessão válida. Inicie o acesso novamente.",
+        );
+        window.setTimeout(() => statusMessageRef.current?.focus());
+      });
+  }, [
+    authenticationReturnStatus,
+    navigate,
+    redirectTo,
+    restoreExternalSession,
+    searchParams,
+    setSearchParams,
+    status,
+  ]);
+
+  useEffect(() => {
+    if (
+      status !== "unauthenticated" ||
+      authenticationReturnStatus ||
+      providersState.status === "loading"
+    ) {
+      return;
+    }
+
+    const focusTimeout = window.setTimeout(() => {
+      if (document.activeElement !== document.body) return;
+
+      const targetId =
+        providersState.status === "ready" && providersState.googleEnabled
+          ? "google-login"
+          : providersState.status === "unavailable"
+            ? "provider-discovery-retry"
+            : "administrative-access-toggle";
+      document.querySelector<HTMLElement>(`#${targetId}`)?.focus();
+    });
+
+    return () => window.clearTimeout(focusTimeout);
+  }, [authenticationReturnStatus, providersState, status]);
+
+  useEffect(() => {
+    if (isAdministrativeAccessOpen) {
+      document.querySelector<HTMLElement>("#email")?.focus();
+    } else if (shouldRestoreAdministrativeFocus.current) {
+      shouldRestoreAdministrativeFocus.current = false;
+      administrativeAccessRef.current?.focus();
+    }
+  }, [isAdministrativeAccessOpen]);
 
   if (status === "restoring") {
-    return <SessionLoadingState title="Verificando sua sessão" />;
+    return (
+      <SessionLoadingState
+        title={
+          authenticationReturnStatus === "success"
+            ? "Concluindo seu acesso"
+            : "Verificando sua sessão"
+        }
+      />
+    );
   }
 
   if (user && status === "authenticated") {
@@ -91,26 +169,29 @@ export function LoginPage() {
     );
   }
 
-  const submitLogin = handleSubmit(async (values) => {
-    try {
-      const authenticatedUser = await login(values);
-      navigate(
-        authenticatedUser.requiresPasswordChange ? "/conta/senha" : redirectTo,
-        { replace: true },
-      );
-    } catch (error) {
-      setError("root.server", { message: loginErrorMessage(error) });
-    }
-  });
   const loginStatusMessage =
-    errors.root?.server?.message ??
+    callbackError ??
     (sessionEndReason ? sessionEndMessage(sessionEndReason) : null);
-  const emailDescriptionIds = [
-    errors.email ? "email-error" : null,
-    loginStatusMessage ? "login-status-message" : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const openAdministrativeAccess = () => {
+    shouldRestoreAdministrativeFocus.current = true;
+    setIsAdministrativeAccessOpen(true);
+  };
+  const closeAdministrativeAccess = () => {
+    setIsAdministrativeAccessOpen(false);
+  };
+  const beginGoogleAccess = () => {
+    setCallbackError(null);
+    setIsGoogleRedirecting(true);
+    try {
+      startGoogleAuthentication();
+    } catch {
+      setIsGoogleRedirecting(false);
+      setCallbackError(
+        "Não foi possível iniciar o acesso agora. Tente novamente mais tarde.",
+      );
+      window.setTimeout(() => statusMessageRef.current?.focus());
+    }
+  };
 
   return (
     <main className="login-page relative min-h-svh overflow-x-hidden bg-background text-text">
@@ -129,12 +210,18 @@ export function LoginPage() {
                 <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-primary">
                   Controle de acesso
                 </p>
-                <h1 className="font-display text-4xl font-bold leading-tight text-text sm:text-5xl">
-                  Bem-vindo(a)!
+                <h1
+                  className="font-display text-4xl font-bold leading-tight text-text sm:text-5xl"
+                  id="login-view-title"
+                >
+                  {isAdministrativeAccessOpen
+                    ? "Acesso administrativo"
+                    : "Bem-vindo(a)!"}
                 </h1>
                 <p className="mt-4 max-w-xl text-base leading-7 text-text-muted">
-                  Acesse sua conta para registrar e acompanhar a movimentação de
-                  veículos no campus.
+                  {isAdministrativeAccessOpen
+                    ? "Entre com e-mail e senha. Exclusivo para contas do perfil Administrador."
+                    : "Acesse sua conta para registrar e acompanhar a movimentação de veículos no campus."}
                 </p>
               </header>
 
@@ -142,151 +229,132 @@ export function LoginPage() {
                 <div
                   className="mt-7 w-full max-w-xl rounded-xl border border-danger-border bg-danger-surface px-4 py-3 text-sm font-medium text-danger-text"
                   id="login-status-message"
+                  ref={statusMessageRef}
                   role="alert"
+                  tabIndex={-1}
                 >
                   {loginStatusMessage}
                 </div>
               )}
 
-              <form
-                className="mt-7 w-full max-w-xl space-y-5"
-                noValidate
-                onSubmit={submitLogin}
-              >
-                <div>
-                  <label
-                    className="text-sm font-semibold text-text"
-                    htmlFor="email"
-                  >
-                    E-mail:
-                  </label>
-                  <div className="relative mt-2">
-                    <span aria-hidden="true" className="login-field-icon">
-                      <Icon name="mail" size={21} />
-                    </span>
-                    <TextField
-                      aria-describedby={emailDescriptionIds || undefined}
-                      aria-invalid={Boolean(errors.email)}
-                      autoCapitalize="none"
-                      autoComplete="username"
-                      autoFocus
-                      className="login-field-input"
-                      data-filled={Boolean(emailValue)}
-                      id="email"
-                      inputMode="email"
-                      placeholder="nome@instituicao.edu.br"
-                      type="email"
-                      {...register("email")}
-                    />
-                  </div>
-                  {errors.email && (
-                    <p
-                      className="mt-2 text-sm font-semibold text-danger-text"
-                      id="email-error"
-                      role="alert"
-                    >
-                      {errors.email.message}
-                    </p>
-                  )}
-                </div>
+              {!isAdministrativeAccessOpen ? (
+                <>
+                  <div className="mt-7 w-full max-w-xl">
+                    {providersState.status === "loading" && (
+                      <div
+                        aria-live="polite"
+                        className="rounded-xl border border-border bg-surface px-4 py-4 text-sm text-text-muted"
+                        role="status"
+                      >
+                        Verificando as opções de acesso…
+                      </div>
+                    )}
 
-                <div>
-                  <label
-                    className="text-sm font-semibold text-text"
-                    htmlFor="password"
-                  >
-                    Senha:
-                  </label>
-                  <div className="relative mt-2">
-                    <span aria-hidden="true" className="login-field-icon">
-                      <Icon name="lock" size={21} />
-                    </span>
-                    <TextField
-                      aria-describedby={
-                        errors.password ? "password-error" : undefined
-                      }
-                      aria-invalid={Boolean(errors.password)}
-                      autoComplete="current-password"
-                      className="login-field-input login-password-field"
-                      data-filled={Boolean(passwordValue)}
-                      id="password"
-                      placeholder="Digite sua senha"
-                      type={isPasswordVisible ? "text" : "password"}
-                      {...register("password")}
-                    />
+                    {providersState.status === "ready" &&
+                      providersState.googleEnabled && (
+                        <div>
+                          <p className="mb-3 text-sm leading-6 text-text-muted">
+                            Para Porteiro, Vigilante e Setor de Transporte.
+                          </p>
+                          <Button
+                            aria-busy={isGoogleRedirecting}
+                            className="w-full"
+                            disabled={isGoogleRedirecting}
+                            id="google-login"
+                            onClick={beginGoogleAccess}
+                          >
+                            <GoogleBrandIcon />
+                            {isGoogleRedirecting
+                              ? "Redirecionando…"
+                              : "Continuar com Google"}
+                          </Button>
+                          <p className="mt-3 text-sm leading-6 text-text-muted">
+                            Use sua conta Google pessoal ou institucional, ativa
+                            e previamente autorizada pelo Administrador.
+                          </p>
+                        </div>
+                      )}
+
+                    {providersState.status === "ready" &&
+                      !providersState.googleEnabled && (
+                        <div>
+                          <Button
+                            aria-describedby="google-unavailable-message"
+                            className="w-full"
+                            disabled
+                            id="google-login"
+                          >
+                            <GoogleBrandIcon />
+                            Continuar com Google
+                          </Button>
+                          <p
+                            className="mt-3 text-sm leading-6 text-text-muted"
+                            id="google-unavailable-message"
+                            role="status"
+                          >
+                            O acesso com Google não está disponível neste
+                            ambiente.
+                          </p>
+                        </div>
+                      )}
+
+                    {providersState.status === "unavailable" && (
+                      <div
+                        className="rounded-xl border border-danger-border bg-danger-surface px-4 py-4 text-sm text-danger-text"
+                        role="alert"
+                      >
+                        <p>
+                          Não foi possível verificar as opções de acesso. Tente
+                          novamente.
+                        </p>
+                        <Button
+                          className="mt-3"
+                          id="provider-discovery-retry"
+                          onClick={retry}
+                          variant="secondary"
+                        >
+                          Tentar novamente
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 w-full max-w-xl border-t border-border pt-5">
+                    <p className="text-xs text-text-muted">
+                      Acesso administrativo
+                    </p>
                     <button
-                      aria-label={
-                        isPasswordVisible ? "Ocultar senha" : "Mostrar senha"
-                      }
-                      aria-pressed={isPasswordVisible}
-                      className="login-password-toggle"
-                      onClick={() =>
-                        setIsPasswordVisible((visible) => !visible)
-                      }
+                      className="mt-1 inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-primary underline underline-offset-4 focus:outline-none focus-visible:ring-3 focus-visible:ring-focus"
+                      id="administrative-access-toggle"
+                      onClick={openAdministrativeAccess}
+                      ref={administrativeAccessRef}
                       type="button"
                     >
-                      {isPasswordVisible ? (
-                        <svg
-                          aria-hidden="true"
-                          fill="none"
-                          focusable="false"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="m3 3 18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A11.3 11.3 0 0 1 12 4c5.2 0 8.5 4.6 9 6.3a1.8 1.8 0 0 1 0 1.4 10 10 0 0 1-2 3.3M6.2 6.2A11.6 11.6 0 0 0 3 10.3a1.8 1.8 0 0 0 0 1.4C3.5 13.4 6.8 18 12 18c1 0 2-.2 2.8-.5"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          aria-hidden="true"
-                          fill="none"
-                          focusable="false"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="M3 10.3C3.5 8.6 6.8 4 12 4s8.5 4.6 9 6.3a1.8 1.8 0 0 1 0 1.4C20.5 13.4 17.2 18 12 18s-8.5-4.6-9-6.3a1.8 1.8 0 0 1 0-1.4Z"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                          <circle
-                            cx="12"
-                            cy="11"
-                            r="2.5"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      )}
+                      Entrar com usuário e senha
                     </button>
                   </div>
-                  {errors.password && (
-                    <p
-                      className="mt-2 text-sm font-semibold text-danger-text"
-                      id="password-error"
-                      role="alert"
-                    >
-                      {errors.password.message}
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  aria-busy={isSubmitting}
-                  className="w-full"
-                  disabled={isSubmitting}
-                  type="submit"
+                </>
+              ) : (
+                <section
+                  aria-labelledby="login-view-title"
+                  className="mt-7 w-full max-w-xl"
                 >
-                  {isSubmitting && (
-                    <span aria-hidden="true" className="login-submit-spinner" />
-                  )}
-                  {isSubmitting ? "Entrando..." : "Entrar"}
-                  {!isSubmitting && <Icon name="arrow-right" size={20} />}
-                </Button>
-              </form>
+                  <AdministrativeLoginForm
+                    externalDescriptionId={
+                      loginStatusMessage ? "login-status-message" : undefined
+                    }
+                    onBack={closeAdministrativeAccess}
+                    onAuthenticated={(authenticatedUser) =>
+                      navigate(
+                        authenticatedUser.requiresPasswordChange
+                          ? "/conta/senha"
+                          : redirectTo,
+                        { replace: true },
+                      )
+                    }
+                  />
+                </section>
+              )}
             </div>
 
             <div className="login-support flex items-center gap-3 border-t border-border pt-5 text-xs leading-5 text-text-muted">
@@ -296,7 +364,10 @@ export function LoginPage() {
               >
                 <Icon name="lock" size={18} />
               </span>
-              <p>Utilize a conta individual cadastrada pelo administrador.</p>
+              <p>
+                O acesso é permitido somente a contas previamente autorizadas
+                pelo Administrador.
+              </p>
             </div>
           </div>
 

@@ -109,6 +109,17 @@ public sealed class InstitutionalVehicleCatalogStore(
             }
 
             var changedFields = GetChangedFields(entity, vehicle);
+            var identityChanged = entity.Placa != vehicle.Plate ||
+                entity.IdentificacaoVeiculo != vehicle.Identification;
+            if (identityChanged &&
+                (await dbContext.RegistrosAcesso.AnyAsync(
+                     access => access.VeiculoId == vehicleId, cancellationToken) ||
+                 await dbContext.UsosVeiculosInstitucionais.AnyAsync(
+                     usage => usage.VeiculoId == vehicleId, cancellationToken)))
+            {
+                return new(InstitutionalVehicleStoreUpdateStatus.ReferencedIdentity, null);
+            }
+
             var changed = entity.AtualizarDados(
                 vehicle.Plate,
                 vehicle.VehicleType,

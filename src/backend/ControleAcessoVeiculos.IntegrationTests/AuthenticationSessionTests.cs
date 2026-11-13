@@ -1,3 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using ControleAcessoVeiculos.API.Security;
+using ControleAcessoVeiculos.Application.Authorization;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -14,6 +21,71 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class AuthenticationSessionTests(ApiFactory factory)
 {
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("malformed")]
+    [InlineData("empty")]
+    [InlineData("unknown")]
+    [InlineData("other-user")]
+    [InlineData("expired")]
+    [InlineData("idle")]
+    public async Task AccessTokenRequiresLiveOwnedSessionFamily(string scenario)
+    {
+        const string password = "Test-only-password-123!";
+        var ct = TestContext.Current.CancellationToken;
+        var email = await CreateUserAsync(password, operational: true);
+        using var client = factory.CreateClient();
+        var login = await client.PostAsJsonAsync("/auth/login", new { email, password }, ct);
+        login.EnsureSuccessStatusCode();
+        var body = await login.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: ct);
+        Assert.NotNull(body);
+        Assert.Equal(HttpStatusCode.OK, await ReadProtectedAsync(client, body.AccessToken));
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(body.AccessToken);
+        var family = Guid.Parse(token.Claims.Single(claim => claim.Type == "sid").Value);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var sid = scenario switch
+        {
+            "missing" => null,
+            "malformed" => "not-a-guid",
+            "empty" => Guid.Empty.ToString("D"),
+            "unknown" => Guid.NewGuid().ToString("D"),
+            _ => family.ToString("D")
+        };
+
+        if (scenario == "other-user")
+        {
+            var otherEmail = await CreateUserAsync(password, operational: true);
+            using var otherClient = factory.CreateClient();
+            var otherLogin = await otherClient.PostAsJsonAsync("/auth/login", new { email = otherEmail, password }, ct);
+            otherLogin.EnsureSuccessStatusCode();
+            var otherBody = await otherLogin.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: ct);
+            Assert.NotNull(otherBody);
+            sid = handler.ReadJwtToken(otherBody.AccessToken).Claims.Single(claim => claim.Type == "sid").Value;
+        }
+        else if (scenario == "expired")
+        {
+            await db.SessoesAutenticacao.Where(session => session.FamiliaId == family)
+                .ExecuteUpdateAsync(update => update.SetProperty(session => session.CriadaEm, DateTime.UtcNow.AddDays(-1)).SetProperty(session => session.ExpiraEm, DateTime.UtcNow.AddSeconds(-1)), ct);
+        }
+        else if (scenario == "idle")
+        {
+            await db.SessoesAutenticacao.Where(session => session.FamiliaId == family)
+                .ExecuteUpdateAsync(update => update.SetProperty(session => session.UltimaAtividadeEm, DateTime.UtcNow.AddHours(-1)), ct);
+        }
+
+        var claims = token.Claims.Where(claim => claim.Type != "sid").ToList();
+        if (sid is not null)
+            claims.Add(new Claim("sid", sid));
+        var options = scope.ServiceProvider.GetRequiredService<IOptions<JwtOptions>>().Value;
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.SigningKey));
+        var forged = new JwtSecurityToken(
+            token.Issuer, token.Audiences.Single(), claims, token.ValidFrom, token.ValidTo,
+            new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256));
+        Assert.Equal(HttpStatusCode.Unauthorized, await ReadProtectedAsync(client, handler.WriteToken(forged)));
+    }
+
     [Fact]
     public async Task LoginPublishesConfirmedSessionDeadlinesWithoutChangingBodyContract()
     {
@@ -75,7 +147,7 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
     public async Task RefreshRotatesTokenAndReplayedTokenRevokesFamily()
     {
         const string password = "Test-only-password-123!";
-        var email = await CreateUserAsync(password);
+        var email = await CreateUserAsync(password, operational: true);
         var userId = await GetUserIdAsync(email);
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -90,6 +162,13 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
 
         var login = await client.PostAsJsonAsync("/auth/login", new { email, password }, cancellationToken: TestContext.Current.CancellationToken);
         login.EnsureSuccessStatusCode();
+        var originalAccess = await login.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(originalAccess);
+        using var independentClient = factory.CreateClient();
+        var independentLogin = await independentClient.PostAsJsonAsync("/auth/login", new { email, password }, cancellationToken: TestContext.Current.CancellationToken);
+        independentLogin.EnsureSuccessStatusCode();
+        var independentAccess = await independentLogin.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(independentAccess);
         var firstRefreshToken = GetCookie(login, "cav_refresh");
         var absoluteDeadline = ReadUtcHeader(
             login,
@@ -121,6 +200,8 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
             refreshCompletedAtUtc);
         var secondRefreshToken = GetCookie(firstRefresh, "cav_refresh");
         Assert.NotEqual(firstRefreshToken, secondRefreshToken);
+        Assert.Equal(HttpStatusCode.OK, await ReadProtectedAsync(client, originalAccess.AccessToken));
+        Assert.Equal(HttpStatusCode.OK, await ReadProtectedAsync(client, refreshedLogin.AccessToken));
 
         var replay = await SendSessionRequestAsync(
             client,
@@ -129,6 +210,9 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
             csrfCookie,
             firstRefreshToken);
         Assert.Equal(HttpStatusCode.Unauthorized, replay.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, await ReadProtectedAsync(client, originalAccess.AccessToken));
+        Assert.Equal(HttpStatusCode.Unauthorized, await ReadProtectedAsync(client, refreshedLogin.AccessToken));
+        Assert.Equal(HttpStatusCode.OK, await ReadProtectedAsync(independentClient, independentAccess.AccessToken));
 
         var successorAfterReplay = await SendSessionRequestAsync(
             client,
@@ -141,9 +225,11 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider
             .GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var originalFamilyId = Guid.Parse(new JwtSecurityTokenHandler()
+            .ReadJwtToken(originalAccess.AccessToken).Claims.Single(claim => claim.Type == "sid").Value);
         var sessions = await dbContext.SessoesAutenticacao
             .AsNoTracking()
-            .Where(item => item.UsuarioId == userId)
+            .Where(item => item.UsuarioId == userId && item.FamiliaId == originalFamilyId)
             .OrderBy(item => item.CriadaEm)
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
@@ -163,7 +249,7 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
     public async Task LogoutRevokesSessionFamilyAndExpiresCookie()
     {
         const string password = "Test-only-password-123!";
-        var email = await CreateUserAsync(password);
+        var email = await CreateUserAsync(password, operational: true);
         var userId = await GetUserIdAsync(email);
         using var client = factory.CreateClient();
 
@@ -174,12 +260,16 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
 
         var login = await client.PostAsJsonAsync("/auth/login", new { email, password }, cancellationToken: TestContext.Current.CancellationToken);
         login.EnsureSuccessStatusCode();
+        var originalAccess = await login.Content.ReadFromJsonAsync<LoginResponse>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(originalAccess);
+        Assert.Equal(HttpStatusCode.OK, await ReadProtectedAsync(client, originalAccess.AccessToken));
         using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/auth/logout");
         logoutRequest.Headers.Add("X-CSRF-TOKEN", csrf.RequestToken);
 
         var logout = await client.SendAsync(logoutRequest, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, await ReadProtectedAsync(client, originalAccess.AccessToken));
         var deletedCookie = Assert.Single(
             logout.Headers.GetValues("Set-Cookie"),
             value => value.StartsWith("cav_refresh=", StringComparison.Ordinal));
@@ -292,7 +382,128 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
             .GetRequiredService<ControleAcessoVeiculosDbContext>();
         var activeSuccessors = await dbContext.SessoesAutenticacao.CountAsync(item =>
             item.UsuarioId == userId && item.RevogadaEm == null, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True(activeSuccessors <= 1);
+        Assert.Equal(0, activeSuccessors);
+
+        var winningResponse = Assert.Single(responses, response =>
+            response.StatusCode == HttpStatusCode.OK);
+        using var winningTokenAfterReuse = await SendSessionRequestAsync(
+            client,
+            "/auth/refresh",
+            csrf.RequestToken,
+            csrfCookie,
+            GetCookie(winningResponse, "cav_refresh"));
+        Assert.Equal(HttpStatusCode.Unauthorized, winningTokenAfterReuse.StatusCode);
+        foreach (var response in responses)
+        {
+            response.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task LostCommittedRefreshResponseRevokesStaleFamilyAndFreshLoginRecovers()
+    {
+        const string password = "Test-only-password-123!";
+        var email = await CreateUserAsync(password);
+        var userId = await GetUserIdAsync(email);
+        using var transport = new DiscardFirstRefreshResponseHandler(factory.Server.CreateHandler());
+        using var client = new HttpClient(transport)
+        {
+            BaseAddress = new Uri("http://localhost")
+        };
+        using var csrfResponse = await client.GetAsync("/auth/csrf", TestContext.Current.CancellationToken);
+        csrfResponse.EnsureSuccessStatusCode();
+        var csrf = await csrfResponse.Content.ReadFromJsonAsync<CsrfResponse>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(csrf);
+        var csrfCookie = GetCookie(csrfResponse, "cav_csrf");
+        using var login = await client.PostAsJsonAsync("/auth/login", new { email, password }, cancellationToken: TestContext.Current.CancellationToken);
+        login.EnsureSuccessStatusCode();
+        var originalToken = GetCookie(login, "cav_refresh");
+
+        // The server commits rotation, but this test transport discards the
+        // response before HttpClient can observe or apply its Set-Cookie.
+        await Assert.ThrowsAsync<HttpRequestException>(() => SendSessionRequestAsync(
+            client, "/auth/refresh", csrf.RequestToken, csrfCookie, originalToken));
+        Assert.True(transport.ResponseDiscardedAfterSuccess);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var committedFamily = await db.SessoesAutenticacao.AsNoTracking()
+                .Where(item => item.UsuarioId == userId)
+                .ToListAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(2, committedFamily.Count);
+            Assert.Equal(1, committedFamily.Count(item => item.ConsumidaEm is not null));
+            var rotated = Assert.Single(committedFamily, item => item.ConsumidaEm is not null);
+            Assert.NotNull(rotated.RevogadaEm);
+            Assert.Equal(MotivoRevogacaoSessao.Rotacao, rotated.MotivoRevogacao);
+            Assert.Single(committedFamily, item => item.RevogadaEm is null);
+        }
+
+        using var staleRetry = await SendSessionRequestAsync(
+            client, "/auth/refresh", csrf.RequestToken, csrfCookie, originalToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, staleRetry.StatusCode);
+
+        Guid revokedFamily;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var sessions = await db.SessoesAutenticacao.AsNoTracking()
+                .Where(item => item.UsuarioId == userId)
+                .ToListAsync(TestContext.Current.CancellationToken);
+            revokedFamily = Assert.Single(sessions.Select(item => item.FamiliaId).Distinct());
+            Assert.All(sessions, item => Assert.NotNull(item.RevogadaEm));
+            Assert.Contains(sessions, item => item.MotivoRevogacao == MotivoRevogacaoSessao.Rotacao);
+            Assert.Contains(sessions, item => item.MotivoRevogacao == MotivoRevogacaoSessao.ReutilizacaoDetectada);
+            var audits = await db.Auditorias.AsNoTracking()
+                .Where(item => item.RegistroId == userId)
+                .ToListAsync(TestContext.Current.CancellationToken);
+            Assert.Contains(audits, item => item.DadosNovos != null &&
+                item.DadosNovos.Contains("TokenReuseDetected", StringComparison.Ordinal));
+        }
+
+        using var freshLogin = await client.PostAsJsonAsync("/auth/login", new { email, password }, cancellationToken: TestContext.Current.CancellationToken);
+        freshLogin.EnsureSuccessStatusCode();
+        using var freshRefresh = await SendSessionRequestAsync(
+            client, "/auth/refresh", csrf.RequestToken, csrfCookie, GetCookie(freshLogin, "cav_refresh"));
+        freshRefresh.EnsureSuccessStatusCode();
+        using var recoveryScope = factory.Services.CreateScope();
+        var recoveryDb = recoveryScope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var activeFamily = await recoveryDb.SessoesAutenticacao.AsNoTracking()
+            .Where(item => item.UsuarioId == userId && item.RevogadaEm == null && item.ConsumidaEm == null)
+            .Select(item => item.FamiliaId)
+            .SingleAsync(TestContext.Current.CancellationToken);
+        Assert.NotEqual(revokedFamily, activeFamily);
+    }
+
+    private static async Task<HttpStatusCode> ReadProtectedAsync(HttpClient client, string token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/access-records/open");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        return response.StatusCode;
+    }
+
+    private sealed class DiscardFirstRefreshResponseHandler(HttpMessageHandler innerHandler)
+        : DelegatingHandler(innerHandler)
+    {
+        public bool ResponseDiscardedAfterSuccess { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+            if (!ResponseDiscardedAfterSuccess &&
+                request.RequestUri?.AbsolutePath == "/auth/refresh" &&
+                response.IsSuccessStatusCode)
+            {
+                ResponseDiscardedAfterSuccess = true;
+                response.Dispose();
+                throw new HttpRequestException("Simulated response loss after committed rotation.");
+            }
+
+            return response;
+        }
     }
 
     private static async Task<HttpResponseMessage> SendSessionRequestAsync(
@@ -329,17 +540,22 @@ public sealed class AuthenticationSessionTests(ApiFactory factory)
             System.Globalization.DateTimeStyles.RoundtripKind);
     }
 
-    private async Task<string> CreateUserAsync(string password)
+    private async Task<string> CreateUserAsync(string password, bool operational = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider
             .GetRequiredService<ControleAcessoVeiculosDbContext>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHashService>();
         var suffix = Guid.NewGuid().ToString("N");
-        var profile = new Perfil(
-            $"SessionTest{suffix}",
-            "Perfil criado exclusivamente para teste de integracao.");
-        dbContext.Perfis.Add(profile);
+        var profileName = operational
+            ? ProfileNames.Doorman
+            : $"SessionTest{suffix}";
+        var profile = await dbContext.Perfis.SingleOrDefaultAsync(item => item.Nome == profileName);
+        if (profile is null)
+        {
+            profile = new Perfil(profileName, "Test-only session profile.");
+            dbContext.Perfis.Add(profile);
+        }
 
         var person = new Pessoa($"Pessoa de Teste {suffix}");
         dbContext.Pessoas.Add(person);

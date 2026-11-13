@@ -1,3 +1,5 @@
+using ControleAcessoVeiculos.Application.CampusDrivers;
+using ControleAcessoVeiculos.Infrastructure.CampusDrivers;
 using ControleAcessoVeiculos.API.Health;
 using ControleAcessoVeiculos.API.Endpoints;
 using ControleAcessoVeiculos.API.Middleware;
@@ -32,6 +34,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -113,8 +116,13 @@ var googleOidcOptions = builder.Configuration
 googleOidcOptions.Validate();
 builder.Services.Configure<GoogleOidcOptions>(
     builder.Configuration.GetSection(GoogleOidcOptions.SectionName));
+var homologationTestAccess = builder.Configuration
+    .GetSection(HomologationTestAccessOptions.SectionName)
+    .Get<HomologationTestAccessOptions>() ?? new HomologationTestAccessOptions();
+var homologationPasswordPolicy = homologationTestAccess.Validate(
+    builder.Environment.EnvironmentName, DateTimeOffset.UtcNow);
 builder.Services.AddSingleton(
-    new AuthenticationMethodPolicy(googleOidcOptions.Enabled));
+    new AuthenticationMethodPolicy(googleOidcOptions.Enabled, homologationPasswordPolicy));
 
 var temporaryCredentialOptions = builder.Configuration
     .GetSection(TemporaryCredentialOptions.SectionName)
@@ -187,11 +195,20 @@ var authenticationBuilder = builder.Services
                     return;
                 }
 
+                if (!Guid.TryParseExact(
+                        context.Principal.FindFirst(AuthenticationClaimTypes.SessionFamilyId)?.Value,
+                        "D", out var sessionFamilyId) || sessionFamilyId == Guid.Empty)
+                {
+                    context.Fail("Invalid session family.");
+                    return;
+                }
+
                 var userStore = context.HttpContext.RequestServices
                     .GetRequiredService<IAuthenticationUserStore>();
                 if (!await userStore.IsAuthenticationStateValidAsync(
                         userId,
                         credentialVersion,
+                        sessionFamilyId,
                         context.HttpContext.RequestAborted))
                 {
                     context.Fail("Inactive user account.");
@@ -222,6 +239,8 @@ if (googleOidcOptions.Enabled)
             options.Authority = "https://accounts.google.com";
             options.ClientId = googleOidcOptions.ClientId;
             options.ClientSecret = googleOidcOptions.ClientSecret;
+            // Shared workstations must offer identity choice on each explicit login.
+            options.Prompt = OpenIdConnectPrompt.SelectAccount;
             options.CallbackPath = googleOidcOptions.CallbackPath;
             options.ResponseType = OpenIdConnectResponseType.Code;
             options.UsePkce = true;
@@ -253,6 +272,18 @@ if (googleOidcOptions.Enabled)
 
                     return Task.CompletedTask;
                 },
+                OnAccessDenied = async context =>
+                {
+                    // The OIDC handler validates protected state and correlation
+                    // before raising this event. Invalid callbacks still fail closed.
+                    context.HandleResponse();
+                    context.Response.Headers.CacheControl = "no-store";
+                    await context.HttpContext.SignOutAsync(GoogleOidcOptions.ExternalCookieScheme);
+                    context.Response.Redirect(QueryHelpers.AddQueryString(
+                        googleOidcOptions.FrontendCompletionPath,
+                        "status",
+                        "denied"));
+                },
                 OnRemoteFailure = async context =>
                 {
                     context.HandleResponse();
@@ -260,7 +291,7 @@ if (googleOidcOptions.Enabled)
                     context.Response.Headers.CacheControl = "no-store";
                     await context.Response.WriteAsJsonAsync(new
                     {
-                        Message = "NÃ£o foi possÃ­vel concluir a autenticaÃ§Ã£o pelo Google."
+                        Message = "Não foi possível concluir a autenticação pelo Google."
                     });
                 }
             };
@@ -274,6 +305,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.OperateAccess, policy => policy.RequireRole(
         ProfileNames.Doorman,
         ProfileNames.SecurityGuard,
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAccessRecords, policy => policy.RequireRole(
         ProfileNames.Doorman,
@@ -289,6 +321,7 @@ builder.Services.AddAuthorizationBuilder()
         policy => policy.RequireRole(
             ProfileNames.Doorman,
             ProfileNames.SecurityGuard,
+            ProfileNames.TransportationDepartment,
             ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewTransportationRecords, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment,
@@ -315,10 +348,14 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ManageCampusDrivers, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment, ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewOperationalSummary, policy => policy.RequireRole(
         ProfileNames.Doorman,
@@ -326,7 +363,8 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAdministrativeReports,
-        policy => policy.RequireRole(ProfileNames.Administrator));
+        policy => policy.RequireRole(ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator));
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(institutionalTimeZone);
@@ -363,6 +401,8 @@ builder.Services.AddScoped<UserAccountLifecycleService>();
 builder.Services.AddScoped<ChangeAccountProfileService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
+builder.Services.AddScoped<CampusDriverService>();
+builder.Services.AddScoped<ICampusDriverStore, CampusDriverStore>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
 builder.Services.AddScoped<InstitutionalVehicleCatalogService>();
 builder.Services.AddScoped<InstitutionalDriverService>();
@@ -403,6 +443,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<SensitiveResponseHeadersMiddleware>();
 app.UseMiddleware<RequestSafetyMiddleware>();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
@@ -461,6 +502,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     .DisableRateLimiting();
 
 app.MapVehicleAccessEndpoints();
+app.MapCampusDriverEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
 app.MapInstitutionalDriverEndpoints();
@@ -489,7 +531,7 @@ app.MapGet("/auth/google/start", (HttpContext httpContext) =>
     {
         return Results.NotFound(new
         {
-            Message = "A autenticaÃ§Ã£o pelo Google nÃ£o estÃ¡ habilitada."
+            Message = "A autenticação pelo Google não está habilitada."
         });
     }
 
@@ -503,7 +545,7 @@ app.MapGet("/auth/google/start", (HttpContext httpContext) =>
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
 .WithTags("Authentication")
 .WithName("StartGoogleAuthentication")
-.WithSummary("Inicia a autenticaÃ§Ã£o Google de uma conta previamente autorizada")
+.WithSummary("Inicia a autenticação Google de uma conta previamente autorizada")
 .Produces(StatusCodes.Status302Found)
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status429TooManyRequests);
@@ -571,7 +613,7 @@ app.MapGet("/auth/google/complete", async (
 .RequireRateLimiting(ApiRateLimiting.LoginPolicy)
 .WithTags("Authentication")
 .WithName("CompleteGoogleAuthentication")
-.WithSummary("Conclui o vÃ­nculo Google e cria a sessÃ£o local protegida")
+.WithSummary("Conclui o vínculo Google e cria a sessão local protegida")
 .Produces(StatusCodes.Status302Found)
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status429TooManyRequests);

@@ -14,7 +14,7 @@ vi.mock("../features/authentication/services/passwordChangeService", () => ({
 }));
 
 function renderPage(
-  profileName: ProfileName = "Porteiro",
+  profileName: ProfileName = "Administrador",
   requiresPasswordChange = false,
 ) {
   const completePasswordChange = vi.fn();
@@ -25,6 +25,7 @@ function renderPage(
         expiresAtUtc: "2030-09-21T23:59:59.000Z",
         login: vi.fn(),
         logout: vi.fn(),
+        restoreExternalSession: vi.fn(),
         sessionEndReason: null,
         sessionNotice: null,
         status: "authenticated",
@@ -40,6 +41,7 @@ function renderPage(
         <Routes>
           <Route element={<PasswordChangePage />} path="/conta/senha" />
           <Route element={<h1>Novo login necessário</h1>} path="/login" />
+          <Route element={<h1>Visão geral</h1>} path="/visao-geral" />
         </Routes>
       </MemoryRouter>
     </SessionContext.Provider>,
@@ -49,19 +51,28 @@ function renderPage(
 }
 
 describe("PasswordChangePage", () => {
-  it.each<ProfileName>([
-    "Porteiro",
-    "Vigilante",
-    "SetorTransporte",
-    "Administrador",
-  ])("provides the same account flow to %s", (profileName) => {
-    renderPage(profileName);
+  it("keeps voluntary password change available to the administrator", () => {
+    renderPage();
 
     expect(
       screen.getByRole("heading", { level: 1, name: "Alterar senha" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/todas as sessões anteriores/)).toBeInTheDocument();
   });
+
+  it.each<ProfileName>(["Porteiro", "Vigilante", "SetorTransporte"])(
+    "redirects a direct password-page visit by %s without mounting the form",
+    async (profileName) => {
+      vi.mocked(changeAuthenticatedPassword).mockClear();
+      renderPage(profileName);
+
+      expect(
+        await screen.findByRole("heading", { name: "Visão geral" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+      expect(changeAuthenticatedPassword).not.toHaveBeenCalled();
+    },
+  );
 
   it("ends the local session and requires a new login after success", async () => {
     vi.mocked(changeAuthenticatedPassword).mockResolvedValue();
@@ -88,8 +99,13 @@ describe("PasswordChangePage", () => {
     expect(completePasswordChange).toHaveBeenCalledOnce();
   });
 
-  it("explains mandatory first access without exposing operational actions", () => {
-    renderPage("Vigilante", true);
+  it.each<ProfileName>([
+    "Administrador",
+    "Porteiro",
+    "Vigilante",
+    "SetorTransporte",
+  ])("preserves API-mandated first access for %s", (profileName) => {
+    renderPage(profileName, true);
 
     expect(
       screen.getByRole("heading", {

@@ -20,22 +20,24 @@ IFPE — Campus Belo Jardim.
 
 > [!IMPORTANT]
 > O MVP técnico está integrado e pode ser demonstrado com dados fictícios. Ele
-> possui uma homologação técnica na OCI com borda HTTPS, WAF e origem privada,
-> mas ainda não está autorizado para operação institucional. Certificado público
-> confiável e DNS, gestão definitiva de segredos, monitoramento operado, backup
-> protegido, exercício de recuperação e homologação formal permanecem pendentes.
+> possui uma homologação técnica na OCI com borda HTTPS, WAF, origem privada
+> e certificado público confiável, validado pelo hostname temporário de
+> homologação. Gestão definitiva de segredos, renovação automática do certificado,
+> monitoramento operado, backup protegido, exercício de recuperação e homologação
+> formal permanecem pendentes. O ambiente ainda não está autorizado para operação
+> institucional.
 
 ## Visão geral
 
 O projeto substitui formulários repetitivos e consultas manuais por um fluxo
 rastreável de entrada e saída de veículos. O MVP atende quatro perfis:
 
-| Perfil              | Responsabilidade atual                                    |
-| ------------------- | --------------------------------------------------------- |
-| Porteiro            | opera entradas, saídas e consultas necessárias à portaria |
-| Vigilante           | assume o mesmo fluxo do Porteiro durante a substituição   |
-| Setor de Transporte | supervisiona históricos e mantém frota e motoristas       |
-| Administrador       | gerencia contas, eventos e operações técnicas autorizadas |
+| Perfil              | Responsabilidade atual                                        |
+| ------------------- | ------------------------------------------------------------- |
+| Porteiro            | opera entradas, saídas e consultas necessárias à portaria     |
+| Vigilante           | assume o mesmo fluxo do Porteiro durante a substituição       |
+| Setor de Transporte | opera acessos e mantém cadastros, frota, motoristas e eventos |
+| Administrador       | reúne as funções de negócio e gerencia contas e permissões    |
 
 O sistema inclui acesso geral, acessos em aberto, histórico e correção auditada,
 frota institucional, motoristas autorizados, utilizações, eventos, resumo diário,
@@ -44,6 +46,26 @@ cancelas e fluxo de pedestres não pertencem ao MVP atual.
 
 O estado confirmado, as hipóteses e as pendências estão na página
 [Status do Projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Status-do-Projeto).
+
+## Incrementos incorporados em 12/11/2026
+
+A main `8b61ccd` incorpora o catálogo de doze categorias, o pré-cadastro de
+condutores vinculados e as sugestões de retorno diário. Transporte e Administrador
+podem manter esses cadastros. O nascimento conferido fica restrito à verificação
+de maioridade do condutor. A portaria confirma a pessoa e o objetivo antes de
+registrar a nova entrada.
+
+Os contratos estão no [guia de pré-cadastro](docs/development/campus-driver-registry-contract.md)
+e na [matriz de permissões](docs/architecture/transport-authorization-matrix.md).
+As interfaces correspondentes estão em revisão nos PRs #702/#704/#705. A promoção
+à homologação será acompanhada pela #686.
+
+A CI publica o resumo de [cobertura backend](docs/development/backend-coverage-gate.md)
+e aplica piso de 70%. A execução 43343801016, na main `8b61ccd`, mediu 93,50% das
+linhas do backend, com migrations geradas excluídas. A automação de
+[releases revisáveis](docs/operations/release-automation.md) prepara changelog,
+tag e publicação após os gates das imagens. A primeira publicação desse fluxo
+continua em acompanhamento na #686.
 
 ## Arquitetura
 

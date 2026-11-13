@@ -1,17 +1,26 @@
+import { useId } from "react";
+import { Button } from "../../../components/ui/Button";
 import { Icon, type IconName } from "../../../components/ui/Icon";
 import type { AccessHistoryRequestStatus } from "../hooks/useAccessHistory";
-import { featuredAccessCategories } from "../model/accessCategories";
+import { useHistoryCategoryShelfScroll } from "../hooks/useHistoryCategoryShelfScroll";
+import {
+  generalAccessCategories,
+  type GeneralAccessCategory,
+} from "../model/accessCategories";
 
 interface AccessHistoryCategoryTabsProps {
   activeCategory: string;
   categoryCounts: Record<string, number> | null;
   categoryCountsStatus: "loading" | "ready" | "error";
   onSelect: (category: string) => void;
-  onShowMore: () => void;
   requestStatus: AccessHistoryRequestStatus;
 }
 
-const featuredCategoryIcons: Record<string, IconName> = {
+const categoryIcons: Record<GeneralAccessCategory, IconName> = {
+  "Caminhada com veículo": "vehicle",
+  Mototáxi: "motorcycle",
+  "Permanência excepcional": "clock",
+  "Outro acesso autorizado": "clipboard",
   Entrega: "package",
   Evento: "users",
   "Prestador de serviço": "wrench",
@@ -42,15 +51,19 @@ export function AccessHistoryCategoryTabs({
   categoryCounts,
   categoryCountsStatus,
   onSelect,
-  onShowMore,
   requestStatus,
 }: AccessHistoryCategoryTabsProps) {
   const isLoading = requestStatus === "loading";
-  const isAdditionalCategory =
-    activeCategory.length > 0 &&
-    !featuredAccessCategories.includes(
-      activeCategory as (typeof featuredAccessCategories)[number],
-    );
+  const {
+    edges,
+    moveViewport,
+    navigateCategories,
+    revealCategory,
+    updateEdges,
+    viewportRef,
+  } = useHistoryCategoryShelfScroll(activeCategory);
+  const shelfId = useId();
+  const hintId = `${shelfId}-hint`;
 
   return (
     <section
@@ -61,20 +74,68 @@ export function AccessHistoryCategoryTabs({
         Filtros rápidos por categoria
       </h2>
 
-      <div className="history-category-tabs overflow-x-auto px-0.5 pb-3 pt-4">
-        <div className="grid min-w-max grid-cols-6 gap-3 xl:min-w-0">
-          {featuredAccessCategories.map((label) => {
+      <div className="flex min-h-12 items-center justify-between gap-3 pb-1">
+        <p className="text-sm text-text-muted" id={hintId}>
+          {edges.previous || edges.next
+            ? "Deslize ou use as setas para ver todas as categorias."
+            : "Selecione uma categoria para filtrar os registros."}
+        </p>
+        {(edges.previous || edges.next) && (
+          <div className="flex shrink-0 gap-2">
+            <Button
+              aria-controls={shelfId}
+              aria-label="Ver categorias anteriores"
+              disabled={!edges.previous}
+              onClick={() => moveViewport(-1)}
+              type="button"
+              variant="secondary"
+            >
+              <Icon name="chevron-down" className="rotate-90" size={20} />
+            </Button>
+            <Button
+              aria-controls={shelfId}
+              aria-label="Ver próximas categorias"
+              disabled={!edges.next}
+              onClick={() => moveViewport(1)}
+              type="button"
+              variant="secondary"
+            >
+              <Icon name="chevron-down" className="-rotate-90" size={20} />
+            </Button>
+          </div>
+        )}
+      </div>
+      <div
+        aria-describedby={hintId}
+        aria-label="Categorias do histórico"
+        role="group"
+        id={shelfId}
+        ref={viewportRef}
+        onScroll={updateEdges}
+        onKeyDown={navigateCategories}
+        onFocus={(event) => {
+          if (event.target instanceof HTMLButtonElement)
+            revealCategory(event.target);
+        }}
+        className="history-category-tabs overflow-x-auto px-2 pb-3 pt-4"
+      >
+        <div className="flex w-max gap-3">
+          {generalAccessCategories.map((label, index) => {
             const isActive = activeCategory === label;
             const count = categoryCounts?.[label];
 
             return (
               <button
                 aria-pressed={isActive}
+                aria-labelledby={`${shelfId}-label-${index}`}
+                aria-disabled={isLoading || undefined}
+                aria-describedby={`${shelfId}-count-${index}`}
                 className="history-category-card"
                 data-active={isActive || undefined}
-                disabled={isLoading}
                 key={label}
-                onClick={() => onSelect(isActive ? "" : label)}
+                onClick={() => {
+                  if (!isLoading) onSelect(isActive ? "" : label);
+                }}
                 type="button"
               >
                 <FolderShape />
@@ -82,33 +143,33 @@ export function AccessHistoryCategoryTabs({
                   aria-hidden="true"
                   className="history-category-count"
                   title={
-                    categoryCountsStatus === "ready"
-                      ? `${count ?? 0} registros no período e filtros atuais`
+                    categoryCountsStatus === "ready" && count !== undefined
+                      ? `${count} registros no período e filtros atuais`
                       : undefined
                   }
                 >
                   {categoryCountsStatus === "loading" ? "…" : (count ?? "—")}
                 </span>
-                <Icon name={featuredCategoryIcons[label]} size={26} />
-                <span>{label}</span>
+                <Icon name={categoryIcons[label]} size={26} />
+                <span id={`${shelfId}-label-${index}`}>{label}</span>
+                <span className="sr-only" id={`${shelfId}-count-${index}`}>
+                  {categoryCountsStatus === "loading"
+                    ? "Carregando contagem."
+                    : categoryCountsStatus === "ready" && count !== undefined
+                      ? `${count} registros no período e filtros atuais.`
+                      : "Contagem indisponível."}
+                </span>
               </button>
             );
           })}
-
-          <button
-            aria-pressed={isAdditionalCategory}
-            className="history-category-card"
-            data-active={isAdditionalCategory || undefined}
-            disabled={isLoading}
-            onClick={onShowMore}
-            type="button"
-          >
-            <FolderShape />
-            <Icon name="ellipsis" size={27} />
-            <span>Mais categorias</span>
-          </button>
         </div>
       </div>
+      {categoryCountsStatus === "error" && (
+        <p className="pb-3 text-sm text-text-muted" role="status">
+          As contagens estão indisponíveis. Você ainda pode filtrar por
+          categoria.
+        </p>
+      )}
     </section>
   );
 }
