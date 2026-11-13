@@ -1,31 +1,37 @@
 import { useEffect, useId, useRef, useState } from "react";
-
 import { ActionFeedback } from "../../../components/ui/ActionFeedback";
 import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
 import { PageHeader } from "../../../components/ui/PageHeader";
-import { SelectField } from "../../../components/ui/SelectField";
 import { TextField } from "../../../components/ui/TextField";
-import {
-  preregistrationClassifications,
-  type PreregistrationCatalogStatus,
-  type PreregistrationDraft,
-  type PreregistrationListItem,
-  type PreregistrationSearchDraft,
+import type {
+  PreregistrationCatalogStatus,
+  PreregistrationDraft,
+  PreregistrationListItem,
+  PreregistrationSearchDraft,
 } from "../model/preregistrationPresentation";
 import { PreregistrationCatalog } from "./PreregistrationCatalog";
 import { PreregistrationForm } from "./PreregistrationForm";
-
-interface PreregistrationViewProps {
+interface Props {
   items: readonly PreregistrationListItem[];
   notice?: string | null;
-  onCreate: (draft: PreregistrationDraft) => Promise<void>;
+  onCreate: (draft: PreregistrationDraft) => Promise<boolean>;
   onSearch: (filters: PreregistrationSearchDraft) => void;
   onRetry: () => void;
   status: PreregistrationCatalogStatus;
+  readError?: string | null;
+  mutationError?: string | null;
+  fieldErrors?: Record<string, string>;
+  possibleDuplicate?: boolean;
+  uncertain?: boolean;
+  pending?: boolean;
+  onEdit?: () => void;
+  onAddVehicle?: (person: PreregistrationListItem) => void;
+  onDeactivate?: (person: PreregistrationListItem) => void;
+  page?: number;
+  totalCount?: number;
+  onPageChange?: (page: number) => void;
 }
-
-/** Unmounted presentation candidate: no route, API, storage or permission rule. */
 export function PreregistrationView({
   items,
   notice,
@@ -33,31 +39,47 @@ export function PreregistrationView({
   onSearch,
   onRetry,
   status,
-}: PreregistrationViewProps) {
-  const id = useId();
-  const trigger = useRef<HTMLButtonElement>(null);
-  const wasOpen = useRef(false);
-  const [formOpen, setFormOpen] = useState(false);
-  const [filters, setFilters] = useState<PreregistrationSearchDraft>({
-    name: "",
-    classification: "",
-  });
+  readError,
+  mutationError,
+  fieldErrors,
+  possibleDuplicate,
+  uncertain,
+  pending,
+  onEdit,
+  onAddVehicle,
+  onDeactivate,
+  page = 1,
+  totalCount,
+  onPageChange,
+}: Props) {
+  const id = useId(),
+    trigger = useRef<HTMLButtonElement>(null),
+    wasOpen = useRef(false),
+    noticeRef = useRef<HTMLDivElement>(null);
+  const [formOpen, setFormOpen] = useState(false),
+    [filters, setFilters] = useState<PreregistrationSearchDraft>({
+      query: "",
+      includeInactive: false,
+    });
   useEffect(() => {
     if (wasOpen.current && !formOpen) trigger.current?.focus();
     wasOpen.current = formOpen;
   }, [formOpen]);
+  useEffect(() => {
+    if (notice) noticeRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [notice]);
+  const pages = Math.max(1, Math.ceil((totalCount ?? items.length) / 25));
   return (
     <div className="min-w-0">
-      <p className="mb-5 rounded-xl border border-border bg-surface-subtle p-4 text-sm text-text">
-        Prévia de interface #689 — sem conexão com o cadastro. Use somente dados
-        fictícios.
-      </p>
       <PageHeader
         action={
           status !== "denied" ? (
             <Button
-              disabled={formOpen}
-              onClick={() => setFormOpen(true)}
+              disabled={formOpen || pending || uncertain}
+              onClick={() => {
+                onEdit?.();
+                setFormOpen(true);
+              }}
               ref={trigger}
             >
               <Icon name="plus" size={18} />
@@ -65,9 +87,9 @@ export function PreregistrationView({
             </Button>
           ) : undefined
         }
-        description="Prepare os dados de alunos e funcionários para agilizar o atendimento."
+        description="Cadastre condutores vinculados ao campus e associe seus veículos para agilizar o atendimento."
         eyebrow="Organização e atendimento"
-        title="Pré-cadastro de pessoas"
+        title="Pré-cadastro de condutores"
         variant="prominent"
       />
       {status === "denied" ? (
@@ -83,13 +105,49 @@ export function PreregistrationView({
           {formOpen && (
             <PreregistrationForm
               onCancel={() => setFormOpen(false)}
+              onEdit={onEdit}
               onSubmit={async (draft) => {
-                await onCreate(draft);
-                setFormOpen(false);
+                const success = await onCreate(draft);
+                if (success) setFormOpen(false);
+                return success;
               }}
+              possibleDuplicate={possibleDuplicate}
+              serverErrors={fieldErrors}
+              serverMessage={mutationError}
+              uncertain={uncertain}
             />
           )}
-          <ActionFeedback className="mt-5" message={notice} tone="success" />
+          <div className="mt-5" ref={noticeRef}>
+            <ActionFeedback
+              focusOnChange={!formOpen}
+              message={notice}
+              tone="success"
+            />
+            {!formOpen && (
+              <ActionFeedback
+                focusOnChange
+                message={mutationError}
+                tone="error"
+              />
+            )}
+          </div>
+          {uncertain && (
+            <div className="mt-4 rounded-xl border border-border bg-surface-subtle p-4 text-sm leading-6 text-text">
+              <p>
+                O resultado continua incerto. A consulta não repete o envio;
+                ausência momentânea na lista não prova que ele falhou. Confira o
+                cadastro com o responsável antes de iniciar outra operação.
+              </p>
+              <Button
+                className="mt-3"
+                disabled={status === "loading"}
+                onClick={onRetry}
+                variant="secondary"
+              >
+                Consultar resultado sem reenviar
+              </Button>
+            </div>
+          )}
           <section
             aria-labelledby={`${id}-search-title`}
             className="mt-6 overflow-hidden rounded-2xl border border-border bg-surface text-text"
@@ -99,54 +157,46 @@ export function PreregistrationView({
                 Encontre um pré-cadastro
               </h2>
               <form
-                className="mt-5 grid items-end gap-4 md:grid-cols-2 xl:grid-cols-[2fr_1fr_auto]"
+                className="mt-5 flex flex-wrap items-end gap-4"
                 onSubmit={(event) => {
                   event.preventDefault();
                   if (status !== "loading")
-                    onSearch({ ...filters, name: filters.name.trim() });
+                    onSearch({ ...filters, query: filters.query.trim() });
                 }}
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 basis-72">
                   <label
                     className="block text-sm font-semibold"
                     htmlFor={`${id}-query`}
                   >
-                    Nome completo
+                    Nome ou placa
                   </label>
                   <TextField
                     autoComplete="off"
                     className="mt-2 w-full"
                     id={`${id}-query`}
+                    maxLength={80}
                     onChange={(event) =>
-                      setFilters({ ...filters, name: event.target.value })
+                      setFilters({ ...filters, query: event.target.value })
                     }
                     type="search"
-                    value={filters.name}
+                    value={filters.query}
                   />
                 </div>
-                <div className="min-w-0">
-                  <label
-                    className="block text-sm font-semibold"
-                    htmlFor={`${id}-filter`}
-                  >
-                    Classificação
-                  </label>
-                  <SelectField
-                    className="mt-2 w-full"
-                    id={`${id}-filter`}
-                    onValueChange={(classification) =>
-                      setFilters({ ...filters, classification })
+                <label className="flex min-h-12 items-center gap-3 text-sm">
+                  <input
+                    checked={filters.includeInactive}
+                    className="size-5 accent-primary"
+                    onChange={(event) =>
+                      setFilters({
+                        ...filters,
+                        includeInactive: event.target.checked,
+                      })
                     }
-                    options={[
-                      { label: "Todas", value: "" },
-                      ...preregistrationClassifications.map((value) => ({
-                        label: value,
-                        value,
-                      })),
-                    ]}
-                    value={filters.classification}
+                    type="checkbox"
                   />
-                </div>
+                  Incluir inativos
+                </label>
                 <div className="flex flex-wrap gap-3">
                   <Button disabled={status === "loading"} type="submit">
                     <Icon name="search" size={18} />
@@ -155,7 +205,7 @@ export function PreregistrationView({
                   <Button
                     disabled={status === "loading"}
                     onClick={() => {
-                      const empty = { name: "", classification: "" };
+                      const empty = { query: "", includeInactive: false };
                       setFilters(empty);
                       onSearch(empty);
                     }}
@@ -168,11 +218,38 @@ export function PreregistrationView({
             </div>
             <div className="p-5 sm:p-6">
               <PreregistrationCatalog
+                errorMessage={readError}
                 items={items}
+                locked={pending || uncertain || formOpen}
+                onAddVehicle={onAddVehicle}
+                onDeactivate={onDeactivate}
                 onRetry={onRetry}
                 status={status}
               />
             </div>
+            {status === "ready" && onPageChange && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-5">
+                <p className="text-sm text-text-muted">
+                  Página {page} de {pages} · {totalCount} vínculo(s)
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    disabled={page <= 1}
+                    onClick={() => onPageChange(page - 1)}
+                    variant="secondary"
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    disabled={page >= pages}
+                    onClick={() => onPageChange(page + 1)}
+                    variant="secondary"
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </section>
         </>
       )}

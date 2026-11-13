@@ -1,27 +1,21 @@
-// Presentation models only; no HTTP contract exists for Issue #689 yet.
+import type {
+  CampusDriver,
+  RegisterCampusDriverInput,
+} from "../schemas/campusDriverSchemas";
 export const preregistrationClassifications = [
   "Aluno",
   "Terceirizado",
   "Federal",
 ] as const;
-
 export type PreregistrationClassification =
   (typeof preregistrationClassifications)[number];
-
-export interface PreregistrationDraft {
-  name: string;
-  classification: PreregistrationClassification;
-}
-
-export interface PreregistrationListItem extends PreregistrationDraft {
-  // React rendering key, not a proposed backend identifier.
-  key: string;
-}
-
+export const affiliationLabel = (value: string) =>
+  value === "Federal" ? "Servidor federal" : value;
+export type PreregistrationDraft = RegisterCampusDriverInput;
+export type PreregistrationListItem = CampusDriver;
 export interface PreregistrationSearchDraft {
-  name: string;
-  classification: string;
+  query: string;
+  includeInactive: boolean;
 }
-
 export type PreregistrationCatalogStatus =
   "loading" | "ready" | "error" | "denied";
