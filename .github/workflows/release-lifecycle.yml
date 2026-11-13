@@ -1,0 +1,84 @@
+name: Release - Reviewed lifecycle
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version increment after reviewed composition
+        type: choice
+        options: [patch, minor]
+        default: patch
+        required: true
+      preparation_issue:
+        description: Open issue scoped to preparation (publication tracked separately)
+        type: string
+        required: true
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - CHANGELOG.md
+      - infrastructure/ci/release_lifecycle.py
+      - infrastructure/ci/tests/test_release_lifecycle.py
+      - .github/workflows/release-lifecycle.yml
+      - .github/workflows/ci-containers.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-lifecycle-${{ github.event_name }}-${{ github.event.pull_request.number || 'prepare' }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python3 -m unittest discover -s infrastructure/ci/tests -p test_release_lifecycle.py
+
+  prepare:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Generate reviewed proposal
+        env:
+          BUMP: ${{ inputs.bump }}
+          ISSUE: ${{ inputs.preparation_issue }}
+        run: python3 infrastructure/ci/release_lifecycle.py prepare --bump "$BUMP" --issue "$ISSUE" --plan "$RUNNER_TEMP/release-plan.json"
+      - name: Create a draft PR without merging
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 infrastructure/ci/release_lifecycle.py propose --plan "$RUNNER_TEMP/release-plan.json"
+
+  tag-reviewed-preparation:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.head.ref, '-release-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Verify immutable tag and explicitly dispatch gated image publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          RELEASE_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+        run: python3 infrastructure/ci/release_lifecycle.py tag --branch "$RELEASE_BRANCH" --commit "$RELEASE_COMMIT"
