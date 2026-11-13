@@ -8,7 +8,16 @@ public class PessoaConfiguration : IEntityTypeConfiguration<Pessoa>
 {
     public void Configure(EntityTypeBuilder<Pessoa> builder)
     {
-        builder.ToTable("pessoas", "dbo");
+        builder.ToTable("pessoas", "dbo", table => table.HasCheckConstraint(
+            "ck_pessoas_cadastro_campus_completo",
+            "NOT cadastro_campus_ativo OR (data_nascimento IS NOT NULL AND cadastro_campus_conferido_em IS NOT NULL AND cadastro_campus_conferido_por_id IS NOT NULL AND tipo_vinculo IN ('Aluno', 'Terceirizado', 'Federal'))"));
+
+        builder.Property(x => x.DataNascimento).HasColumnName("data_nascimento").HasColumnType("date");
+        builder.Property(x => x.CadastroCampusAtivo).HasColumnName("cadastro_campus_ativo").HasDefaultValue(false);
+        builder.Property(x => x.CadastroCampusConferidoPorId).HasColumnName("cadastro_campus_conferido_por_id");
+        builder.Property(x => x.CadastroCampusConferidoEm).HasColumnName("cadastro_campus_conferido_em");
+        builder.HasOne<Usuario>().WithMany().HasForeignKey(x => x.CadastroCampusConferidoPorId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.CadastroCampusAtivo, x.TipoVinculo });
 
         builder.HasKey(pessoa => pessoa.Id)
             .HasName("pk_pessoas");

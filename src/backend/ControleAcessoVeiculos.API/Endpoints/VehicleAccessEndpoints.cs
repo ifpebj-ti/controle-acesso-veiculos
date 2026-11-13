@@ -15,7 +15,9 @@ public static class VehicleAccessEndpoints
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("RegisterVehicleEntry")
             .WithSummary("Registra a entrada de um veículo")
-            .WithDescription(VehiclePlateOpenApi.CompletePlate);
+            .WithDescription(VehiclePlateOpenApi.CompletePlate +
+                " Categorias aceitas: " + string.Join(", ", AccessCategoryNames.Supported) +
+                ". Federal identifica servidor federal; categoria não concede autorização.");
         group.MapGet("/open", ListOpenAsync)
             .RequireAuthorization(AuthorizationPolicies.OperateAccess)
             .WithName("ListOpenVehicleAccesses")

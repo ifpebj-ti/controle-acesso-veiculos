@@ -85,6 +85,12 @@ A versão atual consulta `GET /auth/providers` sem usar uma variável de build
 como fonte de verdade. Com `googleEnabled: false`, “Continuar com Google”
 permanece visível, desabilitado e acompanhado da mensagem de indisponibilidade;
 isso não habilita autenticação nem depende de haver contas autorizadas.
+Ao voltar pelo histórico com a página preservada pelo navegador (BFCache),
+o estado transitório de saída para o Google é encerrado e os provedores são
+consultados novamente. O sistema aguarda nova ação explícita; foco ou troca de
+aba não liberam outra tentativa durante a navegação. O retorno sem cache usa
+uma nova página com o estado inicial. Nenhum timer ou armazenamento de token
+é usado para destravar o botão, e a restauração do callback continua separada.
 O botão usa o “G” colorido oficial, servido localmente em
 `public/brand/google-g.png`, com proporção preservada, fundo branco próprio e
 imagem decorativa; o texto continua como nome acessível. Fonte do arquivo:
@@ -101,6 +107,12 @@ rota, e posiciona o foco no e-mail. “Voltar” desmonta o formulário, apaga a
 e devolve o foco à ação que o abriu. Contas Google podem ser pessoais ou
 institucionais, desde que estejam ativas e previamente autorizadas pelo
 Administrador; identidade Google não concede acesso nem perfil.
+No logout explícito, a navegação de entrada é substituída sem intenção de retorno.
+Login local, restauração e callback Google conferem o destino pela matriz de
+rotas e pelo perfil recebido da API: páginas incompatíveis, desconhecidas ou
+externas levam à Visão geral. A troca obrigatória de senha tem prioridade.
+Isso não persiste uma última página por pessoa nem substitui a autorização
+do servidor.
 O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
@@ -287,6 +299,47 @@ Isso não transforma a interface em controle de autorização: o backend continu
 validando cada operação. Falhas de validação, rede, conflito e acesso negado são
 apresentadas sem produzir confirmação falsa. A integração não representa
 homologação para produção.
+
+## Alteração administrativa de perfil — Issue #473
+
+Na administração de contas, a ação “Alterar perfil” fica disponível para outra
+conta ativa. O formulário oferece somente os quatro perfis do contrato, exige
+justificativa de 10 a 500 caracteres e confirmação explícita das consequências.
+O servidor continua responsável por autorização, autoalteração, estado da
+conta, último Administrador ativo e método de autenticação.
+
+O serviço da feature envia um único `PUT /users/{id}/profile`, sem repetição
+automática após HTTP 401, e valida a resposta com Zod. A consulta é revalidada
+com os filtros e a página aplicados. Uma falha da consulta após sucesso oferece
+somente recarga, sem repetir a alteração. Falhas de validação, conflito e limite
+de tentativas preservam os campos. Resultado incerto por rede, erro inesperado
+ou resposta incompatível exige fechar e atualizar a lista antes de nova tentativa.
+Cancelamento da espera após a confirmação também deixa o resultado incerto:
+`CanceledError`/`AbortError` não comprovam rollback. A confirmação fica bloqueada
+inclusive para callbacks antigos, e fechar exige reconsulta somente por leitura.
+Somente falhas conhecidas de validação, conflito e limite permitem revisar e
+confirmar novamente no mesmo diálogo; consultas canceladas mantêm seus guards.
+
+O método de autenticação e o vínculo externo exibidos vêm da API. Contas Google
+não oferecem redefinição local de senha. A criação aceita credencial nula para
+Google; a promoção para Administrador mostra a credencial temporária somente
+quando retornada pelo servidor, reutilizando a exibição única em memória. Ela
+não é enviada a logs, URL ou storage e é removida da interface ao fechar.
+
+Respostas de contas incompatíveis com o contrato são recusadas e exibem uma
+orientação para atualizar a lista, sem atribuir o problema à conexão do usuário.
+Falhas reais de transporte mantêm a mensagem de rede. Esse tratamento pertence
+à feature de contas; a revisão da classificação compartilhada nos demais fluxos
+permanece na Issue #603. A aceitação da credencial nula para Google já faz parte
+do schema estrito existente e não dispensa a validação dos demais campos.
+
+O diálogo reutiliza o seletor e os tokens existentes. Mantém o restante da
+página inerte, contém Tab/Shift+Tab, permite Escape fora de uma mutação pendente
+e devolve o foco ao cancelar. Erros recebem anúncio acessível, foco e rolagem
+local para permanecerem visíveis. O padrão foi adaptado do
+[W3C APG — Modal Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+Os testes automatizados não substituem leitor de tela, tablet físico nem
+homologação institucional. A revisão desses critérios continua pendente.
 
 ## Sessão e segurança
 

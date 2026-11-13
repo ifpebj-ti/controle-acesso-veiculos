@@ -1,6 +1,7 @@
 name: CI - Containers
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -526,7 +527,7 @@ jobs:
 
   validate-release-tag:
     name: Validate semantic release tag
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -535,6 +536,11 @@ jobs:
       version: ${{ steps.version.outputs.version }}
 
     steps:
+      - name: Check out release source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
       - name: Validate release version
         id: version
         shell: bash
@@ -548,9 +554,14 @@ jobs:
 
           echo "version=${release_version}" >> "${GITHUB_OUTPUT}"
 
+      - name: Require reviewed changelog notes before image publication
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: python3 infrastructure/ci/release_lifecycle.py notes --version "$RELEASE_VERSION" --commit "$GITHUB_SHA" --output "$RUNNER_TEMP/release-notes.md"
+
   publish-platform:
     name: Publish verified ${{ matrix.image }} (${{ matrix.platform }})
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/tags/v')
     needs:
       - build-and-scan
       - compose-smoke-test
@@ -709,7 +720,7 @@ jobs:
 
   publish-manifest:
     name: Publish verified ${{ matrix.image }} multi-platform manifest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/tags/v')
     needs:
       - publish-platform
       - validate-release-tag
@@ -847,3 +858,21 @@ jobs:
             echo "Release tag digest does not match ${immutable_tag}" >&2
             exit 1
           fi
+
+  publish-github-release:
+    name: Publish GitHub Release after verified images
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && startsWith(github.ref, 'refs/tags/v')
+    needs: [validate-release-tag, publish-manifest]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Publish notes only after both image manifests passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.validate-release-tag.outputs.version }}
+        run: python3 infrastructure/ci/release_lifecycle.py publish --version "$RELEASE_VERSION" --commit "$GITHUB_SHA" --output "$RUNNER_TEMP/release-notes.md"
