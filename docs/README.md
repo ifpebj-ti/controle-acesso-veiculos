@@ -46,6 +46,7 @@ Datas, commits e classificação de cada evidência devem ser preservados.
 - [Central de segurança](security/README.md): autenticação, STRIDE, Threat Dragon,
   desenvolvimento seguro e limites do ZAP.
 - [Implantação versionada e rollback](operations/versioned-container-deployment.md).
+- [Cadência de releases e promoção](operations/release-cadence.md).
 - [Verificação pública de HTTPS e readiness](operations/public-tls-verification.md):
   probe somente leitura; não implementa renovação nem alerta operacional.
 - [Preflight OCI](operations/oci-homologation-preflight.md),

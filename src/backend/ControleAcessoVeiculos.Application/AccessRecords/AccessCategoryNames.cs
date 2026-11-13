@@ -12,6 +12,10 @@ public static class AccessCategoryNames
     public const string ExceptionalStay = "Permanência excepcional";
     public const string OtherAuthorizedAccess = "Outro acesso autorizado";
 
+    public const string Student = "Aluno";
+    public const string OutsourcedWorker = "Terceirizado";
+    public const string FederalEmployee = "Federal";
+
     private static readonly IReadOnlyDictionary<string, string> CanonicalNames =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -23,7 +27,10 @@ public static class AccessCategoryNames
             [VehicleWalk] = VehicleWalk,
             [MotorcycleTaxi] = MotorcycleTaxi,
             [ExceptionalStay] = ExceptionalStay,
-            [OtherAuthorizedAccess] = OtherAuthorizedAccess
+            [OtherAuthorizedAccess] = OtherAuthorizedAccess,
+            [Student] = Student,
+            [OutsourcedWorker] = OutsourcedWorker,
+            [FederalEmployee] = FederalEmployee
         };
 
     public static IReadOnlyCollection<string> Supported { get; } =

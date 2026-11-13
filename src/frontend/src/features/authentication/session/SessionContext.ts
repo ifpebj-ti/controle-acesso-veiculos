@@ -12,6 +12,7 @@ export interface SessionContextValue {
   expiresAtUtc: string | null;
   login: (credentials: LoginCredentials) => Promise<AuthenticatedUser>;
   logout: () => Promise<void>;
+  restoreExternalSession: () => Promise<AuthenticatedUser>;
   sessionEndReason: SessionEndReason;
   sessionNotice?: SessionNotice;
   status: "authenticated" | "authenticating" | "restoring" | "unauthenticated";
