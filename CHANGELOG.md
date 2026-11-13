@@ -60,6 +60,8 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Quality and operations
 
+- Consolidate backend line coverage across test reports with a 70% CI floor,
+  excluding generated migrations and reporting module-level totals (#691).
 - Expand Google protocol/signed-token and session-response-loss regressions,
   keeping controlled tests distinct from real OAuth acceptance (#538, #563, #595).
 - Prepare reviewed version/changelog proposals and publish immutable release
