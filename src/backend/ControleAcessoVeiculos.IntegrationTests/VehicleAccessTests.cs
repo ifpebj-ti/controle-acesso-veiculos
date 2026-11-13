@@ -16,6 +16,24 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class VehicleAccessTests(ApiFactory factory)
 {
+    [Fact]
+    public async Task TransportationCanReadAuditButCannotManageAccountsOrElevateItself()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        const string password = "Fictitious-Test-Only-123!";
+        var (userId, email) = await CreateUserAsync(ProfileNames.TransportationDepartment, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/audits", ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/users", ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync("/users", new { }, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PutAsJsonAsync($"/users/{userId}/profile",
+            new { profileName = "Administrador", reason = "Tentativa controlada de elevação de privilégio." }, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync($"/users/{userId}/temporary-credential", new { }, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync($"/users/{userId}/reactivation", new { }, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.DeleteAsync($"/users/{userId}", ct)).StatusCode);
+    }
+
     [Theory]
     [InlineData("driverName")]
     [InlineData("observation")]
@@ -524,7 +542,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task TransportationProfileCannotOperateGeneralAccess()
+    public async Task TransportationProfileCanOperateGeneralAccess()
     {
         const string password = "Test-only-password-123!";
         var (_, email) = await CreateUserAsync(
@@ -535,15 +553,16 @@ public sealed class VehicleAccessTests(ApiFactory factory)
 
         var entry = await client.PostAsJsonAsync("/access-records/entries", new
         {
-            driverName = "Condutor não autorizado",
-            plate = "TST1A23",
-            objective = "Operação não autorizada",
+            driverName = "Condutor Fictício",
+            plate = TestPlate.From(Guid.NewGuid().ToString("N")),
+            objective = "Operação de transporte autorizada",
             categoryName = AccessCategoryNames.Visitor
         }, cancellationToken: TestContext.Current.CancellationToken);
-        var exit = await client.PostAsync("/access-records/1/exit", null, TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.Forbidden, entry.StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, exit.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, entry.StatusCode);
+        using var created = JsonDocument.Parse(await entry.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var id = created.RootElement.GetProperty("id").GetInt32();
+        var exit = await client.PostAsync($"/access-records/{id}/exit", null, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, exit.StatusCode);
     }
 
     [Fact]
@@ -713,8 +732,8 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         using var transportationClient = factory.CreateClient();
         await AuthenticateClientAsync(transportationClient, transportationEmail, password);
         Assert.Equal(
-            HttpStatusCode.Forbidden,
-            (await transportationClient.PostAsJsonAsync("/access-records/1/exceptional-closure", request, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
+            HttpStatusCode.BadRequest,
+            (await transportationClient.PostAsJsonAsync("/access-records/1/exceptional-closure", new { reason = "Desconhecido", observation = "curta" }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
 
         var (_, administratorEmail) = await CreateUserAsync(
             ProfileNames.Administrator,
