@@ -76,6 +76,7 @@ function renderPage(profileName: ProfileName = "Porteiro") {
     expiresAtUtc: "2099-01-01T00:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),
+    restoreExternalSession: vi.fn(),
     sessionEndReason: null,
     status: "authenticated",
     user: {
