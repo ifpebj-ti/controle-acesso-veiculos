@@ -94,7 +94,6 @@ See the [release policy](docs/operations/release-cadence.md).
   TLS renewal, deployment evidence and readiness limits (#635, #552, #517, #512,
   #637, #660, #670). Documentation does not prove operational completion.
 
-
 ## [0.4.0] - 2026-10-22
 
 ### Added

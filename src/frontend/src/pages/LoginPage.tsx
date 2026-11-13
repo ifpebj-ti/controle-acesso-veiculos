@@ -386,7 +386,6 @@ export function LoginPage() {
                       </div>
                     )}
                   </div>
-
                 </>
               ) : (
                 <section
