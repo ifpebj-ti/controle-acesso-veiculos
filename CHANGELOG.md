@@ -14,6 +14,8 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Extend the canonical vehicle-access catalog with Aluno, Terceirizado and
+  Federal while retaining the original nine categories (#694, Refs #688).
 - Optional native fullscreen controls and an authenticated overview invitation,
   with per-tab dismissal guidance and persistent access (#621, #629).
 - History category shelf with bounded parallel counting, independent failures,
