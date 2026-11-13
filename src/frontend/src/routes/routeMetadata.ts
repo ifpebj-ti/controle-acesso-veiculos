@@ -94,7 +94,7 @@ const profileSectionOrder: Readonly<
 };
 
 export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
-  "/login": { focusSelector: "#email", title: "Entrar" },
+  "/login": { title: "Entrar" },
   "/conta/senha": {
     allowedProfiles: allProfiles,
     title: "Alterar senha",

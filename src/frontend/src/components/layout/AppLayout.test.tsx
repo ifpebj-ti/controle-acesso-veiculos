@@ -24,6 +24,7 @@ function renderLayout(
           expiresAtUtc: "2026-09-03T23:59:59.000Z",
           login: vi.fn(),
           logout,
+          restoreExternalSession: vi.fn(),
           sessionEndReason: null,
           sessionNotice,
           status: "authenticated",
@@ -62,6 +63,7 @@ function renderNavigableLayout() {
           expiresAtUtc: "2026-09-03T23:59:59.000Z",
           login: vi.fn(),
           logout: vi.fn(),
+          restoreExternalSession: vi.fn(),
           sessionEndReason: null,
           status: "authenticated",
           user: {
@@ -94,6 +96,32 @@ function renderNavigableLayout() {
 }
 
 describe("AppLayout", () => {
+  it.each<ProfileName>([
+    "Porteiro",
+    "Vigilante",
+    "SetorTransporte",
+    "Administrador",
+  ])(
+    "shows voluntary password change only for the administrator in both menus (%s)",
+    async (profile) => {
+      const user = userEvent.setup();
+      renderLayout(profile);
+      const sidebar = screen.getByRole("complementary");
+      const expectedLinks = profile === "Administrador" ? 1 : 0;
+      expect(
+        within(sidebar).queryAllByRole("link", { name: "Alterar senha" }),
+      ).toHaveLength(expectedLinks);
+
+      screen.getByRole("button", { name: "Abrir menu" }).focus();
+      await user.keyboard("{Enter}");
+      const dialog = screen.getByRole("dialog", { name: "Menu principal" });
+      expect(
+        within(dialog).queryAllByRole("link", { name: "Alterar senha" }),
+      ).toHaveLength(expectedLinks);
+      await user.keyboard("{Escape}");
+      expect(screen.getByRole("button", { name: "Abrir menu" })).toHaveFocus();
+    },
+  );
   it.each<ProfileName>([
     "Porteiro",
     "Vigilante",
@@ -296,8 +324,8 @@ describe("AppLayout", () => {
       within(dialog).getByRole("link", { name: "Trilha de auditoria" }),
     ).toBeVisible();
     expect(
-      within(dialog).getByRole("link", { name: "Alterar senha" }),
-    ).toHaveAttribute("href", "/conta/senha");
+      within(dialog).queryByRole("link", { name: "Alterar senha" }),
+    ).not.toBeInTheDocument();
   });
 
   it("announces collapsible groups and preserves a clear active item", async () => {

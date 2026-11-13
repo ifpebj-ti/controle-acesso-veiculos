@@ -38,6 +38,7 @@ function sessionValue(profileName: ProfileName = "Administrador") {
     expiresAtUtc: "2030-09-10T23:59:59.000Z",
     login: vi.fn(),
     logout: vi.fn(),
+    restoreExternalSession: vi.fn(),
     sessionEndReason: null,
     status: "authenticated" as const,
     user: {
@@ -157,11 +158,11 @@ describe("route metadata", () => {
 });
 
 describe("RouteTransitionManager", () => {
-  it("focuses the login field on the direct login route", async () => {
+  it("focuses the login heading before the authentication choices", async () => {
     renderTransitions(["/login"]);
 
     await waitFor(() =>
-      expect(screen.getByRole("textbox", { name: "E-mail" })).toHaveFocus(),
+      expect(screen.getByRole("heading", { name: "Bem-vindo" })).toHaveFocus(),
     );
     expect(document.title).toBe("Entrar | Controle de Acesso de Veículos");
   });
