@@ -7,6 +7,10 @@ import { ProfileRoute } from "./ProfileRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { RouteTransitionManager } from "./RouteTransitionManager";
 
+const loadAuditPage = () =>
+  import("../pages/AuditPage").then(({ AuditPage }) => ({
+    Component: AuditPage,
+  }));
 const loadAdminPage = () =>
   import("../pages/AdminPage").then(({ AdminPage }) => ({
     Component: AdminPage,
@@ -93,6 +97,7 @@ export const router = createBrowserRouter([
                   },
                   { path: "/eventos", lazy: loadEventsPage },
                   { path: "/administracao", lazy: loadAdminPage },
+                  { path: "/auditoria", lazy: loadAuditPage },
                   { path: "/relatorios", lazy: loadReportsPage },
                 ],
               },

@@ -563,3 +563,9 @@ npm run lint
 npm run build
 npm test
 ```
+
+## Funções de negócio do Transporte
+
+O alinhamento de navegação/ações ao contrato incorporado está documentado em
+[`docs/transport-business-ui.md`](docs/transport-business-ui.md), incluindo o
+limite temporário da confirmação de exportação e os ensaios pendentes.

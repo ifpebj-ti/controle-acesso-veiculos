@@ -279,17 +279,22 @@ describe("AppLayout", () => {
       within(dialog).getByRole("link", { name: "Histórico de acessos" }),
     ).toBeVisible();
     expect(
-      within(dialog).queryByRole("link", { name: "Registrar entrada" }),
+      within(dialog).getByRole("link", { name: "Registrar entrada" }),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("link", { name: "Acessos em aberto" }),
+    ).toBeVisible();
+    expect(
+      within(dialog).queryByRole("link", {
+        name: /Usuários e permissões|Contas de acesso/,
+      }),
     ).not.toBeInTheDocument();
     expect(
-      within(dialog).queryByRole("link", { name: "Acessos em aberto" }),
-    ).not.toBeInTheDocument();
+      within(dialog).getByRole("link", { name: "Relatórios" }),
+    ).toBeVisible();
     expect(
-      within(dialog).queryByRole("link", { name: "Usuários e permissões" }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(dialog).queryByRole("link", { name: "Relatórios" }),
-    ).not.toBeInTheDocument();
+      within(dialog).getByRole("link", { name: "Trilha de auditoria" }),
+    ).toBeVisible();
     expect(
       within(dialog).getByRole("link", { name: "Alterar senha" }),
     ).toHaveAttribute("href", "/conta/senha");

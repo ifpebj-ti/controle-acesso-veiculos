@@ -439,7 +439,7 @@ describe("OpenAccessPage", () => {
     },
   );
 
-  it("does not offer exceptional closure to Transportation", async () => {
+  it("offers exceptional closure to Transportation", async () => {
     vi.mocked(listOpenAccessRecords).mockResolvedValue([record]);
     renderPage("SetorTransporte");
 
@@ -449,7 +449,7 @@ describe("OpenAccessPage", () => {
       within(mobileList()).queryByRole("button", {
         name: /Regularizar saída não registrada/,
       }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
   });
 
   it("applies the canonical exceptional response before list revalidation", async () => {

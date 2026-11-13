@@ -202,7 +202,7 @@ describe("InstitutionalUsagesPage", () => {
     expect(searchInstitutionalUsageHistory).not.toHaveBeenCalled();
   });
 
-  it("lets transportation review history without requesting operations", async () => {
+  it("lets transportation review history and operate uses under the current server policy", async () => {
     renderPage("SetorTransporte");
     expect(
       await screen.findByRole("heading", { name: "Histórico de utilizações" }),
@@ -212,11 +212,11 @@ describe("InstitutionalUsagesPage", () => {
     );
     expect(
       screen.queryByRole("heading", { name: "Veículos em uso" }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Registrar saída" }),
-    ).not.toBeInTheDocument();
-    expect(listOpenInstitutionalUsages).not.toHaveBeenCalled();
+    ).toBeInTheDocument();
+    expect(listOpenInstitutionalUsages).toHaveBeenCalled();
   });
 
   it("registers a departure with catalog identifiers", async () => {

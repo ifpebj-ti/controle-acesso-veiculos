@@ -21,7 +21,8 @@ export type ProtectedRoutePath =
   | "/motoristas-institucionais"
   | "/eventos"
   | "/administracao"
-  | "/relatorios";
+  | "/relatorios"
+  | "/auditoria";
 
 type NavigationSectionId =
   | "overview"
@@ -64,6 +65,7 @@ export interface ProfileNavigationSection {
 const portariaProfiles = ["Porteiro", "Vigilante"] as const;
 export const operationalProfiles = [
   ...portariaProfiles,
+  "SetorTransporte",
   "Administrador",
 ] as const satisfies readonly ProfileName[];
 const managementProfiles = [
@@ -87,7 +89,7 @@ const profileSectionOrder: Readonly<
 > = {
   Administrador: ["overview", "supervision", "support", "technical"],
   Porteiro: ["overview", "operations", "support"],
-  SetorTransporte: ["overview", "supervision", "management"],
+  SetorTransporte: ["overview", "operations", "supervision", "management"],
   Vigilante: ["overview", "operations", "support"],
 };
 
@@ -111,7 +113,12 @@ export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
     navigation: {
       icon: "plus",
       label: "Registrar entrada",
-      placements: [{ profiles: portariaProfiles, section: "operations" }],
+      placements: [
+        {
+          profiles: [...portariaProfiles, "SetorTransporte"],
+          section: "operations",
+        },
+      ],
     },
     title: "Registrar entrada",
   },
@@ -120,7 +127,12 @@ export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
     navigation: {
       icon: "clock",
       label: "Acessos em aberto",
-      placements: [{ profiles: portariaProfiles, section: "operations" }],
+      placements: [
+        {
+          profiles: [...portariaProfiles, "SetorTransporte"],
+          section: "operations",
+        },
+      ],
     },
     title: "Acessos em aberto",
   },
@@ -202,12 +214,27 @@ export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
     },
     title: "Administração",
   },
+  "/auditoria": {
+    allowedProfiles: managementProfiles,
+    navigation: {
+      icon: "shield",
+      label: "Trilha de auditoria",
+      placements: [
+        { profiles: ["Administrador"], section: "technical" },
+        { profiles: ["SetorTransporte"], section: "supervision" },
+      ],
+    },
+    title: "Trilha de auditoria",
+  },
   "/relatorios": {
-    allowedProfiles: ["Administrador"],
+    allowedProfiles: managementProfiles,
     navigation: {
       icon: "clipboard",
       label: "Relatórios",
-      placements: [{ profiles: ["Administrador"], section: "technical" }],
+      placements: [
+        { profiles: ["Administrador"], section: "technical" },
+        { profiles: ["SetorTransporte"], section: "supervision" },
+      ],
     },
     title: "Relatórios",
   },
@@ -246,7 +273,12 @@ const profileCapabilities: Readonly<
   ],
   SetorTransporte: [
     "correct-general-access",
+    "exceptionally-close-general-access",
+    "manage-event-authorizations",
     "manage-institutional-catalogs",
+    "operate-general-access",
+    "operate-institutional-fleet",
+    "review-administrative-reports",
     "review-institutional-fleet",
   ],
   Vigilante: [

@@ -30,6 +30,26 @@ function navigationPaths(sections: readonly ProfileNavigationSection[]) {
 }
 
 describe("profile route and navigation metadata", () => {
+  it("keeps account governance Administrator-only while exposing Transportation business routes", () => {
+    expect(canProfileAccessRoute("SetorTransporte", "/administracao")).toBe(
+      false,
+    );
+    expect(
+      profileHasCapability("SetorTransporte", "manage-administration"),
+    ).toBe(false);
+    for (const path of [
+      "/auditoria",
+      "/relatorios",
+      "/acessos/novo",
+      "/acessos/abertos",
+    ]) {
+      expect(canProfileAccessRoute("SetorTransporte", path)).toBe(true);
+    }
+    for (const profile of ["Porteiro", "Vigilante"] as const) {
+      expect(canProfileAccessRoute(profile, "/auditoria")).toBe(false);
+      expect(canProfileAccessRoute(profile, "/relatorios")).toBe(false);
+    }
+  });
   it("keeps Porteiro and Vigilante navigation exactly equivalent", () => {
     expect(navigationSnapshot("Vigilante")).toEqual(
       navigationSnapshot("Porteiro"),
@@ -64,9 +84,17 @@ describe("profile route and navigation metadata", () => {
     ]);
   });
 
-  it("gives Transportation supervision and management without general operations", () => {
+  it("gives Transportation supervision and management with business operations and account governance excluded", () => {
     expect(navigationSnapshot("SetorTransporte")).toEqual([
       { items: undefined, label: "Visão geral", to: "/visao-geral" },
+      {
+        items: [
+          { label: "Registrar entrada", to: "/acessos/novo" },
+          { label: "Acessos em aberto", to: "/acessos/abertos" },
+        ],
+        label: "Operações",
+        to: undefined,
+      },
       {
         items: [
           { label: "Histórico de acessos", to: "/acessos/historico" },
@@ -75,6 +103,8 @@ describe("profile route and navigation metadata", () => {
             to: "/utilizacoes-institucionais",
           },
           { label: "Eventos e autorizações", to: "/eventos" },
+          { label: "Trilha de auditoria", to: "/auditoria" },
+          { label: "Relatórios", to: "/relatorios" },
         ],
         label: "Supervisão",
         to: undefined,
@@ -122,6 +152,7 @@ describe("profile route and navigation metadata", () => {
       {
         items: [
           { label: "Usuários e permissões", to: "/administracao" },
+          { label: "Trilha de auditoria", to: "/auditoria" },
           { label: "Relatórios", to: "/relatorios" },
         ],
         label: "Gestão técnica",
@@ -167,15 +198,15 @@ describe("profile route and navigation metadata", () => {
         "/visao-geral": true,
       },
       SetorTransporte: {
-        "/acessos/abertos": false,
+        "/acessos/abertos": true,
         "/acessos/historico": true,
-        "/acessos/novo": false,
+        "/acessos/novo": true,
         "/administracao": false,
         "/conta/senha": true,
         "/eventos": true,
         "/frota": true,
         "/motoristas-institucionais": true,
-        "/relatorios": false,
+        "/relatorios": true,
         "/utilizacoes-institucionais": true,
         "/visao-geral": true,
       },
@@ -250,12 +281,8 @@ describe("profile route and navigation metadata", () => {
         "SetorTransporte",
         "exceptionally-close-general-access",
       ),
-    ).toBe(false);
-    for (const profileName of [
-      "Porteiro",
-      "Vigilante",
-      "SetorTransporte",
-    ] as const) {
+    ).toBe(true);
+    for (const profileName of ["Porteiro", "Vigilante"] as const) {
       expect(
         profileHasCapability(profileName, "manage-event-authorizations"),
       ).toBe(false);
