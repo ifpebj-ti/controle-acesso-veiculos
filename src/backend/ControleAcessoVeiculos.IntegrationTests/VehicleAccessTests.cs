@@ -17,6 +17,35 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 public sealed class VehicleAccessTests(ApiFactory factory)
 {
     [Theory]
+    [InlineData("Aluno")]
+    [InlineData("Terceirizado")]
+    [InlineData("Federal")]
+    public async Task NewCategoriesRoundTripThroughEntryAndHistory(string category)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        const string password = "Fictitious-Test-Only-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var plate = TestPlate.From(Guid.NewGuid().ToString("N"));
+        var response = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = "Condutor Fictício",
+            plate,
+            objective = "Atendimento fictício",
+            categoryName = category,
+            vehicleType = "Automóvel"
+        }, ct);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        Assert.Equal(category, body.RootElement.GetProperty("categoryName").GetString());
+        var history = await client.GetAsync("/access-records/history?plate=" + plate + "&categoryName=" + Uri.EscapeDataString(category), ct);
+        Assert.Equal(HttpStatusCode.OK, history.StatusCode);
+        using var rows = JsonDocument.Parse(await history.Content.ReadAsStringAsync(ct));
+        Assert.Equal(1, rows.RootElement.GetProperty("totalCount").GetInt32());
+    }
+
+    [Theory]
     [InlineData("driverName")]
     [InlineData("observation")]
     public async Task NullTextReturnsValidationWithoutCreatingAccess(string field)
