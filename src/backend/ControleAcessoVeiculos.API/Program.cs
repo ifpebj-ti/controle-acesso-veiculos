@@ -322,7 +322,7 @@ builder.Services.AddAuthorizationBuilder()
             ProfileNames.Doorman,
             ProfileNames.SecurityGuard,
             ProfileNames.TransportationDepartment,
-        ProfileNames.Administrator))
+            ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewTransportationRecords, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))

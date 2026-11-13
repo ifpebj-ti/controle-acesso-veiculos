@@ -396,3 +396,14 @@ navegador ou leitura de imagem. Ver [contrato e limites](../development/campus-d
 Esse complemento não declara nova homologação, retenção aprovada para nascimento
 ou validação visual do diagrama. A base histórica 3.9 continua identificada; o
 novo recorte deve acompanhar a revisão institucional antes de dados reais.
+
+## Ampliação candidata do Transporte — #693
+
+A decisão de 12/11/2026 amplia o ator Transporte para operação, manutenção de
+eventos, relatórios e leitura de auditoria. A política ManageUsers continua
+exclusiva do Administrador. Testes negativos cobrem consulta/criação de contas,
+troca de perfil, credencial, reativação e desativação pelo Transporte.
+
+A exportação preserva confirmação local e auditoria. O método Google exige a
+confirmação compatível acompanhada pela #699. A renovação da sessão não constitui
+prova de autenticação recente. Ver a [matriz candidata](../architecture/transport-authorization-matrix.md).
