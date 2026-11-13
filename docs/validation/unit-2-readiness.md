@@ -1,5 +1,17 @@
 # Preparação para a Unidade 2
 
+> Atualização de 13/11/2026, fonte main `8b61ccd`. O backend conhecido da
+> hospedagem é `812b71e`, após a promoção #677, com frontend `7dd02a6`.
+> O gate global de linhas backend foi incorporado pelo #697. A execução
+> 43343801016 mediu 93,50% e passou no piso de 70%. A meta de 90% nos recortes
+> críticos e frontend continua na #499/#507. A automação de releases #701 está
+> incorporada, com primeira publicação e promoção ainda na #686.
+> Os incrementos de categorias, cadastro e Transporte têm API na main e telas
+> candidatas #702/#704/#705. A composição local passou 893 testes frontend e 25
+> verificações de serviços reais contra API/PostgreSQL. O navegador conectado
+> estava indisponível. UI autenticada HTTPS e ensaios humanos permanecem pendentes.
+> Essas evidências atualizam itens parciais e mantêm a régua anterior de 17 critérios.
+
 ## Objetivo e critério
 
 Esta matriz relaciona as 17 entregas consolidadas da Unidade 2 às evidências
@@ -7,7 +19,7 @@ atuais, mantendo a régua de peso igual (1 atendido, 0,5 parcial, 0 pendente).
 A revisão de **08/11/2026** usa main `202a913`, após #599 e os cinco merges
 de testes/documentação #595/#635/#532/#512/#517.
 A release estável continua `v0.4.0`. A última composição identificada instalada
-é frontend `7dd02a6` e backend `5fa21bb`; PRs e novos merges não alteram o site
+é frontend `7dd02a6` e backend `812b71e` (fonte conferida na #677); PRs e novos merges não alteram o site
 automaticamente.
 
 O [balanço de 04/11](homologation-test-balance-2026-11-04.md) registra 111/111
@@ -24,7 +36,7 @@ indicadores Maintainability/Reliability do portal Code Quality nem comprova
 inexistência de bugs. Esses critérios não foram promovidos por inferência.
 
 #621/#629 estão na main; a tela cheia ainda não está no frontend hospedado.
-#530 mantém critérios de homologação. #607/b220177 passou 449 testes completos;
+#530 está ready/Closes #473 com evidências atribuídas, aguardando incorporação. #607/b220177 passou 449 testes completos;
 #613/3a5b00f recebeu revisão independente com 82 testes focados, lint/build.
 A composição local anterior validou solicitação/aprovação contra API real,
 mas não substitui o ensaio HTTPS final e as pessoas. #611/1aad5fb passou 467
@@ -55,13 +67,13 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 
 ## Engenharia de Software
 
-| Entrega                                       | Evidência atual                                                                                                                                                         | Estado                       | Próxima comprovação                                                                                                          |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Estratégia de testes                          | [Wiki — Estratégia de Testes](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Estrategia-de-Testes), [CI/CD](../development/ci-cd.md) e suítes automatizadas | Parcial                      | auditoria da Wiki #545 corrigiu contradições e a meta de 90%; falta comprovar medição por risco e incorporar o gate revisado |
-| Manual de uso                                 | [Wiki — Manual de Uso](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Manual-de-Uso)                                                                        | Parcial                      | revisar após login Google, nome oficial, relatórios e validação final dos quatro perfis                                      |
-| Ligação story → PR → testes → pipeline → demo | Issues, PRs, commits `Refs/Closes`, checks e registros semanais                                                                                                         | Atendido                     | manter a rastreabilidade nas próximas entregas e anexar evidência da demonstração quando solicitada                          |
-| Maintainability e Reliability acima de Good   | CodeQL e checks de qualidade estão ativos                                                                                                                               | Pendente / validação externa | resolver os avisos atuais e conferir os dois indicadores no portal GitHub Security and quality                               |
-| Tags, releases e changelog                    | [`v0.4.0`](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0), imagens semânticas e [`CHANGELOG.md`](../../CHANGELOG.md)                        | Atendido                     | criar nova release somente após fechar o incremento que irá para a homologação                                               |
+| Entrega                                       | Evidência atual                                                                                                                                  | Estado                      | Próxima comprovação                                                                                 |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- | --------------------------------------------------------------------------------------------------- |
+| Estratégia de testes                          | Wiki, CI e cobertura backend publicados em 8b61ccd, 93,50% de linhas e piso global de 70% pelo #697                                              | Parcial                     | concluir o recorte crítico de 90% e frontend na #499/#507                                           |
+| Manual de uso                                 | [Wiki — Manual de Uso](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Manual-de-Uso)                                                 | Parcial                     | revisar após login Google, nome oficial, relatórios e validação final dos quatro perfis             |
+| Ligação story → PR → testes → pipeline → demo | Issues, PRs, commits `Refs/Closes`, checks e registros semanais                                                                                  | Atendido                    | manter a rastreabilidade nas próximas entregas e anexar evidência da demonstração quando solicitada |
+| Maintainability e Reliability acima de Good   | Última conferência #684 identificou nove notes e zero warnings, compatível com Good pelo critério oficial                                        | Parcial / validação externa | conferir ambos indicadores no portal e o critério acadêmico acima de Good                           |
+| Tags, releases e changelog                    | [`v0.4.0`](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0), imagens semânticas e [`CHANGELOG.md`](../../CHANGELOG.md) | Atendido                    | criar nova release somente após fechar o incremento que irá para a homologação                      |
 
 ## Segurança
 
