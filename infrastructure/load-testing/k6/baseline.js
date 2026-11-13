@@ -117,7 +117,8 @@ export function handleSummary(data) {
 
   return {
     stdout: `${JSON.stringify(summary, null, 2)}\n`,
-    "/results/summary.json": `${JSON.stringify(summary, null, 2)}\n`,
+    [__ENV.K6_SUMMARY_PATH || "/results/summary.json"]:
+      `${JSON.stringify(summary, null, 2)}\n`,
   };
 }
 

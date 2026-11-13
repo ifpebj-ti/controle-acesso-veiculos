@@ -58,8 +58,25 @@ revisado.
 ```
 
 Repita com `medium` e `intense` apenas dentro da mesma janela autorizada. O
-invocador usa a imagem oficial `grafana/k6:2.3.0`, pede a senha sem eco, faz um
+invocador remoto usa a imagem oficial `grafana/k6:2.3.0`, pede a senha sem eco, faz um
 login único e não escreve a credencial no repositório ou no relatório.
+
+## Execução local
+
+Alvos `localhost`, `127.0.0.1` e `::1` usam o executável nativo oficial do k6,
+instalado no PATH ou informado por `-K6Executable`. O loopback de um contêiner
+pertence ao próprio contêiner; não encaminhe o token para outro hostname apenas
+para contornar essa diferença. O invocador rejeita URL com credenciais, query ou
+fragmento antes de solicitar a senha e autenticar.
+
+Cada execução grava seu resumo em uma pasta UTC/perfil distinta, evitando que
+`medium` sobrescreva `low`. O script também aceita `K6_SUMMARY_PATH` para uma
+saída nativa fora do repositório. Valores de tokens continuam apenas em memória
+e variáveis transitórias do processo.
+
+Um ensaio local serve para validar o roteiro, os endpoints e os thresholds.
+Ele não comprova latência de internet, capacidade da VM, atuação do WAF, TLS ou
+aceitação do volume real da portaria. A pendência de nuvem permanece na #502.
 
 ## Evidência mínima
 
@@ -87,3 +104,9 @@ placa, nome ou conteúdo de resposta.
 6. atualize a Wiki somente depois do PR e da evidência serem incorporados.
 
 Resultados de uma única VM e janela não devem ser extrapolados para produção.
+
+## Execução local registrada
+
+O [relatório de 13/11/2026](../validation/k6-local-baseline-2026-11-13.md)
+registra os três perfis executados contra a API fictícia local. Os thresholds
+passaram; métricas e limitações permanecem separadas do ensaio OCI pendente.

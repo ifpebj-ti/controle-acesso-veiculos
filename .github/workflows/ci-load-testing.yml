@@ -71,3 +71,30 @@ jobs:
             echo 'A target containing credentials or a query was accepted.' >&2
             exit 1
           fi
+
+      - name: Validate native runner guards before authentication
+        shell: pwsh
+        run: |
+          $runner = Join-Path $PWD 'infrastructure/load-testing/k6/Invoke-Baseline.ps1'
+          $parseErrors = $null
+          $tokens = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($runner, [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count) { throw 'PowerShell parsing failed.' }
+          $cases = @(
+            @{ Url = 'https://user:password@example.test/api'; Expected = 'sem credenciais' },
+            @{ Url = 'http://127.0.0.1:8080/api?unsafe=true'; Expected = 'sem credenciais' },
+            @{ Url = 'http://127.0.0.1:8080/api#fragment'; Expected = 'sem credenciais' },
+            @{ Url = 'http://example.test/api'; Expected = 'HTTPS' },
+            @{ Url = 'https://example.test/api'; Expected = 'ApprovedRemoteTarget' },
+            @{ Url = 'http://127.0.0.1:8080/api'; Expected = 'k6 nativo' }
+          )
+          foreach ($case in $cases) {
+            $rejected = $false
+            try {
+              & $runner -ApiBaseUrl $case.Url -K6Executable '/__cav_missing_k6__'
+            } catch {
+              if ($_.Exception.Message -notmatch $case.Expected) { throw }
+              $rejected = $true
+            }
+            if (-not $rejected) { throw 'Unsafe or unprepared runner reached authentication.' }
+          }

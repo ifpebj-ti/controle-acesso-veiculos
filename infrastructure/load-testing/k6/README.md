@@ -30,7 +30,7 @@ usar o invocador.
 
 A senha é solicitada de modo protegido. O invocador realiza um único login,
 repassa apenas o token temporário ao contêiner e remove as variáveis ao final. O
-arquivo `artifacts/k6/summary.json` é local e ignorado pelo Git; revise e
+arquivo `artifacts/k6/<UTC-perfil>/summary.json` é local e ignorado pelo Git; revise e
 sanitize qualquer evidência antes de publicá-la.
 
 A imagem oficial `grafana/k6:2.3.0` está fixada pelo digest multi-arquitetura
@@ -39,3 +39,19 @@ A CI executa apenas `k6 inspect --include-system-env-vars` com valores fictício
 ela valida a sintaxe e a configuração do script sem enviar carga ou acessar a
 homologação. A opção explícita é necessária porque o comando `inspect`, por
 segurança, não expõe variáveis do ambiente ao script por padrão.
+
+## Execução no computador local
+
+Para `localhost`, `127.0.0.1` e `::1`, o invocador utiliza k6 nativo. Isso permite
+alcançar a API no computador que recebe a conexão loopback. Obtenha a distribuição
+oficial do Grafana k6 e informe seu caminho quando estiver fora do PATH.
+
+```powershell
+./infrastructure/load-testing/k6/Invoke-Baseline.ps1 -ApiBaseUrl http://127.0.0.1:5118 -Profile low -K6Executable CAMINHO_DO_K6
+```
+
+O invocador confere o executável antes de solicitar credenciais. Cada execução
+recebe diretório próprio por data UTC e perfil. O script mantém os mesmos
+thresholds, limite de cinco usuários e proteções de alvos remotos. O comando
+nativo também aceita `K6_SUMMARY_PATH` para o resumo JSON. O padrão Docker é
+`/results/summary.json`, dentro do volume de resultados.
