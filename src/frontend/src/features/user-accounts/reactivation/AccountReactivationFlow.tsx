@@ -4,17 +4,21 @@ import { Button } from "../../../components/ui/Button";
 import { SelectField } from "../../../components/ui/SelectField";
 import { TemporaryCredentialDialog } from "../components/TemporaryCredentialDialog";
 import { credentialResetReasons } from "../types";
-import type { ReactivationAccount, ReadReactivationAccount } from "./types";
+import type {
+  ReactivationAccount,
+  ReadReactivationAccount,
+  ReactivationCloseOutcome,
+} from "./types";
 import { useAccountReactivation } from "./useAccountReactivation";
 
 interface Props {
   account: ReactivationAccount;
   readAccount: ReadReactivationAccount;
-  onClose: () => void;
+  onClose: (outcome: ReactivationCloseOutcome) => void;
   returnFocusTo: HTMLElement | null;
 }
 
-// Deliberately not mounted by AdminPage until the #530 contract reaches main.
+// Receives only a validated canonical account and an independent catalog reader.
 export function AccountReactivationFlow(props: Props) {
   return <ReactivationSession key={props.account.id} {...props} />;
 }
@@ -43,8 +47,9 @@ function ReactivationSession({
     flow.phase === "editing" && !flow.account.active && knownMethod;
 
   function close() {
+    const outcome = flow.getCloseOutcome();
     if (!flow.close()) return;
-    onClose();
+    onClose(outcome);
     window.requestAnimationFrame(() => {
       if (
         returnFocusTo?.isConnected &&

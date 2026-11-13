@@ -10,7 +10,11 @@ import {
   reactivateLocalAccount,
   reactivationFailure,
 } from "./accountReactivationService";
-import type { ReactivationAccount, ReadReactivationAccount } from "./types";
+import type {
+  ReactivationAccount,
+  ReadReactivationAccount,
+  ReactivationCloseOutcome,
+} from "./types";
 
 type Phase =
   | "editing"
@@ -194,7 +198,14 @@ export function useAccountReactivation(
     return true;
   }
 
+  function getCloseOutcome(): ReactivationCloseOutcome {
+    if (phase === "credential" || phase === "completed") return "confirmed";
+    if (phase === "editing") return "cancelled";
+    return legacyRefusal.current ? "refresh-required" : "uncertain";
+  }
+
   return {
+    getCloseOutcome,
     account,
     reason,
     reasonError,

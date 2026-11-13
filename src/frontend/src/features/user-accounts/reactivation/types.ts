@@ -1,6 +1,6 @@
 import type { UserAccount } from "../types";
 
-// Supplied by a validated account DTO after the #530 contract reaches main.
+// Supplied by the validated canonical account DTO incorporated through #530.
 // This projection does not replace or relax that DTO's schema.
 export type ReactivationAccount = Pick<
   UserAccount,
@@ -14,3 +14,6 @@ export type ReactivationAccount = Pick<
 export type ReadReactivationAccount = (
   account: ReactivationAccount,
 ) => Promise<ReactivationAccount | null>;
+
+export type ReactivationCloseOutcome =
+  "cancelled" | "confirmed" | "uncertain" | "refresh-required";
