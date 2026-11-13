@@ -51,7 +51,27 @@ snapshot; não é nova execução de testes nem medição de candidatos posterio
 Sem a exclusão de migrations geradas, o resultado seria 96,58%; esse número
 não foi escolhido para avaliar código de negócio. Não há evidência nesta tarefa
 para afirmar porcentagem consolidada do frontend, cobertura de 100% ou ausência
-de bugs. O gate só estará ativo na main após incorporação e execução da CI.
+de bugs. O gate foi incorporado pelo #697 e executado com sucesso na main `8b61ccd`.
+
+## Medição automática após incorporação
+
+A execução [43343801016](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/runs/43343801016)
+concluiu com sucesso na main `8b61ccd38b4c9b2e73783a6a3fdccf9a388c10a9`.
+O artefato `13999454597` contém `backend-coverage-summary/summary.json` e
+`summary.md`, além dos TRX. Os TRX registram 88 Domain, 141 Application e 285
+integração, todos aprovados. O sufixo do nome do artefato é o número da execução.
+
+| Projeto             | Cobertas | Executáveis |     Linhas |
+| ------------------- | -------: | ----------: | ---------: |
+| Domain              |      700 |         756 |     92,59% |
+| Application         |     2639 |        2786 |     94,72% |
+| Infrastructure      |     3168 |        3313 |     95,62% |
+| API                 |     2431 |        2704 |     89,90% |
+| Backend consolidado |     8938 |        9559 | **93,50%** |
+
+O resumo identifica três relatórios únicos entre seis arquivos. O mesmo método
+preserva o piso global de 70% e a exclusão de código gerado. A métrica de linhas
+do backend não mede branches, frontend ou a homologação dos fluxos.
 
 ## Coordenação com #507
 

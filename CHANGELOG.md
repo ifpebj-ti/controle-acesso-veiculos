@@ -68,6 +68,8 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Quality and operations
 
+- Reconcile current role, registry, release and academic documentation with
+  incorporated contracts and published backend coverage evidence (#706).
 - Consolidate backend line coverage across test reports with a 70% CI floor,
   excluding generated migrations and reporting module-level totals (#691).
 - Expand Google protocol/signed-token and session-response-loss regressions,

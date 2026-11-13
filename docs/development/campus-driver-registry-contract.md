@@ -1,4 +1,4 @@
-# Pré-cadastro veicular e sugestões de retorno — candidato #690
+# Pré-cadastro veicular e sugestões de retorno — #690/#695
 
 ## Decisão e escopo
 
@@ -31,7 +31,7 @@ presença no campus. Maioridade **não comprova habilitação**, posse do veícu
 autorização de entrada; não verificar CNH automaticamente não autoriza ignorar
 uma irregularidade conhecida. A portaria continua conferindo a pessoa real.
 
-## Contrato novo, ainda não implantado
+## Contrato incorporado na main, com promoção pendente
 
 ### `POST /campus-drivers`
 
@@ -114,7 +114,7 @@ de início de novos vínculos passa a usar o dia institucional, não o dia UTC.
    descartar respostas antigas de buscas concorrentes. Sem dados pessoais em
    localStorage/sessionStorage. O backend reavalia estado ao confirmar.
 
-Categoria de acesso continua independente do vínculo. A #688 amplia seu
+Categoria de acesso continua independente do vínculo. O #696 ampliou seu
 catálogo, mas não obriga uma nova pergunta Sim/Não nem libera entrada por perfil.
 
 ## Migração, proteção e limites
