@@ -8,12 +8,16 @@ from its first published release.
 
 ## [Unreleased]
 
-This section lists incorporated changes since v0.4.0, not a published release
-or proof of deployment. Frontend candidates still in open PRs are excluded.
+This section records increments since v0.4.0. Entries introduced by open PRs
+remain proposed until incorporation, not a published release or proof of deployment.
 See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Transportation navigation and actions aligned with the incorporated business
+  matrix, including independent audit queries without user management and report
+  consultation; keep PDF export unavailable until compatible confirmation is
+  available, without asking for a Google password (#705, Refs #703).
 - Register verified adult campus drivers and private vehicles, with audited
   management, transactional persistence and operator-scoped same-day entry
   suggestions (#690, Refs #689).
