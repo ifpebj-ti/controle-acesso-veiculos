@@ -1,3 +1,4 @@
+import { getAccessCategoryLabel } from "../features/access-records/model/accessCategories";
 import {
   act,
   fireEvent,
@@ -278,7 +279,7 @@ describe("NewAccessPage", () => {
       );
       await screen.findByRole("alert");
       expect(screen.getByLabelText(/Categoria do acesso/)).toHaveTextContent(
-        categoryName,
+        getAccessCategoryLabel(categoryName),
       );
       expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
         "Pessoa fictícia",

@@ -19,7 +19,10 @@ import {
 import { describeApiError } from "../services/api-errors";
 import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { selectFieldOption } from "../test/selectField";
-import { generalAccessCategories } from "../features/access-records/model/accessCategories";
+import {
+  generalAccessCategories,
+  getAccessCategoryLabel,
+} from "../features/access-records/model/accessCategories";
 import { HistoryPage } from "./HistoryPage";
 
 vi.mock("../features/access-records/services/accessRecordsService", () => ({
@@ -343,7 +346,7 @@ describe("HistoryPage", () => {
 
     for (const category of generalAccessCategories) {
       expect(
-        screen.getByRole("button", { name: category }),
+        screen.getByRole("button", { name: getAccessCategoryLabel(category) }),
       ).toBeInTheDocument();
     }
     expect(
@@ -361,7 +364,9 @@ describe("HistoryPage", () => {
     expect(category).toHaveAttribute("aria-pressed", "true");
     expect(category).toHaveFocus();
     await user.keyboard("{End}");
-    expect(screen.getByRole("button", { name: "Federal" })).toHaveFocus();
+    expect(
+      screen.getByRole("button", { name: "Servidor federal" }),
+    ).toHaveFocus();
     await user.keyboard("{Home}");
     expect(screen.getByRole("button", { name: "Visitante" })).toHaveFocus();
   });
@@ -376,7 +381,9 @@ describe("HistoryPage", () => {
       await waitFor(() =>
         expect(countAccessHistoryByCategory).toHaveBeenCalledOnce(),
       );
-      const shortcut = screen.getByRole("button", { name: categoryName });
+      const shortcut = screen.getByRole("button", {
+        name: getAccessCategoryLabel(categoryName),
+      });
       expect(shortcut).toHaveAccessibleDescription(
         /\d+ registros no período e filtros atuais/,
       );
@@ -396,7 +403,7 @@ describe("HistoryPage", () => {
         categoryName,
       );
       expect(screen.getByLabelText("Categoria")).toHaveTextContent(
-        categoryName,
+        getAccessCategoryLabel(categoryName),
       );
     },
   );

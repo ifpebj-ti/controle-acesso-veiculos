@@ -7,19 +7,17 @@ acrescentadas ao final do catálogo compartilhado. As nove opções anteriores,
 sua ordem e a seleção inicial Visitante são preservadas. Não há novo campo de
 vínculo, cadastro de pessoas ou autorização automática.
 
-Na base `1915d13`, o backend aceita somente as nove categorias anteriores em
-`AccessCategoryNames`. Portanto esta preparação **não está integrada**: registrar,
-corrigir ou filtrar uma categoria nova pode ser recusado pela API antiga; a
-consulta das contagens também pode ficar indisponível. Não incorporar/implantar
-este frontend isoladamente antes de um candidato backend compatível. Manter
-Refs #688 e draft enquanto faltar a validação integrada.
+A base atual é a main `8b61ccd`, que incorporou #696/5313f18. O backend já
+aceita as doze categorias no código; isso não comprova implantação. O frontend
+foi sincronizado por merge regular, preservando a preparação anterior. A
+validação integrada depende de composição e URL identificadas com a API nova.
+Manter Refs #688/draft enquanto faltarem os critérios de integração e revisão.
 
-O suporte solicitado ao backend deve manter os nomes exatos Aluno, Terceirizado e
-Federal, o catálogo anterior, normalização e rejeição de valores desconhecidos.
-José deve conferir persistência, filtros, correções, contrato/OpenAPI, relatórios
-e resumo diário. A preparação não cria endpoints nem muda DTOs, autorização ou
-regras de entrada. Se o contrato publicado divergir, revisar a integração antes
-de promovê-la; não presumir que este documento substitui o contrato real.
+Federal significa **Servidor federal**. Seletores, faixa, detalhes, acessos
+abertos, relatórios e legenda de distribuição usam esse rótulo, mantendo `Federal`
+como valor e chave de contagem. Nenhuma regra de vínculo/autorização é inferida.
+No filtro textual dos relatórios, somente o rótulo completo “Servidor federal”
+é traduzido para Federal; termos parciais continuam parciais e não são ampliados.
 
 ## Consumidores
 
@@ -51,7 +49,7 @@ Conferir também seleção/rolagem em 390 px, tablet e 1440 px, teclado, leitor 
 tela, temas e reflow/zoom de 200%, com atribuição de cada evidência. Ensaios de
 outras issues não são automaticamente novas evidências deste candidato.
 
-### Ensaios locais executados em 11/11/2026
+### Histórico: ensaios locais executados em 11/11/2026 (7d8c62e)
 
 - Suíte frontend completa sequencial: 711 testes em 62 arquivos passaram.
   `npm ci`, ESLint, build, Prettier dos arquivos alterados e diff check passaram.
@@ -73,3 +71,16 @@ outras issues não são automaticamente novas evidências deste candidato.
 
 Scripts, logs e capturas desses ensaios são temporários e ficam fora do
 repositório; o código de demonstração não integra a aplicação de produção.
+
+### Atualização de 12/11/2026 sobre main 8b61ccd
+
+Passaram 721 testes completos sequenciais em 62 arquivos e 246 testes focados
+em 13 arquivos, além de lint, build, Prettier e diff check. Foram incluídas
+regressões de apresentação/consulta das novas categorias nos relatórios e resumo
+diário. Os testes usam transporte simulado; não são ensaio da API hospedada.
+
+A faixa/filtros passaram novamente em oito casos locais Brave 157.0.8103.79,
+390×844, 768×1024, 1440×1000 e 720×500, Claro/Escuro: rótulo Servidor federal,
+seleção por teclado, Home/End, foco, visibilidade e ausência de overflow. As
+evidências nativas/físicas anteriores mantêm seus snapshots/autores; não foram
+automaticamente repetidas ou atribuídas a esta atualização.

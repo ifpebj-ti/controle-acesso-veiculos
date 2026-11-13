@@ -10,7 +10,7 @@ import {
   describeApiError,
   getApiValidationErrors,
 } from "../../../services/api-errors";
-import { generalAccessCategories } from "../model/accessCategories";
+import { generalAccessCategoryOptions } from "../model/accessCategories";
 import {
   accessCorrectionFormSchema,
   type AccessCorrectionFormValues,
@@ -301,10 +301,7 @@ export function AccessCorrectionDialog({
                   name={field.name}
                   onBlur={field.onBlur}
                   onValueChange={field.onChange}
-                  options={generalAccessCategories.map((category) => ({
-                    label: category,
-                    value: category,
-                  }))}
+                  options={generalAccessCategoryOptions}
                   value={field.value}
                 />
               )}

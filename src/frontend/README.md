@@ -61,8 +61,9 @@ homologação em tablet físico.
 ## Estado atual
 
 O candidato da #688 acrescenta Aluno, Terceirizado e Federal às nove categorias
-anteriores. Depende da ampliação do catálogo aceito pela API antes de incorporar
-ou implantar este frontend. Detalhes e limites estão em
+anteriores. A main `8b61ccd` já incorpora o suporte backend #696; isso não
+comprova a implantação. Federal aparece como Servidor federal, mantendo a chave
+canônica. Detalhes e limites de integração estão em
 [`docs/access-categories.md`](docs/access-categories.md).
 O histórico oferece as doze opções na mesma faixa horizontal,
 com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
