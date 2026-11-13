@@ -1,3 +1,5 @@
+using ControleAcessoVeiculos.Application.CampusDrivers;
+using ControleAcessoVeiculos.Infrastructure.CampusDrivers;
 using ControleAcessoVeiculos.API.Health;
 using ControleAcessoVeiculos.API.Endpoints;
 using ControleAcessoVeiculos.API.Middleware;
@@ -345,6 +347,8 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ManageCampusDrivers, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment, ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
@@ -392,6 +396,8 @@ builder.Services.AddScoped<UserAccountLifecycleService>();
 builder.Services.AddScoped<ChangeAccountProfileService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
+builder.Services.AddScoped<CampusDriverService>();
+builder.Services.AddScoped<ICampusDriverStore, CampusDriverStore>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
 builder.Services.AddScoped<InstitutionalVehicleCatalogService>();
 builder.Services.AddScoped<InstitutionalDriverService>();
@@ -491,6 +497,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     .DisableRateLimiting();
 
 app.MapVehicleAccessEndpoints();
+app.MapCampusDriverEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
 app.MapInstitutionalDriverEndpoints();
