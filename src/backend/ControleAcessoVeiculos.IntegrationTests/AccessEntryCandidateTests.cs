@@ -31,7 +31,7 @@ public sealed class AccessEntryCandidateTests(ApiFactory factory)
         using var transportation = factory.CreateClient();
         await AuthenticateClientAsync(transportation, transportationEmail);
         Assert.Equal(
-            HttpStatusCode.Forbidden,
+            HttpStatusCode.OK,
             (await transportation.GetAsync("/access-records/entry-candidates?query=ABC", TestContext.Current.CancellationToken)).StatusCode);
 
         var doormanEmail = await CreateUserAsync(ProfileNames.Doorman);

@@ -18,6 +18,7 @@ import {
 import { AdministrativeLoginForm } from "../features/authentication/components/AdministrativeLoginForm";
 import { GoogleBrandIcon } from "../features/authentication/components/GoogleBrandIcon";
 import { useAuthenticationProviders } from "../features/authentication/hooks/useAuthenticationProviders";
+import { getLoginDestination } from "../routes/loginDestination";
 
 interface LoginLocationState {
   from?: {
@@ -49,6 +50,9 @@ export function LoginPage() {
   const [isAdministrativeAccessOpen, setIsAdministrativeAccessOpen] =
     useState(false);
   const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
+  const googleRedirectPending = useRef(false);
+  const googleLoginRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreGoogleFocus = useRef(false);
   const callbackHandled = useRef(false);
   const administrativeAccessRef = useRef<HTMLButtonElement>(null);
   const shouldRestoreAdministrativeFocus = useRef(false);
@@ -60,8 +64,62 @@ export function LoginPage() {
   const { restoreExternalSession, sessionEndReason, status, user } =
     useSession();
   const locationState = location.state as LoginLocationState | null;
-  const redirectTo = locationState?.from?.pathname ?? "/visao-geral";
+  const requestedPath = locationState?.from?.pathname;
   const authenticationReturnStatus = searchParams.get("status");
+  const isGoogleCallbackReturn =
+    authenticationReturnStatus === "success" ||
+    authenticationReturnStatus === "denied";
+
+  useEffect(() => {
+    function restoreGoogleAction(event: PageTransitionEvent) {
+      if (!event.persisted || !googleRedirectPending.current) return;
+
+      googleRedirectPending.current = false;
+      shouldRestoreGoogleFocus.current = true;
+      setIsGoogleRedirecting(false);
+      retry();
+    }
+
+    window.addEventListener("pageshow", restoreGoogleAction);
+    return () => window.removeEventListener("pageshow", restoreGoogleAction);
+  }, [retry]);
+
+  useEffect(() => {
+    if (
+      !shouldRestoreGoogleFocus.current ||
+      isGoogleRedirecting ||
+      providersState.status === "loading"
+    ) {
+      return;
+    }
+
+    shouldRestoreGoogleFocus.current = false;
+    if (
+      status !== "unauthenticated" ||
+      isGoogleCallbackReturn ||
+      isAdministrativeAccessOpen ||
+      (document.activeElement !== document.body &&
+        document.activeElement !== googleLoginRef.current)
+    ) {
+      return;
+    }
+
+    const target =
+      providersState.status === "ready" && providersState.googleEnabled
+        ? googleLoginRef.current
+        : providersState.status === "unavailable"
+          ? document.querySelector<HTMLButtonElement>(
+              "#provider-discovery-retry",
+            )
+          : administrativeAccessRef.current;
+    target?.focus();
+  }, [
+    isAdministrativeAccessOpen,
+    isGoogleCallbackReturn,
+    isGoogleRedirecting,
+    providersState,
+    status,
+  ]);
 
   useEffect(() => {
     if (
@@ -74,9 +132,14 @@ export function LoginPage() {
     }
 
     callbackHandled.current = true;
+    if (status === "authenticated") return;
+
     const remainingSearchParams = new URLSearchParams(searchParams);
     remainingSearchParams.delete("status");
-    setSearchParams(remainingSearchParams, { replace: true });
+    setSearchParams(remainingSearchParams, {
+      replace: true,
+      state: location.state,
+    });
 
     if (authenticationReturnStatus === "denied") {
       queueMicrotask(() => {
@@ -88,16 +151,11 @@ export function LoginPage() {
       return;
     }
 
-    if (status === "authenticated") return;
-
     void restoreExternalSession()
       .then((authenticatedUser) => {
-        navigate(
-          authenticatedUser.requiresPasswordChange
-            ? "/conta/senha"
-            : redirectTo,
-          { replace: true },
-        );
+        navigate(getLoginDestination(authenticatedUser, requestedPath), {
+          replace: true,
+        });
       })
       .catch(() => {
         setCallbackError(
@@ -107,8 +165,9 @@ export function LoginPage() {
       });
   }, [
     authenticationReturnStatus,
+    location.state,
     navigate,
-    redirectTo,
+    requestedPath,
     restoreExternalSession,
     searchParams,
     setSearchParams,
@@ -161,12 +220,7 @@ export function LoginPage() {
   }
 
   if (user && status === "authenticated") {
-    return (
-      <Navigate
-        replace
-        to={user.requiresPasswordChange ? "/conta/senha" : redirectTo}
-      />
-    );
+    return <Navigate replace to={getLoginDestination(user, requestedPath)} />;
   }
 
   const loginStatusMessage =
@@ -180,11 +234,23 @@ export function LoginPage() {
     setIsAdministrativeAccessOpen(false);
   };
   const beginGoogleAccess = () => {
+    if (
+      googleRedirectPending.current ||
+      status !== "unauthenticated" ||
+      isGoogleCallbackReturn ||
+      providersState.status !== "ready" ||
+      !providersState.googleEnabled
+    ) {
+      return;
+    }
+
+    googleRedirectPending.current = true;
     setCallbackError(null);
     setIsGoogleRedirecting(true);
     try {
       startGoogleAuthentication();
     } catch {
+      googleRedirectPending.current = false;
       setIsGoogleRedirecting(false);
       setCallbackError(
         "Não foi possível iniciar o acesso agora. Tente novamente mais tarde.",
@@ -256,9 +322,14 @@ export function LoginPage() {
                           <Button
                             aria-busy={isGoogleRedirecting}
                             className="login-google-action"
-                            disabled={isGoogleRedirecting}
+                            disabled={
+                              isGoogleRedirecting ||
+                              status !== "unauthenticated" ||
+                              isGoogleCallbackReturn
+                            }
                             id="google-login"
                             onClick={beginGoogleAccess}
+                            ref={googleLoginRef}
                           >
                             <GoogleBrandIcon />
                             {isGoogleRedirecting
@@ -328,9 +399,7 @@ export function LoginPage() {
                     onBack={closeAdministrativeAccess}
                     onAuthenticated={(authenticatedUser) =>
                       navigate(
-                        authenticatedUser.requiresPasswordChange
-                          ? "/conta/senha"
-                          : redirectTo,
+                        getLoginDestination(authenticatedUser, requestedPath),
                         { replace: true },
                       )
                     }
