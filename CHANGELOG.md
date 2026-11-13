@@ -14,6 +14,9 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Register verified adult campus drivers and private vehicles, with audited
+  management, transactional persistence and operator-scoped same-day entry
+  suggestions (#690, Refs #689).
 - Optional native fullscreen controls and an authenticated overview invitation,
   with per-tab dismissal guidance and persistent access (#621, #629).
 - History category shelf with bounded parallel counting, independent failures,
