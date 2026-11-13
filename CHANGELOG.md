@@ -37,8 +37,24 @@ See the [release policy](docs/operations/release-cadence.md).
   responses and expiry states; scheduling, renewal and alert delivery remain
   operational work (#556).
 
+### Changed
+
+- Increase spacing between sign-in guidance and administrative access while
+  retaining the established login alignment, typography and panel composition.
+- Cap the Google sign-in action at 18rem within the available width, retaining
+  its touch-target height and consistent enabled/disabled presentation.
+  Add a detached sage contour, shorten introductory copy and align the separate
+  administrative action without changing authentication behavior.
+
 ### Fixed
 
+- Restore Google sign-in after a cached browser-history return, rechecking
+  provider availability before an explicit retry and preventing overlapping
+  departures or callback restoration. Preserve administrative access and focus.
+- Return `Local`/`Google` strings for `authenticationMethod` in administrative
+  account listings, consistently with account creation and profile changes.
+  Preserve pagination and all existing public fields without changing the
+  domain, authentication policy or global JSON converters.
 - Reject invalid session-family identifiers, preserve historical vehicle
   identity, apply literal administrative searches and institutional date
   boundaries, and prevent caching of sensitive API responses

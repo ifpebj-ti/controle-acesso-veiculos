@@ -91,6 +91,12 @@ A versão atual consulta `GET /auth/providers` sem usar uma variável de build
 como fonte de verdade. Com `googleEnabled: false`, “Continuar com Google”
 permanece visível, desabilitado e acompanhado da mensagem de indisponibilidade;
 isso não habilita autenticação nem depende de haver contas autorizadas.
+Ao voltar pelo histórico com a página preservada pelo navegador (BFCache),
+o estado transitório de saída para o Google é encerrado e os provedores são
+consultados novamente. O sistema aguarda nova ação explícita; foco ou troca de
+aba não liberam outra tentativa durante a navegação. O retorno sem cache usa
+uma nova página com o estado inicial. Nenhum timer ou armazenamento de token
+é usado para destravar o botão, e a restauração do callback continua separada.
 O botão usa o “G” colorido oficial, servido localmente em
 `public/brand/google-g.png`, com proporção preservada, fundo branco próprio e
 imagem decorativa; o texto continua como nome acessível. Fonte do arquivo:
@@ -107,6 +113,12 @@ rota, e posiciona o foco no e-mail. “Voltar” desmonta o formulário, apaga a
 e devolve o foco à ação que o abriu. Contas Google podem ser pessoais ou
 institucionais, desde que estejam ativas e previamente autorizadas pelo
 Administrador; identidade Google não concede acesso nem perfil.
+No logout explícito, a navegação de entrada é substituída sem intenção de retorno.
+Login local, restauração e callback Google conferem o destino pela matriz de
+rotas e pelo perfil recebido da API: páginas incompatíveis, desconhecidas ou
+externas levam à Visão geral. A troca obrigatória de senha tem prioridade.
+Isso não persiste uma última página por pessoa nem substitui a autorização
+do servidor.
 O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
@@ -470,6 +482,26 @@ Os dois tons mantêm contraste superior a 4,5:1 sobre branco e sobre o fundo
 creme do sistema. Em superfícies coloridas, o componente deve usar a combinação
 com contraste medido, sem substituir as cores semânticas próprias de erro,
 sucesso, aviso ou indisponibilidade.
+
+## Apresentação da ação de login
+
+O botão Google usa até 18 rem, limitado à largura disponível, com alvo de toque
+preservado. Seu contorno verde-sálvia tem afastamento de 4 px; o foco do teclado
+continua usando o indicador semântico próprio, e o estado desabilitado mantém a
+aparência de indisponibilidade. A posição da marca, a largura do painel e a
+tipografia anteriores são preservadas, conforme a revisão visual da solicitante.
+
+A introdução inicial usa “Entre para acompanhar os acessos ao campus.”. A lista
+redundante dos perfis foi retirada; a orientação sobre a conta pessoal ou
+institucional previamente autorizada permanece. O grupo Google usa espaço flexível
+para separar introdução e ação, com a orientação próxima do botão. O acesso
+administrativo fica acima da orientação inferior de segurança, com rótulo e link
+alinhados. Textos de sessão, erro, loading e descoberta continuam presentes.
+
+Foto, curvas, temas, foco, alvos de toque e rolagem natural são mantidos. A mudança
+é de apresentação e texto; não altera descoberta de provedores, HTTP, callback,
+sessão, armazenamento, acesso administrativo ou autorização. Esta branch continua
+empilhada sobre a #494; correções #592/#567 devem ser compostas explicitamente.
 
 ## Classificação de falhas — Issue #603
 
