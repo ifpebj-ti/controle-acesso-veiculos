@@ -34,6 +34,9 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Run local k6 baselines with the native executable so loopback reaches the host
+  API; validate target URLs before authentication and preserve separate profile
+  summaries without changing load thresholds (Refs #502).
 - Reject invalid session-family identifiers, preserve historical vehicle
   identity, apply literal administrative searches and institutional date
   boundaries, and prevent caching of sensitive API responses

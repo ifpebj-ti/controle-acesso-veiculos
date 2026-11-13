@@ -1,6 +1,6 @@
 # Preparação para a Unidade 2
 
-> Atualização de 13/11/2026, fonte main `8b61ccd`. O backend conhecido da
+> Atualização de 13/11/2026, fonte main `8ad5dba`. O backend conhecido da
 > hospedagem é `812b71e`, após a promoção #677, com frontend `7dd02a6`.
 > O gate global de linhas backend foi incorporado pelo #697. A execução
 > 43343801016 mediu 93,50% e passou no piso de 70%. A meta de 90% nos recortes
@@ -10,7 +10,9 @@
 > candidatas #702/#704/#705. A composição local passou 893 testes frontend e 25
 > verificações de serviços reais contra API/PostgreSQL. O navegador conectado
 > estava indisponível. UI autenticada HTTPS e ensaios humanos permanecem pendentes.
-> Essas evidências atualizam itens parciais e mantêm a régua anterior de 17 critérios.
+> O ensaio k6 local de 13/11 executou três perfis e passou nos thresholds (#502/#515).
+> Carga passa de pendente a parcial: WAF/LB e recursos da OCI não foram medidos.
+> A régua continua com 17 critérios; detalhes e limites constam no relatório local.
 
 ## Objetivo e critério
 
@@ -94,7 +96,7 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 | Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                                      | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado                                    |
 | Plataforma de gerenciamento de contêineres  | não provisionada                                                                                                    | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação                                     |
 | Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não                             | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas                                  |
-| Teste de carga com k6 e análise de gargalos | script preparado no candidato #515; nenhuma execução observada foi comprovada                                       | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias                                  |
+| Teste de carga com k6 e análise de gargalos | três perfis locais executados, 975 requisições sem erro/429; relatório sanitizado #515                              | Parcial — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502)  | executar a janela OCI autorizada, medir recursos e observar WAF/LB; baseline local não comprova pico real                         |
 | Software implantado, acessível e utilizável | candidato HTTPS com 111 verificações técnicas; lista de contas corrigida, tarefas humanas/aceite completo pendentes | Parcial                                                                             | observar tarefas com perfis autorizados; janela sintética explícita até 12/11 às 23h59 de Brasília; Google real continua distinto |
 
 ## Estimativa auditável
@@ -106,15 +108,17 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0` quando pendente.
 
 Na reavaliação de **13/11/2026**, os 17 itens ficam em **8 atendidos,
-7 parciais e 2 pendentes**. A estimativa é `(8 + 7 × 0,5) / 17 = 67,6%`, cerca
-de **68% concluído e 32% restante**, com incerteza de **±5 pontos**.
+8 parciais e 1 pendente**. A estimativa é `(8 + 8 × 0,5) / 17 = 70,6%`, cerca
+de **71% concluído e 29% restante**, com incerteza de **±5 pontos**.
 
 O item de indicadores passa de pendente para parcial pela conferência registrada
 na #684, com zero warnings e nove notes, compatível com Good. A comprovação dos
 dois indicadores e do critério acadêmico acima de Good continua pendente no
-portal. A cobertura publicada atualiza a evidência de outro item parcial. A
-variação é uma reavaliação da matriz e corresponde a aproximadamente 3 pontos
-percentuais em relação aos 64,7% anteriores.
+portal. A cobertura publicada atualiza a evidência de outro item parcial.
+Essa primeira reavaliação chegou a 67,6%. O ensaio k6 local acrescenta meia
+unidade de evidência, levando a 70,6% (mais 2,9 pontos), sem afirmar execução
+na nuvem ou encerramento da #502. Os resultados e limites estão no
+[relatório local](k6-local-baseline-2026-11-13.md).
 
 Essa régua mede critérios consolidados da matéria, não esforço, linhas de código,
 segurança absoluta ou nota garantida. Os 17 itens e pesos foram mantidos para não
