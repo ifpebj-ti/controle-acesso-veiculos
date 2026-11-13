@@ -37,7 +37,39 @@ institucional fica reservado principalmente às ações. Lógica de sessão, coo
 API, capacidades e armazenamento permanecem inalterados. A ativação de temas e a
 migração das páginas operacionais e administrativas continuam nas etapas seguintes.
 
+## Tela cheia opcional (candidato #620)
+
+A melhoria #622 acrescenta um convite não bloqueante na Visão geral, depois da
+autenticação. “Agora não” informa, no próprio local, que o controle permanece no
+menu lateral abaixo de Aparência e no atalho do canto inferior direito. O convite não abre o menu, não ativa tela cheia
+automaticamente e não é exibido nos formulários operacionais. Os critérios de
+validação e o ciclo de vida da marca não sensível por aba estão em
+[`docs/fullscreen.md`](docs/fullscreen.md#convite-opcional--issue-622).
+A orientação após a dispensa é temporária: desaparece após 12 segundos, com pausa
+por mouse/foco no aviso ou aba em segundo plano. O controle permanece no menu.
+O ícone fixo aparece nas páginas autenticadas, com nome acessível e estado real
+compartilhado com o menu. Diálogos e mensagens flutuantes têm prioridade sobre ele.
+
+A área autenticada oferece, quando suportado, “Entrar em tela cheia” junto aos
+ajustes de aparência. O modo usa a API nativa e só inicia por ação explícita;
+Escape/saída do navegador continuam disponíveis. Alvo, foco, portais, fallback,
+limites de zoom móvel e roteiro de validação estão em
+[`docs/fullscreen.md`](docs/fullscreen.md). Não é modo quiosque nem requisito
+para usar o sistema; a implementação candidata não implica implantação ou
+homologação em tablet físico.
+
 ## Estado atual
+
+O histórico oferece as nove categorias existentes na mesma faixa horizontal,
+com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
+O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
+do total validado da consulta de histórico; falhas mostram indisponibilidade,
+sem inventar zero. O contrato atual exige nove leituras de contagem, em lotes
+de até três, além da consulta de resultados. Trocar somente a categoria ou a
+página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
+correção salva atualizam as contagens, mesmo sem mudar o período, a placa,
+o condutor ou a situação. Isso não cria um endpoint agregado nem mede
+desempenho em produção.
 
 A aplicação de produção não inclui provedor de demonstração nem registros
 fictícios embutidos. As telas integradas exibem somente respostas validadas da
@@ -75,6 +107,12 @@ rota, e posiciona o foco no e-mail. “Voltar” desmonta o formulário, apaga a
 e devolve o foco à ação que o abriu. Contas Google podem ser pessoais ou
 institucionais, desde que estejam ativas e previamente autorizadas pelo
 Administrador; identidade Google não concede acesso nem perfil.
+No logout explícito, a navegação de entrada é substituída sem intenção de retorno.
+Login local, restauração e callback Google conferem o destino pela matriz de
+rotas e pelo perfil recebido da API: páginas incompatíveis, desconhecidas ou
+externas levam à Visão geral. A troca obrigatória de senha tem prioridade.
+Isso não persiste uma última página por pessoa nem substitui a autorização
+do servidor.
 O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
@@ -218,6 +256,13 @@ somente veículos ativos. Embora o backend possua uma operação de reativação
 frontend não oferece essa ação enquanto não existir contrato para consultar os
 veículos inativos. A desativação preserva viagens e histórico no servidor.
 
+Na edição, um HTTP 409 com orientação pública em `errors.vehicle` mostra esse
+texto no feedback acessível do formulário. Os campos permanecem preenchidos e
+não há reenvio automático. Sem orientação válida, a mensagem genérica é mantida;
+os demais códigos de erro conservam seu tratamento. A interface não tenta prever
+ou liberar a edição da identidade: o servidor decide o conflito, e uma atualização
+descritiva posterior exige nova ação explícita. Refs #665.
+
 O catálogo de motoristas usa `GET`, `POST` e `DELETE` em
 `/institutional-drivers`. Os quatro perfis autenticados consultam os motoristas
 ativos; somente Setor de Transporte e Administrador autorizam ou desativam. Nome
@@ -254,6 +299,47 @@ Isso não transforma a interface em controle de autorização: o backend continu
 validando cada operação. Falhas de validação, rede, conflito e acesso negado são
 apresentadas sem produzir confirmação falsa. A integração não representa
 homologação para produção.
+
+## Alteração administrativa de perfil — Issue #473
+
+Na administração de contas, a ação “Alterar perfil” fica disponível para outra
+conta ativa. O formulário oferece somente os quatro perfis do contrato, exige
+justificativa de 10 a 500 caracteres e confirmação explícita das consequências.
+O servidor continua responsável por autorização, autoalteração, estado da
+conta, último Administrador ativo e método de autenticação.
+
+O serviço da feature envia um único `PUT /users/{id}/profile`, sem repetição
+automática após HTTP 401, e valida a resposta com Zod. A consulta é revalidada
+com os filtros e a página aplicados. Uma falha da consulta após sucesso oferece
+somente recarga, sem repetir a alteração. Falhas de validação, conflito e limite
+de tentativas preservam os campos. Resultado incerto por rede, erro inesperado
+ou resposta incompatível exige fechar e atualizar a lista antes de nova tentativa.
+Cancelamento da espera após a confirmação também deixa o resultado incerto:
+`CanceledError`/`AbortError` não comprovam rollback. A confirmação fica bloqueada
+inclusive para callbacks antigos, e fechar exige reconsulta somente por leitura.
+Somente falhas conhecidas de validação, conflito e limite permitem revisar e
+confirmar novamente no mesmo diálogo; consultas canceladas mantêm seus guards.
+
+O método de autenticação e o vínculo externo exibidos vêm da API. Contas Google
+não oferecem redefinição local de senha. A criação aceita credencial nula para
+Google; a promoção para Administrador mostra a credencial temporária somente
+quando retornada pelo servidor, reutilizando a exibição única em memória. Ela
+não é enviada a logs, URL ou storage e é removida da interface ao fechar.
+
+Respostas de contas incompatíveis com o contrato são recusadas e exibem uma
+orientação para atualizar a lista, sem atribuir o problema à conexão do usuário.
+Falhas reais de transporte mantêm a mensagem de rede. Esse tratamento pertence
+à feature de contas; a revisão da classificação compartilhada nos demais fluxos
+permanece na Issue #603. A aceitação da credencial nula para Google já faz parte
+do schema estrito existente e não dispensa a validação dos demais campos.
+
+O diálogo reutiliza o seletor e os tokens existentes. Mantém o restante da
+página inerte, contém Tab/Shift+Tab, permite Escape fora de uma mutação pendente
+e devolve o foco ao cancelar. Erros recebem anúncio acessível, foco e rolagem
+local para permanecerem visíveis. O padrão foi adaptado do
+[W3C APG — Modal Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+Os testes automatizados não substituem leitor de tela, tablet físico nem
+homologação institucional. A revisão desses critérios continua pendente.
 
 ## Sessão e segurança
 
@@ -391,7 +477,33 @@ creme do sistema. Em superfícies coloridas, o componente deve usar a combinaç�
 com contraste medido, sem substituir as cores semânticas próprias de erro,
 sucesso, aviso ou indisponibilidade.
 
+## Classificação de falhas — Issue #603
+
+`describeApiError` diferencia erros de resposta/execução de falhas reais de
+transporte e de cancelamento. Erros comuns, inclusive os de contrato, recebem
+mensagem genérica sem atribuir o problema à rede ou expor conteúdo da resposta.
+Axios sem resposta é tratado como transporte quando existe código de conexão
+ou timeout reconhecido, ou uma requisição enviada sem código. Falhas de
+configuração do Axios continuam sendo erros inesperados. As mensagens e os
+estados dos códigos HTTP 400/401/403/409/429/5xx são preservados.
+
+Cancelamentos Axios e AbortError têm classificação própria e mensagem curta,
+sem afirmar que uma operação já recebida pelo servidor foi desfeita. A busca
+recorrente continua descartando o cancelamento deliberado de consultas
+obsoletas; as sequências de requisição protegem resultados mais recentes.
+Não há repetição automática de mutações nem mudança de sessão ou autorização.
+
+A adequação dos campos de autenticação e da credencial nula para contas Google
+pertence ao PR #530. Esse PR mantém seu feedback específico de contas; a #603
+não copia schemas nem depende da incorporação do login para testes locais.
+Testes com listas vazias não representam aprovação visual de itens populados;
+as fixtures e os ensaios locais não substituem a validação autenticada no HTTPS.
+
 ## Testes e acessibilidade
+
+O [roteiro de homologação dos relatórios](../../docs/validation/administrative-report-homologation.md)
+separa o contrato já implementado, as verificações automatizadas e os cenários
+manuais ainda pendentes da Issue #443. O novo PDF paisagem segue na Issue #496.
 
 ### Transições de rota
 

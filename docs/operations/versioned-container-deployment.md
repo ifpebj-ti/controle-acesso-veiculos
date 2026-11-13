@@ -25,6 +25,37 @@ segredos, firewall, backup protegido, monitoramento e autorização instituciona
 
 ## Estado observado na homologação
 
+### Atualização de 11/11/2026 — Issue #677
+
+Backend promovido à main `812b71e`, runtime 10.0.15 confirmado no container,
+frontend `7dd02a6` e PostgreSQL preservados. Backup restaurado em banco temporário,
+rollback e configuração conferidos; 162/162 testes HTTPS passaram nos três perfis
+locais disponíveis. Não foi nova release GHCR nem aplicação de migrations.
+José confirmou a continuidade como Porteiro após login Google e uma recarga;
+é relato do titular, separado da descoberta do provedor e dos ensaios do agente.
+Consulte [identidades, verificações e limites](../validation/backend-runtime-rollout-2026-11-11.md).
+
+A release `0.5.0` está somente em draft, acompanhada na #686. A promoção urgente
+não autoriza substituir o frontend candidato pela main sem composição revisada.
+
+### Atualização de 10/11/2026 — Issue #657
+
+O backend foi promovido à fonte `2689402`, com artefato AMD64 identificado,
+scan/SBOM, backup restaurado em banco temporário e rollback preparado. O frontend
+permaneceu `7dd02a6`; configuração e banco foram preservados. Passaram 162
+verificações HTTPS nos três perfis locais disponíveis. José também relatou
+login Google autorizado e continuidade como Porteiro após uma recarga, sem
+observação independente do agente. A conta fictícia de Porteiro com senha já
+estava indisponível antes da promoção.
+
+Não houve nova release estável, migration ou movimentação da tag `0.4.0`. A
+promoção usa imagem candidata explícita e overlay operacional; não se deve
+confundi-la com as imagens da release descritas abaixo. A fonte do código não
+atualiza automaticamente a VM. Identidades, resultados e limites estão na
+[evidência da promoção](../validation/backend-security-rollout-2026-11-10.md).
+
+### Registro histórico de 25–28/10/2026
+
 Em 25 de outubro de 2026, a homologação técnica executava frontend, API e
 PostgreSQL saudáveis com a release `v0.4.0`, atrás de Load Balancer e OCI WAF. A
 promoção é deliberadamente manual: alterações na `main` não atualizam a VM até que
@@ -155,7 +186,39 @@ CHAVE_ALEATORIA
 ```
 
 No Linux, aplique `chmod 600` e mantenha o diretório inacessível para outros
-usuários. O backend falha no startup quando um caminho é relativo, o arquivo não
+usuários. O proprietário dos arquivos lidos pelo backend deve permitir acesso
+ao UID efetivo da imagem não root. Um arquivo `root:root` em modo `0600` não
+fica legível para a aplicação apenas por ser declarado como secret no Compose.
+Confira o UID da imagem escolhida e ajuste somente os arquivos destinados a
+esse serviço, sem trocar o conteúdo nem conceder leitura a todos.
+
+Exemplo para **um arquivo do backend**, com imagem já obtida e caminho absoluto
+protegido; repita a verificação para connection string, chave JWT, PFX, senha do
+PFX e, quando habilitado, segredo Google:
+
+```bash
+candidate_image=ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:VERSAO_REVISADA
+runtime_uid=$(docker run --rm --network none --read-only --cap-drop ALL \
+  --security-opt no-new-privileges --entrypoint /bin/sh "$candidate_image" -ec 'id -u')
+case "$runtime_uid" in ''|*[!0-9]*|0) exit 1 ;; esac
+sudo chown "$runtime_uid" /CAMINHO_ABSOLUTO/segredo-do-backend
+sudo chmod 600 /CAMINHO_ABSOLUTO/segredo-do-backend
+docker run --rm --network none --read-only --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --mount type=bind,source=/CAMINHO_ABSOLUTO/segredo-do-backend,target=/run/secrets/probe,readonly \
+  --entrypoint /bin/sh "$candidate_image" -ec 'test -r /run/secrets/probe'
+```
+
+O comando verifica permissão sem imprimir o conteúdo e não inicia a API. Não
+use esse exemplo para alterar indiscriminadamente arquivos de PostgreSQL ou de
+outros serviços: cada imagem tem seu próprio processo de inicialização.
+Preserve o acesso do operador pela administração do host. `config --quiet`
+valida o modelo, mas não comprova que o usuário do contêiner consegue ler cada
+arquivo. Em secrets locais por arquivo, não presuma remapeamento de proprietário
+por `uid`, `gid` ou `mode`; confira a [documentação do Compose](https://docs.docker.com/reference/compose-file/services/#secrets)
+e teste o acesso efetivo. Rastreabilidade: #583, reprodução com conteúdo fictício.
+
+O backend falha no startup quando um caminho é relativo, o arquivo não
 existe, está vazio, excede 16 KiB ou quando valor direto e arquivo são fornecidos
 ao mesmo tempo. O conteúdo nunca integra a mensagem de erro.
 
@@ -168,7 +231,8 @@ docker volume create controle-acesso-veiculos-data-protection
 ```
 
 O caminho informado em `DATA_PROTECTION_CERTIFICATE_FILE` deve existir no host,
-ser legível somente pelo operador autorizado e conter um PFX com chave privada.
+permitir leitura pelo processo backend e administração somente pelos operadores
+autorizados, sem leitura pública, e conter um PFX com chave privada.
 O Compose o monta como secret somente leitura. Não coloque PFX, senha ou XML do
 key ring junto das imagens, do repositório ou dos artefatos de CI.
 
@@ -304,6 +368,28 @@ ring de forma controlada e encerre as sessões de maneira conservadora.
 
 ## Atualização e rollback
 
+### Pacotes da imagem e atualização do runtime
+
+Fixar o runtime .NET não atualiza, por si só, os pacotes Ubuntu de uma imagem
+armazenada em cache. A correção da Issue #626 trata separadamente `apt` e
+`libapt-pkg6.0t64`, conforme o
+[USN-8996-1 da Canonical](https://ubuntu.com/security/notices/USN-8996-1).
+No Ubuntu 24.04, ambos devem estar em `2.8.4ubuntu0.1` ou versão posterior.
+O Dockerfile usa HTTPS nos arquivos oficiais de repositório, desabilita novas
+tentativas no bootstrap e valida as versões instaladas antes de concluir a
+camada. Assinaturas de pacotes e validação TLS permanecem habilitadas.
+
+Reconstrua com `--pull` e confira as versões com `dpkg-query`, o inventário SBOM
+e os scans de ambas as arquiteturas na imagem final. Os gates CRITICAL e HIGH
+corrigível permanecem ativos; não crie exceção de CVE para fazer o CI passar.
+O resultado pertence ao digest e à base do scanner daquela execução.
+
+Um PR corrigido não atualiza a VM. A promoção exige imagem identificada, backup
+e rollback compatíveis, preservando os arquivos externos, a configuração
+Google, a janela explícita de testes locais e o banco. A checagem da imagem
+hospedada é uma evidência separada; não declare que ela foi corrigida apenas
+porque o Dockerfile ou uma execução de CI mudou.
+
 ### Primeira promoção após os ajustes de HTTPS
 
 Antes de aplicar o Compose atual à VM que ainda executa `0.4.0`:
@@ -357,3 +443,24 @@ docker compose \
 Não acrescente `--volumes` em ambiente com dados que precisem ser preservados.
 Consulte também o
 [`procedimento de continuidade`](data-retention-and-continuity.md).
+
+## Falha transitória de rede no refresh APT (#673)
+
+O build mantém HTTPS e `Acquire::Retries=0` durante o bootstrap protegido do
+cliente APT. O refresh usa `--error-on=any`: falha ao baixar qualquer índice,
+inclusive por DNS, impede avançar para a instalação. São feitas no máximo três
+invocações explícitas, com esperas de um e dois segundos e timeout HTTPS de 15
+segundos. Não é garantia de sucesso em indisponibilidade prolongada.
+
+O padrão anterior do APT podia emitir warnings e terminar `update` sem falha,
+mesmo sem índices novos. A comparação mínima de versões já recusava o pacote
+vulnerável; a mudança torna a causa explícita e evita a tentativa de instalação
+com metadados incompletos. Versões mínimas, assinaturas, TLS e gates Trivy não
+foram reduzidos, nem foi adotado fallback HTTP ou outro mirror.
+
+Quando o CI falhar com DNS comprovado, pode-se repetir uma vez o job falho no
+mesmo SHA. Esse resultado não deve ser atribuído a outro commit e não substitui
+a revisão de uma falha persistente ou de scanner. O log não precisa expor
+configuração ou credenciais para distinguir a etapa de build da aplicação.
+
+Referência: [APT — error-on=any](https://manpages.ubuntu.com/manpages/noble/man8/apt-get.8.html).

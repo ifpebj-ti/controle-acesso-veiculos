@@ -18,6 +18,7 @@ import {
 import { AdministrativeLoginForm } from "../features/authentication/components/AdministrativeLoginForm";
 import { GoogleBrandIcon } from "../features/authentication/components/GoogleBrandIcon";
 import { useAuthenticationProviders } from "../features/authentication/hooks/useAuthenticationProviders";
+import { getLoginDestination } from "../routes/loginDestination";
 
 interface LoginLocationState {
   from?: {
@@ -63,7 +64,7 @@ export function LoginPage() {
   const { restoreExternalSession, sessionEndReason, status, user } =
     useSession();
   const locationState = location.state as LoginLocationState | null;
-  const redirectTo = locationState?.from?.pathname ?? "/visao-geral";
+  const requestedPath = locationState?.from?.pathname;
   const authenticationReturnStatus = searchParams.get("status");
   const isGoogleCallbackReturn =
     authenticationReturnStatus === "success" ||
@@ -135,7 +136,10 @@ export function LoginPage() {
 
     const remainingSearchParams = new URLSearchParams(searchParams);
     remainingSearchParams.delete("status");
-    setSearchParams(remainingSearchParams, { replace: true });
+    setSearchParams(remainingSearchParams, {
+      replace: true,
+      state: location.state,
+    });
 
     if (authenticationReturnStatus === "denied") {
       queueMicrotask(() => {
@@ -149,12 +153,9 @@ export function LoginPage() {
 
     void restoreExternalSession()
       .then((authenticatedUser) => {
-        navigate(
-          authenticatedUser.requiresPasswordChange
-            ? "/conta/senha"
-            : redirectTo,
-          { replace: true },
-        );
+        navigate(getLoginDestination(authenticatedUser, requestedPath), {
+          replace: true,
+        });
       })
       .catch(() => {
         setCallbackError(
@@ -164,8 +165,9 @@ export function LoginPage() {
       });
   }, [
     authenticationReturnStatus,
+    location.state,
     navigate,
-    redirectTo,
+    requestedPath,
     restoreExternalSession,
     searchParams,
     setSearchParams,
@@ -218,12 +220,7 @@ export function LoginPage() {
   }
 
   if (user && status === "authenticated") {
-    return (
-      <Navigate
-        replace
-        to={user.requiresPasswordChange ? "/conta/senha" : redirectTo}
-      />
-    );
+    return <Navigate replace to={getLoginDestination(user, requestedPath)} />;
   }
 
   const loginStatusMessage =
@@ -425,9 +422,7 @@ export function LoginPage() {
                     onBack={closeAdministrativeAccess}
                     onAuthenticated={(authenticatedUser) =>
                       navigate(
-                        authenticatedUser.requiresPasswordChange
-                          ? "/conta/senha"
-                          : redirectTo,
+                        getLoginDestination(authenticatedUser, requestedPath),
                         { replace: true },
                       )
                     }

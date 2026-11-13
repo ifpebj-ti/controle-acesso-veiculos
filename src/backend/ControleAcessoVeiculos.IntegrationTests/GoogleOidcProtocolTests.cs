@@ -28,6 +28,9 @@ public sealed class GoogleOidcProtocolTests
         Assert.Equal("provider.example.test", location.Host);
         var query = QueryHelpers.ParseQuery(location.Query);
         Assert.Equal("code", query["response_type"].ToString());
+        Assert.Equal("select_account", query["prompt"].ToString());
+        Assert.False(query.ContainsKey("login_hint"));
+        Assert.False(query.ContainsKey("hd"));
         Assert.Equal("S256", query["code_challenge_method"].ToString());
         Assert.Matches("^[A-Za-z0-9_-]{43}$", query["code_challenge"].ToString());
         Assert.Equal("https://localhost/signin-google", query["redirect_uri"].ToString());
@@ -95,7 +98,13 @@ public sealed class GoogleOidcProtocolTests
         var callback = QueryHelpers.AddQueryString("/signin-google?error=access_denied", "state", state);
 
         using var denied = await client.GetAsync(callback, TestContext.Current.CancellationToken);
-        await AssertDeniedAsync(denied);
+        Assert.Equal(HttpStatusCode.Redirect, denied.StatusCode);
+        Assert.Equal("/login?status=denied", denied.Headers.Location?.OriginalString);
+        Assert.True(denied.Headers.CacheControl?.NoStore);
+        AssertNoApplicationSession(denied);
+        Assert.Empty(await denied.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.DoesNotContain("fictional-client-secret",
+            await denied.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
         using var replayed = await client.GetAsync(callback, TestContext.Current.CancellationToken);
         await AssertDeniedAsync(replayed);
         AssertNoBackchannel(factory);
@@ -112,6 +121,35 @@ public sealed class GoogleOidcProtocolTests
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal("/login?status=denied", response.Headers.Location?.OriginalString);
         AssertNoApplicationSession(response);
+        AssertNoBackchannel(factory);
+    }
+
+    [Fact]
+    public async Task ExplicitRetryRequestsAccountChoiceWithFreshStateNonceAndPkce()
+    {
+        using var factory = CreateFactory();
+        using var client = CreateClient(factory);
+        using var first = await client.GetAsync("/auth/google/start", TestContext.Current.CancellationToken);
+        using var retry = await client.GetAsync(
+            "/auth/google/start?prompt=consent&login_hint=other%40example.test&hd=untrusted.example.test",
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Redirect, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, retry.StatusCode);
+        var original = QueryHelpers.ParseQuery(first.Headers.Location!.Query);
+        var next = QueryHelpers.ParseQuery(retry.Headers.Location!.Query);
+        Assert.Equal("select_account", next["prompt"].ToString());
+        Assert.False(next.ContainsKey("login_hint"));
+        Assert.False(next.ContainsKey("hd"));
+        Assert.False(string.IsNullOrWhiteSpace(next["state"]));
+        Assert.False(string.IsNullOrWhiteSpace(next["nonce"]));
+        Assert.Matches("^[A-Za-z0-9_-]{43}$", next["code_challenge"].ToString());
+        Assert.NotEqual(original["state"], next["state"]);
+        Assert.NotEqual(original["nonce"], next["nonce"]);
+        Assert.NotEqual(original["code_challenge"], next["code_challenge"]);
+        Assert.Equal("S256", next["code_challenge_method"].ToString());
+        Assert.Equal(["email", "openid", "profile"], next["scope"].ToString().Split(' ').Order().ToArray());
+        AssertNoApplicationSession(first);
+        AssertNoApplicationSession(retry);
         AssertNoBackchannel(factory);
     }
 
@@ -145,7 +183,11 @@ public sealed class GoogleOidcProtocolTests
         });
 
     private static WebApplicationFactory<Program> CreateFactory() =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        new ProtocolFactory();
+
+    private sealed class ProtocolFactory : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
             // No request in this suite should reach the database.
@@ -171,7 +213,8 @@ public sealed class GoogleOidcProtocolTests
                     options.Backchannel = new HttpClient(guard);
                 });
             });
-        });
+        }
+    }
 
     private static void AssertNoBackchannel(WebApplicationFactory<Program> factory) =>
         Assert.Equal(0, factory.Services.GetRequiredService<RejectBackchannelHandler>().RequestCount);

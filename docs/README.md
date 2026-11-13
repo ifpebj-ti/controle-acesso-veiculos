@@ -17,6 +17,16 @@ Datas, commits e classificação de cada evidência devem ser preservados.
 | Conferir entregas acadêmicas                | [Unidade 1](validation/unit-1-readiness.md) e [Unidade 2](validation/unit-2-readiness.md): fotografias datadas, não aceite dos professores                                                                                               |
 | Conhecer o alcance das revisões documentais | [Inventário e limites da auditoria](validation/documentation-audit-2026-10-31.md)                                                                                                                                                        |
 
+## Evidência técnica recente
+
+- [Prontidão funcional em 06/11](validation/project-readiness-2026-11-06.md) e
+  [matriz da Unidade 2](validation/unit-2-readiness.md): critérios e percentuais
+  mantidos separados de aceite e implantação.
+
+- [Balanço da homologação de 04/11/2026](validation/homologation-test-balance-2026-11-04.md):
+  verificações HTTPS dos quatro perfis, limpeza fictícia autorizada e limites de
+  integração dos candidatos. Não equivale a aceite institucional.
+
 ## Arquitetura e contratos
 
 - [Política de placas](architecture/vehicle-plate-policy.md).
@@ -36,6 +46,7 @@ Datas, commits e classificação de cada evidência devem ser preservados.
 - [Central de segurança](security/README.md): autenticação, STRIDE, Threat Dragon,
   desenvolvimento seguro e limites do ZAP.
 - [Implantação versionada e rollback](operations/versioned-container-deployment.md).
+- [Cadência de releases e promoção](operations/release-cadence.md).
 - [Verificação pública de HTTPS e readiness](operations/public-tls-verification.md):
   probe somente leitura; não implementa renovação nem alerta operacional.
 - [Preflight OCI](operations/oci-homologation-preflight.md),
