@@ -105,12 +105,16 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na reavaliação de **08/11/2026**, a classificação continua com **8 itens
-atendidos, 6 parciais e 3 pendentes**: `(8 + 6 × 0,5) / 17 = 64,7%`, cerca de
-**65% concluído e 35% restante**, com incerteza de **±5 pontos**. O número é igual
-à estimativa anterior, agora com evidências atualizadas. Correções de integração
-e testes ampliados melhoram a base, mas não concluem requisitos ainda dependentes
-de operação, cobertura ou validação externa.
+Na reavaliação de **13/11/2026**, os 17 itens ficam em **8 atendidos,
+7 parciais e 2 pendentes**. A estimativa é `(8 + 7 × 0,5) / 17 = 67,6%`, cerca
+de **68% concluído e 32% restante**, com incerteza de **±5 pontos**.
+
+O item de indicadores passa de pendente para parcial pela conferência registrada
+na #684, com zero warnings e nove notes, compatível com Good. A comprovação dos
+dois indicadores e do critério acadêmico acima de Good continua pendente no
+portal. A cobertura publicada atualiza a evidência de outro item parcial. A
+variação é uma reavaliação da matriz e corresponde a aproximadamente 3 pontos
+percentuais em relação aos 64,7% anteriores.
 
 Essa régua mede critérios consolidados da matéria, não esforço, linhas de código,
 segurança absoluta ou nota garantida. Os 17 itens e pesos foram mantidos para não
