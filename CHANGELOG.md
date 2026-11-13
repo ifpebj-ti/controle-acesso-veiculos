@@ -14,6 +14,11 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Register verified adult campus drivers and private vehicles, with audited
+  management, transactional persistence and operator-scoped same-day entry
+  suggestions (#690, Refs #689).
+- Extend the canonical vehicle-access catalog with Aluno, Terceirizado and
+  Federal while retaining the original nine categories (#694, Refs #688).
 - Optional native fullscreen controls and an authenticated overview invitation,
   with per-tab dismissal guidance and persistent access (#621, #629).
 - History category shelf with bounded parallel counting, independent failures,
@@ -53,6 +58,9 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Changed
 
+- Extend Transportation business policies to access operations, events, audit
+  queries and reports while enforcing Administrator account governance and
+  method-aware PDF confirmation (#693). Federated export confirmation is #699.
 - Remove unused frontend demonstration state and modernize administrative
   reports without treating mock data as integrated functionality (#531, #487).
 - Update reviewed frontend, .NET, GitHub Actions and OCI provider dependencies,
@@ -60,8 +68,12 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Quality and operations
 
+- Consolidate backend line coverage across test reports with a 70% CI floor,
+  excluding generated migrations and reporting module-level totals (#691).
 - Expand Google protocol/signed-token and session-response-loss regressions,
   keeping controlled tests distinct from real OAuth acceptance (#538, #563, #595).
+- Prepare reviewed version/changelog proposals and publish immutable release
+  tags and GitHub Releases after gated container publication (#698).
 - Document security analysis, threat-model consistency, protected operations,
   TLS renewal, deployment evidence and readiness limits (#635, #552, #517, #512,
   #637, #660, #670). Documentation does not prove operational completion.
