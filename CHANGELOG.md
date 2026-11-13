@@ -34,6 +34,13 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Restore Google sign-in after a cached browser-history return, rechecking
+  provider availability before an explicit retry and preventing overlapping
+  departures or callback restoration. Preserve administrative access and focus.
+- Return `Local`/`Google` strings for `authenticationMethod` in administrative
+  account listings, consistently with account creation and profile changes.
+  Preserve pagination and all existing public fields without changing the
+  domain, authentication policy or global JSON converters.
 - Reject invalid session-family identifiers, preserve historical vehicle
   identity, apply literal administrative searches and institutional date
   boundaries, and prevent caching of sensitive API responses
