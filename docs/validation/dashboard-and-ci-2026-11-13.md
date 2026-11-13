@@ -30,6 +30,11 @@ arquivos pertence à revisão anterior dessa composição; ela não foi executad
 outra vez para este documento. Os 21 testes focados desta rodada não devem ser
 somados a ela como testes distintos.
 
+O relógio da página atualiza a cada segundo. Os indicadores têm outro ciclo:
+consulta inicial, aplicação explícita da data e nova tentativa após erro. Não há
+polling ou WebSocket no hook atual; o relógio não comprova atualização contínua
+dos totais. A resposta agregada da API é a autoridade dos valores exibidos.
+
 ## OWASP ZAP
 
 O relatório da execução [43502824579](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/runs/43502824579),
