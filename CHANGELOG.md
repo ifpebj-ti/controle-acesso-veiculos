@@ -12,22 +12,13 @@ This section lists incorporated changes since v0.4.0, not a published release
 or proof of deployment. Frontend candidates still in open PRs are excluded.
 See the [release policy](docs/operations/release-cadence.md).
 
-### Account reactivation preparation — Refs #669
-
-- Prepare standalone reactivation services, dialog and behavior tests for the
-  #668 contract, reusing temporary credential disclosure and read-only
-  reconciliation after uncertain outcomes. Account-page integration remains
-  pending the canonical Local/Google account contract from #530 and an
-  identified integrated candidate; no existing account flow is replaced yet.
-
-### Vehicle conflict feedback — Refs #665
-
-- Show the server's public vehicle-conflict guidance when an institutional
-  vehicle edit returns HTTP 409, preserving form values, generic fallbacks and
-  explicit submission without adding automatic retries or local identity rules.
-
 ### Added
 
+- Prepare standalone account-reactivation services, dialog and behavior tests
+  for the #668 contract, preserving temporary credential disclosure and read-only
+  reconciliation after uncertain outcomes. Account-page integration remains
+  pending; the Local/Google account contract is already incorporated (#530,
+  Refs #669).
 - Register verified adult campus drivers and private vehicles, with audited
   management, transactional persistence and operator-scoped same-day entry
   suggestions (#690, Refs #689).

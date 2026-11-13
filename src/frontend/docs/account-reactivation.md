@@ -13,6 +13,20 @@ incorporada ou hospedada. A montagem final aguarda a incorporação do contrato
 canônico de contas Local/Google do #530, conforme coordenação com Raíssa.
 Não houve cópia ou merge desse PR nem relaxamento dos schemas atuais.
 
+## Sincronização de 13/11/2026
+
+A base foi atualizada por merge regular para main `8ad5dba`, que já incorpora
+#530. O contrato Local/Google deixou de ser uma dependência não incorporada.
+O backend #668 está em `e01247d`, ainda candidato; seus 292 testes de integração
+e 141 testes Application são evidências da revisão anterior, não nova execução
+neste frontend. Os arquivos de produção da reativação permanecem idênticos ao
+snapshot `dd5cf90`.
+
+No frontend sincronizado passaram 48 testes focados/3 arquivos com Vitest 5.1.0,
+lint e build. A montagem na AdminPage, a composição com a API #668 e a validação
+autenticada continuam pendentes. Não houve deploy, alteração de contas ou ensaio
+físico. Os parágrafos anteriores preservam a fotografia da preparação inicial.
+
 ## Contrato preparado
 
 - Google inativa: `POST /users/{id}/reactivation`, sem corpo, HTTP 204; não
