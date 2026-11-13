@@ -110,6 +110,7 @@ function mockAuthenticatedProfile(profileName: ProfileName) {
     expiresAtUtc: "2030-06-10T22:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),
+    restoreExternalSession: vi.fn(),
     sessionEndReason: null,
     status: "authenticated",
     user: {

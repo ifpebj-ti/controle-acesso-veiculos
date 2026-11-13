@@ -112,11 +112,14 @@ O procedimento de armazenamento, rotação, resposta a comprometimento, backup e
 restauração do key ring está registrado na
 [ADR 0003](../architecture/decisions/0003-protected-data-protection-key-ring.md).
 
-A integração Google ainda não é declarada homologada: faltam credenciais OAuth
-separadas por ambiente, callback HTTPS real, gestão administrativa da pré-autorização,
-integração da tela e testes observados. Enquanto `Authentication:Google:Enabled`
-for `false`, os endpoints de início e conclusão respondem como indisponíveis e o
-comportamento atual não é alterado.
+A homologação completa do Google mantém os critérios e as fontes dos ensaios
+registrados, sem confundir configuração com aceite. A
+[promoção de 11/11](../validation/backend-runtime-rollout-2026-11-11.md)
+identifica frontend `7dd02a6` e backend `812b71e`, com sucesso e uma recarga
+relatados por José como Porteiro; não é observação independente do agente nem
+validação de todos os cenários. Enquanto `Authentication:Google:Enabled` for
+`false`, os endpoints de início e conclusão respondem como indisponíveis e o
+frontend mantém a ação Google visível e desabilitada.
 
 O procedimento planejado para indisponibilidade do provedor, uso individual de
 contas de emergência, retorno ao serviço e preservação de evidências está no
@@ -144,11 +147,27 @@ ensaio necessário para distinguir configuração pronta de login homologado.
 
 ## Integração do frontend
 
-A Issue #117 aplica essa decisão no frontend React. O formulário usa e-mail e
-senha porque esse é o contrato vigente de `POST /auth/login`; a preferência
-visual anterior por nome de usuário não altera silenciosamente a API. A resposta
-é validada antes de criar a sessão, e somente `id`, e-mail, perfil e expiração
-compõem a identidade local.
+A Issue #461 integra a decisão no frontend React. A tela consulta
+`GET /auth/providers` sem cache. “Continuar com Google” só permite iniciar o
+acesso quando a resposta validada informa `googleEnabled: true`. Com `false`,
+o botão permanece visível e desabilitado, com mensagem de indisponibilidade.
+A ausência de contas autorizadas não controla a exibição; a API verifica o
+acesso após a autenticação. Falha na descoberta mantém o estado de erro e não
+habilita o botão. O início usa navegação completa
+para `/auth/google/start`, sem `fetch`, popup ou SDK Google. O formulário de
+e-mail e senha só aparece depois da ação “Entrar com usuário e senha”, indicada
+como “Acesso administrativo”, em uma visualização exclusiva na mesma rota. A
+ação “Voltar” apaga o formulário e restaura o foco ao acionador. O acesso permanece
+exclusivo do perfil Administrador; o backend continua impondo o método aceito.
+
+No retorno `/login?status=success`, o frontend remove o parâmetro e restaura a
+sessão local pelo ciclo CSRF e refresh existente. `status=denied`, descoberta
+indisponível e retorno sem sessão válida produzem mensagens genéricas e
+acessíveis. Nenhum parâmetro concede perfil, e-mail e domínio não são usados
+para inferir autorização. HTTPS, domínio e cliente OAuth são configuração externa;
+sua disponibilidade já registrada não encerra os critérios pendentes. A correlação
+do cenário de conta não pré-autorizada continua limitada pelas evidências existentes:
+uma mensagem genérica não comprova retrospectivamente o ramo interno da negação.
 
 O access token fica em uma variável de módulo e no contexto React apenas durante
 a aba aberta. Ele é anexado pelo interceptor do Axios, nunca é colocado em URL,

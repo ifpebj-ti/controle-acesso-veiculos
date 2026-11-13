@@ -32,6 +32,15 @@ See the [release policy](docs/operations/release-cadence.md).
   responses and expiry states; scheduling, renewal and alert delivery remain
   operational work (#556).
 
+### Changed
+
+- Increase spacing between sign-in guidance and administrative access while
+  retaining the established login alignment, typography and panel composition.
+- Cap the Google sign-in action at 18rem within the available width, retaining
+  its touch-target height and consistent enabled/disabled presentation.
+  Add a detached sage contour, shorten introductory copy and align the separate
+  administrative action without changing authentication behavior.
+
 ### Fixed
 
 - Reject invalid session-family identifiers, preserve historical vehicle
@@ -96,6 +105,10 @@ See the [release policy](docs/operations/release-cadence.md).
   preauthorized accounts by stable subject, rotates local credential state and
   creates the existing protected application session without exposing provider
   tokens to the browser.
+- The frontend discovers whether Google authentication is enabled, starts the
+  backend-mediated redirect as its primary sign-in action, restores the local
+  session after the callback, and keeps local credentials behind an explicit
+  Administrator-only access action.
 
 - Semantic frontend design tokens and a documented WCAG 2.2 contrast matrix
   for the future light, dark, and system appearance foundation.
