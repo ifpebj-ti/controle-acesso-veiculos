@@ -305,6 +305,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.OperateAccess, policy => policy.RequireRole(
         ProfileNames.Doorman,
         ProfileNames.SecurityGuard,
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAccessRecords, policy => policy.RequireRole(
         ProfileNames.Doorman,
@@ -320,6 +321,7 @@ builder.Services.AddAuthorizationBuilder()
         policy => policy.RequireRole(
             ProfileNames.Doorman,
             ProfileNames.SecurityGuard,
+            ProfileNames.TransportationDepartment,
             ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewTransportationRecords, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment,
@@ -346,12 +348,14 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageCampusDrivers, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment, ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewOperationalSummary, policy => policy.RequireRole(
         ProfileNames.Doorman,
@@ -359,7 +363,8 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAdministrativeReports,
-        policy => policy.RequireRole(ProfileNames.Administrator));
+        policy => policy.RequireRole(ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator));
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(institutionalTimeZone);

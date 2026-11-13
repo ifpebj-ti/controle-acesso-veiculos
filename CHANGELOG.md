@@ -58,6 +58,9 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Changed
 
+- Extend Transportation business policies to access operations, events, audit
+  queries and reports while enforcing Administrator account governance and
+  method-aware PDF confirmation (#693). Federated export confirmation is #699.
 - Remove unused frontend demonstration state and modernize administrative
   reports without treating mock data as integrated functionality (#531, #487).
 - Update reviewed frontend, .NET, GitHub Actions and OCI provider dependencies,
