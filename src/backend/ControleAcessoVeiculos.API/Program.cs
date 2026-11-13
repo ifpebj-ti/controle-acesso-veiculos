@@ -1,3 +1,5 @@
+using ControleAcessoVeiculos.Application.CampusDrivers;
+using ControleAcessoVeiculos.Infrastructure.CampusDrivers;
 using ControleAcessoVeiculos.API.Health;
 using ControleAcessoVeiculos.API.Endpoints;
 using ControleAcessoVeiculos.API.Middleware;
@@ -303,6 +305,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.OperateAccess, policy => policy.RequireRole(
         ProfileNames.Doorman,
         ProfileNames.SecurityGuard,
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAccessRecords, policy => policy.RequireRole(
         ProfileNames.Doorman,
@@ -318,6 +321,7 @@ builder.Services.AddAuthorizationBuilder()
         policy => policy.RequireRole(
             ProfileNames.Doorman,
             ProfileNames.SecurityGuard,
+            ProfileNames.TransportationDepartment,
             ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewTransportationRecords, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment,
@@ -344,10 +348,14 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ManageCampusDrivers, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment, ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewOperationalSummary, policy => policy.RequireRole(
         ProfileNames.Doorman,
@@ -355,7 +363,8 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAdministrativeReports,
-        policy => policy.RequireRole(ProfileNames.Administrator));
+        policy => policy.RequireRole(ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator));
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(institutionalTimeZone);
@@ -394,6 +403,8 @@ builder.Services.AddScoped<UserAccountLifecycleService>();
 builder.Services.AddScoped<ChangeAccountProfileService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
+builder.Services.AddScoped<CampusDriverService>();
+builder.Services.AddScoped<ICampusDriverStore, CampusDriverStore>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
 builder.Services.AddScoped<InstitutionalVehicleCatalogService>();
 builder.Services.AddScoped<InstitutionalDriverService>();
@@ -493,6 +504,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     .DisableRateLimiting();
 
 app.MapVehicleAccessEndpoints();
+app.MapCampusDriverEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
 app.MapInstitutionalDriverEndpoints();
