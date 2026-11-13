@@ -11,6 +11,10 @@ const loadCampusDriversPage = () =>
   import("../pages/CampusDriversPage").then(({ CampusDriversPage }) => ({
     Component: CampusDriversPage,
   }));
+const loadAuditPage = () =>
+  import("../pages/AuditPage").then(({ AuditPage }) => ({
+    Component: AuditPage,
+  }));
 const loadAdminPage = () =>
   import("../pages/AdminPage").then(({ AdminPage }) => ({
     Component: AdminPage,
@@ -101,6 +105,7 @@ export const router = createBrowserRouter([
                     lazy: loadCampusDriversPage,
                   },
                   { path: "/administracao", lazy: loadAdminPage },
+                  { path: "/auditoria", lazy: loadAuditPage },
                   { path: "/relatorios", lazy: loadReportsPage },
                 ],
               },

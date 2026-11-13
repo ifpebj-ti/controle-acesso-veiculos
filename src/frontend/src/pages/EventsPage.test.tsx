@@ -147,7 +147,7 @@ describe("EventsPage", () => {
     vi.mocked(getApiValidationErrors).mockReturnValue({});
   });
 
-  it.each(["Porteiro", "Vigilante", "SetorTransporte"] as const)(
+  it.each(["Porteiro", "Vigilante"] as const)(
     "lets %s consult events without maintenance actions",
     async (profileName) => {
       renderPage(profileName);
@@ -414,31 +414,38 @@ describe("EventsPage", () => {
     expect(screen.getAllByText(ruleError.textContent ?? "")).toHaveLength(1);
   });
 
-  it("creates an authorization through the real feature boundary", async () => {
-    vi.mocked(createEventAuthorization).mockResolvedValue({
-      ...authorization,
-      id: 11,
-      name: "Encontro de Teste",
-    });
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findByText(authorization.name);
-    await user.click(screen.getByRole("button", { name: "Nova autorização" }));
-    await fillRequiredForm(user);
-    await user.click(screen.getByRole("button", { name: "Criar autorização" }));
-    await waitFor(() =>
-      expect(createEventAuthorization).toHaveBeenCalledTimes(1),
-    );
-    expect(createEventAuthorization).toHaveBeenCalledWith(
-      expect.objectContaining({
-        parkingLocation: "ADefinir",
-        responsibleContact: "eventos@example.test",
-      }),
-    );
-    expect(
-      await screen.findByText("Autorização criada com sucesso."),
-    ).toBeInTheDocument();
-  });
+  it.each(["Administrador", "SetorTransporte"] as const)(
+    "lets %s create an authorization through the real feature boundary",
+    async (profileName) => {
+      vi.mocked(createEventAuthorization).mockResolvedValue({
+        ...authorization,
+        id: 11,
+        name: "Encontro de Teste",
+      });
+      const user = userEvent.setup();
+      renderPage(profileName);
+      await screen.findByText(authorization.name);
+      await user.click(
+        screen.getByRole("button", { name: "Nova autorização" }),
+      );
+      await fillRequiredForm(user);
+      await user.click(
+        screen.getByRole("button", { name: "Criar autorização" }),
+      );
+      await waitFor(() =>
+        expect(createEventAuthorization).toHaveBeenCalledTimes(1),
+      );
+      expect(createEventAuthorization).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parkingLocation: "ADefinir",
+          responsibleContact: "eventos@example.test",
+        }),
+      );
+      expect(
+        await screen.findByText("Autorização criada com sucesso."),
+      ).toBeInTheDocument();
+    },
+  );
 
   it("edits an active authorization and preserves the API identifier", async () => {
     vi.mocked(updateEventAuthorization).mockResolvedValue({

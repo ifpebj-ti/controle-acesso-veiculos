@@ -21,13 +21,13 @@ export function ReportsPage() {
     !profileHasCapability(user.profileName, "review-administrative-reports")
   ) {
     return (
-      <AccessDeniedState message="Os relatórios são exclusivos do perfil Administrador." />
+      <AccessDeniedState message="Os relatórios estão disponíveis para Administrador e Setor de Transporte." />
     );
   }
-  return <AdministratorReports />;
+  return <BusinessReports canExport={user.profileName === "Administrador"} />;
 }
 
-function AdministratorReports() {
+function BusinessReports({ canExport }: { canExport: boolean }) {
   const report = useAdministrativeReport();
   const [exportOpen, setExportOpen] = useState(false);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
@@ -43,7 +43,10 @@ function AdministratorReports() {
       <PageHeader
         action={
           <Button
-            disabled={report.status === "loading"}
+            disabled={!canExport || report.status === "loading"}
+            aria-describedby={
+              !canExport ? "transport-export-availability" : undefined
+            }
             onClick={() => setExportOpen(true)}
             ref={exportTriggerRef}
           >
@@ -56,6 +59,16 @@ function AdministratorReports() {
         variant="prominent"
       />
 
+      {!canExport && (
+        <p
+          className="mt-5 rounded-xl border border-border bg-surface-subtle p-4 text-sm leading-6 text-text"
+          id="transport-export-availability"
+        >
+          Para o Setor de Transporte, a consulta está disponível. A exportação
+          ainda não está disponível neste acesso e precisa de uma confirmação
+          compatível.
+        </p>
+      )}
       <ReportKindSelector kind={report.kind} onChange={report.changeKind} />
 
       {exportNotice && (
@@ -79,7 +92,7 @@ function AdministratorReports() {
       />
       <ReportContent report={report} />
 
-      {exportOpen && (
+      {exportOpen && canExport && (
         <ReportExportDialog
           applied={report.applied}
           kind={report.kind}
