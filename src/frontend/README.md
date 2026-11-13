@@ -60,9 +60,10 @@ homologação em tablet físico.
 
 ## Estado atual
 
-A preparação da reativação segura #669 mantém serviço, diálogo e testes isolados,
-sem alterar a página de contas. A montagem aguarda o contrato Local/Google do
-#530 e a validação conjunta com a API candidata #668. Contrato, tratamento de
+A reativação segura #669 está montada na página de contas com o contrato
+Local/Google do #530 incorporado. A API #668 permanece candidata e exige
+composição identificada para validação autenticada; não é considerada hospedada.
+Contrato, tratamento de
 resultado incerto e critérios pendentes estão em
 [`docs/account-reactivation.md`](docs/account-reactivation.md).
 
