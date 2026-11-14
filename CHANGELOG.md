@@ -18,6 +18,14 @@ See the [release policy](docs/operations/release-cadence.md).
   matrix, including independent audit queries without user management and report
   consultation; keep PDF export unavailable until compatible confirmation is
   available, without asking for a Google password (#705, Refs #703).
+- Campus-driver registration and vehicle association for Administrator and
+  Transportation, with explicit homonym confirmation and uncertain-write
+  protection; extend the existing entry search with source-aware, expiring
+  suggestions and current driver/objective confirmation (#704, Refs #689).
+- Frontend support for Aluno, Terceirizado and Federal across access forms,
+  history categories/counts, open accesses, summaries and reports, displaying
+  Federal as Servidor federal while preserving canonical keys, partial filters,
+  bounded counting concurrency and unavailable-count states (#702, Refs #688).
 - Register verified adult campus drivers and private vehicles, with audited
   management, transactional persistence and operator-scoped same-day entry
   suggestions (#690, Refs #689).

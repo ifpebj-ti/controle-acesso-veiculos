@@ -22,6 +22,7 @@ export type ProtectedRoutePath =
   | "/eventos"
   | "/administracao"
   | "/relatorios"
+  | "/condutores-vinculados"
   | "/auditoria";
 
 type NavigationSectionId =
@@ -189,6 +190,18 @@ export const routeMetadata: Readonly<Record<string, RouteMetadata>> = {
       ],
     },
     title: "Motoristas autorizados",
+  },
+  "/condutores-vinculados": {
+    allowedProfiles: managementProfiles,
+    navigation: {
+      icon: "users",
+      label: "Condutores vinculados",
+      placements: [
+        { profiles: ["Administrador"], section: "support" },
+        { profiles: ["SetorTransporte"], section: "management" },
+      ],
+    },
+    title: "Condutores vinculados",
   },
   "/eventos": {
     allowedProfiles: allProfiles,

@@ -90,6 +90,23 @@ function renderPage() {
 }
 
 describe("ReportsPage", () => {
+  it.each(["Aluno", "Terceirizado", "Federal"])(
+    "renders the real %s category with its presentation label",
+    async (categoryName) => {
+      vi.mocked(searchVehicleMovementReport).mockResolvedValue({
+        ...movementPage,
+        items: movementPage.items.map((item) => ({ ...item, categoryName })),
+      });
+      renderPage();
+      expect(
+        (
+          await screen.findAllByText(
+            categoryName === "Federal" ? "Servidor federal" : categoryName,
+          )
+        ).length,
+      ).toBeGreaterThan(0);
+    },
+  );
   it("allows Transportation consultation without asking for a Google or unverified local password", async () => {
     vi.mocked(useAuthenticatedSession).mockReturnValue({
       user: {
