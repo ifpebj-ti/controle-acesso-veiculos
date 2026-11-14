@@ -8,8 +8,8 @@
 > [registro da implantação e validação](integrated-candidate-2026-11-14.md).
 >
 > Passaram 961 testes frontend/78 arquivos, 521 backend, 42 verificações locais
-> dos serviços frontend com API/PostgreSQL e nove verificações autenticadas HTTPS
-> de consulta. Raíssa relatou tablet/Narrador locais nos snapshots dos respectivos
+> dos serviços frontend com API/PostgreSQL e 24 verificações autenticadas HTTPS
+> de consulta e reativação. Raíssa relatou tablet/Narrador locais nos snapshots dos respectivos
 > PRs. As tarefas pela interface hospedada continuam pendentes. A ferramenta de
 > controle do navegador falhou ao inicializar durante esta revisão.
 >

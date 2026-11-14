@@ -55,7 +55,7 @@ retomada e o arquivo completo foi verificado antes da importação das imagens.
 | Backend completo      | 521 testes, sendo 88 domínio, 141 aplicação e 292 integração, fonte f7ee701               |
 | Serviços reais locais | 25 verificações de categorias/cadastro/Transporte com API e PostgreSQL descartável        |
 | Reativação real local | 17 verificações de contrato, autorização, reset, revogação e auditoria com API/PostgreSQL |
-| HTTPS hospedado       | 9 verificações autenticadas com Administrador, usando os serviços TypeScript reais        |
+| HTTPS hospedado       | 9 verificações de consulta e 15 de reativação, autenticadas com serviços TypeScript reais |
 | Build e qualidade     | Lint/build frontend, build backend e scans das duas imagens AMD64 aprovados               |
 
 As 25 verificações locais cobriram os três vínculos, idade mínima, confirmação,
@@ -68,7 +68,13 @@ negação aos perfis operacionais. A conta fictícia desse ensaio ficou inativa.
 Os nove ensaios HTTPS verificaram autenticação administrativa, provedor Google,
 catálogo de contas, catálogo de pré-cadastro, consulta de sugestões, doze contagens
 com no máximo três requisições simultâneas, histórico, relatórios e auditoria.
-Esses ensaios preservaram os dados e as contas compartilhadas.
+As consultas preservaram os dados e as contas compartilhadas. Outros 15 ensaios
+HTTPS exercitaram reativação Local/Google com contas fictícias dedicadas, senha
+anterior negada, sessão revogada, credencial de uso único e troca obrigatória.
+As contas desses ensaios ficaram inativas. A primeira execução do script
+interrompeu no readback por usar um nome ausente da resposta de criação. O
+script foi corrigido para o nome conhecido do próprio fixture e a execução
+completa passou. A conta da primeira tentativa também permaneceu inativa.
 
 Raíssa relatou sucesso em tablet físico/Narrador locais nos snapshots publicados
 nos PRs. Esses relatos mantêm autoria e ambiente. As tarefas autenticadas da
