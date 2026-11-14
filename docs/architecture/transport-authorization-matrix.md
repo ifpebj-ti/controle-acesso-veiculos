@@ -1,4 +1,4 @@
-# Permissões do Transporte — candidato #693
+# Permissões do Transporte — backend incorporado pelo #700
 
 ## Decisão de 12/11/2026
 
@@ -7,7 +7,7 @@ A concessão de acesso e o gerenciamento de contas continuam sob responsabilidad
 do Administrador, incluindo perfis, credenciais, desativação e reativação.
 A política `ManageUsers` protege todas essas operações no servidor.
 
-## Matriz da API candidata
+## Matriz da API na main
 
 | Função                                                          | Porteiro e Vigilante       | Transporte           | Administrador |
 | --------------------------------------------------------------- | -------------------------- | -------------------- | ------------- |
@@ -22,9 +22,9 @@ A política `ManageUsers` protege todas essas operações no servidor.
 | Exportar PDF com confirmação de senha local válida              | Não                        | Conta local elegível | Sim           |
 | Exportar PDF pela conta Google                                  | Não                        | Pendente #699        | Não se aplica |
 
-O pré-cadastro depende do #695. O fluxo novo de proposta e revisão de correção
-continua nos candidatos #607/#613. A matriz descreve permissões da API desta
-composição e exige integração dos controles de navegação e ações do frontend.
+O pré-cadastro foi incorporado pelo #695. O fluxo novo de proposta e revisão de correção
+continua nos candidatos #607/#613. A matriz descreve permissões da API na main `8b61ccd`. A integração dos controles
+de navegação e ações do frontend é acompanhada no #705/#703.
 
 ## Confirmação da exportação
 

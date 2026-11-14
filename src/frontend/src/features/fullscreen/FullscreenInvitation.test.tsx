@@ -72,6 +72,7 @@ const session: SessionContextValue = {
   },
   login: vi.fn(),
   logout: vi.fn(),
+  restoreExternalSession: vi.fn(),
   completePasswordChange: vi.fn(),
   expiresAtUtc: null,
   sessionEndReason: null,
