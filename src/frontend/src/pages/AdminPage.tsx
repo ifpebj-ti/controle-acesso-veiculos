@@ -1,3 +1,5 @@
+import { AccountReactivationFlow } from "../features/user-accounts/reactivation/AccountReactivationFlow";
+import { readReactivationAccount } from "../features/user-accounts/reactivation/readReactivationAccount";
 import { useState } from "react";
 
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
@@ -38,7 +40,7 @@ export function AdminPage() {
     );
   }
 
-  return <AdministratorPage currentUserId={user.id} />;
+  return <AdministratorPage key={user.id} currentUserId={user.id} />;
 }
 
 function AdministratorPage({ currentUserId }: { currentUserId: number }) {
@@ -153,7 +155,20 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
             onChange={accounts.setDraft}
             onClear={accounts.clearFilters}
           />
-          <section className="institutional-catalog mt-4 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_24px_rgba(1,36,40,0.035)]">
+          {accounts.reactivation.warning && (
+            <ActionFeedback
+              className="mt-4"
+              focusOnChange
+              tone="error"
+              message={accounts.reactivation.warning}
+            />
+          )}
+          <section
+            data-account-catalog-focus
+            tabIndex={-1}
+            aria-label="Contas do sistema"
+            className="institutional-catalog mt-4 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_24px_rgba(1,36,40,0.035)]"
+          >
             <SectionHeader
               className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6 sm:pt-6"
               description="Pesquise por nome ou e-mail. Desativar revoga o acesso na próxima requisição protegida, mas preserva registros e autoria."
@@ -165,7 +180,9 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
               currentUserId={currentUserId}
               onPageChange={accounts.goToPage}
               onResetCredential={accounts.openCredentialReset}
-              onToggle={(account) => void accounts.changeAccountState(account)}
+              onToggle={(account, trigger) =>
+                void accounts.changeAccountState(account, trigger)
+              }
               page={accounts.page}
               pendingAction={accounts.pendingAction}
               status={accounts.status}
@@ -195,6 +212,15 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
           onCancel={accounts.profileChange.close}
           onConfirm={(input) => void accounts.profileChange.confirm(input)}
           returnFocusTo={accounts.profileChange.returnFocusTo}
+        />
+      )}
+
+      {accounts.reactivation.target && (
+        <AccountReactivationFlow
+          account={accounts.reactivation.target.account}
+          readAccount={readReactivationAccount}
+          onClose={accounts.reactivation.close}
+          returnFocusTo={accounts.reactivation.target.trigger}
         />
       )}
 

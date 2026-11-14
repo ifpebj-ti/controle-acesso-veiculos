@@ -1,3 +1,4 @@
+import { reactivateLocalAccount } from "../features/user-accounts/reactivation/accountReactivationService";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -53,6 +54,16 @@ vi.mock(
 vi.mock("../features/audit-trail/services/auditTrailService", () => ({
   searchAuditTrail: vi.fn(),
 }));
+vi.mock(
+  "../features/user-accounts/reactivation/accountReactivationService",
+  async (original) => ({
+    ...(await original<
+      typeof import("../features/user-accounts/reactivation/accountReactivationService")
+    >()),
+    reactivateLocalAccount: vi.fn(),
+    reactivateGoogleAccount: vi.fn(),
+  }),
+);
 vi.mock("../services/api-errors", () => ({
   describeApiError: vi.fn(),
   getApiValidationErrors: vi.fn(),
@@ -960,19 +971,33 @@ describe("AdminPage", () => {
     expect(reactivateUserAccount).not.toHaveBeenCalled();
   });
 
-  it("confirms and reactivates an inactive account", async () => {
-    vi.mocked(reactivateUserAccount).mockResolvedValue();
+  it("confirms Local reactivation with a reason and the prepared secure boundary", async () => {
+    vi.mocked(reactivateLocalAccount).mockResolvedValue({
+      temporaryCredential: "CREDENCIAL_FICTICIA_NAO_UTILIZAVEL",
+      temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
+    });
     const user = userEvent.setup();
     renderPage();
     await screen.findAllByText(inactiveAccount.name);
     await user.click(screen.getAllByRole("button", { name: "Reativar" })[0]);
-
-    const dialog = await screen.findByRole("alertdialog");
+    const dialog = await screen.findByRole("dialog", {
+      name: "Reativar com nova credencial?",
+    });
     expect(dialog).toHaveTextContent(inactiveAccount.name);
-    await user.click(
-      within(dialog).getByRole("button", { name: "Reativar conta" }),
+    await selectFieldOption(
+      user,
+      within(dialog).getByLabelText("Motivo da reativação"),
+      "Esquecimento",
     );
-    await waitFor(() => expect(reactivateUserAccount).toHaveBeenCalledWith(9));
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: "Confirmar reativação com nova credencial",
+      }),
+    );
+    await waitFor(() =>
+      expect(reactivateLocalAccount).toHaveBeenCalledWith(9, "Esquecimento"),
+    );
+    expect(reactivateUserAccount).not.toHaveBeenCalled();
     expect(deactivateUserAccount).not.toHaveBeenCalled();
   });
 
