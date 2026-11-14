@@ -45,3 +45,30 @@ public sealed record PaperReconciliationResult(
     PaperReconciliationReceipt? Receipt = null,
     string? Code = null,
     IReadOnlyDictionary<string, string[]>? Errors = null);
+
+
+public sealed record RegisterPaperIncidentCommand(
+    Guid IncidentId, string PaperReference, DateTimeOffset StartedAt, DateTimeOffset EndedAt);
+
+public sealed record PaperIncidentRecord(
+    Guid IncidentId, string PaperReference, DateTime StartedAtUtc, DateTime EndedAtUtc,
+    int CreatedById, DateTime CreatedAtUtc);
+
+public sealed record PaperReconciliationItem(
+    int AccessRecordId, Guid IncidentId, int LineNumber, string PaperAuthorReference,
+    int ImportedById, DateTime ObservedEntryAtUtc, DateTime? ObservedExitAtUtc,
+    DateTime ImportedAtUtc, string Justification, string ReviewStatus,
+    int? ReviewedById, DateTime? ReviewedAtUtc, string? ReviewReason,
+    string Plate, string DriverName);
+
+public sealed record PaperReconciliationPage(
+    IReadOnlyList<PaperReconciliationItem> Items, int TotalCount, int Page, int PageSize);
+
+public interface IPaperReconciliationCatalog
+{
+    Task<PaperIncidentRecord?> RegisterIncidentAsync(RegisterPaperIncidentCommand command,
+        int actorUserId, DateTime createdAtUtc, CancellationToken ct);
+    Task<IReadOnlyList<PaperIncidentRecord>> ListIncidentsAsync(int page, int pageSize, CancellationToken ct);
+    Task<PaperReconciliationPage> SearchAsync(string? status, int? importedById,
+        int page, int pageSize, CancellationToken ct);
+}

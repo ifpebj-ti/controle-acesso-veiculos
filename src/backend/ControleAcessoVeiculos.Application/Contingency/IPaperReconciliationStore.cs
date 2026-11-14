@@ -1,10 +1,10 @@
 namespace ControleAcessoVeiculos.Application.Contingency;
 
 /// <summary>
-/// Atomic persistence boundary. There is deliberately no implementation or DI registration yet.
+/// Atomic persistence boundary implemented by the PostgreSQL store.
 /// Import must validate the incident/paper reference, enforce unique incident/line and actor/request
 /// keys, reject changed replays and overlapping open accesses, and commit access + provenance +
-/// optional paper exit + minimal audit together. Never compose ordinary entry/exit writes here.
+/// optional paper exit + minimal audit together. Reuse registration only inside this transaction, never through separate entry/exit commits.
 /// Event rules must be evaluated at the observed entry time, not silently at import time.
 /// </summary>
 public interface IPaperReconciliationStore

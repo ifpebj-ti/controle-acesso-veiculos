@@ -4,19 +4,20 @@ using ControleAcessoVeiculos.Domain.Entities;
 
 namespace ControleAcessoVeiculos.Application.Contingency;
 
-/// <summary>Application orchestration only; no public endpoint or persistence is enabled.</summary>
+/// <summary>Validates observed facts and delegates one atomic import or review.</summary>
 public sealed class PaperReconciliationService(
     IPaperReconciliationStore store,
     TimeProvider timeProvider)
 {
-    // The future API must resolve actor/profile from the authenticated, active account.
+    // Actor/profile are resolved by the API from the authenticated, active account.
     public async Task<PaperReconciliationResult> ImportAsync(
         ImportPaperAccessCommand command,
         int actorUserId,
         string profileName,
         CancellationToken cancellationToken = default)
     {
-        if (actorUserId <= 0 || profileName is not (ProfileNames.Doorman or ProfileNames.SecurityGuard))
+        if (actorUserId <= 0 || profileName is not (ProfileNames.Doorman or ProfileNames.SecurityGuard or
+            ProfileNames.TransportationDepartment or ProfileNames.Administrator))
             return new(PaperReconciliationStatus.Forbidden);
         cancellationToken.ThrowIfCancellationRequested();
         var now = timeProvider.GetUtcNow();
@@ -43,8 +44,8 @@ public sealed class PaperReconciliationService(
         AccessCategoryNames.TryGetCanonicalName(entry.CategoryName, out var category);
         var data = new PaperImportData(
             command.RequestKey, command.IncidentId, command.LineNumber,
-            command.PaperAuthorReference.Trim(), command.ObservedEntryAt.UtcDateTime,
-            command.ObservedExitAt?.UtcDateTime, command.Justification.Trim(),
+            command.PaperAuthorReference.Trim(), Microseconds(command.ObservedEntryAt.UtcDateTime),
+            command.ObservedExitAt.HasValue ? Microseconds(command.ObservedExitAt.Value.UtcDateTime) : null, command.Justification.Trim(),
             new VehicleEntryData(
                 entry.DriverName.Trim(), Veiculo.NormalizarPlaca(entry.Plate),
                 entry.Objective.Trim(), category, Optional(entry.DocumentType)?.ToUpperInvariant(),
@@ -74,12 +75,14 @@ public sealed class PaperReconciliationService(
             actorUserId, timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
     }
 
+    private static DateTime Microseconds(DateTime value) => value.AddTicks(-(value.Ticks % 10));
+
     private static string? Optional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static void ValidateText(string? value, int min, int max, string field,
         Dictionary<string, string[]> errors)
     {
-        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < min || value.Trim().Length > max)
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < min || value.Trim().Length > max || value.Any(char.IsControl))
             errors[field] = [$"Informe de {min} a {max} caracteres."];
     }
 }

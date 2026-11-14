@@ -21,6 +21,8 @@ public sealed class PaperReconciliationServiceTests
     [Theory]
     [InlineData(ProfileNames.Doorman)]
     [InlineData(ProfileNames.SecurityGuard)]
+    [InlineData(ProfileNames.Administrator)]
+    [InlineData(ProfileNames.TransportationDepartment)]
     public async Task ImportsAsOperationAndPreservesIndependentTimes(string profile)
     {
         var command = Valid with { ObservedEntryAt = Now.AddHours(-2).ToOffset(TimeSpan.FromHours(-3)) };
@@ -53,8 +55,6 @@ public sealed class PaperReconciliationServiceTests
     }
 
     [Theory]
-    [InlineData(ProfileNames.Administrator)]
-    [InlineData(ProfileNames.TransportationDepartment)]
     [InlineData("Porteiro ")]
     [InlineData("unknown")]
     [InlineData("")]
