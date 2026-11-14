@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { accessCorrectionFormSchema } from "./accessRecordSchemas";
+import { generalAccessCategories } from "../model/accessCategories";
 
 const validCorrection = {
   categoryName: "Visitante",
@@ -10,6 +11,18 @@ const validCorrection = {
 };
 
 describe("accessCorrectionFormSchema", () => {
+  it.each(generalAccessCategories)(
+    "accepts the prepared category %s",
+    (categoryName) => {
+      expect(
+        accessCorrectionFormSchema.safeParse({
+          ...validCorrection,
+          categoryName,
+        }).success,
+      ).toBe(true);
+    },
+  );
+
   it("accepts the canonical categories and an optional empty observation", () => {
     expect(
       accessCorrectionFormSchema.safeParse({

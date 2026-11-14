@@ -1,3 +1,4 @@
+import { toAccessCategoryFilter } from "../../access-records/model/accessCategories";
 import axios from "axios";
 
 import { api } from "../../../services/api";
@@ -41,7 +42,9 @@ function queryParams(
     plate: optional(filters.plate),
     driverName: optional(filters.driverName),
     categoryName:
-      kind === "movements" ? optional(filters.categoryName) : undefined,
+      kind === "movements"
+        ? optional(toAccessCategoryFilter(filters.categoryName))
+        : undefined,
     vehicleIdentification:
       kind === "fleet" ? optional(filters.vehicleIdentification) : undefined,
     status: optional(filters.status),
@@ -90,7 +93,9 @@ function exportBody(
     plate: optional(filters.plate),
     driverName: optional(filters.driverName),
     categoryName:
-      kind === "movements" ? optional(filters.categoryName) : undefined,
+      kind === "movements"
+        ? optional(toAccessCategoryFilter(filters.categoryName))
+        : undefined,
     vehicleIdentification:
       kind === "fleet" ? optional(filters.vehicleIdentification) : undefined,
     status: optional(filters.status),
