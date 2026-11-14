@@ -14,6 +14,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Campus-driver registration and vehicle association for Administrator and
+  Transportation, with explicit homonym confirmation and uncertain-write
+  protection; extend the existing entry search with source-aware, expiring
+  suggestions and current driver/objective confirmation (#704, Refs #689).
 - Frontend support for Aluno, Terceirizado and Federal across access forms,
   history categories/counts, open accesses, summaries and reports, displaying
   Federal as Servidor federal while preserving canonical keys, partial filters,
