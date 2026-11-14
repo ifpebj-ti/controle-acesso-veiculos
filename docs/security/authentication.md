@@ -354,3 +354,41 @@ A Issue #542 corrige a serialização numérica identificada no ensaio real do
 candidato frontend #530, que valida esse campo estritamente. A regressão integrada
 verifica o JSON de contas Local e Google e o conjunto de propriedades expostas.
 Não há mudança de perfil, persistência ou regra de autenticação nesta correção.
+
+## Recuperação na reativação — candidato #663
+
+A reativação simples `POST /users/{id}/reactivation` permanece disponível para
+contas Google e preserva seu vínculo. Para uma conta Local suspensa, o candidato
+retorna HTTP 409 com `local_reactivation_requires_credential_reset`, sem ativá-la.
+Isso evita restabelecer uma senha possivelmente comprometida.
+
+O novo `POST /users/{id}/reactivation-with-reset` exige `users:manage` e corpo
+`{ "reason": "SuspeitaComprometimento" }`, ou outro motivo do catálogo de
+redefinição já existente. Em conta Local inativa, reativação, nova credencial,
+incremento de versão, revogação de sessões e auditoria são gravados na mesma
+transação, sob bloqueio da conta. A resposta 200 usa o contrato
+`{ temporaryCredential, temporaryCredentialExpiresAtUtc }`, entregue uma vez,
+com `no-store`; a senha anterior não autentica. O primeiro uso consome a
+credencial e restringe a sessão à troca obrigatória conforme a política existente.
+
+Conta já ativa ou Google e auto-operação retornam conflito; motivo inválido
+retorna 400; conta inexistente retorna 404. A operação usa o limitador de troca
+de senha já adotado. Não é recuperação automática por e-mail nem redefinição
+da senha do provedor. O fluxo de conta ativa em `temporary-credential` mantém
+seu contrato. A auditoria não contém a nova credencial, hash ou identificador Google.
+
+Se a resposta se perder após o commit, não repetir a reativação automaticamente:
+ela já pode ter concluído. Conferir o estado; um Administrador pode emitir outra
+credencial pelo fluxo de redefinição de conta ativa, com nova justificativa.
+Concorrentes não recebem duas credenciais pela reativação: só uma transação
+pode converter o estado inativo em ativo.
+
+A interface precisa distinguir Local/Google, exibir a credencial nova uma única
+vez e orientar sua entrega protegida. **Este contrato é candidato, não está
+implantado e depende de integração com o frontend antes da liberação.** O botão
+antigo não deve ser apresentado como capaz de concluir uma reativação Local.
+A validação local inclui falha de auditoria injetada, verificando rollback do
+estado, hash e versão; o ensaio integrado com a interface permanece pendente.
+
+Referências: [OWASP — recuperação de conta](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
+e [OWASP — autenticação](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html).

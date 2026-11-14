@@ -378,6 +378,22 @@ examinada; a implantação e a verificação do servidor permanecem etapas disti
 Este incremento não muda atores ou fronteiras do modelo, não reduz o escore
 residual de TM-05 e não significa que toda a cadeia de suprimentos esteja segura.
 
+## Complemento candidato — reativação Local (#663)
+
+Risco tratado: reativar uma conta suspensa sem substituir uma credencial
+possivelmente comprometida restabelece o acesso do portador da senha anterior.
+O candidato exige recuperação administrativa atômica para Local, preserva a
+identidade Google e separa o endpoint que pode devolver uma credencial. A
+resposta é `no-store`; o valor não entra na auditoria. Bloqueio da conta e
+transação serializam a emissão concorrente e a mudança de estado.
+
+Atores, fronteiras de confiança e privilégios não são ampliados. Permanecem
+riscos de entrega indevida pelo operador e perda da resposta após commit, com
+procedimento de nova redefinição explícita documentado em [Autenticação](authentication.md).
+Implementação candidata e testes locais não reduzem o risco residual por si
+só: integração frontend e promoção/reteste continuam pendentes. A falha transacional
+foi exercitada localmente em PostgreSQL descartável, sem alterar a hospedagem.
+
 ## Complemento candidato — pré-cadastro e retorno diário (#690, 12/11/2026)
 
 O fluxo usa as mesmas fronteiras API/PostgreSQL do modelo: nasce um dado pessoal

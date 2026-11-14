@@ -53,6 +53,7 @@ public enum ChangeUserAccountStateStatus
     NotFound,
     Conflict,
     SelfDeactivation,
+    CredentialResetRequired,
     LastAdministrator
 }
 
@@ -65,5 +66,6 @@ public enum UserAccountStoreStateStatus
     Success,
     NotFound,
     Conflict,
+    CredentialResetRequired,
     LastAdministrator
 }
