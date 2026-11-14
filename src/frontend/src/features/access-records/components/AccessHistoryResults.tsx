@@ -219,7 +219,7 @@ export function AccessHistoryResults({
                   </Button>
                   {onCorrect && (
                     <Button
-                      aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                      aria-label={`Solicitar correção do registro ${record.plate} de ${record.driverName}`}
                       className="w-full"
                       onClick={(event) =>
                         onCorrect(record, event.currentTarget)
@@ -228,7 +228,7 @@ export function AccessHistoryResults({
                       variant="secondary"
                     >
                       <Icon aria-hidden="true" name="wrench" size={16} />
-                      Corrigir registro
+                      Solicitar correção
                     </Button>
                   )}
                 </div>
@@ -330,7 +330,7 @@ export function AccessHistoryResults({
                         </Button>
                         {onCorrect && (
                           <Button
-                            aria-label={`Corrigir registro ${record.plate} de ${record.driverName}`}
+                            aria-label={`Solicitar correção do registro ${record.plate} de ${record.driverName}`}
                             className="history-action-button whitespace-nowrap text-xs"
                             onClick={(event) =>
                               onCorrect(record, event.currentTarget)
@@ -339,7 +339,7 @@ export function AccessHistoryResults({
                             variant="secondary"
                           >
                             <Icon aria-hidden="true" name="wrench" size={15} />
-                            Corrigir registro
+                            Solicitar correção
                           </Button>
                         )}
                       </div>

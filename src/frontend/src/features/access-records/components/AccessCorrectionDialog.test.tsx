@@ -1,321 +1,258 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AxiosError } from "axios";
+import { AxiosError, CanceledError } from "axios";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import { expectNoSeriousAccessibilityViolations } from "../../../test/accessibility";
 import { selectFieldOption } from "../../../test/selectField";
 import {
-  AccessRecordsContractError,
-  correctAccessRecord,
-} from "../services/accessRecordsService";
-import type { AccessRecord } from "../types";
+  correctionAccess,
+  correctionKey,
+  pendingCorrection,
+} from "../../../test/correctionReviewFixtures";
+import { CorrectionReviewScope } from "../../access-corrections/CorrectionReviewScope";
+import {
+  CorrectionReviewContractError,
+  findOwnCorrectionRequest,
+  submitCorrectionRequest,
+} from "../../access-corrections/service";
+import type { CorrectionRequest } from "../../access-corrections/schemas";
 import { AccessCorrectionDialog } from "./AccessCorrectionDialog";
 
-vi.mock("../services/accessRecordsService", async () => {
-  const actual = await vi.importActual<
-    typeof import("../services/accessRecordsService")
-  >("../services/accessRecordsService");
-  return { ...actual, correctAccessRecord: vi.fn() };
-});
-
-const record: AccessRecord = {
-  categoryName: "Visitante",
-  createdById: 4,
-  driverName: "Pessoa histórica fictícia",
-  entryAtUtc: "2026-09-02T12:00:00.000Z",
-  eventAuthorizationId: 7,
-  eventAuthorizationName: "Evento Fictício",
-  eventVehicleRuleId: 9,
-  exitAtUtc: null,
-  id: 10,
-  objective: "Atendimento fictício",
-  observation: "Observação inicial fictícia",
-  personId: 2,
-  plate: "DEM1A23",
-  status: "Aberto",
-  updatedById: null,
-  vehicleId: 3,
-};
-
-const correctedRecord: AccessRecord = {
-  ...record,
-  categoryName: "Entrega",
-  objective: "Entrega corrigida",
-  observation: "Conferido na portaria",
-  updatedById: 8,
-};
-
-function axiosError(status: number, data: unknown = {}) {
-  return {
-    isAxiosError: true,
-    response: { data, status },
-  };
-}
-
-function DialogHarness({ current = record }: { current?: AccessRecord }) {
+vi.mock("../../access-corrections/service", async (original) => ({
+  ...(await original<typeof import("../../access-corrections/service")>()),
+  submitCorrectionRequest: vi.fn(),
+  findOwnCorrectionRequest: vi.fn(),
+}));
+function Harness({ onReload = vi.fn() }: { onReload?: () => void }) {
   const [open, setOpen] = useState(false);
-  const [updated, setUpdated] = useState<AccessRecord | null>(null);
-
+  const [request, setRequest] = useState<CorrectionRequest | null>(null);
+  const [returnTo, setReturnTo] = useState<HTMLButtonElement | null>(null);
   return (
-    <>
-      <button onClick={() => setOpen(true)} type="button">
-        Abrir correção
+    <CorrectionReviewScope>
+      <button
+        onClick={(event) => {
+          setReturnTo(event.currentTarget);
+          setOpen(true);
+        }}
+      >
+        Abrir solicitação
       </button>
-      {updated && <p role="status">Atualizado: {updated.objective}</p>}
+      {request && (
+        <p role="status">
+          Pedido #{request.id}: {request.status}
+        </p>
+      )}
       {open && (
         <AccessCorrectionDialog
+          record={correctionAccess}
+          returnFocusTo={returnTo}
           onClose={() => setOpen(false)}
-          onCorrected={(next) => {
-            setUpdated(next);
+          onReload={onReload}
+          onRequested={(value) => {
+            setRequest(value);
             setOpen(false);
           }}
-          record={current}
-          returnFocusTo={document.activeElement as HTMLElement}
         />
       )}
-    </>
+    </CorrectionReviewScope>
   );
 }
-
-async function openDialog(user: ReturnType<typeof userEvent.setup>) {
-  const trigger = screen.getByRole("button", { name: "Abrir correção" });
-  trigger.focus();
-  await user.click(trigger);
-  return trigger;
-}
-
-async function submitValidCorrection(user: ReturnType<typeof userEvent.setup>) {
-  const objective = screen.getByLabelText("Objetivo");
-  await user.clear(objective);
-  await user.type(objective, "Entrega corrigida");
+async function fill(user: ReturnType<typeof userEvent.setup>) {
+  await user.clear(screen.getByLabelText("Objetivo"));
+  await user.type(
+    screen.getByLabelText("Objetivo"),
+    pendingCorrection.proposed.objective,
+  );
   await selectFieldOption(user, screen.getByLabelText("Categoria"), "Entrega");
-  const observation = screen.getByLabelText(/Observação/);
-  await user.clear(observation);
-  await user.type(observation, "Conferido na portaria");
+  await user.type(
+    screen.getByLabelText(/Observação/),
+    pendingCorrection.proposed.observation!,
+  );
   await user.type(
     screen.getByLabelText("Justificativa da correção"),
-    "Correção solicitada durante conferência.",
+    pendingCorrection.justification,
   );
-  await user.click(screen.getByRole("button", { name: "Salvar correção" }));
 }
-
-describe("AccessCorrectionDialog", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("presents immutable context and initializes only correctable values", async () => {
-    const user = userEvent.setup();
-    render(<DialogHarness />);
-    await openDialog(user);
-
-    expect(
-      screen.getByRole("dialog", { name: "Corrigir registro" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Objetivo")).toHaveValue(
-      "Atendimento fictício",
-    );
-    expect(screen.getByLabelText("Categoria")).toHaveTextContent("Visitante");
-    expect(screen.getByLabelText(/Observação/)).toHaveValue(
-      "Observação inicial fictícia",
-    );
-    expect(screen.getByLabelText("Justificativa da correção")).toHaveValue("");
-    expect(screen.getByText("DEM1A23")).not.toBeInstanceOf(HTMLInputElement);
-    expect(screen.getByText("Pessoa histórica fictícia")).not.toBeInstanceOf(
-      HTMLInputElement,
-    );
-    expect(screen.getByText("Usuário #4")).toBeInTheDocument();
-    expect(screen.getByText("Evento Fictício")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "A correção e sua justificativa serão registradas na trilha de auditoria.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Objetivo")).toHaveFocus();
+describe("correction proposal dialog", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(correctionKey);
   });
-
-  it("closes with Escape and returns focus to the opening action", async () => {
+  it("submits the original canonical snapshot and proposed values without claiming an applied correction", async () => {
+    vi.mocked(submitCorrectionRequest).mockResolvedValue(pendingCorrection);
     const user = userEvent.setup();
-    render(<DialogHarness />);
-    const trigger = await openDialog(user);
-
-    await user.keyboard("{Escape}");
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
-  });
-
-  it("validates required values and limits before calling the API", async () => {
-    const user = userEvent.setup();
-    render(<DialogHarness />);
-    await openDialog(user);
-    await user.clear(screen.getByLabelText("Objetivo"));
-    await user.type(
-      screen.getByLabelText("Justificativa da correção"),
-      "curta",
+    render(<Harness />);
+    await user.click(screen.getByRole("button", { name: "Abrir solicitação" }));
+    expect(
+      await screen.findByRole("dialog", { name: "Solicitar correção" }),
+    ).toHaveTextContent("Somente a aprovação altera");
+    await fill(user);
+    await user.click(
+      screen.getByRole("button", { name: "Enviar solicitação" }),
     );
-    await user.click(screen.getByRole("button", { name: "Salvar correção" }));
-
+    expect(await screen.findByText("Pedido #31: Pendente")).toBeInTheDocument();
+    expect(submitCorrectionRequest).toHaveBeenCalledExactlyOnceWith(10, {
+      requestKey: correctionKey,
+      original: pendingCorrection.original,
+      proposed: pendingCorrection.proposed,
+      justification: pendingCorrection.justification,
+    });
+    expect(
+      screen.queryByText(/corrigido com sucesso/i),
+    ).not.toBeInTheDocument();
+  });
+  it("validates fields locally and focuses the first invalid field without a request", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole("button", { name: "Abrir solicitação" }));
+    const objective = await screen.findByLabelText("Objetivo");
+    await user.clear(objective);
+    await user.click(
+      screen.getByRole("button", { name: "Enviar solicitação" }),
+    );
     expect(
       await screen.findByText("Informe o objetivo do acesso."),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "A justificativa deve possuir pelo menos 10 caracteres.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Objetivo")).toHaveAttribute(
-      "aria-describedby",
-      "correction-objective-error",
+    await waitFor(() => expect(objective).toHaveFocus());
+    expect(objective).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Justificativa da correção")).toHaveAttribute(
+      "maxLength",
+      "500",
     );
-    expect(correctAccessRecord).not.toHaveBeenCalled();
+    expect(submitCorrectionRequest).not.toHaveBeenCalled();
   });
-
-  it("submits only the correction data and uses the canonical API response", async () => {
-    vi.mocked(correctAccessRecord).mockResolvedValue(correctedRecord);
+  it("rejects an unchanged proposal rather than creating a fake request", async () => {
     const user = userEvent.setup();
-    render(<DialogHarness />);
-    await openDialog(user);
-    await submitValidCorrection(user);
-
-    expect(correctAccessRecord).toHaveBeenCalledWith(10, {
-      categoryName: "Entrega",
-      justification: "Correção solicitada durante conferência.",
-      objective: "Entrega corrigida",
-      observation: "Conferido na portaria",
-    });
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Atualizado: Entrega corrigida",
+    render(<Harness />);
+    await user.click(screen.getByRole("button", { name: "Abrir solicitação" }));
+    await user.type(
+      await screen.findByLabelText("Justificativa da correção"),
+      pendingCorrection.justification,
     );
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("associates API validation errors and preserves all values", async () => {
-    vi.mocked(correctAccessRecord).mockRejectedValue(
-      axiosError(400, {
-        errors: {
-          categoryName: ["Informe uma categoria suportada pelo MVP."],
-          justification: [
-            "A justificativa deve possuir entre 10 e 500 caracteres.",
-          ],
-          objective: ["O objetivo deve possuir até 500 caracteres."],
-          observation: ["O campo deve possuir até 1000 caracteres."],
-        },
-      }),
+    await user.click(
+      screen.getByRole("button", { name: "Enviar solicitação" }),
     );
-    const user = userEvent.setup();
-    render(<DialogHarness />);
-    await openDialog(user);
-    await submitValidCorrection(user);
-
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Revise os campos destacados",
+      "Altere ao menos um",
     );
-    for (const label of [
-      "Objetivo",
-      "Categoria",
-      "Observação (opcional)",
-      "Justificativa da correção",
-    ]) {
-      expect(screen.getByLabelText(label)).toHaveAttribute(
-        "aria-invalid",
-        "true",
-      );
-      expect(screen.getByLabelText(label)).toHaveAttribute("aria-describedby");
-    }
-    expect(screen.getByLabelText("Objetivo")).toHaveValue("Entrega corrigida");
-    expect(screen.getByLabelText("Categoria")).toHaveTextContent("Entrega");
-    expect(screen.getByLabelText(/Observação/)).toHaveValue(
-      "Conferido na portaria",
-    );
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(submitCorrectionRequest).not.toHaveBeenCalled();
   });
-
-  it.each([
-    [401, {}, "Sua sessão não é mais válida. Entre novamente."],
-    [403, {}, "Seu perfil não possui permissão para realizar esta ação."],
-    [
-      404,
-      {},
-      "O registro não existe mais ou não está disponível para correção.",
-    ],
-    [
-      409,
-      {
-        errors: {
-          accessRecord: ["A correção não altera os dados do registro."],
-        },
-      },
-      "A correção não altera os dados do registro.",
-    ],
-  ])(
-    "presents HTTP %s without closing the form",
-    async (status, data, message) => {
-      vi.mocked(correctAccessRecord).mockRejectedValue(
-        axiosError(status, data),
-      );
+  it.each([400, 429])(
+    "preserves values and key after known recoverable HTTP %s without automatic retry",
+    async (status) => {
+      vi.mocked(submitCorrectionRequest).mockRejectedValue({
+        isAxiosError: true,
+        response: { status, data: {} },
+      });
       const user = userEvent.setup();
-      render(<DialogHarness />);
-      await openDialog(user);
-      await submitValidCorrection(user);
-
-      expect(await screen.findByRole("alert")).toHaveTextContent(message);
-      expect(screen.getByRole("dialog")).toBeInTheDocument();
-      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      render(<Harness />);
+      await user.click(
+        screen.getByRole("button", { name: "Abrir solicitação" }),
+      );
+      await screen.findByLabelText("Objetivo");
+      await fill(user);
+      await user.click(
+        screen.getByRole("button", { name: "Enviar solicitação" }),
+      );
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
+      expect(screen.getByLabelText("Objetivo")).toHaveValue(
+        pendingCorrection.proposed.objective,
+      );
+      expect(screen.getByLabelText("Justificativa da correção")).toHaveValue(
+        pendingCorrection.justification,
+      );
+      expect(submitCorrectionRequest).toHaveBeenCalledTimes(1);
+      expect(crypto.randomUUID).toHaveBeenCalledTimes(1);
     },
   );
-
-  it("distinguishes network and response-contract failures", async () => {
-    vi.mocked(correctAccessRecord)
-      .mockRejectedValueOnce(new AxiosError("network", "ERR_NETWORK"))
-      .mockRejectedValueOnce(new AccessRecordsContractError());
+  it.each([
+    new AxiosError("network", "ERR_NETWORK"),
+    new CorrectionReviewContractError(),
+    new CanceledError("fixture"),
+    new DOMException("fixture", "AbortError"),
+  ])(
+    "retains an uncertain intention across closing/reopening after %s",
+    async (error) => {
+      vi.mocked(submitCorrectionRequest).mockRejectedValue(error);
+      vi.mocked(findOwnCorrectionRequest).mockResolvedValue(null);
+      const user = userEvent.setup();
+      render(<Harness />);
+      await user.click(
+        screen.getByRole("button", { name: "Abrir solicitação" }),
+      );
+      await screen.findByLabelText("Objetivo");
+      await fill(user);
+      await user.click(
+        screen.getByRole("button", { name: "Enviar solicitação" }),
+      );
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "pode ter sido recebida",
+      );
+      await user.click(screen.getByRole("button", { name: "Fechar" }));
+      await user.click(
+        screen.getByRole("button", { name: "Abrir solicitação" }),
+      );
+      expect(await screen.findByLabelText("Objetivo")).toHaveValue(
+        pendingCorrection.proposed.objective,
+      );
+      expect(screen.getByLabelText("Objetivo")).toBeDisabled();
+      expect(
+        screen.queryByRole("button", { name: "Enviar solicitação" }),
+      ).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Consultar envio" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "não confirma",
+      );
+      expect(findOwnCorrectionRequest).toHaveBeenCalledWith(correctionKey);
+      expect(submitCorrectionRequest).toHaveBeenCalledTimes(1);
+      expect(crypto.randomUUID).toHaveBeenCalledTimes(1);
+    },
+  );
+  it.each([401, 403])(
+    "does not repeat a denied submission on HTTP %s",
+    async (status) => {
+      vi.mocked(submitCorrectionRequest).mockRejectedValue({
+        isAxiosError: true,
+        response: { status, data: {} },
+      });
+      const user = userEvent.setup();
+      render(<Harness />);
+      await user.click(
+        screen.getByRole("button", { name: "Abrir solicitação" }),
+      );
+      await screen.findByLabelText("Objetivo");
+      await fill(user);
+      await user.click(
+        screen.getByRole("button", { name: "Enviar solicitação" }),
+      );
+      await screen.findByRole("alert");
+      expect(
+        screen.getByRole("button", { name: "Consultar envio" }),
+      ).toBeDisabled();
+      expect(submitCorrectionRequest).toHaveBeenCalledTimes(1);
+    },
+  );
+  it("contains keyboard focus, supports Escape, returns focus and has accessible fields", async () => {
     const user = userEvent.setup();
-    render(<DialogHarness />);
-    await openDialog(user);
-    await submitValidCorrection(user);
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Não foi possível conectar ao sistema",
-    );
-
-    await user.click(screen.getByRole("button", { name: "Salvar correção" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "A resposta da correção não pôde ser validada",
-    );
-    expect(correctAccessRecord).toHaveBeenCalledTimes(2);
-  });
-
-  it("blocks duplicate submission while the request is pending", async () => {
-    let resolveRequest: ((value: AccessRecord) => void) | undefined;
-    vi.mocked(correctAccessRecord).mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveRequest = resolve;
-        }),
-    );
-    const user = userEvent.setup();
-    render(<DialogHarness />);
-    await openDialog(user);
-    await submitValidCorrection(user);
-
-    const pendingButton = screen.getByRole("button", {
-      name: "Salvando correção…",
-    });
-    expect(pendingButton).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
-    await user.click(pendingButton);
-    expect(correctAccessRecord).toHaveBeenCalledTimes(1);
-
-    resolveRequest?.(correctedRecord);
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Entrega corrigida",
-    );
-  });
-
-  it("has no serious accessibility violations", async () => {
-    const user = userEvent.setup();
-    const { container } = render(<DialogHarness />);
-    await openDialog(user);
-
+    const { container } = render(<Harness />);
+    const trigger = screen.getByRole("button", { name: "Abrir solicitação" });
+    await user.click(trigger);
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByRole("heading", { name: "Solicitar correção" }),
+    ).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(
+      within(dialog).getByRole("button", { name: "Enviar solicitação" }),
+    ).toHaveFocus();
+    await user.tab();
+    expect(
+      within(dialog).getByRole("button", { name: "Fechar janela de correção" }),
+    ).toHaveFocus();
     await expectNoSeriousAccessibilityViolations(container);
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

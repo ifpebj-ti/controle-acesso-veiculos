@@ -21,6 +21,24 @@ import { expectNoSeriousAccessibilityViolations } from "../test/accessibility";
 import { selectFieldOption } from "../test/selectField";
 import { generalAccessCategories } from "../features/access-records/model/accessCategories";
 import { HistoryPage } from "./HistoryPage";
+import {
+  correctionKey,
+  pendingCorrection,
+  terminalCorrection,
+} from "../test/correctionReviewFixtures";
+import {
+  decideCorrectionRequest,
+  searchCorrectionRequests,
+  submitCorrectionRequest,
+} from "../features/access-corrections/service";
+vi.mock("../features/access-corrections/service", async (original) => ({
+  ...(await original<
+    typeof import("../features/access-corrections/service")
+  >()),
+  decideCorrectionRequest: vi.fn(),
+  searchCorrectionRequests: vi.fn(),
+  submitCorrectionRequest: vi.fn(),
+}));
 
 vi.mock("../features/access-records/services/accessRecordsService", () => ({
   countAccessHistoryByCategory: vi.fn(),
@@ -91,8 +109,79 @@ function renderPage(profileName: ProfileName = "Porteiro") {
   );
 }
 
+function prepareReview() {
+  vi.mocked(searchCorrectionRequests).mockResolvedValue({
+    items: [{ ...pendingCorrection, requestedByUserId: 2 }],
+    page: 1,
+    pageSize: 25,
+    totalCount: 1,
+    totalPages: 1,
+  });
+  vi.mocked(decideCorrectionRequest).mockResolvedValue({
+    ...terminalCorrection(),
+    requestedByUserId: 2,
+    decidedByUserId: 1,
+  });
+}
+async function approveRequest(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Consultar pedidos" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Conferir solicitação #31" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Aprovar" }));
+  await user.type(
+    screen.getByLabelText("Motivo — Aprovar"),
+    "Conferência fictícia para aprovação.",
+  );
+  await user.click(screen.getByRole("button", { name: "Confirmar aprovar" }));
+}
+async function submitProposal(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    (
+      await screen.findAllByRole("button", {
+        name: /Solicitar correção do registro/,
+      })
+    )[0],
+  );
+  const dialog = await screen.findByRole("dialog", {
+    name: "Solicitar correção",
+  });
+  await user.clear(within(dialog).getByLabelText("Objetivo"));
+  await user.type(
+    within(dialog).getByLabelText("Objetivo"),
+    pendingCorrection.proposed.objective,
+  );
+  await selectFieldOption(
+    user,
+    within(dialog).getByLabelText("Categoria"),
+    "Entrega",
+  );
+  await user.type(
+    within(dialog).getByLabelText(/Observação/),
+    pendingCorrection.proposed.observation!,
+  );
+  await user.type(
+    within(dialog).getByLabelText("Justificativa da correção"),
+    pendingCorrection.justification,
+  );
+  await user.click(
+    within(dialog).getByRole("button", { name: "Enviar solicitação" }),
+  );
+}
+
 describe("HistoryPage", () => {
   beforeEach(() => {
+    vi.spyOn(crypto, "randomUUID").mockReturnValue(correctionKey);
+    vi.mocked(submitCorrectionRequest).mockReset();
+    vi.mocked(decideCorrectionRequest).mockReset();
+    vi.mocked(searchCorrectionRequests).mockReset();
+    vi.mocked(searchCorrectionRequests).mockResolvedValue({
+      items: [],
+      page: 1,
+      pageSize: 25,
+      totalCount: 0,
+      totalPages: 0,
+    });
     vi.mocked(countAccessHistoryByCategory).mockReset();
     vi.mocked(countAccessHistoryByCategory).mockResolvedValue({
       Entrega: 1,
@@ -164,7 +253,7 @@ describe("HistoryPage", () => {
     expect(table.parentElement).toHaveClass("overflow-x-auto", "2xl:block");
     expect(
       within(table).getByRole("button", {
-        name: /Corrigir registro DEM1A23/,
+        name: /Solicitar correção do registro DEM1A23/,
       }).parentElement,
     ).toHaveClass("flex-col", "min-w-[10.5rem]");
   });
@@ -589,11 +678,11 @@ describe("HistoryPage", () => {
     await user.click(
       within(
         screen.getByRole("dialog", { name: "Detalhes do registro" }),
-      ).getByRole("button", { name: "Corrigir registro" }),
+      ).getByRole("button", { name: "Solicitar correção" }),
     );
 
     expect(
-      screen.getByRole("dialog", { name: "Corrigir registro" }),
+      screen.getByRole("dialog", { name: "Solicitar correção" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Objetivo")).toHaveValue(
       "Atendimento fictício",
@@ -606,292 +695,168 @@ describe("HistoryPage", () => {
     "SetorTransporte",
     "Administrador",
   ])(
-    "allows %s to correct a record using the canonical response",
+    "allows %s to request correction without changing the effective row",
     async (profileName) => {
-      const correctedRecord = {
-        ...record,
-        categoryName: "Entrega",
-        objective: "Objetivo devolvido pela API",
-        updatedById: 9,
-      };
-      vi.mocked(searchAccessHistory)
-        .mockResolvedValueOnce(pageResult([record]))
-        .mockResolvedValueOnce(pageResult([correctedRecord]));
-      vi.mocked(correctAccessRecord).mockResolvedValue(correctedRecord);
+      vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([record]));
+      vi.mocked(submitCorrectionRequest).mockResolvedValue(pendingCorrection);
       const user = userEvent.setup();
       renderPage(profileName);
-
-      await screen.findAllByText("DEM1A23");
-      const correctionButton = screen.getAllByRole("button", {
-        name: /Corrigir registro/,
-      })[0];
-      await user.click(correctionButton);
-      const objective = screen.getByLabelText("Objetivo");
-      await user.clear(objective);
-      await user.type(objective, "Valor enviado pelo formulário");
-      await user.type(
-        screen.getByLabelText("Justificativa da correção"),
-        "Justificativa fictícia válida.",
-      );
-      await user.click(screen.getByRole("button", { name: "Salvar correção" }));
-
-      expect(correctAccessRecord).toHaveBeenCalledTimes(1);
+      await submitProposal(user);
       expect(
-        await screen.findAllByText("Objetivo devolvido pela API"),
-      ).toHaveLength(2);
-      const feedback = screen
-        .getByText("Registro #10 corrigido com sucesso.")
-        .closest('[role="status"]');
-      expect(feedback).toHaveClass("fixed", "md:left-auto", "md:max-w-xl");
-      expect(feedback).toHaveAttribute("aria-live", "polite");
-      expect(searchAccessHistory).toHaveBeenCalledTimes(2);
-      expect(searchAccessHistory).toHaveBeenLastCalledWith(
-        expect.objectContaining({ categoryName: undefined, page: 1 }),
-      );
-      expect(correctionButton).toHaveFocus();
-      expect(feedback).not.toHaveFocus();
-      await waitFor(() =>
-        expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2),
-      );
+        await screen.findByText(/Solicitação #31: Pendente/),
+      ).toBeInTheDocument();
+      expect(screen.getAllByText(record.objective)).toHaveLength(2);
+      expect(
+        screen.queryByText(pendingCorrection.proposed.objective),
+      ).not.toBeInTheDocument();
+      expect(searchAccessHistory).toHaveBeenCalledTimes(1);
+      expect(submitCorrectionRequest).toHaveBeenCalledExactlyOnceWith(10, {
+        requestKey: correctionKey,
+        original: pendingCorrection.original,
+        proposed: pendingCorrection.proposed,
+        justification: pendingCorrection.justification,
+      });
+      expect(correctAccessRecord).not.toHaveBeenCalled();
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(1);
     },
   );
-
-  it("keeps the current result and focus during background revalidation", async () => {
-    let resolveRevalidation: ((value: PagedAccessRecords) => void) | undefined;
-    const correctedRecord = {
-      ...record,
-      objective: "Resultado canônico durante atualização",
-      updatedById: 8,
-    };
-    const pendingRevalidation = new Promise<PagedAccessRecords>((resolve) => {
-      resolveRevalidation = resolve;
-    });
-    vi.mocked(searchAccessHistory)
-      .mockResolvedValueOnce(pageResult([record]))
-      .mockReturnValueOnce(pendingRevalidation);
-    vi.mocked(correctAccessRecord).mockResolvedValue(correctedRecord);
-    const user = userEvent.setup();
-    renderPage();
-
-    await screen.findAllByText("DEM1A23");
-    const correctionButton = screen.getAllByRole("button", {
-      name: /Corrigir registro/,
-    })[0];
-    await user.click(correctionButton);
-    await user.type(
-      screen.getByLabelText("Justificativa da correção"),
-      "Justificativa fictícia válida.",
-    );
-    await user.click(screen.getByRole("button", { name: "Salvar correção" }));
-
-    expect(
-      await screen.findAllByText("Resultado canônico durante atualização"),
-    ).toHaveLength(2);
-    expect(screen.queryByText("Carregando histórico…")).not.toBeInTheDocument();
-    expect(correctionButton).toHaveFocus();
-    expect(correctAccessRecord).toHaveBeenCalledTimes(1);
-
-    await act(async () => {
-      resolveRevalidation?.(pageResult([correctedRecord]));
-    });
-    expect(correctionButton).toHaveFocus();
-  });
-
-  it("revalidates applied category filters after a correction", async () => {
-    const correctedRecord = {
-      ...record,
-      categoryName: "Entrega",
-      objective: "Entrega fictícia corrigida",
-      updatedById: 8,
-    };
-    vi.mocked(searchAccessHistory)
-      .mockResolvedValueOnce(pageResult([record]))
-      .mockResolvedValueOnce(pageResult([record]))
-      .mockResolvedValueOnce(pageResult([]));
-    vi.mocked(correctAccessRecord).mockResolvedValue(correctedRecord);
-    const user = userEvent.setup();
-    renderPage();
-
-    await screen.findAllByText("DEM1A23");
-    await selectFieldOption(
-      user,
-      screen.getByLabelText("Categoria"),
-      "Visitante",
-    );
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
-    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
-    await selectFieldOption(
-      user,
-      screen.getByLabelText("Categoria"),
-      "Entrega",
-    );
-
-    await user.click(
-      screen.getAllByRole("button", { name: /Corrigir registro/ })[0],
-    );
-    await selectFieldOption(
-      user,
-      within(screen.getByRole("dialog")).getByLabelText("Categoria"),
-      "Entrega",
-    );
-    await user.type(
-      screen.getByLabelText("Justificativa da correção"),
-      "Ajuste fictício da categoria do registro.",
-    );
-    await user.click(screen.getByRole("button", { name: "Salvar correção" }));
-
-    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(3));
-    expect(searchAccessHistory).toHaveBeenLastCalledWith(
-      expect.objectContaining({ categoryName: "Visitante", page: 1 }),
-    );
-    expect(correctAccessRecord).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("DEM1A23")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Entrega fictícia corrigida"),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("0 registro(s)")).toBeInTheDocument();
-    expect(screen.getByText("Página 1 de 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Categoria")).toHaveTextContent("Entrega");
-    const filteredFeedback = screen
-      .getByText("Registro #10 corrigido com sucesso.")
-      .closest('[role="status"]');
-    expect(filteredFeedback).toHaveAttribute("aria-live", "polite");
-    expect(filteredFeedback).toHaveClass("fixed", "inset-x-4");
-    await waitFor(() => expect(filteredFeedback).toHaveFocus());
-  });
-
-  it("offers correction for both open and closed records", async () => {
+  it("offers requests for both open and closed records", async () => {
     vi.mocked(searchAccessHistory).mockResolvedValue(
       pageResult([
         record,
         {
           ...record,
-          exitAtUtc: "2026-09-02T13:00:00.000Z",
           id: 11,
+          exitAtUtc: "2026-09-02T13:00:00Z",
           status: "Encerrado",
         },
       ]),
     );
     const user = userEvent.setup();
     renderPage();
-
+    const controls = await screen.findAllByRole("button", {
+      name: /Solicitar correção do registro/,
+    });
+    expect(controls).toHaveLength(4);
+    await user.click(controls[1]);
     expect(
-      await screen.findAllByRole("button", { name: /Corrigir registro/ }),
-    ).toHaveLength(4);
-    await user.click(
-      screen.getAllByRole("button", { name: /Corrigir registro/ })[1],
-    );
-    expect(screen.getByRole("dialog")).toHaveTextContent("Registro #11");
-    expect(screen.getByRole("dialog")).toHaveTextContent("Encerrado");
-    expect(screen.getByRole("dialog")).not.toHaveTextContent(
-      "Ainda não registrada",
-    );
+      await screen.findByRole("dialog", { name: "Solicitar correção" }),
+    ).toHaveTextContent("Registro #11");
+    expect(screen.queryByLabelText(/Horário/)).not.toBeInTheDocument();
   });
-
-  it("preserves applied filters and pagination after correction", async () => {
-    const correctedRecord = {
-      ...record,
-      objective: "Resultado canônico corrigido",
-      updatedById: 8,
-    };
+  it("keeps the current row during approval revalidation instead of applying proposed values locally", async () => {
+    let resolve!: (value: PagedAccessRecords) => void;
+    const pending = new Promise<PagedAccessRecords>((yes) => {
+      resolve = yes;
+    });
     vi.mocked(searchAccessHistory)
-      .mockResolvedValueOnce(pageResult([record], 1, 2))
-      .mockResolvedValueOnce(pageResult([record], 1, 2))
-      .mockResolvedValueOnce(pageResult([record], 2, 2))
-      .mockResolvedValueOnce(pageResult([correctedRecord], 2, 2));
-    vi.mocked(correctAccessRecord).mockResolvedValue(correctedRecord);
+      .mockResolvedValueOnce(pageResult([record]))
+      .mockReturnValueOnce(pending);
+    prepareReview();
     const user = userEvent.setup();
-    renderPage();
-
-    await screen.findAllByText("DEM1A23");
-    await user.type(screen.getByLabelText("Placa"), "DEM-1A23");
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    renderPage("Administrador");
+    await screen.findAllByText(record.plate);
+    await approveRequest(user);
     await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
-    await user.click(screen.getByRole("button", { name: "2" }));
-    expect(await screen.findByText("Página 2 de 2")).toBeInTheDocument();
-
-    await user.click(
-      screen.getAllByRole("button", { name: /Corrigir registro/ })[0],
-    );
-    await user.type(
-      screen.getByLabelText("Justificativa da correção"),
-      "Justificativa fictícia válida.",
-    );
-    await user.click(screen.getByRole("button", { name: "Salvar correção" }));
-
+    expect(screen.getAllByText(record.objective)).toHaveLength(2);
     expect(
-      await screen.findAllByText("Resultado canônico corrigido"),
+      screen.queryByText(pendingCorrection.proposed.objective),
+    ).not.toBeInTheDocument();
+    await act(async () =>
+      resolve(pageResult([{ ...record, ...pendingCorrection.proposed }])),
+    );
+    expect(
+      await screen.findAllByText(pendingCorrection.proposed.objective),
     ).toHaveLength(2);
-    expect(screen.getByLabelText("Placa")).toHaveValue("DEM-1A23");
-    expect(screen.getByText("Página 2 de 2")).toBeInTheDocument();
-    expect(searchAccessHistory).toHaveBeenCalledTimes(4);
-    expect(searchAccessHistory).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 2, plate: "DEM-1A23" }),
-    );
-    expect(correctAccessRecord).toHaveBeenCalledTimes(1);
+    expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
   });
-
-  it("loads the last valid page when correction reduces pagination", async () => {
-    const remainingRecord = { ...record, id: 11, plate: "DEM1A24" };
-    const correctedRecord = {
-      ...record,
-      categoryName: "Entrega",
-      updatedById: 8,
-    };
+  it("revalidates applied filters and announces when an approved row is no longer in the results", async () => {
     vi.mocked(searchAccessHistory)
-      .mockResolvedValueOnce(pageResult([record], 1, 2, 26))
-      .mockResolvedValueOnce(pageResult([record], 1, 2, 26))
-      .mockResolvedValueOnce(pageResult([record], 2, 2, 26))
-      .mockResolvedValueOnce(pageResult([], 2, 1, 25))
-      .mockResolvedValueOnce(pageResult([remainingRecord], 1, 1, 25));
-    vi.mocked(correctAccessRecord).mockResolvedValue(correctedRecord);
+      .mockResolvedValueOnce(pageResult([record]))
+      .mockResolvedValueOnce(pageResult([record]))
+      .mockResolvedValueOnce(pageResult([]));
+    prepareReview();
     const user = userEvent.setup();
-    renderPage();
-
-    await screen.findAllByText("DEM1A23");
-    await selectFieldOption(
-      user,
-      screen.getByLabelText("Categoria"),
-      "Visitante",
-    );
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    renderPage("Administrador");
+    await screen.findAllByText(record.plate);
+    await user.click(screen.getByRole("button", { name: "Visitante" }));
     await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
-    await user.click(screen.getByRole("button", { name: "2" }));
-    expect(await screen.findByText("Página 2 de 2")).toBeInTheDocument();
-
-    await user.click(
-      screen.getAllByRole("button", { name: /Corrigir registro/ })[0],
+    await approveRequest(user);
+    const feedback = await screen.findByText(
+      /não aparece no resultado consultado/,
     );
-    await selectFieldOption(
-      user,
-      within(screen.getByRole("dialog")).getByLabelText("Categoria"),
-      "Entrega",
-    );
-    await user.type(
-      screen.getByLabelText("Justificativa da correção"),
-      "Ajuste fictício que reduz a paginação.",
-    );
-    await user.click(screen.getByRole("button", { name: "Salvar correção" }));
-
-    expect(await screen.findByText("Página 1 de 1")).toBeInTheDocument();
-    expect(screen.getByText("25 registro(s)")).toBeInTheDocument();
-    expect(screen.queryByText("DEM1A23")).not.toBeInTheDocument();
-    expect(screen.getAllByText("DEM1A24")).toHaveLength(2);
-    expect(searchAccessHistory).toHaveBeenCalledTimes(5);
-    expect(searchAccessHistory).toHaveBeenNthCalledWith(
-      4,
-      expect.objectContaining({ categoryName: "Visitante", page: 2 }),
+    await waitFor(() =>
+      expect(
+        feedback.closest("[tabindex] ") ?? feedback.closest("[tabindex]"),
+      ).toHaveFocus(),
     );
     expect(searchAccessHistory).toHaveBeenLastCalledWith(
       expect.objectContaining({ categoryName: "Visitante", page: 1 }),
     );
-    expect(correctAccessRecord).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText("Categoria")).toHaveTextContent("Visitante");
+    expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
+  });
+  it("preserves a valid applied page after approval", async () => {
+    const other = { ...record, id: 11 };
+    vi.mocked(searchAccessHistory)
+      .mockResolvedValueOnce(pageResult([other], 1, 2))
+      .mockResolvedValueOnce(pageResult([record], 2, 2))
+      .mockResolvedValueOnce(
+        pageResult([{ ...record, ...pendingCorrection.proposed }], 2, 2),
+      );
+    prepareReview();
+    const user = userEvent.setup();
+    renderPage("Administrador");
+    await screen.findAllByText(record.plate);
+    await user.click(screen.getByRole("button", { name: "2" }));
+    await screen.findByText("Página 2 de 2");
+    await approveRequest(user);
+    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(3));
+    expect(searchAccessHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 2, pageSize: 25 }),
+    );
+    expect(await screen.findByText("Página 2 de 2")).toBeInTheDocument();
+  });
+  it("loads the last valid page when approval reduces pagination", async () => {
+    vi.mocked(searchAccessHistory)
+      .mockResolvedValueOnce(pageResult([record], 1, 2))
+      .mockResolvedValueOnce(pageResult([record], 2, 2))
+      .mockResolvedValueOnce(pageResult([], 2, 1))
+      .mockResolvedValueOnce(
+        pageResult([{ ...record, ...pendingCorrection.proposed }], 1, 1),
+      );
+    prepareReview();
+    const user = userEvent.setup();
+    renderPage("Administrador");
+    await screen.findAllByText(record.plate);
+    await user.click(screen.getByRole("button", { name: "2" }));
+    await screen.findByText("Página 2 de 2");
+    await approveRequest(user);
+    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(4));
+    expect(searchAccessHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1 }),
+    );
+    expect(await screen.findByText("Página 1 de 1")).toBeInTheDocument();
+    expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
     await waitFor(() =>
-      expect(
-        screen
-          .getByText("Registro #10 corrigido com sucesso.")
-          .closest('[role="status"]'),
-      ).toHaveFocus(),
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2),
+    );
+  });
+  it("reports a failed read after approval without repeating the decision", async () => {
+    vi.mocked(searchAccessHistory)
+      .mockResolvedValueOnce(pageResult([record]))
+      .mockRejectedValueOnce(new Error("read fixture"));
+    prepareReview();
+    const user = userEvent.setup();
+    renderPage("Administrador");
+    await screen.findAllByText(record.plate);
+    await approveRequest(user);
+    expect(
+      await screen.findByText(/consulta dos registros não foi concluída/),
+    ).toBeInTheDocument();
+    expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(2),
     );
   });
 

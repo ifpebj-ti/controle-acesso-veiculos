@@ -299,7 +299,7 @@ export function AccessDetailsDialog({
           </Button>
           {onCorrect && (
             <Button onClick={onCorrect} type="button">
-              <Icon name="wrench" size={18} /> Corrigir registro
+              <Icon name="wrench" size={18} /> Solicitar correção
             </Button>
           )}
         </div>

@@ -1,5 +1,6 @@
 import { type MouseEvent, useEffect, useId, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { CorrectionReviewScope } from "../../features/access-corrections/CorrectionReviewScope";
 
 import {
   canShowPasswordChange,
@@ -437,13 +438,13 @@ export function AppLayout() {
   const fullscreen = useFullscreen();
 
   return (
-    <>
+    <CorrectionReviewScope key={user.id}>
       {user.requiresPasswordChange ? (
         <MandatoryPasswordChangeLayout fullscreen={fullscreen} />
       ) : (
         <StandardAppLayout fullscreen={fullscreen} />
       )}
       <FullscreenShortcut fullscreen={fullscreen} />
-    </>
+    </CorrectionReviewScope>
   );
 }
