@@ -18,6 +18,10 @@ See the [release policy](docs/operations/release-cadence.md).
   history categories/counts, open accesses, summaries and reports, displaying
   Federal as Servidor federal while preserving canonical keys, partial filters,
   bounded counting concurrency and unavailable-count states (#702, Refs #688).
+- Campus-driver registration and vehicle association for Administrator and
+  Transportation, with explicit homonym confirmation and uncertain-write
+  protection; extend the existing entry search with source-aware, expiring
+  suggestions and current driver/objective confirmation (#704, Refs #689).
 - Register verified adult campus drivers and private vehicles, with audited
   management, transactional persistence and operator-scoped same-day entry
   suggestions (#690, Refs #689).

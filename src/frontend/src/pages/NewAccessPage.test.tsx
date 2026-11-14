@@ -1,4 +1,5 @@
 import { getAccessCategoryLabel } from "../features/access-records/model/accessCategories";
+import { useAuthenticatedSession } from "../features/authentication";
 import {
   act,
   fireEvent,
@@ -17,7 +18,7 @@ import {
   type AccessRecord,
   vehicleTypeOptions,
 } from "../features/access-records";
-import { searchAccessEntryCandidates } from "../features/access-records/services/accessRecordsService";
+import { searchEntrySuggestions } from "../features/person-preregistration/services/campusDriversService";
 import {
   EventAuthorizationsContractError,
   searchEventAuthorizations,
@@ -29,6 +30,12 @@ import { selectFieldOption } from "../test/selectField";
 import { operationalProfiles } from "../routes/routeMetadata";
 import { NewAccessPage } from "./NewAccessPage";
 
+vi.mock("../features/authentication", async () => {
+  const actual = await vi.importActual<
+    typeof import("../features/authentication")
+  >("../features/authentication");
+  return { ...actual, useAuthenticatedSession: vi.fn() };
+});
 vi.mock("../features/access-records", async () => {
   const actual = await vi.importActual<
     typeof import("../features/access-records")
@@ -36,12 +43,12 @@ vi.mock("../features/access-records", async () => {
   return { ...actual, registerAccessEntry: vi.fn() };
 });
 vi.mock(
-  "../features/access-records/services/accessRecordsService",
+  "../features/person-preregistration/services/campusDriversService",
   async () => {
     const actual = await vi.importActual<
-      typeof import("../features/access-records/services/accessRecordsService")
-    >("../features/access-records/services/accessRecordsService");
-    return { ...actual, searchAccessEntryCandidates: vi.fn() };
+      typeof import("../features/person-preregistration/services/campusDriversService")
+    >("../features/person-preregistration/services/campusDriversService");
+    return { ...actual, searchEntrySuggestions: vi.fn() };
   },
 );
 vi.mock(
@@ -71,6 +78,11 @@ const createdRecord: AccessRecord = {
 };
 
 const recurringCandidate = {
+  source: "CampusRegistration" as const,
+  affiliation: "Aluno" as const,
+  previousObjective: null,
+  hasOpenAccess: false,
+  expiresAtUtc: null,
   brand: "Marca fictícia",
   color: "Prata",
   driverName: "Condutor recorrente fictício",
@@ -82,6 +94,11 @@ const recurringCandidate = {
 };
 
 const alternateCandidate = {
+  source: "CampusRegistration" as const,
+  affiliation: "Aluno" as const,
+  previousObjective: null,
+  hasOpenAccess: false,
+  expiresAtUtc: null,
   brand: "Outra marca fictícia",
   color: "Azul",
   driverName: "Outra pessoa recorrente fictícia",
@@ -93,6 +110,11 @@ const alternateCandidate = {
 };
 
 const candidateWithoutVehicleType = {
+  source: "CampusRegistration" as const,
+  affiliation: "Aluno" as const,
+  previousObjective: null,
+  hasOpenAccess: false,
+  expiresAtUtc: null,
   brand: null,
   color: null,
   driverName: "Pessoa sem tipo fictícia",
@@ -174,6 +196,13 @@ function renderPage({ strictMode = false } = {}) {
 }
 
 type TestUser = ReturnType<typeof userEvent.setup>;
+async function confirmCurrentDriverIfPresent(user: TestUser) {
+  const confirmation = screen.queryByRole("checkbox", {
+    name: "Confirmei quem está dirigindo agora.",
+  });
+  if (confirmation && !(confirmation as HTMLInputElement).checked)
+    await user.click(confirmation);
+}
 
 async function fillRequiredFields(
   user: TestUser,
@@ -209,12 +238,141 @@ async function advanceCandidateSearchDebounce() {
 }
 
 describe("NewAccessPage", () => {
+  it("requires confirmation of the current driver and review of the previous objective before a single entry request", async () => {
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([
+      { ...recurringCandidate, previousObjective: "Reunião" },
+    ]);
+    vi.mocked(registerAccessEntry).mockResolvedValue(createdRecord);
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(
+      screen.getByRole("combobox", {
+        name: "Buscar por placa ou nome do condutor",
+      }),
+      "REC",
+    );
+    await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
+    expect(registerAccessEntry).not.toHaveBeenCalled();
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+    expect(
+      await screen.findByText(
+        "Confirme quem está dirigindo agora e confira o objetivo antes de registrar.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", {
+        name: "Confirmei quem está dirigindo agora.",
+      }),
+    ).toHaveFocus();
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "Confirmei quem está dirigindo agora.",
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+    expect(registerAccessEntry).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("checkbox", { name: /Conferi o objetivo anterior/ }),
+    ).toHaveFocus();
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+    await waitFor(() => expect(registerAccessEntry).toHaveBeenCalledOnce());
+    expect(registerAccessEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        personId: recurringCandidate.personId,
+        objective: "Atendimento em setor",
+      }),
+    );
+  });
+
+  it("directs an already open vehicle to the existing access without submitting a duplicate entry", async () => {
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([
+      { ...recurringCandidate, hasOpenAccess: true },
+    ]);
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(
+      screen.getByRole("combobox", {
+        name: "Buscar por placa ou nome do condutor",
+      }),
+      "REC",
+    );
+    await user.click(await screen.findByRole("option", { name: /REC1A23/ }));
+    expect(
+      screen.getByRole("link", { name: "Conferir acesso existente" }),
+    ).toHaveAttribute("href", "/acessos/abertos");
+    await user.click(
+      screen.getByRole("radio", { name: "Atendimento em setor" }),
+    );
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "Confirmei quem está dirigindo agora.",
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Registrar e continuar" }),
+    );
+    expect(
+      await screen.findByText(
+        "Este veículo já tem acesso em aberto. Confira o registro existente antes de registrar outra entrada.",
+      ),
+    ).toBeInTheDocument();
+    expect(registerAccessEntry).not.toHaveBeenCalled();
+  });
+
+  it("clears entered personal data when the authenticated account changes", async () => {
+    const user = userEvent.setup();
+    const view = render(
+      <MemoryRouter>
+        <NewAccessPage />
+      </MemoryRouter>,
+    );
+    await fillRequiredFields(user);
+    expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
+      "Pessoa fictícia",
+    );
+    vi.mocked(useAuthenticatedSession).mockReturnValue({
+      user: { id: 2, profileName: "Vigilante" },
+    } as ReturnType<typeof useAuthenticatedSession>);
+    view.rerender(
+      <MemoryRouter>
+        <NewAccessPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue("");
+    expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("");
+  });
+
+  it("clears personal data when the institutional day changes after browser resume", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2030-06-11T02:59:59Z"));
+    const user = userEvent.setup();
+    renderPage();
+    await fillRequiredFields(user);
+    act(() => {
+      vi.setSystemTime(new Date("2030-06-11T03:00:01Z"));
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue("");
+    expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("");
+  });
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(useAuthenticatedSession).mockReturnValue({
+      user: { id: 1, profileName: "Porteiro" },
+    } as ReturnType<typeof useAuthenticatedSession>);
     vi.mocked(searchEventAuthorizations).mockResolvedValue(
       eventPage([plateEvent, quotaEvent]),
     );
-    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([]);
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -293,9 +451,7 @@ describe("NewAccessPage", () => {
   );
 
   it("fills and submits both canonical candidate identifiers together", async () => {
-    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
-      recurringCandidate,
-    ]);
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([recurringCandidate]);
     vi.mocked(registerAccessEntry).mockResolvedValue({
       ...createdRecord,
       driverName: recurringCandidate.driverName,
@@ -323,6 +479,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -345,9 +502,7 @@ describe("NewAccessPage", () => {
   });
 
   it("invalidates candidate identifiers after a manual plate edit", async () => {
-    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
-      recurringCandidate,
-    ]);
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([recurringCandidate]);
     vi.mocked(registerAccessEntry).mockResolvedValue(createdRecord);
     const user = userEvent.setup();
     renderPage();
@@ -374,6 +529,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -392,9 +548,7 @@ describe("NewAccessPage", () => {
   });
 
   it("clears a candidate without losing unrelated entry values", async () => {
-    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
-      recurringCandidate,
-    ]);
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([recurringCandidate]);
     const user = userEvent.setup();
     renderPage();
 
@@ -430,7 +584,9 @@ describe("NewAccessPage", () => {
     );
     expect(screen.getByRole("radio", { name: "Reunião" })).toBeChecked();
     expect(observation).toHaveValue("Observação fictícia");
-    expect(eventOption).toBeChecked();
+    expect(
+      screen.queryByRole("radio", { name: /Evento por Placa Fictício/ }),
+    ).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("");
     expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue("");
     expect(screen.getByLabelText(/Tipo do veículo/)).toHaveTextContent(
@@ -443,7 +599,7 @@ describe("NewAccessPage", () => {
   });
 
   it("keeps the current candidate while searching and replaces it only after selection", async () => {
-    vi.mocked(searchAccessEntryCandidates)
+    vi.mocked(searchEntrySuggestions)
       .mockResolvedValueOnce([recurringCandidate])
       .mockResolvedValueOnce([alternateCandidate]);
     const user = userEvent.setup();
@@ -488,7 +644,7 @@ describe("NewAccessPage", () => {
   });
 
   it("clears a previous vehicle type when a candidate has no type", async () => {
-    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([
       candidateWithoutVehicleType,
     ]);
     const user = userEvent.setup();
@@ -518,9 +674,7 @@ describe("NewAccessPage", () => {
   });
 
   it("does not submit a valid entry when Enter has no active search option", async () => {
-    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
-      recurringCandidate,
-    ]);
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([recurringCandidate]);
     const user = userEvent.setup();
     renderPage();
 
@@ -537,9 +691,7 @@ describe("NewAccessPage", () => {
   });
 
   it("preserves a selected candidate after a submission conflict", async () => {
-    vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
-      recurringCandidate,
-    ]);
+    vi.mocked(searchEntrySuggestions).mockResolvedValue([recurringCandidate]);
     let rejectRequest: ((reason: unknown) => void) | undefined;
     vi.mocked(registerAccessEntry).mockImplementation(
       () =>
@@ -560,6 +712,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.dblClick(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -678,6 +831,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Participação em atividade" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -713,6 +867,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -800,6 +955,7 @@ describe("NewAccessPage", () => {
     await user.type(plateField, "DEM-1A23");
     await user.type(driverField, "Pessoa fictícia");
     await user.click(objectiveField);
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -841,6 +997,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Participação em atividade" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -908,6 +1065,7 @@ describe("NewAccessPage", () => {
     await user.type(plateField, "DEM-1A23");
     await user.type(driverField, "Pessoa fictícia");
     await user.click(firstObjective);
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -919,6 +1077,7 @@ describe("NewAccessPage", () => {
       user,
       "Segundo atendimento",
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -1026,6 +1185,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Participação em atividade" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -1062,6 +1222,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -1080,6 +1241,7 @@ describe("NewAccessPage", () => {
     const user = userEvent.setup();
     renderPage();
 
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -1124,6 +1286,7 @@ describe("NewAccessPage", () => {
     await user.click(
       screen.getByRole("radio", { name: "Atendimento em setor" }),
     );
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -1214,6 +1377,7 @@ describe("NewAccessPage", () => {
       /Outro tipo de veículo/,
     );
     await user.type(customVehicleType, "Triciclo fictício");
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -1250,6 +1414,7 @@ describe("NewAccessPage", () => {
       /Outro tipo de veículo/,
     );
     await waitFor(() => expect(vehicleTypeOther).toHaveFocus());
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -1322,6 +1487,7 @@ describe("NewAccessPage", () => {
       /Outro tipo de veículo/,
     );
     await user.type(vehicleTypeOther, "Tipo fictício");
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
@@ -1381,6 +1547,7 @@ describe("NewAccessPage", () => {
     );
     await user.type(vehicleTypeOther, "Veículo fictício adaptado");
     const observation = await fillObservation(user, "Detalhe fictício");
+    await confirmCurrentDriverIfPresent(user);
     await user.click(
       screen.getByRole("button", { name: "Registrar e continuar" }),
     );
