@@ -303,7 +303,7 @@ public sealed class AuthenticationTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task TransportationProfileCannotOperateVehicleAccess()
+    public async Task TransportationProfileCanOperateVehicleAccess()
     {
         const string password = "Test-only-password-123!";
         var email = await CreateUserAsync(ProfileNames.TransportationDepartment, password);
@@ -316,7 +316,7 @@ public sealed class AuthenticationTests(ApiFactory factory)
 
         var response = await client.GetAsync("/access-records/open", TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]

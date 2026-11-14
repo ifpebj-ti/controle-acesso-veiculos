@@ -4,6 +4,32 @@ namespace ControleAcessoVeiculos.Application.Tests;
 
 public sealed class OperationalSummaryServiceTests
 {
+    [Theory]
+    [InlineData(1, 1, 1)]
+    [InlineData(1, 1, 13)]
+    [InlineData(9999, 12, 31)]
+    public async Task UnsupportedDateIsRejectedBeforeQueryingTheStore(int year, int month, int day)
+    {
+        var store = new FakeStore();
+        var service = new OperationalSummaryService(store, TimeProvider.System, InstitutionalTimeZone);
+        var exception = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            service.GetAsync(new DateOnly(year, month, day), TestContext.Current.CancellationToken));
+        Assert.Equal("localDate", exception.ParamName);
+        Assert.Null(store.Criteria);
+    }
+
+    [Theory]
+    [InlineData(1, 1, 14)]
+    [InlineData(9999, 12, 30)]
+    public async Task SupportedBoundaryDateRetainsFourteenDayTrend(int year, int month, int day)
+    {
+        var store = new FakeStore();
+        var service = new OperationalSummaryService(store, TimeProvider.System, InstitutionalTimeZone);
+        var result = await service.GetAsync(new DateOnly(year, month, day), TestContext.Current.CancellationToken);
+        Assert.Equal(14, result.RecentDailyAccess.Count);
+        Assert.Equal(new DateOnly(year, month, day), result.LocalDate);
+    }
+
     private static readonly TimeZoneInfo InstitutionalTimeZone =
         TimeZoneInfo.FindSystemTimeZoneById("America/Recife");
 

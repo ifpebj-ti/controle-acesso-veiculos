@@ -1,6 +1,7 @@
-# Escopo funcional e prontidão — 06/11/2026
+# Escopo funcional e prontidão — revisão de 08/11/2026
 
-Rastreabilidade: #624. Main c170f9b; candidatos e hospedagem distintos.
+Rastreabilidade: #624 e #628. Main 202a913; candidatos e hospedagem distintos.
+O nome histórico do arquivo foi mantido para preservar os links existentes.
 
 ## Critério mantido
 
@@ -15,7 +16,7 @@ implementado. Não é medida de horas, segurança ou aceite. Incerteza de julgam
 | Contas e perfis               |    0,5 | lista corrigida e API exercitada; #530 com integração humana pendente         |
 | Entrada geral                 |      1 | núcleo implementado e testado                                                 |
 | Acessos abertos e saída       |      1 | núcleo implementado e testado                                                 |
-| Histórico e filtros           |      1 | existente; #568 é melhoria candidata independente                             |
+| Histórico e filtros           |      1 | núcleo e #568 incorporados; composição hospedada 7dd02a6                      |
 | Catálogo da frota             |      1 | existente; HTTPS vazio limita teste populado                                  |
 | Motoristas autorizados        |      1 | existente; HTTPS vazio limita teste populado                                  |
 | Saída e retorno institucional |      1 | existente; ensaio de tarefas reais pendente                                   |
@@ -23,7 +24,7 @@ implementado. Não é medida de horas, segurança ou aceite. Incerteza de julgam
 | Resumo operacional            |      1 | integrado e consultado                                                        |
 | Relatórios e PDF              |    0,5 | consultas/exportação; reformulação #496 e aceite visual pendentes             |
 | Auditoria administrativa      |      1 | consulta implementada, exercitada e preservada na limpeza                     |
-| Revisão de correções          |    0,5 | backend #607 e frontend #613 candidatos; composição real pendente             |
+| Revisão de correções          |    0,5 | candidatos com ensaio local real; HTTPS/aceite ainda pendentes                |
 | Reconciliação do papel        |    0,5 | #611 tem domínio/aplicação; falta persistência, transação/API e tela          |
 
 Resultado: **11,5/14 = 82,1%**, aproximadamente **82% concluído / 18% restante**.
@@ -58,8 +59,22 @@ linearmente os pontos: uma integração difícil pode valer só meio ponto.
 
 ## Dependências de equipe
 
-Raíssa: tarefas finais do login/contas, acessibilidade, #613, PDFs e #621/#622.
+Raíssa: tarefas finais do login/contas, acessibilidade, #613 e PDFs. #621/#622
+foram incorporadas na main; a promoção dessa interface continua separada.
 Backend/infra: store/API do papel, composição de correções, segurança/operação,
 qualidade/cobertura e preparação de candidatos. Há trabalho técnico independente
 suficiente; não é necessário esperar todo o frontend para avançar nessas bases.
 Aceite dos professores e observação dos usuários são tarefas conjuntas.
+
+## Evidência operacional de 08/11
+
+A [atualização de segurança #628](backend-runtime-security-2026-11-08.md)
+instalou o backend 5fa21bb, preservando frontend 7dd02a6 e banco. Backup com
+restauração isolada local e 111 verificações HTTPS passaram. Os cinco itens
+funcionais parciais continuam parciais: login, contas, PDFs, revisão e papel.
+Não foi atribuído ponto por corrigir o empacotamento ou repetir testes.
+
+#613/3a5b00f aplicou a resolução de contagens; revisão independente executou
+82 testes focados, lint e build. A produção frontend desse recorte é equivalente
+à composição local a159e4c, mas isso não substitui HTTPS/aceite humano no SHA
+final nem instala a interface. Nenhum novo login Google real foi realizado.

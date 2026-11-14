@@ -7,7 +7,8 @@ public interface IAccessTokenService
         string email,
         string profileName,
         int credentialVersion,
-        bool requiresPasswordChange);
+        bool requiresPasswordChange,
+        Guid sessionFamilyId);
 }
 
 public sealed record AccessToken(string Value, DateTime ExpiresAtUtc);

@@ -73,7 +73,11 @@ public sealed class AuditTrailService(
             }
         }
 
-        if (command.Entity?.Trim().Length > 100)
+        if (command.Entity?.Contains('\0') == true)
+        {
+            errors["entity"] = ["A entidade não pode conter o caractere NUL."];
+        }
+        else if (command.Entity?.Trim().Length > 100)
         {
             errors["entity"] = ["A entidade deve possuir até 100 caracteres."];
         }

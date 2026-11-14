@@ -147,6 +147,7 @@ public sealed class LoginServiceTests
         public Task<bool> IsAuthenticationStateValidAsync(
             int userId,
             int credentialVersion,
+            Guid sessionFamilyId,
             CancellationToken cancellationToken) =>
             Task.FromResult(true);
 
@@ -197,7 +198,8 @@ public sealed class LoginServiceTests
             string email,
             string profileName,
             int credentialVersion,
-            bool requiresPasswordChange) =>
+            bool requiresPasswordChange,
+        Guid sessionFamilyId) =>
             new("access-token", FixedNow.UtcDateTime.AddMinutes(15));
     }
 

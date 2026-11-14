@@ -1,3 +1,5 @@
+using ControleAcessoVeiculos.Application.CampusDrivers;
+using ControleAcessoVeiculos.Infrastructure.CampusDrivers;
 using ControleAcessoVeiculos.API.Health;
 using ControleAcessoVeiculos.API.Endpoints;
 using ControleAcessoVeiculos.API.Middleware;
@@ -32,6 +34,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -192,11 +195,20 @@ var authenticationBuilder = builder.Services
                     return;
                 }
 
+                if (!Guid.TryParseExact(
+                        context.Principal.FindFirst(AuthenticationClaimTypes.SessionFamilyId)?.Value,
+                        "D", out var sessionFamilyId) || sessionFamilyId == Guid.Empty)
+                {
+                    context.Fail("Invalid session family.");
+                    return;
+                }
+
                 var userStore = context.HttpContext.RequestServices
                     .GetRequiredService<IAuthenticationUserStore>();
                 if (!await userStore.IsAuthenticationStateValidAsync(
                         userId,
                         credentialVersion,
+                        sessionFamilyId,
                         context.HttpContext.RequestAborted))
                 {
                     context.Fail("Inactive user account.");
@@ -260,6 +272,18 @@ if (googleOidcOptions.Enabled)
 
                     return Task.CompletedTask;
                 },
+                OnAccessDenied = async context =>
+                {
+                    // The OIDC handler validates protected state and correlation
+                    // before raising this event. Invalid callbacks still fail closed.
+                    context.HandleResponse();
+                    context.Response.Headers.CacheControl = "no-store";
+                    await context.HttpContext.SignOutAsync(GoogleOidcOptions.ExternalCookieScheme);
+                    context.Response.Redirect(QueryHelpers.AddQueryString(
+                        googleOidcOptions.FrontendCompletionPath,
+                        "status",
+                        "denied"));
+                },
                 OnRemoteFailure = async context =>
                 {
                     context.HandleResponse();
@@ -281,6 +305,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.OperateAccess, policy => policy.RequireRole(
         ProfileNames.Doorman,
         ProfileNames.SecurityGuard,
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAccessRecords, policy => policy.RequireRole(
         ProfileNames.Doorman,
@@ -296,6 +321,7 @@ builder.Services.AddAuthorizationBuilder()
         policy => policy.RequireRole(
             ProfileNames.Doorman,
             ProfileNames.SecurityGuard,
+            ProfileNames.TransportationDepartment,
             ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewTransportationRecords, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment,
@@ -322,10 +348,14 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ManageCampusDrivers, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment, ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAuditTrail, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewOperationalSummary, policy => policy.RequireRole(
         ProfileNames.Doorman,
@@ -333,7 +363,8 @@ builder.Services.AddAuthorizationBuilder()
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ReviewAdministrativeReports,
-        policy => policy.RequireRole(ProfileNames.Administrator));
+        policy => policy.RequireRole(ProfileNames.TransportationDepartment,
+        ProfileNames.Administrator));
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(institutionalTimeZone);
@@ -342,6 +373,8 @@ builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
 builder.Services.AddScoped<IAuthenticationSessionStore, AuthenticationSessionStore>();
 builder.Services.AddScoped<IAuthenticatedPasswordChangeStore, AuthenticatedPasswordChangeStore>();
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
+builder.Services.AddScoped<IUserAccountReactivationStore, UserAccountStore>();
+builder.Services.AddScoped<UserAccountReactivationService>();
 builder.Services.AddScoped<IAccountProfileStore, UserAccountStore>();
 builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();
@@ -370,6 +403,8 @@ builder.Services.AddScoped<UserAccountLifecycleService>();
 builder.Services.AddScoped<ChangeAccountProfileService>();
 builder.Services.AddScoped<BootstrapAdministratorService>();
 builder.Services.AddScoped<VehicleAccessService>();
+builder.Services.AddScoped<CampusDriverService>();
+builder.Services.AddScoped<ICampusDriverStore, CampusDriverStore>();
 builder.Services.AddScoped<InstitutionalVehicleUsageService>();
 builder.Services.AddScoped<InstitutionalVehicleCatalogService>();
 builder.Services.AddScoped<InstitutionalDriverService>();
@@ -410,6 +445,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<SensitiveResponseHeadersMiddleware>();
 app.UseMiddleware<RequestSafetyMiddleware>();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
@@ -468,6 +504,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     .DisableRateLimiting();
 
 app.MapVehicleAccessEndpoints();
+app.MapCampusDriverEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();
 app.MapInstitutionalVehicleCatalogEndpoints();
 app.MapInstitutionalDriverEndpoints();

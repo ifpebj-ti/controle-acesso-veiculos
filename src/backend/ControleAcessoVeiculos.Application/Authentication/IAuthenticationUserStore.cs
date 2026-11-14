@@ -14,6 +14,7 @@ public interface IAuthenticationUserStore
     Task<bool> IsAuthenticationStateValidAsync(
         int userId,
         int credentialVersion,
+        Guid sessionFamilyId,
         CancellationToken cancellationToken);
 
     Task SaveChangesAsync(

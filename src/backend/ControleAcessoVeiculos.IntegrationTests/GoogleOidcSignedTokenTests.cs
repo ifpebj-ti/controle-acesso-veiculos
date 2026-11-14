@@ -92,12 +92,88 @@ public sealed class GoogleOidcSignedTokenTests
         }
     }
 
+    [Theory]
+    [InlineData("valid", "/login", true)]
+    [InlineData("valid", "/entrada", true)]
+    [InlineData("missing-state", "/login", false)]
+    [InlineData("invalid-state", "/login", false)]
+    [InlineData("missing-correlation", "/login", false)]
+    [InlineData("provider-error", "/login", false)]
+    public async Task ProviderDenialReturnsLocallyOnlyAfterStateAndCorrelationValidation(
+        string scenario,
+        string completionPath,
+        bool expectsRedirect)
+    {
+        using var rsa = RSA.Create(2048);
+        var key = new RsaSecurityKey(rsa) { KeyId = "fictional-provider-key" };
+        using var backchannel = new TokenResponseHandler();
+        using var factory = CreateFactory(key, backchannel, completionPath);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false,
+            HandleCookies = scenario != "missing-correlation"
+        });
+        using var start = await client.GetAsync("/auth/google/start", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Redirect, start.StatusCode);
+        var query = QueryHelpers.ParseQuery(start.Headers.Location!.Query);
+        Assert.Equal("S256", query["code_challenge_method"].ToString());
+        Assert.False(string.IsNullOrWhiteSpace(query["nonce"].ToString()));
+        var state = scenario switch
+        {
+            "missing-state" => null,
+            "invalid-state" => "fictional-invalid-state",
+            _ => query["state"].ToString()
+        };
+        var callback = QueryHelpers.AddQueryString("/signin-google", new Dictionary<string, string?>
+        {
+            ["error"] = scenario == "provider-error" ? "server_error" : "access_denied",
+            ["error_description"] = "private-fixture@example.test must not be echoed",
+            ["state"] = state,
+            ["returnUrl"] = "https://untrusted.example.test/redirect"
+        });
+        using var response = await client.GetAsync(callback, TestContext.Current.CancellationToken);
+        Assert.Equal(expectsRedirect ? HttpStatusCode.Redirect : HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        var cookies = response.Headers.TryGetValues("Set-Cookie", out var values) ? values.ToArray() : [];
+        Assert.DoesNotContain(cookies, IsExternalIdentityCookie);
+        Assert.DoesNotContain(cookies, cookie => cookie.StartsWith("cav_refresh=", StringComparison.Ordinal));
+        Assert.Equal(0, backchannel.RequestCount);
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("private-fixture@example.test", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("untrusted.example.test", body, StringComparison.Ordinal);
+
+        if (expectsRedirect)
+        {
+            Assert.Equal(completionPath + "?status=denied", response.Headers.Location?.OriginalString);
+            using var replay = await client.GetAsync(callback, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Unauthorized, replay.StatusCode);
+            Assert.Null(replay.Headers.Location);
+            using var retry = await client.GetAsync("/auth/google/start", TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Redirect, retry.StatusCode);
+            Assert.NotEqual(query["state"].ToString(), QueryHelpers.ParseQuery(retry.Headers.Location!.Query)["state"].ToString());
+        }
+        else
+        {
+            Assert.Null(response.Headers.Location);
+        }
+    }
+
     private static bool IsExternalIdentityCookie(string cookie) =>
         cookie.StartsWith("cav_google_external=", StringComparison.Ordinal) &&
         !cookie.StartsWith("cav_google_external=;", StringComparison.Ordinal);
 
-    private static WebApplicationFactory<Program> CreateFactory(SecurityKey key, TokenResponseHandler handler) =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+    private static WebApplicationFactory<Program> CreateFactory(
+        SecurityKey key,
+        TokenResponseHandler handler,
+        string completionPath = "/login") =>
+        new SignedTokenFactory(key, handler, completionPath);
+
+    private sealed class SignedTokenFactory(
+        SecurityKey key, TokenResponseHandler handler, string completionPath)
+        : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:DefaultConnection",
@@ -106,6 +182,7 @@ public sealed class GoogleOidcSignedTokenTests
             builder.UseSetting("Authentication:Google:Enabled", "true");
             builder.UseSetting("Authentication:Google:ClientId", "fictional-client");
             builder.UseSetting("Authentication:Google:ClientSecret", "fictional-client-secret");
+            builder.UseSetting("Authentication:Google:FrontendCompletionPath", completionPath);
             builder.ConfigureServices(services => services.PostConfigure<OpenIdConnectOptions>(GoogleOidcOptions.Scheme, options =>
             {
                 var configuration = new OpenIdConnectConfiguration
@@ -118,7 +195,8 @@ public sealed class GoogleOidcSignedTokenTests
                 options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(configuration);
                 options.Backchannel = new HttpClient(handler, disposeHandler: false);
             }));
-        });
+        }
+    }
 
     private sealed class TokenResponseHandler : HttpMessageHandler
     {

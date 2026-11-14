@@ -5,6 +5,16 @@ namespace ControleAcessoVeiculos.Application.Tests;
 
 public sealed class AuditTrailServiceTests
 {
+    [Fact]
+    public async Task NullCharacterInEntityIsRejectedBeforeSearching()
+    {
+        var store = new FakeStore();
+        var result = await CreateService(store).SearchAsync(new(Entity: "Usuario\0"), TestContext.Current.CancellationToken);
+        Assert.Equal(SearchAuditTrailStatus.Invalid, result.Status);
+        Assert.Contains("entity", result.Errors.Keys);
+        Assert.Null(store.Criteria);
+    }
+
     private static readonly DateTimeOffset FixedNow =
         new(2026, 8, 30, 12, 0, 0, TimeSpan.Zero);
 

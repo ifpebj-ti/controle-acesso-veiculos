@@ -98,7 +98,13 @@ public sealed class GoogleOidcProtocolTests
         var callback = QueryHelpers.AddQueryString("/signin-google?error=access_denied", "state", state);
 
         using var denied = await client.GetAsync(callback, TestContext.Current.CancellationToken);
-        await AssertDeniedAsync(denied);
+        Assert.Equal(HttpStatusCode.Redirect, denied.StatusCode);
+        Assert.Equal("/login?status=denied", denied.Headers.Location?.OriginalString);
+        Assert.True(denied.Headers.CacheControl?.NoStore);
+        AssertNoApplicationSession(denied);
+        Assert.Empty(await denied.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.DoesNotContain("fictional-client-secret",
+            await denied.Content.ReadAsStringAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
         using var replayed = await client.GetAsync(callback, TestContext.Current.CancellationToken);
         await AssertDeniedAsync(replayed);
         AssertNoBackchannel(factory);
@@ -177,7 +183,11 @@ public sealed class GoogleOidcProtocolTests
         });
 
     private static WebApplicationFactory<Program> CreateFactory() =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        new ProtocolFactory();
+
+    private sealed class ProtocolFactory : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
             // No request in this suite should reach the database.
@@ -203,7 +213,8 @@ public sealed class GoogleOidcProtocolTests
                     options.Backchannel = new HttpClient(guard);
                 });
             });
-        });
+        }
+    }
 
     private static void AssertNoBackchannel(WebApplicationFactory<Program> factory) =>
         Assert.Equal(0, factory.Services.GetRequiredService<RejectBackchannelHandler>().RequestCount);

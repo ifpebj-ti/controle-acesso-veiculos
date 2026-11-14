@@ -14,6 +14,66 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class InstitutionalVehicleCatalogTests(ApiFactory factory)
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task ReferencedVehicleIdentityCannotRewriteHistory(bool usageReference, bool changeIdentification)
+    {
+        const string password = "Test-only-password-123!";
+        var ct = TestContext.Current.CancellationToken;
+        var (actorId, email) = await CreateUserAsync(ProfileNames.TransportationDepartment, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var plate = TestPlate.From(Guid.NewGuid().ToString("N"));
+        var identification = $"QA-{Guid.NewGuid():N}";
+        var createdResponse = await client.PostAsJsonAsync("/institutional-vehicles", new { plate, identification }, ct);
+        createdResponse.EnsureSuccessStatusCode();
+        var created = await createdResponse.Content.ReadFromJsonAsync<InstitutionalVehicleResponse>(cancellationToken: ct);
+        Assert.NotNull(created);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var driver = new Pessoa("QA historical identity driver");
+            var category = new CategoriaAcesso($"QA identity {Guid.NewGuid():N}");
+            db.AddRange(driver, category);
+            await db.SaveChangesAsync(ct);
+            var at = new DateTime(2083, 4, 3, 12, 0, 0, DateTimeKind.Utc);
+            if (usageReference)
+            {
+                var usage = new UsoVeiculoInstitucional(created.Id, driver.Id, at, 10, "QA itinerary", actorId);
+                usage.RegistrarRetorno(at.AddHours(1), 20, actorId);
+                db.Add(usage);
+            }
+            else
+            {
+                var access = new RegistroAcesso(created.Id, driver.Id, category.Id, at, "QA identity", actorId);
+                access.RegistrarSaida(at.AddHours(1), actorId);
+                db.Add(access);
+            }
+
+            await db.SaveChangesAsync(ct);
+        }
+
+        var renamedPlate = changeIdentification ? plate : TestPlate.From(Guid.NewGuid().ToString("N"));
+        var renamedIdentification = changeIdentification ? $"QA-new-{Guid.NewGuid():N}" : identification;
+        var response = await client.PutAsJsonAsync($"/institutional-vehicles/{created.Id}",
+            new { plate = renamedPlate, identification = renamedIdentification }, ct);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+            var stored = await db.Veiculos.AsNoTracking().SingleAsync(vehicle => vehicle.Id == created.Id, ct);
+            Assert.Equal(plate, stored.Placa);
+            Assert.Equal(identification.ToUpperInvariant(), stored.IdentificacaoVeiculo);
+        }
+
+        var description = await client.PutAsJsonAsync($"/institutional-vehicles/{created.Id}",
+            new { plate, identification, color = "Azul" }, ct);
+        Assert.Equal(HttpStatusCode.OK, description.StatusCode);
+    }
+
     [Fact]
     public async Task TransportationUserCanCreateAndOperationalUserCanListVehicle()
     {

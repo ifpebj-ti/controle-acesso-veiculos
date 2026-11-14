@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace ControleAcessoVeiculos.Infrastructure.AccessRecords;
 
-public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext)
+public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext, TimeZoneInfo institutionalTimeZone)
     : IVehicleAccessStore
 {
     public async Task<VehicleAccessStoreRegistration> TryRegisterEntryAsync(
@@ -27,7 +27,7 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
 
             if (entry.VehicleId.HasValue && entry.PersonId.HasValue)
             {
-                var activeOn = DateOnly.FromDateTime(entryAtUtc);
+                var activeOn = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(entryAtUtc, institutionalTimeZone));
                 var selectedCandidate = await (
                     from relationship in dbContext.PessoasVeiculos
                     join candidateVehicle in dbContext.Veiculos
@@ -45,7 +45,9 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                         candidateVehicle.Ativo &&
                         !candidateVehicle.EhInstitucional &&
                         candidateVehicle.Placa != null &&
-                        candidatePerson.Ativo
+                        candidatePerson.Ativo &&
+                        (candidatePerson.CadastroCampusConferidoEm == null || candidatePerson.CadastroCampusAtivo) &&
+                        (!candidatePerson.DataNascimento.HasValue || candidatePerson.DataNascimento <= activeOn.AddYears(-18))
                     select new
                     {
                         Vehicle = candidateVehicle,
@@ -162,7 +164,8 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                     cancellationToken);
             }
 
-            if (person is not null && !person.Ativo)
+            if (person is not null && (!person.Ativo ||
+                (person.CadastroCampusConferidoEm != null && !person.CadastroCampusAtivo)))
             {
                 return Conflict();
             }
@@ -207,7 +210,7 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                     person.Id,
                     vehicle.Id,
                     "Condutor",
-                    DateOnly.FromDateTime(entryAtUtc)));
+                    DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(entryAtUtc, institutionalTimeZone))));
             }
 
             var accessRecord = new RegistroAcesso(
@@ -280,7 +283,7 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 vehicle.Ativo &&
                 !vehicle.EhInstitucional &&
                 vehicle.Placa != null &&
-                person.Ativo &&
+                person.Ativo && (person.CadastroCampusConferidoEm == null || person.CadastroCampusAtivo) &&
                 ((criteria.PlatePrefix != string.Empty &&
                     vehicle.Placa.StartsWith(criteria.PlatePrefix)) ||
                     EF.Functions.ILike(person.Nome, namePattern, "\\"))
