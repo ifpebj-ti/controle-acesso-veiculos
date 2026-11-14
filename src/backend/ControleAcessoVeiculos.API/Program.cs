@@ -373,6 +373,8 @@ builder.Services.AddScoped<IAuthenticationUserStore, AuthenticationUserStore>();
 builder.Services.AddScoped<IAuthenticationSessionStore, AuthenticationSessionStore>();
 builder.Services.AddScoped<IAuthenticatedPasswordChangeStore, AuthenticatedPasswordChangeStore>();
 builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
+builder.Services.AddScoped<IUserAccountReactivationStore, UserAccountStore>();
+builder.Services.AddScoped<UserAccountReactivationService>();
 builder.Services.AddScoped<IAccountProfileStore, UserAccountStore>();
 builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
 builder.Services.AddScoped<IInstitutionalVehicleUsageStore, InstitutionalVehicleUsageStore>();

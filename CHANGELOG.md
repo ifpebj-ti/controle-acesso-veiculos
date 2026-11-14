@@ -48,6 +48,8 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Require one-time credential recovery for suspended Local accounts while
+  preserving method-aware Google reactivation and transactional auditing (#663).
 - Restore Google sign-in after a cached browser-history return, rechecking
   provider availability before an explicit retry and preventing overlapping
   departures or callback restoration. Preserve administrative access and focus.
