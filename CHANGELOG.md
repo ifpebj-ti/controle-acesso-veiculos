@@ -50,6 +50,8 @@ See the [release policy](docs/operations/release-cadence.md).
   account listings, consistently with account creation and profile changes.
   Preserve pagination and all existing public fields without changing the
   domain, authentication policy or global JSON converters.
+- Require one-time credential recovery for suspended Local accounts while
+  preserving method-aware Google reactivation and transactional auditing (#663).
 - Reject invalid session-family identifiers, preserve historical vehicle
   identity, apply literal administrative searches and institutional date
   boundaries, and prevent caching of sensitive API responses
