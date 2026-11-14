@@ -133,8 +133,11 @@ A visão geral consulta o resumo operacional diário agregado da API. A área de
 administração consulta, cria, desativa e reativa contas pela API, mostra o
 estado mínimo das credenciais temporárias e permite ao Administrador redefinir
 a credencial de outra conta ativa. Credenciais emitidas pelo servidor aparecem
-uma única vez em memória, com cópia explícita e sem persistência no navegador. A
-mesma tela também consulta a trilha de auditoria em uma área separada.
+uma única vez em memória, com cópia explícita e sem persistência no navegador.
+Na branch da #703, a Trilha de auditoria possui uma única entrada no menu lateral,
+na rota `/auditoria`, para Administrador e Transporte. Usuários e permissões
+permanece dedicado às contas, sem aba de auditoria ou consulta a seus eventos.
+Esse recorte do candidato não significa implantação na URL pública.
 
 Fluxo sugerido para validação local:
 
