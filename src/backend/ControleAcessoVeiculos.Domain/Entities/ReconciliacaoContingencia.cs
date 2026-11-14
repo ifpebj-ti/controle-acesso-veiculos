@@ -14,7 +14,9 @@ public sealed class ReconciliacaoContingencia
         DateTime entradaObservadaUtc,
         DateTime? saidaObservadaNoPapelUtc,
         DateTime digitadoEmUtc,
-        string justificativa)
+        string justificativa,
+        Guid chaveIntencao,
+        string assinaturaIntencao)
     {
         if (incidenteId == Guid.Empty) throw new ArgumentException("Informe o incidente.", nameof(incidenteId));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(numeroLinha);
@@ -31,6 +33,13 @@ public sealed class ReconciliacaoContingencia
                 throw new ArgumentException("A saída observada deve estar entre a entrada e a digitação.", nameof(saidaObservadaNoPapelUtc));
         }
 
+        if (chaveIntencao == Guid.Empty)
+            throw new ArgumentException("Informe a chave da intenção.", nameof(chaveIntencao));
+        ArgumentException.ThrowIfNullOrWhiteSpace(assinaturaIntencao);
+        if (assinaturaIntencao.Length != 64 || !assinaturaIntencao.All(char.IsAsciiHexDigit))
+            throw new ArgumentException("Informe uma assinatura válida.", nameof(assinaturaIntencao));
+        ChaveIntencao = chaveIntencao;
+        AssinaturaIntencao = assinaturaIntencao;
         IncidenteId = incidenteId;
         NumeroLinha = numeroLinha;
         RegistroAcessoId = registroAcessoId;
@@ -42,6 +51,8 @@ public sealed class ReconciliacaoContingencia
         Justificativa = Normalize(justificativa, 10, 500, nameof(justificativa));
     }
 
+    public Guid ChaveIntencao { get; }
+    public string AssinaturaIntencao { get; }
     public Guid IncidenteId { get; }
     public int NumeroLinha { get; }
     public int RegistroAcessoId { get; }
@@ -85,7 +96,7 @@ public sealed class ReconciliacaoContingencia
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value, parameter);
         var normalized = value.Trim();
-        if (normalized.Length < minimum || normalized.Length > maximum)
+        if (normalized.Length < minimum || normalized.Length > maximum || normalized.Any(char.IsControl))
             throw new ArgumentException($"Informe de {minimum} a {maximum} caracteres.", parameter);
         return normalized;
     }

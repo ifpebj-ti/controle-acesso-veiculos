@@ -160,5 +160,5 @@ public sealed class ReconciliacaoContingenciaTests
         string? paperAuthor = " Operador fictício A ", string? reason = " Transcrição da folha fictícia. ",
         DateTime? entry = null, DateTime? exit = null, DateTime? importedAt = null) =>
         new(incident ?? Guid.NewGuid(), line, accessId, paperAuthor!, importer,
-            entry ?? Entry, exit, importedAt ?? Entry.AddHours(2), reason!);
+            entry ?? Entry, exit, importedAt ?? Entry.AddHours(2), reason!, Guid.NewGuid(), new string('a', 64));
 }
