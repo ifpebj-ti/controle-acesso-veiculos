@@ -1,3 +1,4 @@
+import { getAccessCategoryLabel } from "../features/access-records/model/accessCategories";
 import { useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -89,6 +90,7 @@ export function OpenAccessPage() {
           record.plate,
           record.driverName,
           record.categoryName,
+          getAccessCategoryLabel(record.categoryName),
           record.objective,
         ].some((value) =>
           value.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
@@ -300,7 +302,7 @@ export function OpenAccessPage() {
                     options={[
                       { label: "Todas as categorias", value: "" },
                       ...availableCategories.map((category) => ({
-                        label: category,
+                        label: getAccessCategoryLabel(category),
                         value: category,
                       })),
                     ]}
@@ -331,12 +333,12 @@ export function OpenAccessPage() {
                         <Button
                           aria-pressed={isSelected}
                           className="rounded-full"
-                          key={category}
+                          key={getAccessCategoryLabel(category)}
                           onClick={() => setSelectedCategory(category)}
                           type="button"
                           variant={isSelected ? "primary" : "secondary"}
                         >
-                          {category}
+                          {getAccessCategoryLabel(category)}
                         </Button>
                       );
                     })}
