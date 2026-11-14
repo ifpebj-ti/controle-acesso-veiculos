@@ -1,3 +1,4 @@
+import { generalAccessCategoryOptions } from "../features/access-records/model/accessCategories";
 import { isEntrySuggestionCurrent } from "../features/person-preregistration/model/entrySuggestionExpiry";
 import { useAuthenticatedSession } from "../features/authentication";
 import type { EntrySuggestion as AccessEntryCandidate } from "../features/person-preregistration/schemas/campusDriverSchemas";
@@ -561,10 +562,7 @@ function NewAccessWorkspace() {
                       name={field.name}
                       onBlur={field.onBlur}
                       onValueChange={field.onChange}
-                      options={generalAccessCategories.map((option) => ({
-                        label: option,
-                        value: option,
-                      }))}
+                      options={generalAccessCategoryOptions}
                       required
                       value={field.value}
                     />

@@ -87,6 +87,21 @@ function pdfResponse(
 }
 
 describe("administrativeReportsService", () => {
+  it.each(["Aluno", "Terceirizado", "Federal", "Servidor federal", "alun"])(
+    "preserves category filters and canonicalizes only the full display alias: %s",
+    async (categoryName) => {
+      vi.mocked(api.get).mockResolvedValue({
+        data: { ...pageMetadata, items: [] },
+      });
+      await searchVehicleMovementReport({ ...filters, categoryName });
+      expect(api.get).toHaveBeenLastCalledWith("/reports/vehicle-movements", {
+        params: expect.objectContaining({
+          categoryName:
+            categoryName === "Servidor federal" ? "Federal" : categoryName,
+        }),
+      });
+    },
+  );
   beforeEach(() => {
     vi.mocked(api.get).mockReset();
     vi.mocked(api.post).mockReset();
