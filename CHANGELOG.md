@@ -26,6 +26,11 @@ See the [release policy](docs/operations/release-cadence.md).
   matrix, including independent audit queries without user management and report
   consultation; keep PDF export unavailable until compatible confirmation is
   available, without asking for a Google password (#705, Refs #703).
+- Connect secure account reactivation to the validated administrative catalog:
+  Local credential reset, password-free Google reactivation, one-time disclosure,
+  bounded read-only reconciliation, persistent uncertain-write guards and focus/
+  applied-filter preservation. Integrated API acceptance remains pending
+  (#672, Refs #669).
 - Register verified adult campus drivers and private vehicles, with audited
   management, transactional persistence and operator-scoped same-day entry
   suggestions (#690, Refs #689).

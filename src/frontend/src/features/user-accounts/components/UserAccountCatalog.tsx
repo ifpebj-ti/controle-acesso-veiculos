@@ -11,7 +11,7 @@ interface UserAccountCatalogProps {
   currentUserId: number;
   onPageChange: (page: number) => void;
   onResetCredential: (account: UserAccount, trigger: HTMLElement) => void;
-  onToggle: (account: UserAccount) => void;
+  onToggle: (account: UserAccount, trigger: HTMLElement) => void;
   page: UserAccountPage | null;
   pendingAction: string | null;
   status: "idle" | "loading" | "ready" | "error" | "denied" | "filter-error";
@@ -251,7 +251,7 @@ function ToggleButton({
   pendingAction,
 }: {
   account: UserAccount;
-  onToggle: (account: UserAccount) => void;
+  onToggle: (account: UserAccount, trigger: HTMLElement) => void;
   pendingAction: string | null;
 }) {
   const pending = pendingAction?.endsWith(`-${account.id}`) ?? false;
@@ -259,7 +259,8 @@ function ToggleButton({
     <Button
       className="px-3 text-xs"
       disabled={pendingAction !== null}
-      onClick={() => onToggle(account)}
+      onClick={(event) => onToggle(account, event.currentTarget)}
+      data-toggle-account-id={account.id}
       variant={account.active ? "danger" : "secondary"}
     >
       {pending ? "Processando…" : account.active ? "Desativar" : "Reativar"}
@@ -280,7 +281,7 @@ function AccountCard({
   account: UserAccount;
   currentUserId: number;
   onResetCredential: (account: UserAccount, trigger: HTMLElement) => void;
-  onToggle: (account: UserAccount) => void;
+  onToggle: (account: UserAccount, trigger: HTMLElement) => void;
   pendingAction: string | null;
   currentTime: number;
 }) {
