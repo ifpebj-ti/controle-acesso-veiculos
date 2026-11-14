@@ -672,6 +672,15 @@ src/
 - garantia de autorização baseada somente na interface;
 - homologação do cliente ou prontidão para produção.
 
+## Cabeçalho do primeiro acesso — candidato #714
+
+Na branch da #714, a troca obrigatória de senha mantém logo e saída em um
+cabeçalho compacto. O botão Aparência abre o seletor existente no fluxo da página;
+Escape fecha esse painel e devolve o foco ao botão. O atalho flutuante é o único
+controle de tela cheia nesse layout. O formulário e o foco inicial no título
+permanecem inalterados. Trata-se de candidato local; sua existência não comprova
+incorporação, implantação ou homologação autenticada.
+
 ## Validação
 
 Na pasta `src/frontend`:
