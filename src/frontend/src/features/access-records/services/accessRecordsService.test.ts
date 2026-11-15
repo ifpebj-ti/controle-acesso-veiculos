@@ -280,7 +280,7 @@ describe("accessRecordsService", () => {
       { page: 1, pageSize: 25 },
       generalAccessCategories,
     );
-    for (const expected of [3, 6, 9]) {
+    for (const expected of [3, 6, 9, 12]) {
       await vi.waitFor(() => expect(api.get).toHaveBeenCalledTimes(expected));
       pending.splice(0).forEach((resolve) => resolve());
     }

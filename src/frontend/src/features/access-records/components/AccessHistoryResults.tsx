@@ -1,3 +1,4 @@
+import { getAccessCategoryLabel } from "../model/accessCategories";
 import { useMemo } from "react";
 
 import { Button } from "../../../components/ui/Button";
@@ -171,7 +172,8 @@ export function AccessHistoryResults({
                     <div>
                       <strong className="block text-ink">{record.plate}</strong>
                       <span className="text-xs text-ink-soft">
-                        {record.categoryName} • #{record.id}
+                        {getAccessCategoryLabel(record.categoryName)} • #
+                        {record.id}
                       </span>
                     </div>
                   </div>
@@ -284,7 +286,7 @@ export function AccessHistoryResults({
                             {dateFormatter.format(new Date(record.entryAtUtc))}
                           </span>
                           <span className="mt-1 block text-[0.68rem] font-bold uppercase tracking-wider text-brand-dark">
-                            {record.categoryName}
+                            {getAccessCategoryLabel(record.categoryName)}
                           </span>
                         </div>
                       </div>
