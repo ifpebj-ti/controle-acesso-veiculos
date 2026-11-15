@@ -1,5 +1,4 @@
 import type { AuthenticatedUser } from "../features/authentication/types";
-import { canShowPasswordChange } from "../features/authentication/passwordChangeVisibility";
 import { canProfileAccessRoute } from "./routeMetadata";
 
 export function getLoginDestination(
@@ -11,8 +10,7 @@ export function getLoginDestination(
   if (
     typeof requestedPath !== "string" ||
     !canProfileAccessRoute(user.profileName, requestedPath) ||
-    (requestedPath.replace(/\/+$/, "") === "/conta/senha" &&
-      !canShowPasswordChange(user))
+    requestedPath.replace(/\/+$/, "") === "/conta/senha"
   ) {
     return "/visao-geral";
   }

@@ -127,6 +127,10 @@ No logout explícito, a navegação de entrada é substituída sem intenção de
 Login local, restauração e callback Google conferem o destino pela matriz de
 rotas e pelo perfil recebido da API: páginas incompatíveis, desconhecidas ou
 externas levam à Visão geral. A troca obrigatória de senha tem prioridade.
+Na branch da #715, sem essa exigência da API, uma intenção antiga de retornar
+a /conta/senha é descartada no novo login em favor da Visão geral. O Administrador
+continua podendo abrir Alterar senha explicitamente pelo menu. O ajuste é um
+candidato; não comprova implantação na URL pública.
 Isso não persiste uma última página por pessoa nem substitui a autorização
 do servidor.
 O fluxo geral de veículos também consome a API para registrar
