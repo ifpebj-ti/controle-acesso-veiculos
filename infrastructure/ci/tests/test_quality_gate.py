@@ -154,6 +154,45 @@ class QualityGateTests(unittest.TestCase):
                 gate.run_gate(event, root, "owner/repo", "fixture-token", 1, 1)
             self.assertEqual(set(required.call_args.args[0]), {"source.py", "notes.md"})
 
+    def test_default_codeql_base_needs_no_branch_lookup(self):
+        event = {"repository": {"default_branch": "main"},
+                 "pull_request": {"base": {"ref": "main"}}}
+        with unittest.mock.patch.object(gate, "api_get") as lookup:
+            gate.verify_codeql_base(event, "owner/repo", "fixture-token")
+        lookup.assert_not_called()
+
+    def test_protected_stacked_codeql_base_is_eligible_but_not_an_approval(self):
+        event = {"repository": {"default_branch": "main"},
+                 "pull_request": {"base": {"ref": "feature/parent"}}}
+        with unittest.mock.patch.object(gate, "api_get", return_value={
+                "name": "feature/parent", "protected": True}) as lookup:
+            gate.verify_codeql_base(event, "owner/repo", "fixture-token")
+        lookup.assert_called_once_with("owner/repo", "branches/feature%2Fparent", "fixture-token")
+        self.assertEqual(gate.assess([], [], [], HEAD, BASE, 12, True), (["CodeQL"], []))
+
+    def test_unprotected_or_mismatched_codeql_base_stays_blocked(self):
+        event = {"repository": {"default_branch": "main"},
+                 "pull_request": {"base": {"ref": "feature/parent"}}}
+        for branch in [{"name": "feature/parent", "protected": False},
+                       {"name": "other", "protected": True}, {}]:
+            with self.subTest(branch=branch), unittest.mock.patch.object(gate, "api_get", return_value=branch):
+                with self.assertRaisesRegex(gate.GateError, "unprotected stacked PR base"):
+                    gate.verify_codeql_base(event, "owner/repo", "fixture-token")
+
+    def test_ineligible_stack_does_not_enter_polling_or_wait_for_timeout(self):
+        event = {"repository": {"default_branch": "main"}, "pull_request": {
+            "number": 12, "head": {"sha": HEAD},
+            "base": {"sha": BASE, "ref": "feature/parent"}}}
+        result = unittest.mock.Mock(stdout=b"src/frontend/src/page.tsx\0")
+        with unittest.mock.patch.object(gate.subprocess, "run", return_value=result), \
+                unittest.mock.patch.object(gate, "api_get", return_value={"name": "feature/parent", "protected": False}), \
+                unittest.mock.patch.object(gate, "paginated") as polling, \
+                unittest.mock.patch.object(gate.time, "sleep") as sleep:
+            with self.assertRaisesRegex(gate.GateError, "retarget the child"):
+                gate.run_gate(event, ROOT, "owner/repo", "fixture-token", 3000, 30)
+        polling.assert_not_called()
+        sleep.assert_not_called()
+
     def test_new_pr_source_stops_the_old_gate(self):
         event = {"pull_request": {"number": 12, "head": {"sha": HEAD}, "base": {"sha": BASE}}}
         result = unittest.mock.Mock(stdout=b"README.md\0")
