@@ -1,10 +1,9 @@
 import importlib.util
-import json
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from unittest import mock
+import unittest.mock
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -125,11 +124,11 @@ class QualityGateTests(unittest.TestCase):
         self.assertEqual(gate.assess([], [], [check], HEAD, BASE, 12, True), (["CodeQL"], []))
 
     def test_api_pagination_collects_all_bounded_results(self):
-        with mock.patch.object(gate, "api_get", side_effect=[{"rows": [1] * 100}, {"rows": [2]}]):
+        with unittest.mock.patch.object(gate, "api_get", side_effect=[{"rows": [1] * 100}, {"rows": [2]}]):
             self.assertEqual(len(gate.paginated("owner/repo", "runs", "rows", "fixture-token")), 101)
 
     def test_pagination_limit_fails_closed(self):
-        with mock.patch.object(gate, "api_get", return_value={"rows": [1] * 100}), self.assertRaises(gate.GateError):
+        with unittest.mock.patch.object(gate, "api_get", return_value={"rows": [1] * 100}), self.assertRaises(gate.GateError):
             gate.paginated("owner/repo", "runs", "rows", "fixture-token")
 
     def test_real_git_diff_includes_the_deleted_side_of_a_rename(self):
@@ -148,29 +147,29 @@ class QualityGateTests(unittest.TestCase):
             git("commit", "-qm", "test: rename fixture")
             head = git("rev-parse", "HEAD")
             event = {"pull_request": {"number": 12, "head": {"sha": head}, "base": {"sha": base}}}
-            with mock.patch.object(gate, "required_workflows", return_value=[]) as required, \
-                    mock.patch.object(gate, "api_get", return_value=event["pull_request"]), \
-                    mock.patch.object(gate, "paginated", return_value=[]), \
-                    mock.patch.object(gate, "requires_codeql", return_value=False):
+            with unittest.mock.patch.object(gate, "required_workflows", return_value=[]) as required, \
+                    unittest.mock.patch.object(gate, "api_get", return_value=event["pull_request"]), \
+                    unittest.mock.patch.object(gate, "paginated", return_value=[]), \
+                    unittest.mock.patch.object(gate, "requires_codeql", return_value=False):
                 gate.run_gate(event, root, "owner/repo", "fixture-token", 1, 1)
             self.assertEqual(set(required.call_args.args[0]), {"source.py", "notes.md"})
 
     def test_new_pr_source_stops_the_old_gate(self):
         event = {"pull_request": {"number": 12, "head": {"sha": HEAD}, "base": {"sha": BASE}}}
-        result = mock.Mock(stdout=b"README.md\0")
+        result = unittest.mock.Mock(stdout=b"README.md\0")
         changed = {"head": {"sha": "c" * 40}, "base": {"sha": BASE}}
-        with mock.patch.object(gate.subprocess, "run", return_value=result), \
-                mock.patch.object(gate, "api_get", return_value=changed), self.assertRaises(gate.GateError):
+        with unittest.mock.patch.object(gate.subprocess, "run", return_value=result), \
+                unittest.mock.patch.object(gate, "api_get", return_value=changed), self.assertRaises(gate.GateError):
             gate.run_gate(event, ROOT, "owner/repo", "fixture-token", 1, 1)
 
     def test_timeout_cannot_approve_missing_validation(self):
         event = {"pull_request": {"number": 12, "head": {"sha": HEAD}, "base": {"sha": BASE}}}
-        result = mock.Mock(stdout=b"README.md\0")
-        with mock.patch.object(gate.subprocess, "run", return_value=result), \
-                mock.patch.object(gate, "api_get", return_value=event["pull_request"]), \
-                mock.patch.object(gate, "paginated", return_value=[]), \
-                mock.patch.object(gate.time, "monotonic", side_effect=[0, 0, 2, 2]), \
-                mock.patch.object(gate.time, "sleep"), self.assertRaises(gate.GateError):
+        result = unittest.mock.Mock(stdout=b"README.md\0")
+        with unittest.mock.patch.object(gate.subprocess, "run", return_value=result), \
+                unittest.mock.patch.object(gate, "api_get", return_value=event["pull_request"]), \
+                unittest.mock.patch.object(gate, "paginated", return_value=[]), \
+                unittest.mock.patch.object(gate.time, "monotonic", side_effect=[0, 0, 2, 2]), \
+                unittest.mock.patch.object(gate.time, "sleep"), self.assertRaises(gate.GateError):
             gate.run_gate(event, ROOT, "owner/repo", "fixture-token", 1, 1)
 
 
