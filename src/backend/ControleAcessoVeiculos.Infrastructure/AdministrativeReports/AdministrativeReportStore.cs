@@ -95,7 +95,7 @@ public sealed class AdministrativeReportStore(ControleAcessoVeiculosDbContext db
                     : row.Access.TipoEncerramento.ToString(),
                 row.EventName,
                 row.Access.CriadoPorId,
-                row.Access.AtualizadoPorId))
+                row.Access.EncerradoPorId))
             .ToListAsync(cancellationToken);
 
         var actors = await LoadActorsAsync(
