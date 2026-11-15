@@ -1,9 +1,32 @@
 # ADR 0011 — Reconciliação do papel com conferência assíncrona
 
-- **Estado:** direção autorizada; domínio e orquestração de aplicação candidatos, sem persistência/API.
+- **Estado:** direção autorizada; candidato com persistência e API, sem interface/implantação.
 - **Data:** 03/11/2026.
 - **Rastreabilidade:** #100 e #30. Revisão de correções: #451/#607/#610.
 - **Base atualizada:** main `c620c88` após #616/#614; não incorpora o candidato #607.
+
+## Atualização candidata em 14/11/2026
+
+A branch #611 foi sincronizada com main 2fdcbfc e acrescenta incidentes,
+proveniência persistida, importação atômica, conferência com lock, fila paginada,
+DI, migration e endpoints. O contrato está em
+[reconciliação do papel](../../development/paper-reconciliation-contract.md).
+A hospedagem permanece em f7ee701 com 22 migrations.
+
+A decisão de ampliação das funções de negócio em 12/11 permite a importação pelos
+quatro perfis. O fluxo habitual conserva Porteiro/Vigilante na digitação e
+Transporte/Admin na conferência. A mesma pessoa não aprova o próprio lançamento,
+inclusive se mudar de perfil. Incidentes e conferência são restritos aos gestores.
+
+A referência do papel é cadastrada por gestor com período já observado.
+Datas são explícitas e normalizadas em UTC/microssegundos. Os locks e constraints
+protegem intenção, linha, sobreposição e decisão terminal. O núcleo existente de
+entrada é reutilizado dentro da transação de importação, preservando a gravação
+independente da entrada normal. Quota/evento usam o horário observado.
+
+As seções seguintes preservam os incrementos anteriores. As afirmações de ausência
+de store/API pertencem àqueles snapshots. A interface, a composição com #607 e o
+exercício observado de contingência continuam pendentes.
 
 ## Contexto
 

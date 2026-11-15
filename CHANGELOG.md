@@ -14,6 +14,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Persist paper incidents and attributed import/review transactions with replay
+  protection, observed-time event checks, scoped queues and PostgreSQL constraints
+  (#611, Refs #100). Frontend and hosted rollout remain separately reviewed.
+
 - Register verified adult campus drivers and private vehicles, with audited
   management, transactional persistence and operator-scoped same-day entry
   suggestions (#690, Refs #689).
