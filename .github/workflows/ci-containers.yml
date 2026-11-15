@@ -448,6 +448,13 @@ jobs:
           verify_headers "${frontend_headers}"
           verify_headers "${proxy_error_headers}"
 
+      - name: Verify frontend redirect, frame and cache responses
+        working-directory: infrastructure/docker
+        shell: bash
+        run: |
+          frontend_port="$(docker compose port frontend 8080 | sed 's/.*://')"
+          python3 ../security/verify_frontend_responses.py "http://127.0.0.1:${frontend_port}"
+
       - name: Run passive OWASP ZAP baseline
         shell: bash
         run: |

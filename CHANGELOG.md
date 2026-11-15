@@ -18,6 +18,10 @@ See the [release policy](docs/operations/release-cadence.md).
   Transportation, with explicit homonym confirmation and uncertain-write
   protection; extend the existing entry search with source-aware, expiring
   suggestions and current driver/objective confirmation (#704, Refs #689).
+- A read-only PR quality gate that verifies the applicable existing workflows
+  and CodeQL result for the reviewed source, rejecting failed, cancelled or
+  missing validations. Branch-protection activation is tracked in #661.
+
 - Frontend support for Aluno, Terceirizado and Federal across access forms,
   history categories/counts, open accesses, summaries and reports, displaying
   Federal as Servidor federal while preserving canonical keys, partial filters,
@@ -51,6 +55,12 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Keep frontend API-root redirects relative, emit one DENY frame policy and
+  revalidate SPA HTML while caching hashed bundles immutably. Missing static
+  resources return 404; integrated smoke verifies these responses (#723).
+
+- Require one-time credential recovery for suspended Local accounts while
+  preserving method-aware Google reactivation and transactional auditing (#663).
 - Restore Google sign-in after a cached browser-history return, rechecking
   provider availability before an explicit retry and preventing overlapping
   departures or callback restoration. Preserve administrative access and focus.

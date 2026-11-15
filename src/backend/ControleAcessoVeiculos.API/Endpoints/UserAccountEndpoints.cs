@@ -26,6 +26,17 @@ public static class UserAccountEndpoints
         group.MapPost("/{id:int}/reactivation", ReactivateAsync)
             .WithName("ReactivateUser")
             .WithSummary("Reativa uma conta de usuário");
+        group.MapPost("/{id:int}/reactivation-with-reset", ReactivateWithResetAsync)
+            .RequireRateLimiting(ApiRateLimiting.PasswordChangePolicy)
+            .WithName("ReactivateLocalUserWithCredential")
+            .WithSummary("Reativa uma conta local com nova credencial temporária")
+            .Produces<TemporaryCredentialResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status409Conflict)
+            .Produces(StatusCodes.Status429TooManyRequests);
         group.MapPost("/{id:int}/temporary-credential", ResetCredentialAsync)
             .RequireRateLimiting(ApiRateLimiting.PasswordChangePolicy)
             .WithName("ResetUserCredential")
@@ -183,6 +194,40 @@ public static class UserAccountEndpoints
         };
     }
 
+    private static async Task<IResult> ReactivateWithResetAsync(
+        int id, AdministrativeCredentialResetRequest request, HttpContext httpContext,
+        UserAccountReactivationService service, CancellationToken cancellationToken)
+    {
+        if (!AuthenticatedUser.TryGetId(httpContext.User, out var actorUserId))
+            return Results.Unauthorized();
+
+        var result = await service.ReactivateAsync(id, actorUserId, request.Reason, cancellationToken);
+        if (result.Status == AdministrativeCredentialResetStatus.Success)
+        {
+            httpContext.Response.Headers.CacheControl = "no-store";
+            httpContext.Response.Headers.Pragma = "no-cache";
+            return Results.Ok(new TemporaryCredentialResponse(
+                result.TemporaryCredential!, result.TemporaryCredentialExpiresAtUtc!.Value));
+        }
+        return result.Status switch
+        {
+            AdministrativeCredentialResetStatus.NotFound => Results.NotFound(),
+            AdministrativeCredentialResetStatus.AlreadyActive => Results.Conflict(new
+            {
+                Message = "A conta já está ativa. Use a redefinição administrativa se necessário."
+            }),
+            AdministrativeCredentialResetStatus.SelfReset => Results.Conflict(new
+            {
+                Message = "Não é permitido reativar a própria conta."
+            }),
+            AdministrativeCredentialResetStatus.ExternalAuthentication => Results.Conflict(new
+            {
+                Message = "A conta Google deve usar a reativação sem credencial local."
+            }),
+            _ => Results.ValidationProblem(result.Errors)
+        };
+    }
+
     private static Task<IResult> DeactivateAsync(
         int id,
         HttpContext httpContext,
@@ -276,6 +321,11 @@ public static class UserAccountEndpoints
 
         return result.Status switch
         {
+            ChangeUserAccountStateStatus.CredentialResetRequired => Results.Conflict(new
+            {
+                Code = "local_reactivation_requires_credential_reset",
+                Message = "A reativação de conta local exige recuperação com nova credencial temporária."
+            }),
             ChangeUserAccountStateStatus.Success => Results.NoContent(),
             ChangeUserAccountStateStatus.NotFound => Results.NotFound(new
             {
