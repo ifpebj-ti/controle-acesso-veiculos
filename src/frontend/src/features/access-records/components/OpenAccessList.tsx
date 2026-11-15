@@ -1,3 +1,4 @@
+import { getAccessCategoryLabel } from "../model/accessCategories";
 import { useEffect, useState } from "react";
 
 import { Button } from "../../../components/ui/Button";
@@ -87,7 +88,7 @@ export function OpenAccessList({
                     Categoria
                   </dt>
                   <dd className="mt-0.5 break-words text-ink-soft">
-                    {record.categoryName}
+                    {getAccessCategoryLabel(record.categoryName)}
                   </dd>
                 </div>
                 <div>
@@ -199,7 +200,7 @@ export function OpenAccessList({
                   </td>
                   <td className="break-words px-3 py-4 text-ink-soft">
                     <span className="inline-flex rounded-full border border-success-border bg-success-surface px-2.5 py-1 text-xs font-semibold text-success-text">
-                      {record.categoryName}
+                      {getAccessCategoryLabel(record.categoryName)}
                     </span>
                   </td>
                   <td className="px-3 py-4 tabular-nums text-ink-soft">

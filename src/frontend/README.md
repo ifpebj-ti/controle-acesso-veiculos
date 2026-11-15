@@ -61,17 +61,23 @@ homologação em tablet físico.
 ## Estado atual
 
 A reativação segura #669 está montada na página de contas com o contrato
-Local/Google do #530 incorporado. A API #668 permanece candidata e exige
-composição identificada para validação autenticada; não é considerada hospedada.
+Local/Google do #530 incorporado. A API #668 também foi incorporada; as
+evidências de validação autenticada continuam vinculadas à composição testada.
 Contrato, tratamento de
 resultado incerto e critérios pendentes estão em
 [`docs/account-reactivation.md`](docs/account-reactivation.md).
 
-O histórico oferece as nove categorias existentes na mesma faixa horizontal,
+O candidato da #688 acrescenta Aluno, Terceirizado e Federal às nove categorias
+anteriores. A main `8b61ccd` já incorpora o suporte backend #696; isso não
+comprova a implantação. Federal aparece como Servidor federal, mantendo a chave
+canônica. Detalhes e limites de integração estão em
+[`docs/access-categories.md`](docs/access-categories.md).
+O histórico oferece as doze opções na mesma faixa horizontal,
 com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
 O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
 do total validado da consulta de histórico; falhas mostram indisponibilidade,
-sem inventar zero. O contrato atual exige nove leituras de contagem, em lotes
+sem inventar zero. O contrato atual exige uma leitura de contagem por categoria
+(doze neste candidato), em lotes
 de até três, além da consulta de resultados. Trocar somente a categoria ou a
 página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
 correção salva atualizam as contagens, mesmo sem mudar o período, a placa,
@@ -118,6 +124,10 @@ No logout explícito, a navegação de entrada é substituída sem intenção de
 Login local, restauração e callback Google conferem o destino pela matriz de
 rotas e pelo perfil recebido da API: páginas incompatíveis, desconhecidas ou
 externas levam à Visão geral. A troca obrigatória de senha tem prioridade.
+Na branch da #715, sem essa exigência da API, uma intenção antiga de retornar
+a /conta/senha é descartada no novo login em favor da Visão geral. O Administrador
+continua podendo abrir Alterar senha explicitamente pelo menu. O ajuste é um
+candidato; não comprova implantação na URL pública.
 Isso não persiste uma última página por pessoa nem substitui a autorização
 do servidor.
 O fluxo geral de veículos também consome a API para registrar
@@ -678,6 +688,15 @@ src/
 - suporte à renovação transparente em navegadores sem Web Locks API;
 - garantia de autorização baseada somente na interface;
 - homologação do cliente ou prontidão para produção.
+
+## Cabeçalho do primeiro acesso — candidato #714
+
+Na branch da #714, a troca obrigatória de senha mantém logo e saída em um
+cabeçalho compacto. O botão Aparência abre o seletor existente no fluxo da página;
+Escape fecha esse painel e devolve o foco ao botão. O atalho flutuante é o único
+controle de tela cheia nesse layout. O formulário e o foco inicial no título
+permanecem inalterados. Trata-se de candidato local; sua existência não comprova
+incorporação, implantação ou homologação autenticada.
 
 ## Validação
 

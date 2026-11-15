@@ -302,6 +302,82 @@ function seedRestorableSession() {
 }
 
 describe("authentication flow", () => {
+  it.each(["/conta/senha", "/conta/senha/"])(
+    "does not resume the password form after administrator login from %s",
+    async (pathname) => {
+      const post = vi
+        .spyOn(api, "post")
+        .mockResolvedValue(responseFor("Administrador"));
+      renderRestrictedApplication({
+        pathname: "/login",
+        state: { from: { pathname } },
+      });
+      await submitCredentials();
+      const heading = await screen.findByRole("heading", {
+        name: "Painel operacional fictício",
+      });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+      expect(post.mock.calls.map(([url]) => url)).toEqual(["/auth/login"]);
+    },
+  );
+
+  it("returns to overview after mandatory password change and a new administrator login", async () => {
+    seedRestorableSession();
+    vi.mocked(api.get).mockImplementation(async (url) => ({
+      data:
+        url === "/auth/providers"
+          ? { googleEnabled: true }
+          : { requestToken: "test-only-csrf-token" },
+    }));
+    const post = vi.spyOn(api, "post").mockImplementation(async (url) => {
+      if (url === "/auth/refresh")
+        return responseFor("Administrador", 60_000, true);
+      if (url === "/auth/password") return { data: undefined };
+      if (url === "/auth/login") return responseFor("Administrador");
+      throw new Error("Unexpected test request");
+    });
+    const user = userEvent.setup();
+    renderRestrictedApplication("/conta/senha");
+    await screen.findByRole("heading", { name: "Crie sua senha permanente" });
+    await user.type(
+      screen.getByLabelText("Senha atual"),
+      "temporary-test-password",
+    );
+    await user.type(
+      screen.getByLabelText("Nova senha"),
+      "new-test-password-value",
+    );
+    await user.type(
+      screen.getByLabelText("Confirmar nova senha"),
+      "new-test-password-value",
+    );
+    await user.click(screen.getByRole("button", { name: "Alterar senha" }));
+    await screen.findByText(
+      "Senha alterada com segurança. Entre novamente usando a nova senha.",
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Entrar com usuário e senha" }),
+    );
+    await user.type(
+      await screen.findByLabelText("E-mail:"),
+      "operator@example.test",
+    );
+    await user.type(screen.getByLabelText("Senha:"), "new-test-password-value");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+    const heading = await screen.findByRole("heading", {
+      name: "Painel operacional fictício",
+    });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+    expect(
+      post.mock.calls.filter(([url]) => url === "/auth/password"),
+    ).toHaveLength(1);
+    expect(
+      post.mock.calls.filter(([url]) => url === "/auth/login"),
+    ).toHaveLength(1);
+  });
+
   it.each(["/relatorios", "/administracao"])(
     "clears the previous account destination on logout from %s",
     async (pathname) => {

@@ -5,6 +5,7 @@ import type { AccessHistoryRequestStatus } from "../hooks/useAccessHistory";
 import { useHistoryCategoryShelfScroll } from "../hooks/useHistoryCategoryShelfScroll";
 import {
   generalAccessCategories,
+  getAccessCategoryLabel,
   type GeneralAccessCategory,
 } from "../model/accessCategories";
 
@@ -17,6 +18,9 @@ interface AccessHistoryCategoryTabsProps {
 }
 
 const categoryIcons: Record<GeneralAccessCategory, IconName> = {
+  Aluno: "user",
+  Terceirizado: "wrench",
+  Federal: "user",
   "Caminhada com veículo": "vehicle",
   Mototáxi: "motorcycle",
   "Permanência excepcional": "clock",
@@ -151,7 +155,9 @@ export function AccessHistoryCategoryTabs({
                   {categoryCountsStatus === "loading" ? "…" : (count ?? "—")}
                 </span>
                 <Icon name={categoryIcons[label]} size={26} />
-                <span id={`${shelfId}-label-${index}`}>{label}</span>
+                <span id={`${shelfId}-label-${index}`}>
+                  {getAccessCategoryLabel(label)}
+                </span>
                 <span className="sr-only" id={`${shelfId}-count-${index}`}>
                   {categoryCountsStatus === "loading"
                     ? "Carregando contagem."
