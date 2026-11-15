@@ -1,6 +1,8 @@
 import type { ProfileName } from "../authentication";
 
 export interface UserAccount {
+  authenticationMethod: "Local" | "Google";
+  externalIdentityLinked: boolean;
   id: number;
   name: string;
   email: string;
@@ -35,11 +37,25 @@ export interface CreateUserAccountInput {
 }
 
 export interface CreatedUserAccount {
+  authenticationMethod: "Local" | "Google";
   id: number;
   email: string;
   profileName: ProfileName;
-  temporaryCredential: string;
-  temporaryCredentialExpiresAtUtc: string;
+  temporaryCredential: string | null;
+  temporaryCredentialExpiresAtUtc: string | null;
+}
+
+export interface ChangeAccountProfileInput {
+  profileName: ProfileName;
+  reason: string;
+}
+
+export interface ChangedAccountProfile {
+  previousProfileName: ProfileName;
+  currentProfileName: ProfileName;
+  authenticationMethod: "Local" | "Google";
+  temporaryCredential: string | null;
+  temporaryCredentialExpiresAtUtc: string | null;
 }
 
 export const credentialResetReasons = [

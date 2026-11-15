@@ -79,6 +79,7 @@ function renderPage(profileName: ProfileName = "Porteiro") {
     expiresAtUtc: "2030-06-10T22:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),
+    restoreExternalSession: vi.fn(),
     sessionEndReason: null,
     status: "authenticated",
     user: {
@@ -96,6 +97,20 @@ function renderPage(profileName: ProfileName = "Porteiro") {
 }
 
 describe("DashboardPage", () => {
+  it("uses real counts for the new categories and labels Federal as Servidor federal", async () => {
+    vi.mocked(getDailyOperationalSummary).mockResolvedValue({
+      ...summary,
+      accessCategories: [
+        { label: "Aluno", count: 2 },
+        { label: "Terceirizado", count: 3 },
+        { label: "Federal", count: 3 },
+      ],
+    });
+    renderPage("Administrador");
+    expect(await screen.findByText("Servidor federal")).toBeInTheDocument();
+    expect(screen.getByText("Aluno")).toBeInTheDocument();
+    expect(screen.getByText("Terceirizado")).toBeInTheDocument();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getDailyOperationalSummary).mockResolvedValue(summary);

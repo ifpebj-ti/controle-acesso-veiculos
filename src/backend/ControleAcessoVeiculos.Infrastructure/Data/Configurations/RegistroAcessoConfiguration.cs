@@ -37,6 +37,9 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
                 "AND data_hora_regularizacao IS NOT NULL)))");
         });
 
+        builder.HasIndex(x => new { x.CriadoPorId, x.PessoaId, x.VeiculoId, x.DataHoraEntrada })
+            .HasDatabaseName("ix_registros_acesso_operador_pessoa_veiculo_data");
+
         builder.HasKey(registro => registro.Id)
             .HasName("pk_registros_acesso");
 

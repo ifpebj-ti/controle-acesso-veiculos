@@ -284,7 +284,9 @@ public sealed class VehicleAccessService(
         var hasDocumentNumber = !string.IsNullOrWhiteSpace(command.DocumentNumber);
 
         if (hasDocumentType != hasDocumentNumber || command.DocumentType?.Trim().Length > 10 ||
-            command.DocumentNumber?.Trim().Length > 20)
+            command.DocumentNumber?.Trim().Length > 20 ||
+            command.DocumentType?.Contains('\0') == true ||
+            command.DocumentNumber?.Contains('\0') == true)
         {
             errors["document"] =
                 ["Tipo e número do documento devem ser informados juntos e respeitar os limites de 10 e 20 caracteres."];
@@ -436,7 +438,11 @@ public sealed class VehicleAccessService(
         string description,
         IDictionary<string, string[]> errors)
     {
-        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length > maximumLength)
+        if (value?.Contains('\0') == true)
+        {
+            errors[field] = ["O campo não pode conter o caractere NUL."];
+        }
+        else if (string.IsNullOrWhiteSpace(value) || value.Trim().Length > maximumLength)
         {
             errors[field] = [$"O {description} é obrigatório e deve possuir até {maximumLength} caracteres."];
         }
@@ -448,7 +454,11 @@ public sealed class VehicleAccessService(
         string field,
         IDictionary<string, string[]> errors)
     {
-        if (value?.Trim().Length > maximumLength)
+        if (value?.Contains('\0') == true)
+        {
+            errors[field] = ["O campo não pode conter o caractere NUL."];
+        }
+        else if (value?.Trim().Length > maximumLength)
         {
             errors[field] = [$"O campo deve possuir até {maximumLength} caracteres."];
         }

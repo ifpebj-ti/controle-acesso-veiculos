@@ -53,6 +53,21 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
         Assert.Equal(2, auditCount);
     }
 
+    [Fact]
+    public async Task GoogleTransportCannotBypassExportConfirmationWithAnOldLocalPassword()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (userId, _) = await CreateUserAsync(ProfileNames.TransportationDepartment);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var user = await db.Usuarios.SingleAsync(x => x.Id == userId, ct);
+        user.VincularIdentidadeGoogle("fictitious-google-subject-" + Guid.NewGuid().ToString("N"), DateTime.UtcNow);
+        await db.SaveChangesAsync(ct);
+        var security = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculos.Application.AdministrativeReports.IAdministrativeReportExportSecurity>();
+        var confirmation = await security.ConfirmLocalPasswordAsync(userId, Password, ct);
+        Assert.Equal(ControleAcessoVeiculos.Application.AdministrativeReports.AdministrativeReportExportConfirmationStatus.Unauthorized, confirmation.Status);
+    }
+
     [Theory]
     [InlineData(ProfileNames.Doorman, "GET", "vehicle-movements")]
     [InlineData(ProfileNames.Doorman, "GET", "institutional-fleet")]
@@ -66,7 +81,7 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
     [InlineData(ProfileNames.TransportationDepartment, "GET", "institutional-fleet")]
     [InlineData(ProfileNames.TransportationDepartment, "POST", "vehicle-movements/pdf")]
     [InlineData(ProfileNames.TransportationDepartment, "POST", "institutional-fleet/pdf")]
-    public async Task NonAdministratorCannotReadOrExportReports(
+    public async Task ReportAuthorizationFollowsUpdatedProfileMatrix(
         string profileName,
         string method,
         string endpoint)
@@ -91,8 +106,17 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
             request,
             TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        Assert.NotEqual("application/pdf", response.Content.Headers.ContentType?.MediaType);
+        if (profileName == ProfileNames.TransportationDepartment)
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            if (method == "POST")
+                Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            Assert.NotEqual("application/pdf", response.Content.Headers.ContentType?.MediaType);
+        }
     }
 
     [Fact]
@@ -137,10 +161,12 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
         Assert.DoesNotContain(Password, audit.Detalhes, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task PdfExportRejectsWrongPasswordWithoutReturningAFile()
+    [Theory]
+    [InlineData(ProfileNames.Administrator)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task PdfExportRejectsWrongPasswordWithoutReturningAFile(string profileName)
     {
-        var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
+        var (administratorId, email) = await CreateUserAsync(profileName);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email);
 

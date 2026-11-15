@@ -1,3 +1,4 @@
+import { getAccessCategoryLabel } from "../features/access-records/model/accessCategories";
 import {
   act,
   fireEvent,
@@ -200,6 +201,7 @@ async function fillObservation(user: TestUser, value: string) {
   return field;
 }
 
+// Only debounce timeouts are controlled; jsdom animation-frame intervals stay real.
 async function advanceCandidateSearchDebounce() {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(350);
@@ -218,6 +220,77 @@ describe("NewAccessPage", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
+
+  it.each(["Aluno", "Terceirizado", "Federal"])(
+    "submits %s explicitly and resets the form only after success",
+    async (categoryName) => {
+      vi.mocked(registerAccessEntry).mockResolvedValue({
+        ...createdRecord,
+        categoryName,
+      });
+      const user = userEvent.setup();
+      renderPage();
+      await fillRequiredFields(user);
+      await selectFieldOption(
+        user,
+        screen.getByLabelText(/Categoria do acesso/),
+        categoryName,
+      );
+      await user.click(
+        screen.getByRole("button", { name: "Registrar e continuar" }),
+      );
+      await waitFor(() => expect(registerAccessEntry).toHaveBeenCalledOnce());
+      expect(registerAccessEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ categoryName }),
+      );
+      await waitFor(() =>
+        expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue(""),
+      );
+      expect(screen.getByLabelText(/Categoria do acesso/)).toHaveTextContent(
+        "Visitante",
+      );
+    },
+  );
+
+  it.each(["Aluno", "Terceirizado", "Federal"])(
+    "sends the selected %s category once and preserves the form on API rejection",
+    async (categoryName) => {
+      vi.mocked(registerAccessEntry).mockRejectedValue(
+        apiError(400, { message: "Categoria recusada no ensaio fictício." }),
+      );
+      const user = userEvent.setup();
+      renderPage();
+      await fillRequiredFields(user);
+      await selectFieldOption(
+        user,
+        screen.getByLabelText(/Categoria do acesso/),
+        categoryName,
+      );
+      await user.click(
+        screen.getByRole("button", { name: "Registrar e continuar" }),
+      );
+      await waitFor(() => expect(registerAccessEntry).toHaveBeenCalledOnce());
+      expect(registerAccessEntry).toHaveBeenCalledWith(
+        expect.objectContaining({
+          categoryName,
+          driverName: "Pessoa fictícia",
+          plate: "DEM1A23",
+        }),
+      );
+      await screen.findByRole("alert");
+      expect(screen.getByLabelText(/Categoria do acesso/)).toHaveTextContent(
+        getAccessCategoryLabel(categoryName),
+      );
+      expect(screen.getByLabelText(/Nome do condutor/)).toHaveValue(
+        "Pessoa fictícia",
+      );
+      expect(screen.getByLabelText(/Placa do veículo/)).toHaveValue("DEM1A23");
+      expect(
+        screen.getByRole("radio", { name: "Atendimento em setor" }),
+      ).toBeChecked();
+      expect(registerAccessEntry).toHaveBeenCalledOnce();
+    },
+  );
 
   it("fills and submits both canonical candidate identifiers together", async () => {
     vi.mocked(searchAccessEntryCandidates).mockResolvedValue([
@@ -380,7 +453,7 @@ describe("NewAccessPage", () => {
     });
 
     await user.click(search);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     fireEvent.change(search, { target: { value: "REC" } });
     await advanceCandidateSearchDebounce();
     vi.useRealTimers();
@@ -388,7 +461,7 @@ describe("NewAccessPage", () => {
     expect(screen.getByText(/REC1A23 · Condutor recorrente/)).toBeVisible();
 
     await user.click(search);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     fireEvent.change(search, { target: { value: "ALT" } });
     await advanceCandidateSearchDebounce();
     vi.useRealTimers();
@@ -430,7 +503,7 @@ describe("NewAccessPage", () => {
       name: "Buscar por placa ou nome do condutor",
     });
     await user.click(search);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     fireEvent.change(search, { target: { value: "SEM" } });
     await advanceCandidateSearchDebounce();
     vi.useRealTimers();

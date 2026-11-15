@@ -34,7 +34,7 @@
 
 ## Regras funcionais conhecidas
 
-- Porteiro e vigilante compartilham o fluxo operacional normal de entradas e saídas. O setor de Transporte acompanha a operação. O administrador gerencia contas e permissões e consulta históricos; operações excepcionais dependem de regra confirmada.
+- Porteiro e Vigilante compartilham o fluxo operacional de entradas e saídas. A decisão de 12/11/2026 amplia Transporte para operações de negócio, eventos, relatórios e leitura de auditoria, conforme `docs/architecture/transport-authorization-matrix.md`. Administrador gerencia contas, perfis e credenciais. A confirmação PDF de Transporte Google permanece na #699.
 - O fluxo geral de veículos registra nome do condutor, placa, objetivo e categoria. Documento e detalhes complementares permanecem opcionais no contrato atual.
 - Categoria, objetivo, pessoa, vínculo e veículo são conceitos distintos. Não transforme formulários de pessoas fora do núcleo do MVP em abas do registro geral.
 - O uso de veículo institucional possui fluxo próprio de saída, quilometragem, motorista e retorno; não o apresente como categoria da entrada geral.

@@ -2,6 +2,7 @@ namespace ControleAcessoVeiculos.API.Security;
 
 public static class AuthorizationPolicies
 {
+    public const string ManageCampusDrivers = "campus-drivers:manage";
     public const string OperateAccess = "access:operate";
     public const string ReviewAccessRecords = "access-records:review";
     public const string CorrectAccessRecords = "access-records:correct";

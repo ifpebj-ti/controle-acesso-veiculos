@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAccountProfileChange } from "./useAccountProfileChange";
+import { profileLabels } from "../../authentication";
 
 import { useConfirmation } from "../../../components/ui/confirmationContext";
 import {
   describeApiError,
   getApiValidationErrors,
+  type ApiErrorDescription,
 } from "../../../services/api-errors";
 import {
   createUserAccount,
@@ -11,6 +14,7 @@ import {
   reactivateUserAccount,
   resetTemporaryCredential,
   searchUserAccounts,
+  UserAccountsContractError,
 } from "../services/userAccountsService";
 import type {
   CredentialResetReason,
@@ -32,6 +36,17 @@ const initialFilters: UserAccountFilters = {
 };
 
 const createFields = ["email", "name", "profileName"] as const;
+
+function describeAccountError(error: unknown): ApiErrorDescription {
+  if (error instanceof UserAccountsContractError) {
+    return {
+      kind: "unexpected",
+      message:
+        "Não foi possível confirmar os dados recebidos. Atualize a lista antes de tentar novamente.",
+    };
+  }
+  return describeApiError(error);
+}
 
 interface CredentialDisclosure {
   accountId?: number;
@@ -99,7 +114,7 @@ export function useUserAccounts() {
         if (persistedMessage) setNotice(persistedMessage);
       } catch (error) {
         if (requestId.current !== currentRequest) return;
-        const description = describeApiError(error);
+        const description = describeAccountError(error);
         const validationErrors = getApiValidationErrors(error);
         if (description.kind === "validation" && validationErrors.search) {
           setFilterError(validationErrors.search);
@@ -128,7 +143,7 @@ export function useUserAccounts() {
       })
       .catch((error: unknown) => {
         if (requestId.current !== currentRequest) return;
-        const description = describeApiError(error);
+        const description = describeAccountError(error);
         setStatus(description.kind === "access-denied" ? "denied" : "error");
         setErrorMessage(description.message);
       });
@@ -202,22 +217,31 @@ export function useUserAccounts() {
     setServerErrors({});
     try {
       const created = await createUserAccount(input);
-      const credential = {
-        temporaryCredential: created.temporaryCredential,
-        temporaryCredentialExpiresAtUtc:
-          created.temporaryCredentialExpiresAtUtc,
-      };
-      setCredentialDisclosure({
-        accountId: created.id,
-        accountName: input.name,
-        credential,
-        returnFocusTo: formReturnFocusTo,
-      });
+      if (
+        created.temporaryCredential &&
+        created.temporaryCredentialExpiresAtUtc
+      ) {
+        setCredentialDisclosure({
+          accountId: created.id,
+          accountName: input.name,
+          credential: {
+            temporaryCredential: created.temporaryCredential,
+            temporaryCredentialExpiresAtUtc:
+              created.temporaryCredentialExpiresAtUtc,
+          },
+          returnFocusTo: formReturnFocusTo,
+        });
+      }
       setFormReturnFocusTo(null);
       setFormOpen(false);
-      await load(applied, "Conta criada com sucesso.");
+      await load(
+        applied,
+        created.authenticationMethod === "Google"
+          ? "Conta criada com sucesso. O acesso será pelo Google, sem senha local."
+          : "Conta criada com sucesso.",
+      );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       const fieldErrors = createFieldErrors(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
@@ -244,7 +268,13 @@ export function useUserAccounts() {
     account: UserAccount,
     trigger?: HTMLElement | null,
   ) {
-    if (pendingAction || status !== "ready" || !account.active) return;
+    if (
+      pendingAction ||
+      status !== "ready" ||
+      !account.active ||
+      account.authenticationMethod === "Google"
+    )
+      return;
     setResetError(null);
     setResetReturnFocusTo(trigger ?? null);
     setResetTarget(account);
@@ -279,7 +309,7 @@ export function useUserAccounts() {
         `Credencial de ${account.name} redefinida com sucesso.`,
       );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
         setStatus("denied");
@@ -321,7 +351,7 @@ export function useUserAccounts() {
         `Conta de ${account.name} ${account.active ? "desativada" : "reativada"} com sucesso.`,
       );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
         setStatus("denied");
@@ -332,7 +362,42 @@ export function useUserAccounts() {
     }
   }
 
+  const profileChange = useAccountProfileChange({
+    pendingAction,
+    ready: status === "ready",
+    setPendingAction,
+    onReload: () => void load(applied),
+    onDenied: (message) => {
+      clearSensitiveTransientState();
+      setStatus("denied");
+      setErrorMessage(message);
+    },
+    onSuccess: async (account, result, trigger) => {
+      setNotice(null);
+      if (
+        result.temporaryCredential &&
+        result.temporaryCredentialExpiresAtUtc
+      ) {
+        setCredentialDisclosure({
+          accountId: account.id,
+          accountName: account.name,
+          credential: {
+            temporaryCredential: result.temporaryCredential,
+            temporaryCredentialExpiresAtUtc:
+              result.temporaryCredentialExpiresAtUtc,
+          },
+          returnFocusTo: trigger,
+        });
+      }
+      await load(
+        applied,
+        `Perfil alterado para ${profileLabels[result.currentProfileName]}. As sessões anteriores da conta foram encerradas.`,
+      );
+    },
+  });
+
   return {
+    profileChange,
     applyFilters,
     changeAccountState,
     closeCredentialDisclosure,

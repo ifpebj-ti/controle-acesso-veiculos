@@ -8,40 +8,105 @@ from its first published release.
 
 ## [Unreleased]
 
+This section records increments since v0.4.0. Entries introduced by open PRs
+remain proposed until incorporation, not a published release or proof of deployment.
+See the [release policy](docs/operations/release-cadence.md).
+
 ### Added
 
-- Offer an optional fullscreen invitation on the authenticated overview, with
-  temporary contextual guidance after dismissal, a persistent corner shortcut
-  and a non-sensitive per-tab flag.
-  Reuse the existing native control without changing authentication or forms.
+- Frontend support for Aluno, Terceirizado and Federal across access forms,
+  history categories/counts, open accesses, summaries and reports, displaying
+  Federal as Servidor federal while preserving canonical keys, partial filters,
+  bounded counting concurrency and unavailable-count states (#702, Refs #688).
+- Register verified adult campus drivers and private vehicles, with audited
+  management, transactional persistence and operator-scoped same-day entry
+  suggestions (#690, Refs #689).
+- Extend the canonical vehicle-access catalog with Aluno, Terceirizado and
+  Federal while retaining the original nine categories (#694, Refs #688).
+- Optional native fullscreen controls and an authenticated overview invitation,
+  with per-tab dismissal guidance and persistent access (#621, #629).
+- History category shelf with bounded parallel counting, independent failures,
+  applied-filter preservation and pagination (#568).
+- Google account selection on explicit OIDC attempts, preserving minimal scopes
+  and preauthorization (#601).
+- Disabled-by-default, bounded synthetic local access for selected operational
+  test accounts in homologation; real operators retain Google authentication
+  (#614). Configuration and expiry are separate from publication.
+- Read-only public HTTPS/readiness probe with certificate validation, bounded
+  responses and expiry states; scheduling, renewal and alert delivery remain
+  operational work (#556).
 
-- Audited access correction requests with immutable snapshots, reviewer-only
-  decisions, scoped lookup, idempotent reconciliation, PostgreSQL constraints
-  and atomic approval/audit. Direct corrections require review by default;
-  coordinated frontend integration is required before deploying this increment.
+- Audited access correction requests with immutable snapshots, scoped queries,
+  independent decisions and transactional approval/audit (#451).
 
-- Request Google account selection on each explicit OIDC login attempt on shared
-  workstations, preserving minimal scopes, PKCE and local preauthorization.
-- A read-only public HTTPS/readiness probe with certificate validation,
-  bounded responses, sanitized failures and 30/14/7-day expiry states.
-  Offline regressions run in infrastructure CI; certificate renewal,
-  scheduling and operational alert delivery remain separate work.
+### Changed
+
+- Increase spacing between sign-in guidance and administrative access while
+  retaining the established login alignment, typography and panel composition.
+- Cap the Google sign-in action at 18rem within the available width, retaining
+  its touch-target height and consistent enabled/disabled presentation.
+  Add a detached sage contour, shorten introductory copy and align the separate
+  administrative action without changing authentication behavior.
 
 ### Fixed
 
-- Upgrade APT and libapt in the backend runtime image for USN-8996-1, use HTTPS
-  archives and disable retries during bootstrap, rejecting vulnerable package
-  versions without relaxing the container security gates.
+- Preserve the original exit author after descriptive corrections, using
+  unambiguous closure audit evidence for legacy attribution (#609).
 
-- Preserved the original exit author in administrative reports after descriptive
-  corrections; legacy attribution is restored only from unambiguous closure audit
-  evidence, without guessing from the last editor (Refs #609).
-- Pin the shipped ASP.NET Core runtime to 10.0.14 so cached floating tags do not
-  regress homologation to a vulnerable patch during container rebuilds.
+- Require one-time credential recovery for suspended Local accounts while
+  preserving method-aware Google reactivation and transactional auditing (#663).
+- Restore Google sign-in after a cached browser-history return, rechecking
+  provider availability before an explicit retry and preventing overlapping
+  departures or callback restoration. Preserve administrative access and focus.
 - Return `Local`/`Google` strings for `authenticationMethod` in administrative
   account listings, consistently with account creation and profile changes.
   Preserve pagination and all existing public fields without changing the
   domain, authentication policy or global JSON converters.
+- Reject invalid session-family identifiers, preserve historical vehicle
+  identity, apply literal administrative searches and institutional date
+  boundaries, and prevent caching of sensitive API responses
+  (#653, #654, #648, #651, #655).
+- Reject NUL characters consistently in text and search inputs without exposing
+  database failures (#659, #664).
+- Route Google completion to the API, handle provider cancellation, preserve
+  forwarded HTTPS and scope WAF authentication exceptions
+  (#590, #599, #524, #589).
+- Load runtime secrets by file with non-root container compatibility and correct
+  public API hostname handling (#518, #584, #520).
+- Serialize account authentication methods as Local/Google and enforce
+  method-aware account governance (#543).
+- Distinguish transport, response-contract and cancellation errors in the
+  frontend; preserve vehicle edit values and public conflict guidance (#608, #666).
+- Preserve focus in candidate searches and keyboard selection navigation
+  (#570, #492), and reject invalid full vehicle plates in the frontend (#458).
+- Upgrade backend APT/libapt for USN-8996-1 and pin runtime 10.0.14 to prevent
+  vulnerable cached floating tags (#627, #616). The subsequent 10.0.15 security
+  patch is incorporated in #675, together with strict APT index refresh and
+  bounded explicit attempts (#676). VM promotion remains separate.
+
+### Changed
+
+- Extend Transportation business policies to access operations, events, audit
+  queries and reports while enforcing Administrator account governance and
+  method-aware PDF confirmation (#693). Federated export confirmation is #699.
+- Remove unused frontend demonstration state and modernize administrative
+  reports without treating mock data as integrated functionality (#531, #487).
+- Update reviewed frontend, .NET, GitHub Actions and OCI provider dependencies,
+  including security fixes (#557, #560, #571, #639–#642).
+
+### Quality and operations
+
+- Reconcile current role, registry, release and academic documentation with
+  incorporated contracts and published backend coverage evidence (#706).
+- Consolidate backend line coverage across test reports with a 70% CI floor,
+  excluding generated migrations and reporting module-level totals (#691).
+- Expand Google protocol/signed-token and session-response-loss regressions,
+  keeping controlled tests distinct from real OAuth acceptance (#538, #563, #595).
+- Prepare reviewed version/changelog proposals and publish immutable release
+  tags and GitHub Releases after gated container publication (#698).
+- Document security analysis, threat-model consistency, protected operations,
+  TLS renewal, deployment evidence and readiness limits (#635, #552, #517, #512,
+  #637, #660, #670). Documentation does not prove operational completion.
 
 ## [0.4.0] - 2026-10-22
 
@@ -61,6 +126,10 @@ from its first published release.
   preauthorized accounts by stable subject, rotates local credential state and
   creates the existing protected application session without exposing provider
   tokens to the browser.
+- The frontend discovers whether Google authentication is enabled, starts the
+  backend-mediated redirect as its primary sign-in action, restores the local
+  session after the callback, and keeps local credentials behind an explicit
+  Administrator-only access action.
 
 - Semantic frontend design tokens and a documented WCAG 2.2 contrast matrix
   for the future light, dark, and system appearance foundation.

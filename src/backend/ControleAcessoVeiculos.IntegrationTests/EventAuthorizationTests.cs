@@ -14,6 +14,25 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class EventAuthorizationTests(ApiFactory factory)
 {
+    [Theory]
+    [InlineData("%00")]
+    [InlineData("Evento%00Teste")]
+    public async Task EventSearchRejectsNullCharacter(string encodedName)
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Administrator, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+
+        var response = await client.GetAsync(
+            $"/event-authorizations?name={encodedName}", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("name", json);
+        Assert.DoesNotContain("Evento", json);
+    }
+
     [Fact]
     public async Task AdministratorCanManageAndDoormanCanReadEvent()
     {
@@ -100,7 +119,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
     [InlineData(ProfileNames.Doorman)]
     [InlineData(ProfileNames.SecurityGuard)]
     [InlineData(ProfileNames.TransportationDepartment)]
-    public async Task NonAdministratorProfilesCanReadButCannotManageEvents(string profileName)
+    public async Task EventManagementFollowsUpdatedProfileMatrix(string profileName)
     {
         const string password = "Test-only-password-123!";
         var (_, email) = await CreateUserAsync(profileName, password);
@@ -110,6 +129,21 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         Assert.Equal(
             HttpStatusCode.OK,
             (await client.GetAsync("/event-authorizations", TestContext.Current.CancellationToken)).StatusCode);
+        if (profileName == ProfileNames.TransportationDepartment)
+        {
+            var plate = TestPlate.From(Guid.NewGuid().ToString("N"));
+            var created = await client.PostAsJsonAsync("/event-authorizations", Request(
+                "Evento Fictício", "Responsável Fictício", plate,
+                DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow.AddDays(2)), TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            using var json = System.Text.Json.JsonDocument.Parse(await created.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            var id = json.RootElement.GetProperty("id").GetInt32();
+            Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync($"/event-authorizations/{id}", Request(
+                "Evento Fictício Atualizado", "Responsável Fictício", plate,
+                DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow.AddDays(2)), TestContext.Current.CancellationToken)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/event-authorizations/{id}", TestContext.Current.CancellationToken)).StatusCode);
+            return;
+        }
         Assert.Equal(
             HttpStatusCode.Forbidden,
             (await client.PostAsJsonAsync("/event-authorizations", Request(

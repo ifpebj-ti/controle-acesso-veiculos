@@ -4,7 +4,7 @@ import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
 import { SelectField } from "../../../components/ui/SelectField";
 import { TextField } from "../../../components/ui/TextField";
-import { generalAccessCategories } from "../model/accessCategories";
+import { generalAccessCategoryOptions } from "../model/accessCategories";
 import type {
   AccessHistoryFilterDraft,
   AccessHistoryRequestStatus,
@@ -158,10 +158,7 @@ export function AccessHistoryFilters({
               onValueChange={(value) => update({ categoryName: value })}
               options={[
                 { label: "Todas", value: "" },
-                ...generalAccessCategories.map((option) => ({
-                  label: option,
-                  value: option,
-                })),
+                ...generalAccessCategoryOptions,
               ]}
               value={draft.categoryName}
             />

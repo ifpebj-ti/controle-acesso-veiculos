@@ -1,9 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 import { PageHeader } from "../components/ui/PageHeader";
 import { Card } from "../components/ui/Card";
 import { Icon } from "../components/ui/Icon";
 import {
+  canShowPasswordChange,
   PasswordChangeForm,
   useAuthenticatedSession,
 } from "../features/authentication";
@@ -16,6 +17,10 @@ export function PasswordChangePage() {
   function handleSuccess() {
     completePasswordChange();
     navigate("/login", { replace: true });
+  }
+
+  if (!canShowPasswordChange(user)) {
+    return <Navigate replace to="/visao-geral" />;
   }
 
   return (

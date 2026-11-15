@@ -1,3 +1,4 @@
+import { getAccessCategoryLabel } from "../model/accessCategories";
 import { useEffect, useRef } from "react";
 
 import { Button } from "../../../components/ui/Button";
@@ -182,7 +183,7 @@ export function AccessDetailsDialog({
                 {record.vehicleType?.trim() || "Tipo de veículo não informado"}
               </p>
               <p className="mt-0.5 text-xs text-ink-soft">
-                Categoria: {record.categoryName}
+                Categoria: {getAccessCategoryLabel(record.categoryName)}
               </p>
             </div>
             <StatusBadge {...status} />
@@ -197,7 +198,7 @@ export function AccessDetailsDialog({
             <DetailRow
               icon="users"
               label="Categoria"
-              value={record.categoryName}
+              value={getAccessCategoryLabel(record.categoryName)}
             />
             <DetailRow
               icon="clipboard"

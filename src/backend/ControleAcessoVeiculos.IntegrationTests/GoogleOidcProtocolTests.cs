@@ -183,7 +183,11 @@ public sealed class GoogleOidcProtocolTests
         });
 
     private static WebApplicationFactory<Program> CreateFactory() =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        new ProtocolFactory();
+
+    private sealed class ProtocolFactory : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
             // No request in this suite should reach the database.
@@ -209,7 +213,8 @@ public sealed class GoogleOidcProtocolTests
                     options.Backchannel = new HttpClient(guard);
                 });
             });
-        });
+        }
+    }
 
     private static void AssertNoBackchannel(WebApplicationFactory<Program> factory) =>
         Assert.Equal(0, factory.Services.GetRequiredService<RejectBackchannelHandler>().RequestCount);

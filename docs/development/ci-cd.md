@@ -23,7 +23,7 @@ portas da API ou do PostgreSQL.
 | Workflow                | Gatilho                                                                   | Verificações                                                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CI - Backend            | Alterações do backend, do runner e de suas regras de formato              | restore, `dotnet format`, build Release com warnings como erros, suíte xUnit v3 na Microsoft Testing Platform, resultados TRX e cobertura Cobertura                                                              |
-| CI - Frontend           | Alterações do frontend                                                    | `npm ci`, ESLint e build Vite                                                                                                                                                                                    |
+| CI - Frontend           | Alterações do frontend                                                    | `npm ci`, testes Vitest, ESLint e build Vite                                                                                                                                                                     |
 | CI - Containers         | Código, Dockerfiles, Compose, contexto Docker ou tag `vMAJOR.MINOR.PATCH` | build isolado, Trivy e SBOM de frontend e backend em `linux/amd64` e `linux/arm64`; smoke test integrado e baseline DAST passiva com OWASP ZAP; publicação, atestação e tag semântica somente em tags de release |
 | CI - Database recovery  | Scripts de backup ou configuração local do PostgreSQL                     | dump lógico, manifesto SHA-256, restauração completa em banco isolado, rejeição de adulteração e limpeza dos recursos temporários                                                                                |
 | Dependency Review       | Toda Pull Request                                                         | bloqueio de novas dependências com vulnerabilidade alta ou crítica                                                                                                                                               |
@@ -36,8 +36,11 @@ job de publicação, restrito a push de tag semântica, acrescenta `packages: wr
 também recebe `artifact-metadata: write`, necessário para a action oficial
 registrar onde o artefato atestado está armazenado. O token OIDC é efêmero e
 usado para assinar a atestação; Pull Requests não recebem essas permissões.
-Todos os workflows cancelam execuções obsoletas da mesma referência e possuem
-timeout.
+Os workflows de validação usam grupos de concorrência para cancelar execuções
+obsoletas da mesma referência. Isso não é uma regra de todos os workflows:
+`release-lifecycle.yml` e `cleanup-closed-pr-cache.yml` usam
+`cancel-in-progress: false`. Os limites de execução seguem a configuração de
+cada job; não altere concorrência para produzir um histórico artificialmente verde.
 
 O `global.json` seleciona a Microsoft Testing Platform (MTP) como runner nativo
 do SDK .NET 10. Os projetos xUnit v3 produzem executáveis de teste e registram as
@@ -90,6 +93,45 @@ Atualizações major do toolchain frontend são deliberadas: propostas para Node
 
 Readiness retorna `503 Service Unavailable` quando o banco não pode ser acessado. A resposta expõe apenas `Healthy` ou `Unhealthy` e timestamp; exceções e detalhes da conexão não são retornados.
 
+## Como interpretar execuções e cancelamentos
+
+Um commit não é apagado quando sua execução é cancelada. Código e execução da
+CI são objetos diferentes. Nos workflows de frontend, backend e containers,
+`cancel-in-progress: true` permite que uma revisão nova substitua a execução
+antiga da mesma branch/grupo. Isso evita continuar gastando recursos em uma
+revisão que já deixou de ser a referência corrente.
+
+| Situação                                | Interpretação e ação                                                                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Sucesso                                 | As verificações daquela execução e fonte passaram; não é garantia absoluta de segurança.                                             |
+| Falha                                   | Identificar a causa e corrigir ou justificar tecnicamente; não repetir até obter verde sem entender a falha.                         |
+| Cancelada em commit anterior            | Conferir se uma revisão nova substituiu a execução. Não é aprovação nem exige reexecutar todo o histórico.                           |
+| Cancelada na fonte atual sem substituta | A verificação não terminou. Resolver o motivo e reexecutar o workflow aplicável antes de considerá-lo aprovado.                      |
+| Em fila/em execução                     | Resultado ainda pendente. Não antecipar verde.                                                                                       |
+| Workflow não disparado                  | Conferir filtros `paths` e eventos. Um merge só de frontend pode não disparar CI Backend; isso não é execução cancelada ou aprovada. |
+| Job pulado                              | Conferir a condição. Publicação de imagem é restrita a tags, por exemplo; não significa que uma imagem foi publicada.                |
+
+A leitura correta é por workflow e SHA, não pela cor geral de todos os commits.
+Olhe o commit mais recente que alterou a área e os checks exigidos no PR/fonte
+revisada. Um workflow filtrado por caminho pode ter a evidência pertinente no
+último commit que alterou esse caminho, e não em cada merge posterior. Não use o
+resultado de uma fonte diferente como aprovação automática da revisão atual.
+
+Para uma consulta pontual, sem acompanhar logs continuamente:
+
+```shell
+gh run list --branch main --limit 20
+gh run view NUMERO_DA_EXECUCAO
+```
+
+Cancelar validações obsoletas não cancela regras de proteção da branch. Não
+habilite bypass nem diminua testes, thresholds ou scanners para resolver uma
+pendência. Releases e implantações precisam de fonte/imagens/configuração
+identificadas, checks aplicáveis e rollback; sucesso da CI não instala a VM.
+
+O [registro de 13/11/2026](../validation/dashboard-and-ci-2026-11-13.md)
+mostra a distinção entre merges, testes de dashboard, relatório ZAP e hospedagem.
+
 ## Smoke test integrado do Compose
 
 O job `Run integrated Compose smoke test` valida uma propriedade diferente dos
@@ -138,7 +180,8 @@ regra é aplicada aos builds candidatos a release.
 
 Quando uma correção Ubuntu já está publicada, mas a tag oficial do runtime .NET
 ainda não foi reconstruída, o Dockerfile do backend atualiza somente os pacotes
-OpenSSL presentes na imagem final e remove os metadados do APT. Esse mecanismo
+APT/libapt e OpenSSL selecionados, exige as versões mínimas de APT/libapt
+versionadas e remove os metadados do gerenciador de pacotes. Esse mecanismo
 não substitui a atualização da imagem-base: o `pull` permanece obrigatório e o
 Trivy continua bloqueando vulnerabilidades altas corrigíveis.
 
