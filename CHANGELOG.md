@@ -40,6 +40,9 @@ See the [release policy](docs/operations/release-cadence.md).
   responses and expiry states; scheduling, renewal and alert delivery remain
   operational work (#556).
 
+- Audited access correction requests with immutable snapshots, scoped queries,
+  independent decisions and transactional approval/audit (#451).
+
 ### Changed
 
 - Increase spacing between sign-in guidance and administrative access while
@@ -50,6 +53,9 @@ See the [release policy](docs/operations/release-cadence.md).
   administrative action without changing authentication behavior.
 
 ### Fixed
+
+- Preserve the original exit author after descriptive corrections, using
+  unambiguous closure audit evidence for legacy attribution (#609).
 
 - Require one-time credential recovery for suspended Local accounts while
   preserving method-aware Google reactivation and transactional auditing (#663).
