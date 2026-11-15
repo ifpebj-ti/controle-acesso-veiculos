@@ -119,6 +119,11 @@ class QualityGateTests(unittest.TestCase):
         self.assertEqual(gate.assess([], [], [dict(check, conclusion="failure")], HEAD, BASE, 12, True),
                          ([], ["CodeQL"]))
 
+    def test_codeql_neutral_during_configuration_upload_remains_pending(self):
+        check = {"id": 2, "name": "CodeQL", "head_sha": HEAD, "app": {"slug": "github-advanced-security"},
+                 "status": "completed", "conclusion": "neutral"}
+        self.assertEqual(gate.assess([], [], [check], HEAD, BASE, 12, True), (["CodeQL"], []))
+
     def test_api_pagination_collects_all_bounded_results(self):
         with mock.patch.object(gate, "api_get", side_effect=[{"rows": [1] * 100}, {"rows": [2]}]):
             self.assertEqual(len(gate.paginated("owner/repo", "runs", "rows", "fixture-token")), 101)

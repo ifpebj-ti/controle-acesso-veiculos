@@ -117,7 +117,8 @@ def assess(required, runs, checks, head, base, number, codeql):
             and check.get("app", {}).get("slug") == "github-advanced-security"
         ]
         latest = max(candidates, key=lambda check: check["id"], default=None)
-        if latest is None or latest.get("status") != "completed":
+        if (latest is None or latest.get("status") != "completed"
+                or latest.get("conclusion") == "neutral"):
             pending.append("CodeQL")
         elif latest.get("conclusion") != "success":
             failures.append("CodeQL")
