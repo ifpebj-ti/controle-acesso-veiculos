@@ -1,3 +1,4 @@
+import { getAccessCategoryLabel } from "../../access-records/model/accessCategories";
 import type { ReactNode } from "react";
 
 import { StatusBadge } from "../../../components/ui/StatusBadge";
@@ -47,7 +48,8 @@ export function MovementReportResults({
                   <strong>Condutor:</strong> {item.driverName}
                 </p>
                 <p>
-                  <strong>Categoria:</strong> {item.categoryName}
+                  <strong>Categoria:</strong>{" "}
+                  {getAccessCategoryLabel(item.categoryName)}
                 </p>
                 <p>
                   <strong>Tipo de veículo:</strong>{" "}
@@ -132,7 +134,9 @@ export function MovementReportResults({
                 </ReportCell>
                 <ReportCell>{item.driverName}</ReportCell>
                 <ReportCell>
-                  <strong className="block">{item.categoryName}</strong>
+                  <strong className="block">
+                    {getAccessCategoryLabel(item.categoryName)}
+                  </strong>
                   <span className="mt-1 block">{item.objective}</span>
                   {item.eventName && (
                     <span className="mt-1 block text-text-muted">

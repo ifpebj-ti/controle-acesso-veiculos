@@ -1,7 +1,5 @@
 import { AccountReactivationFlow } from "../features/user-accounts/reactivation/AccountReactivationFlow";
 import { readReactivationAccount } from "../features/user-accounts/reactivation/readReactivationAccount";
-import { useState } from "react";
-
 import { AccessDeniedState } from "../components/ui/AccessDeniedState";
 import { ActionFeedback } from "../components/ui/ActionFeedback";
 import { Button } from "../components/ui/Button";
@@ -10,7 +8,6 @@ import { Icon } from "../components/ui/Icon";
 import { MetricCard, type MetricCardTone } from "../components/ui/MetricCard";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeader } from "../components/ui/SectionHeader";
-import { AuditTrailPanel } from "../features/audit-trail";
 import {
   profileLabels,
   useAuthenticatedSession,
@@ -44,9 +41,6 @@ export function AdminPage() {
 }
 
 function AdministratorPage({ currentUserId }: { currentUserId: number }) {
-  const [activeArea, setActiveArea] = useState<"accounts" | "audit">(
-    "accounts",
-  );
   const accounts = useUserAccounts();
 
   if (accounts.status === "denied") {
@@ -64,42 +58,22 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
     <div>
       <PageHeader
         action={
-          activeArea === "accounts" ? (
-            <Button
-              disabled={
-                accounts.pendingAction !== null || accounts.status !== "ready"
-              }
-              onClick={(event) => accounts.openForm(event.currentTarget)}
-            >
-              <Icon name="plus" size={18} /> Nova conta
-            </Button>
-          ) : undefined
+          <Button
+            disabled={
+              accounts.pendingAction !== null || accounts.status !== "ready"
+            }
+            onClick={(event) => accounts.openForm(event.currentTarget)}
+          >
+            <Icon name="plus" size={18} /> Nova conta
+          </Button>
         }
-        description="Gerencie contas individuais e consulte a autoria histórica das ações protegidas do sistema."
+        description="Gerencie contas individuais, perfis e credenciais de acesso ao sistema."
         eyebrow="Administração integrada"
         title="Usuários e permissões"
         variant="prominent"
       />
 
-      <nav
-        aria-label="Áreas administrativas"
-        className="admin-area-tabs mt-6 flex flex-wrap gap-1 rounded-xl border border-border bg-surface p-1"
-      >
-        <AreaButton
-          active={activeArea === "accounts"}
-          icon="users"
-          label="Contas de acesso"
-          onClick={() => setActiveArea("accounts")}
-        />
-        <AreaButton
-          active={activeArea === "audit"}
-          icon="history"
-          label="Trilha de auditoria"
-          onClick={() => setActiveArea("audit")}
-        />
-      </nav>
-
-      {activeArea === "accounts" && accounts.notice && (
+      {accounts.notice && (
         <ActionFeedback
           className="mt-6"
           floating
@@ -110,28 +84,26 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
         />
       )}
 
-      {activeArea === "accounts" &&
-        accounts.errorMessage &&
-        accounts.status !== "loading" && (
-          <ContentState
-            action={
-              accounts.status === "error" ? (
-                <button
-                  className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
-                  onClick={accounts.retry}
-                  type="button"
-                >
-                  Tentar novamente
-                </button>
-              ) : undefined
-            }
-            className="mt-6"
-            title={accounts.errorMessage}
-            variant="error"
-          />
-        )}
+      {accounts.errorMessage && accounts.status !== "loading" && (
+        <ContentState
+          action={
+            accounts.status === "error" ? (
+              <button
+                className="min-h-10 rounded-xl border border-red-300 px-4 font-bold focus:outline-none focus-visible:ring-3 focus-visible:ring-red-700/30"
+                onClick={accounts.retry}
+                type="button"
+              >
+                Tentar novamente
+              </button>
+            ) : undefined
+          }
+          className="mt-6"
+          title={accounts.errorMessage}
+          variant="error"
+        />
+      )}
 
-      {activeArea === "accounts" && accounts.formOpen && (
+      {accounts.formOpen && (
         <UserAccountForm
           busy={accounts.pendingAction !== null}
           formError={accounts.formError}
@@ -142,56 +114,50 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
         />
       )}
 
-      {activeArea === "accounts" ? (
-        <>
-          <UserAccountSummary page={accounts.page} status={accounts.status} />
-          <UserAccountFiltersForm
-            disabled={
-              accounts.pendingAction !== null || accounts.status === "loading"
-            }
-            draft={accounts.draft}
-            error={accounts.filterError}
-            onApply={accounts.applyFilters}
-            onChange={accounts.setDraft}
-            onClear={accounts.clearFilters}
-          />
-          {accounts.reactivation.warning && (
-            <ActionFeedback
-              className="mt-4"
-              focusOnChange
-              tone="error"
-              message={accounts.reactivation.warning}
-            />
-          )}
-          <section
-            data-account-catalog-focus
-            tabIndex={-1}
-            aria-label="Contas do sistema"
-            className="institutional-catalog mt-4 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_24px_rgba(1,36,40,0.035)]"
-          >
-            <SectionHeader
-              className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6 sm:pt-6"
-              description="Pesquise por nome ou e-mail. Desativar revoga o acesso na próxima requisição protegida, mas preserva registros e autoria."
-              eyebrow="Administração de acessos"
-              title="Contas do sistema"
-            />
-            <UserAccountCatalog
-              onChangeProfile={accounts.profileChange.open}
-              currentUserId={currentUserId}
-              onPageChange={accounts.goToPage}
-              onResetCredential={accounts.openCredentialReset}
-              onToggle={(account, trigger) =>
-                void accounts.changeAccountState(account, trigger)
-              }
-              page={accounts.page}
-              pendingAction={accounts.pendingAction}
-              status={accounts.status}
-            />
-          </section>
-        </>
-      ) : (
-        <AuditTrailPanel enabled />
+      <UserAccountSummary page={accounts.page} status={accounts.status} />
+      <UserAccountFiltersForm
+        disabled={
+          accounts.pendingAction !== null || accounts.status === "loading"
+        }
+        draft={accounts.draft}
+        error={accounts.filterError}
+        onApply={accounts.applyFilters}
+        onChange={accounts.setDraft}
+        onClear={accounts.clearFilters}
+      />
+      {accounts.reactivation.warning && (
+        <ActionFeedback
+          className="mt-4"
+          focusOnChange
+          tone="error"
+          message={accounts.reactivation.warning}
+        />
       )}
+      <section
+        data-account-catalog-focus
+        tabIndex={-1}
+        aria-label="Contas do sistema"
+        className="institutional-catalog mt-4 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_24px_rgba(1,36,40,0.035)]"
+      >
+        <SectionHeader
+          className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6 sm:pt-6"
+          description="Pesquise por nome ou e-mail. Desativar revoga o acesso na próxima requisição protegida, mas preserva registros e autoria."
+          eyebrow="Administração de acessos"
+          title="Contas do sistema"
+        />
+        <UserAccountCatalog
+          onChangeProfile={accounts.profileChange.open}
+          currentUserId={currentUserId}
+          onPageChange={accounts.goToPage}
+          onResetCredential={accounts.openCredentialReset}
+          onToggle={(account, trigger) =>
+            void accounts.changeAccountState(account, trigger)
+          }
+          page={accounts.page}
+          pendingAction={accounts.pendingAction}
+          status={accounts.status}
+        />
+      </section>
 
       <aside className="admin-guidance mt-6 rounded-2xl border border-warning-border bg-warning-surface p-5 text-sm leading-6 text-ink-soft sm:p-6">
         <h2 className="font-display text-xl text-ink">Orientação importante</h2>
@@ -245,34 +211,6 @@ function AdministratorPage({ currentUserId }: { currentUserId: number }) {
         />
       )}
     </div>
-  );
-}
-
-function AreaButton({
-  active,
-  icon,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  icon: "history" | "users";
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      aria-current={active ? "page" : undefined}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-5 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-brand/30 ${
-        active
-          ? "bg-primary text-primary-text shadow-sm"
-          : "text-primary hover:bg-primary/5"
-      }`}
-      onClick={onClick}
-      type="button"
-    >
-      <Icon name={icon} size={17} />
-      {label}
-    </button>
   );
 }
 
