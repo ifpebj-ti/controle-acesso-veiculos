@@ -60,6 +60,13 @@ homologação em tablet físico.
 
 ## Estado atual
 
+A reativação segura #669 está montada na página de contas com o contrato
+Local/Google do #530 incorporado. A API #668 permanece candidata e exige
+composição identificada para validação autenticada; não é considerada hospedada.
+Contrato, tratamento de
+resultado incerto e critérios pendentes estão em
+[`docs/account-reactivation.md`](docs/account-reactivation.md).
+
 O histórico oferece as nove categorias existentes na mesma faixa horizontal,
 com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
 O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
