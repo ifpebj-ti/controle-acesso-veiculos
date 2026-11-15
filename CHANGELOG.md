@@ -14,6 +14,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- A read-only PR quality gate that verifies the applicable existing workflows
+  and CodeQL result for the reviewed source, rejecting failed, cancelled or
+  missing validations. Branch-protection activation is tracked in #661.
+
 - Frontend support for Aluno, Terceirizado and Federal across access forms,
   history categories/counts, open accesses, summaries and reports, displaying
   Federal as Servidor federal while preserving canonical keys, partial filters,
