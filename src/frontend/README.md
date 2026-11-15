@@ -120,6 +120,10 @@ No logout explícito, a navegação de entrada é substituída sem intenção de
 Login local, restauração e callback Google conferem o destino pela matriz de
 rotas e pelo perfil recebido da API: páginas incompatíveis, desconhecidas ou
 externas levam à Visão geral. A troca obrigatória de senha tem prioridade.
+Na branch da #715, sem essa exigência da API, uma intenção antiga de retornar
+a /conta/senha é descartada no novo login em favor da Visão geral. O Administrador
+continua podendo abrir Alterar senha explicitamente pelo menu. O ajuste é um
+candidato; não comprova implantação na URL pública.
 Isso não persiste uma última página por pessoa nem substitui a autorização
 do servidor.
 O fluxo geral de veículos também consome a API para registrar
@@ -683,6 +687,15 @@ src/
 - suporte à renovação transparente em navegadores sem Web Locks API;
 - garantia de autorização baseada somente na interface;
 - homologação do cliente ou prontidão para produção.
+
+## Cabeçalho do primeiro acesso — candidato #714
+
+Na branch da #714, a troca obrigatória de senha mantém logo e saída em um
+cabeçalho compacto. O botão Aparência abre o seletor existente no fluxo da página;
+Escape fecha esse painel e devolve o foco ao botão. O atalho flutuante é o único
+controle de tela cheia nesse layout. O formulário e o foco inicial no título
+permanecem inalterados. Trata-se de candidato local; sua existência não comprova
+incorporação, implantação ou homologação autenticada.
 
 ## Validação
 

@@ -79,6 +79,8 @@ public sealed class UserAccountLifecycleService(
         {
             UserAccountStoreStateStatus.Success => ChangeUserAccountStateStatus.Success,
             UserAccountStoreStateStatus.NotFound => ChangeUserAccountStateStatus.NotFound,
+            UserAccountStoreStateStatus.CredentialResetRequired =>
+                ChangeUserAccountStateStatus.CredentialResetRequired,
             UserAccountStoreStateStatus.LastAdministrator =>
                 ChangeUserAccountStateStatus.LastAdministrator,
             _ => ChangeUserAccountStateStatus.Conflict

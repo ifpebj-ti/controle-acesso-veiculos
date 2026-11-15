@@ -2302,16 +2302,18 @@ body:has(.login-page),
   flex-direction: column;
   align-items: flex-start;
   padding-top: 3.125rem;
+  /* Move flexible space below the caption without shifting the other controls. */
+  padding-bottom: 2.125rem;
 }
 
 .login-provider-options .login-google-action {
   flex-shrink: 0;
-  margin-block: auto;
+  margin-block: auto 0;
 }
 
 .login-provider-options .login-google-action + p {
-  margin-top: 1.25rem;
-  margin-bottom: 1.875rem;
+  margin-top: 1rem;
+  margin-bottom: auto;
 }
 
 .login-administrative-entry {

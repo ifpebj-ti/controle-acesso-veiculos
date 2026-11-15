@@ -47,25 +47,33 @@ cancelas e fluxo de pedestres não pertencem ao MVP atual.
 O estado confirmado, as hipóteses e as pendências estão na página
 [Status do Projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Status-do-Projeto).
 
-## Incrementos incorporados em 12/11/2026
+## Estado em 15/11/2026
 
-A main `8b61ccd` incorpora o catálogo de doze categorias, o pré-cadastro de
-condutores vinculados e as sugestões de retorno diário. Transporte e Administrador
-podem manter esses cadastros. O nascimento conferido fica restrito à verificação
-de maioridade do condutor. A portaria confirma a pessoa e o objetivo antes de
-registrar a nova entrada.
+A main `8e223d3` incorpora as categorias Aluno, Terceirizado e Federal, exibida
+como Servidor federal (#702), o cabeçalho da troca obrigatória (#716), o retorno
+após troca de senha (#717) e o espaçamento da orientação Google (#719).
+Pré-cadastro e sugestões (#704), navegação do Transporte (#705) e reativação
+pela interface (#672) continuam em revisão.
 
-Os contratos estão no [guia de pré-cadastro](docs/development/campus-driver-registry-contract.md)
+A homologação utiliza o frontend candidato `67ad6b8`, que compõe esses PRs,
+e o backend `f7ee701`, com 22 migrations. Passaram 966 testes frontend e nove
+verificações autenticadas HTTPS de contratos após a promoção. As tarefas humanas
+pendentes estão nos respectivos PRs. Consulte o
+[registro de continuidade](docs/validation/continuity-2026-11-15.md).
+
+Os contratos de categorias, pré-cadastro e permissões estão no
+[guia de pré-cadastro](docs/development/campus-driver-registry-contract.md)
 e na [matriz de permissões](docs/architecture/transport-authorization-matrix.md).
-As interfaces correspondentes estão em revisão nos PRs #702/#704/#705. A promoção
-à homologação será acompanhada pela #686.
+Transporte e Administrador podem manter o pré-cadastro. O nascimento conferido
+é usado na verificação de maioridade. A portaria confirma pessoa e objetivo
+antes da nova entrada.
 
 A CI publica o resumo de [cobertura backend](docs/development/backend-coverage-gate.md)
-e aplica piso de 70%. A execução 43343801016, na main `8b61ccd`, mediu 93,50% das
-linhas do backend, com migrations geradas excluídas. A automação de
-[releases revisáveis](docs/operations/release-automation.md) prepara changelog,
-tag e publicação após os gates das imagens. A primeira publicação desse fluxo
-continua em acompanhamento na #686.
+e aplica piso de 70%. A execução 43343801016, na main `8b61ccd`, mediu 93,50%
+das linhas, com migrations geradas excluídas. Cada candidato posterior mantém
+sua medição própria. O [ciclo de releases](docs/operations/release-automation.md)
+prepara changelog, tag e publicação após os gates das imagens. A release publicada
+é `v0.4.0`. A preparação de `0.5.0` está nas #713/#686 e inclui a conclusão do #672.
 
 ## Arquitetura
 
