@@ -342,19 +342,31 @@ public sealed class AccessCorrectionReviewTests(ApiFactory factory) : IAsyncLife
     {
         var token = TestContext.Current.CancellationToken;
         var profile = new Perfil("Legacy review fixture", "Fictitious migration fixture.");
-        var person = new Pessoa("Fictitious legacy operator");
-        var editorPerson = new Pessoa("Fictitious legacy editor");
         var category = new CategoriaAcesso("Legacy review fixture", "Fictitious migration fixture.");
         var vehicle = new Veiculo("ABC1D23", "Automóvel", null, false);
-        db.AddRange(profile, person, editorPerson, category, vehicle);
+        db.AddRange(profile, category, vehicle);
         await db.SaveChangesAsync(token);
-        var exitActor = new Usuario("legacy-exit@example.test", "migration-fixture-not-a-login-hash", person.Id, profile.Id);
-        var editor = new Usuario("legacy-editor@example.test", "migration-fixture-not-a-login-hash", editorPerson.Id, profile.Id);
+        await using var connection = new NpgsqlConnection(db.Database.GetConnectionString());
+        await connection.OpenAsync(token);
+
+        // Seed the historical schema using only columns available before the tested upgrade.
+        async Task<int> InsertLegacyPersonAsync(string name)
+        {
+            await using var command = new NpgsqlCommand("""
+                INSERT INTO dbo.pessoas (nome, ativo, data_criacao)
+                VALUES (@name, true, CURRENT_TIMESTAMP) RETURNING id;
+                """, connection);
+            command.Parameters.AddWithValue("name", name);
+            return (int)(await command.ExecuteScalarAsync(token))!;
+        }
+
+        var personId = await InsertLegacyPersonAsync("Fictitious legacy operator");
+        var editorPersonId = await InsertLegacyPersonAsync("Fictitious legacy editor");
+        var exitActor = new Usuario("legacy-exit@example.test", "migration-fixture-not-a-login-hash", personId, profile.Id);
+        var editor = new Usuario("legacy-editor@example.test", "migration-fixture-not-a-login-hash", editorPersonId, profile.Id);
         db.AddRange(exitActor, editor);
         await db.SaveChangesAsync(token);
         var ids = new List<int>();
-        await using var connection = new NpgsqlConnection(db.Database.GetConnectionString());
-        await connection.OpenAsync(token);
         for (var index = 0; index < 4; index++)
         {
             await using var command = new NpgsqlCommand("""
@@ -368,7 +380,7 @@ public sealed class AccessCorrectionReviewTests(ApiFactory factory) : IAsyncLife
                 RETURNING id;
                 """, connection);
             command.Parameters.AddWithValue("vehicle", vehicle.Id);
-            command.Parameters.AddWithValue("person", person.Id);
+            command.Parameters.AddWithValue("person", personId);
             command.Parameters.AddWithValue("category", category.Id);
             command.Parameters.AddWithValue("actor", exitActor.Id);
             command.Parameters.AddWithValue("editor", editor.Id);
