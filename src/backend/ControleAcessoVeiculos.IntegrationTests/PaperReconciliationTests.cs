@@ -11,6 +11,7 @@ using ControleAcessoVeiculos.Domain.Enums;
 using ControleAcessoVeiculos.Infrastructure.AccessRecords;
 using ControleAcessoVeiculos.Infrastructure.Contingency;
 using ControleAcessoVeiculos.Infrastructure.Data;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -380,6 +381,58 @@ public sealed class PaperReconciliationTests(ApiFactory factory)
         }
         Assert.Equal(StatusConferenciaContingencia.Pendente, (await db.ReconciliacoesContingencia.SingleAsync(x => x.RegistroAcessoId == receipt.AccessRecordId, Ct)).Status);
     }
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task DescriptiveApprovalPreservesPaperProvenanceAndExitAttribution(bool closedOnPaper, bool acceptPaper)
+    {
+        using var application = factory.WithWebHostBuilder(builder =>
+            builder.UseSetting("AccessCorrections:RequireApproval", "true"));
+        using var manager = application.CreateClient();
+        await LoginAsync(manager, ProfileNames.TransportationDepartment);
+        var incident = await IncidentAsync(manager);
+        using var importer = application.CreateClient();
+        var importerId = await LoginAsync(importer, ProfileNames.Doorman);
+        var input = Request(incident.IncidentId, closedOnPaper);
+        var receipt = await ImportAsync(importer, input);
+        using var exitOperator = application.CreateClient();
+        var exitOperatorId = await LoginAsync(exitOperator, ProfileNames.SecurityGuard);
+        if (!closedOnPaper)
+            Assert.Equal(HttpStatusCode.OK, (await exitOperator.PostAsync(
+                $"/access-records/{receipt.AccessRecordId}/exit", null, Ct)).StatusCode);
+
+        var original = new AccessCorrectionValues("Visitante", input.Entry.Objective, null);
+        var proposed = original with { Objective = "Objetivo conferido após transcrição fictícia." };
+        var submission = await importer.PostAsJsonAsync(
+            $"/access-records/{receipt.AccessRecordId}/correction-requests",
+            new SubmitAccessCorrectionCommand(Guid.NewGuid(), original, proposed, Reason), Ct);
+        Assert.Equal(HttpStatusCode.Created, submission.StatusCode);
+        var correction = (await submission.Content.ReadFromJsonAsync<AccessCorrectionRecord>(Ct))!;
+        Assert.Equal(HttpStatusCode.OK, (await manager.PostAsJsonAsync(
+            $"/paper-reconciliation/imports/{receipt.AccessRecordId}/review",
+            new { accept = acceptPaper, reason = Reason }, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await manager.PostAsJsonAsync(
+            $"/access-correction-requests/{correction.Id}/decision",
+            new { decision = "Approve", justification = Reason }, Ct)).StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var access = await db.RegistrosAcesso.AsNoTracking().SingleAsync(x => x.Id == receipt.AccessRecordId, Ct);
+        var provenance = await db.ReconciliacoesContingencia.AsNoTracking().SingleAsync(
+            x => x.RegistroAcessoId == receipt.AccessRecordId, Ct);
+        Assert.Equal(proposed.Objective, access.Objetivo);
+        Assert.Equal(closedOnPaper ? importerId : exitOperatorId, access.EncerradoPorId);
+        Assert.Equal(importerId, provenance.DigitadoPorId);
+        Assert.Equal(input.PaperAuthorReference, provenance.ReferenciaAutorPapel);
+        Assert.Equal(provenance.EntradaObservadaUtc, access.DataHoraEntrada);
+        Assert.Equal(acceptPaper ? StatusConferenciaContingencia.Conferida : StatusConferenciaContingencia.Recusada,
+            provenance.Status);
+        Assert.Equal(correction.Original, original);
+        Assert.Equal(1, await db.SolicitacoesCorrecaoAcesso.CountAsync(
+            x => x.RegistroAcessoId == receipt.AccessRecordId, Ct));
+        Assert.Equal(receipt.AccessRecordId, (await ImportAsync(importer, input)).AccessRecordId);
+    }
+
     private sealed class RejectPaperAudit(string operation = "paper_imported") : SaveChangesInterceptor
     {
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData data,
