@@ -8,12 +8,16 @@ from its first published release.
 
 ## [Unreleased]
 
-This section lists incorporated changes since v0.4.0, not a published release
-or proof of deployment. Frontend candidates still in open PRs are excluded.
+This section records increments since v0.4.0. Entries introduced by open PRs
+remain proposed until incorporation, not a published release or proof of deployment.
 See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Frontend support for Aluno, Terceirizado and Federal across access forms,
+  history categories/counts, open accesses, summaries and reports, displaying
+  Federal as Servidor federal while preserving canonical keys, partial filters,
+  bounded counting concurrency and unavailable-count states (#702, Refs #688).
 - Register verified adult campus drivers and private vehicles, with audited
   management, transactional persistence and operator-scoped same-day entry
   suggestions (#690, Refs #689).
