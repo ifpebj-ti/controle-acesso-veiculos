@@ -51,6 +51,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Keep frontend API-root redirects relative, emit one DENY frame policy and
+  revalidate SPA HTML while caching hashed bundles immutably. Missing static
+  resources return 404; integrated smoke verifies these responses (#723).
+
 - Require one-time credential recovery for suspended Local accounts while
   preserving method-aware Google reactivation and transactional auditing (#663).
 - Restore Google sign-in after a cached browser-history return, rechecking
