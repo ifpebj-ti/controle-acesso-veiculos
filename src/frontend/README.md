@@ -60,11 +60,24 @@ homologação em tablet físico.
 
 ## Estado atual
 
-O histórico oferece as nove categorias existentes na mesma faixa horizontal,
+A reativação segura #669 está montada na página de contas com o contrato
+Local/Google do #530 incorporado. A API #668 também foi incorporada; as
+evidências de validação autenticada continuam vinculadas à composição testada.
+Contrato, tratamento de
+resultado incerto e critérios pendentes estão em
+[`docs/account-reactivation.md`](docs/account-reactivation.md).
+
+O candidato da #688 acrescenta Aluno, Terceirizado e Federal às nove categorias
+anteriores. A main `8b61ccd` já incorpora o suporte backend #696; isso não
+comprova a implantação. Federal aparece como Servidor federal, mantendo a chave
+canônica. Detalhes e limites de integração estão em
+[`docs/access-categories.md`](docs/access-categories.md).
+O histórico oferece as doze opções na mesma faixa horizontal,
 com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
 O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
 do total validado da consulta de histórico; falhas mostram indisponibilidade,
-sem inventar zero. O contrato atual exige nove leituras de contagem, em lotes
+sem inventar zero. O contrato atual exige uma leitura de contagem por categoria
+(doze neste candidato), em lotes
 de até três, além da consulta de resultados. Trocar somente a categoria ou a
 página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
 correção salva atualizam as contagens, mesmo sem mudar o período, a placa,
@@ -85,6 +98,12 @@ A versão atual consulta `GET /auth/providers` sem usar uma variável de build
 como fonte de verdade. Com `googleEnabled: false`, “Continuar com Google”
 permanece visível, desabilitado e acompanhado da mensagem de indisponibilidade;
 isso não habilita autenticação nem depende de haver contas autorizadas.
+Ao voltar pelo histórico com a página preservada pelo navegador (BFCache),
+o estado transitório de saída para o Google é encerrado e os provedores são
+consultados novamente. O sistema aguarda nova ação explícita; foco ou troca de
+aba não liberam outra tentativa durante a navegação. O retorno sem cache usa
+uma nova página com o estado inicial. Nenhum timer ou armazenamento de token
+é usado para destravar o botão, e a restauração do callback continua separada.
 O botão usa o “G” colorido oficial, servido localmente em
 `public/brand/google-g.png`, com proporção preservada, fundo branco próprio e
 imagem decorativa; o texto continua como nome acessível. Fonte do arquivo:
@@ -101,6 +120,16 @@ rota, e posiciona o foco no e-mail. “Voltar” desmonta o formulário, apaga a
 e devolve o foco à ação que o abriu. Contas Google podem ser pessoais ou
 institucionais, desde que estejam ativas e previamente autorizadas pelo
 Administrador; identidade Google não concede acesso nem perfil.
+No logout explícito, a navegação de entrada é substituída sem intenção de retorno.
+Login local, restauração e callback Google conferem o destino pela matriz de
+rotas e pelo perfil recebido da API: páginas incompatíveis, desconhecidas ou
+externas levam à Visão geral. A troca obrigatória de senha tem prioridade.
+Na branch da #715, sem essa exigência da API, uma intenção antiga de retornar
+a /conta/senha é descartada no novo login em favor da Visão geral. O Administrador
+continua podendo abrir Alterar senha explicitamente pelo menu. O ajuste é um
+candidato; não comprova implantação na URL pública.
+Isso não persiste uma última página por pessoa nem substitui a autorização
+do servidor.
 O fluxo geral de veículos também consome a API para registrar
 entrada, listar acessos em aberto, registrar saída e consultar o histórico. O
 catálogo de frota também lista, cria, edita e desativa veículos institucionais;
@@ -465,6 +494,26 @@ creme do sistema. Em superfícies coloridas, o componente deve usar a combinaç�
 com contraste medido, sem substituir as cores semânticas próprias de erro,
 sucesso, aviso ou indisponibilidade.
 
+## Apresentação da ação de login
+
+O botão Google usa até 18 rem, limitado à largura disponível, com alvo de toque
+preservado. Seu contorno verde-sálvia tem afastamento de 4 px; o foco do teclado
+continua usando o indicador semântico próprio, e o estado desabilitado mantém a
+aparência de indisponibilidade. A posição da marca, a largura do painel e a
+tipografia anteriores são preservadas, conforme a revisão visual da solicitante.
+
+A introdução inicial usa “Entre para acompanhar os acessos ao campus.”. A lista
+redundante dos perfis foi retirada; a orientação sobre a conta pessoal ou
+institucional previamente autorizada permanece. O grupo Google usa espaço flexível
+para separar introdução e ação, com a orientação próxima do botão. O acesso
+administrativo fica acima da orientação inferior de segurança, com rótulo e link
+alinhados. Textos de sessão, erro, loading e descoberta continuam presentes.
+
+Foto, curvas, temas, foco, alvos de toque e rolagem natural são mantidos. A mudança
+é de apresentação e texto; não altera descoberta de provedores, HTTP, callback,
+sessão, armazenamento, acesso administrativo ou autorização. Esta branch continua
+empilhada sobre a #494; correções #592/#567 devem ser compostas explicitamente.
+
 ## Classificação de falhas — Issue #603
 
 `describeApiError` diferencia erros de resposta/execução de falhas reais de
@@ -639,6 +688,15 @@ src/
 - suporte à renovação transparente em navegadores sem Web Locks API;
 - garantia de autorização baseada somente na interface;
 - homologação do cliente ou prontidão para produção.
+
+## Cabeçalho do primeiro acesso — candidato #714
+
+Na branch da #714, a troca obrigatória de senha mantém logo e saída em um
+cabeçalho compacto. O botão Aparência abre o seletor existente no fluxo da página;
+Escape fecha esse painel e devolve o foco ao botão. O atalho flutuante é o único
+controle de tela cheia nesse layout. O formulário e o foco inicial no título
+permanecem inalterados. Trata-se de candidato local; sua existência não comprova
+incorporação, implantação ou homologação autenticada.
 
 ## Validação
 

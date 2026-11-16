@@ -1,3 +1,4 @@
+import { generalAccessCategoryOptions } from "../features/access-records/model/accessCategories";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -445,10 +446,7 @@ export function NewAccessPage() {
                       name={field.name}
                       onBlur={field.onBlur}
                       onValueChange={field.onChange}
-                      options={generalAccessCategories.map((option) => ({
-                        label: option,
-                        value: option,
-                      }))}
+                      options={generalAccessCategoryOptions}
                       required
                       value={field.value}
                     />

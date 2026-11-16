@@ -51,7 +51,7 @@ function SidebarContent({
   function handleLogout() {
     void logout();
     closeMenu?.();
-    navigate("/login");
+    navigate("/login", { replace: true, state: null });
   }
 
   return (
@@ -373,40 +373,62 @@ function StandardAppLayout({
   );
 }
 
-function MandatoryPasswordChangeLayout({
-  fullscreen,
-}: {
-  fullscreen: FullscreenController;
-}) {
+function MandatoryPasswordChangeLayout() {
   const { logout, sessionNotice } = useAuthenticatedSession();
   const navigate = useNavigate();
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const appearanceTrigger = useRef<HTMLButtonElement>(null);
+  const appearancePanelId = useId();
 
   function handleLogout() {
     void logout();
-    navigate("/login", { replace: true });
+    navigate("/login", { replace: true, state: null });
   }
 
   return (
     <div className="min-h-svh bg-background text-text">
       <header className="border-b border-border bg-surface px-4 py-4 sm:px-6">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4">
-          <Brand className="min-w-0 max-w-[17rem]" />
-          <div className="flex w-full flex-wrap items-end justify-end gap-3 sm:w-auto sm:flex-nowrap">
-            <AppearanceSelector className="w-full sm:w-72" />
-            <FullscreenControl
-              fullscreen={fullscreen}
-              className="w-full sm:w-auto"
-              showError={false}
-            />
-            <Button
-              className="shrink-0"
-              variant="secondary"
-              onClick={handleLogout}
-              type="button"
-            >
-              <Icon name="log-out" size={19} />
-              Sair
-            </Button>
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Brand className="min-w-0 max-w-[17rem] flex-1 basis-40" />
+            <div className="flex items-center gap-2">
+              <Button
+                aria-controls={appearancePanelId}
+                aria-expanded={appearanceOpen}
+                onClick={() => setAppearanceOpen((open) => !open)}
+                ref={appearanceTrigger}
+                variant="secondary"
+              >
+                Aparência
+                <Icon
+                  className={appearanceOpen ? "rotate-180" : ""}
+                  name="chevron-down"
+                  size={17}
+                />
+              </Button>
+              <Button
+                className="shrink-0"
+                variant="secondary"
+                onClick={handleLogout}
+                type="button"
+              >
+                <Icon name="log-out" size={19} />
+                Sair
+              </Button>
+            </div>
+          </div>
+          <div
+            hidden={!appearanceOpen}
+            id={appearancePanelId}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                setAppearanceOpen(false);
+                appearanceTrigger.current?.focus();
+              }
+            }}
+          >
+            <AppearanceSelector className="ml-auto mt-3 w-full max-w-sm" />
           </div>
         </div>
       </header>
@@ -439,7 +461,7 @@ export function AppLayout() {
   return (
     <>
       {user.requiresPasswordChange ? (
-        <MandatoryPasswordChangeLayout fullscreen={fullscreen} />
+        <MandatoryPasswordChangeLayout />
       ) : (
         <StandardAppLayout fullscreen={fullscreen} />
       )}

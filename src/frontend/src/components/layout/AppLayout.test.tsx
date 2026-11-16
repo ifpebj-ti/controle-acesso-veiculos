@@ -258,6 +258,35 @@ describe("AppLayout", () => {
     await expectNoSeriousAccessibilityViolations(container);
   });
 
+  it("discloses appearance during mandatory change and returns focus with Escape", async () => {
+    const user = userEvent.setup();
+    renderLayout("Porteiro", null, true);
+    const trigger = screen.getByRole("button", {
+      name: "Aparência",
+    });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("button", { name: "Escuro" }),
+    ).not.toBeInTheDocument();
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await user.click(screen.getByRole("button", { name: "Escuro" }));
+    expect(screen.getByRole("button", { name: "Escuro" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.keyboard("{Escape}");
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("button", { name: "Escuro" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("does not repeat development status inside authenticated pages", () => {
     renderLayout();
 

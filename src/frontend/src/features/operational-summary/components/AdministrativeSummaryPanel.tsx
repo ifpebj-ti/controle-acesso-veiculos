@@ -1,3 +1,4 @@
+import { getAccessCategoryLabel } from "../../access-records/model/accessCategories";
 import { Link } from "react-router-dom";
 
 import { Icon, type IconName } from "../../../components/ui/Icon";
@@ -461,7 +462,10 @@ export function AdministrativeSummaryPanel({
           <DistributionChart
             centerLabel="Acessos"
             emptyMessage={`Nenhuma categoria de acesso foi contabilizada em ${formatShortDate(summary.localDate)}.`}
-            values={summary.accessCategories}
+            values={summary.accessCategories.map((item) => ({
+              ...item,
+              label: getAccessCategoryLabel(item.label),
+            }))}
           />
         </SectionPanel>
       </div>

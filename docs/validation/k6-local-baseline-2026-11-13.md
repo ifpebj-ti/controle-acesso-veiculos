@@ -49,7 +49,8 @@ perfis. A CI confere os guardas sem autenticar ou gerar carga.
 
 A próxima etapa é uma janela identificada na OCI, após composição da release e
 observabilidade, com limites de custo, recursos medidos e critérios de parada.
-A #502 continua aberta e o #515 draft. Registros do banco de QA não se misturam
+A #502 continua aberta. A entrega técnica do #515 é acompanhada na #736,
+separada da execução remota. Registros do banco de QA não se misturam
 à homologação; os resumos brutos permanecem fora do Git.
 
 Referências: [thresholds oficiais do k6](https://grafana.com/docs/k6/latest/using-k6/thresholds/)

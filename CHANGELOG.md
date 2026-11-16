@@ -8,12 +8,25 @@ from its first published release.
 
 ## [Unreleased]
 
-This section lists incorporated changes since v0.4.0, not a published release
-or proof of deployment. Frontend candidates still in open PRs are excluded.
+This section records increments since v0.4.0. Entries introduced by open PRs
+remain proposed until incorporation, not a published release or proof of deployment.
 See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Connect secure account reactivation to the validated administrative catalog:
+  Local credential reset, password-free Google reactivation, one-time disclosure,
+  bounded read-only reconciliation, persistent uncertain-write guards and focus/
+  applied-filter preservation. Acceptance evidence remains candidate-specific
+  (#672, Refs #669).
+- A read-only PR quality gate that verifies the applicable existing workflows
+  and CodeQL result for the reviewed source, rejecting failed, cancelled or
+  missing validations. Branch-protection activation is tracked in #661.
+
+- Frontend support for Aluno, Terceirizado and Federal across access forms,
+  history categories/counts, open accesses, summaries and reports, displaying
+  Federal as Servidor federal while preserving canonical keys, partial filters,
+  bounded counting concurrency and unavailable-count states (#702, Refs #688).
 - Register verified adult campus drivers and private vehicles, with audited
   management, transactional persistence and operator-scoped same-day entry
   suggestions (#690, Refs #689).
@@ -32,11 +45,33 @@ See the [release policy](docs/operations/release-cadence.md).
   responses and expiry states; scheduling, renewal and alert delivery remain
   operational work (#556).
 
+### Changed
+
+- Increase spacing between sign-in guidance and administrative access while
+  retaining the established login alignment, typography and panel composition.
+- Cap the Google sign-in action at 18rem within the available width, retaining
+  its touch-target height and consistent enabled/disabled presentation.
+  Add a detached sage contour, shorten introductory copy and align the separate
+  administrative action without changing authentication behavior.
+
 ### Fixed
 
 - Run local k6 baselines with the native executable so loopback reaches the host
   API; validate target URLs before authentication and preserve separate profile
   summaries without changing load thresholds (Refs #502).
+- Keep frontend API-root redirects relative, emit one DENY frame policy and
+  revalidate SPA HTML while caching hashed bundles immutably. Missing static
+  resources return 404; integrated smoke verifies these responses (#723).
+
+- Require one-time credential recovery for suspended Local accounts while
+  preserving method-aware Google reactivation and transactional auditing (#663).
+- Restore Google sign-in after a cached browser-history return, rechecking
+  provider availability before an explicit retry and preventing overlapping
+  departures or callback restoration. Preserve administrative access and focus.
+- Return `Local`/`Google` strings for `authenticationMethod` in administrative
+  account listings, consistently with account creation and profile changes.
+  Preserve pagination and all existing public fields without changing the
+  domain, authentication policy or global JSON converters.
 - Reject invalid session-family identifiers, preserve historical vehicle
   identity, apply literal administrative searches and institutional date
   boundaries, and prevent caching of sensitive API responses
