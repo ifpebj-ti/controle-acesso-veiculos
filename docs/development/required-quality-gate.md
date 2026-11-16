@@ -70,3 +70,23 @@ Referências primárias
 - [Checks obrigatórios e filtros de caminhos](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
 - [Verificação de execuções pela API](https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-repository).
 - [Consulta de check runs](https://docs.github.com/en/rest/checks/runs#list-check-runs-for-a-git-reference).
+
+## PRs empilhados e CodeQL padrão
+
+O repositório usa CodeQL default setup. O GitHub dispara essa análise para PRs
+com destino à branch padrão ou a uma branch protegida. O #705/5cd9f5e tinha
+como base a feature não protegida do #704; os demais checks passaram, mas não
+existia o check CodeQL exigido. A espera terminou sem aprovação. Não era um
+achado de vulnerabilidade nem comprovação de SAST aprovado.
+
+A #734 acrescenta diagnóstico antecipado dessa base, preservando a falha e a
+obrigatoriedade da análise. Bases elegíveis continuam aguardando o resultado
+real do mesmo SHA/aplicativo. Elegibilidade não substitui sucesso do scanner.
+
+Manter o filho bloqueado enquanto aguarda seu pai. Depois de o pai cumprir seus
+critérios e ser incorporado, redirecionar o filho para main, integrar a main por
+merge normal e conferir o novo diff, testes e análise CodeQL. Atualizar somente
+a documentação ou reexecutar o gate antigo não cria a análise ausente. Não
+proteger branches temporárias nem mudar configuração do scanner como atalho.
+
+Referência: [disparos do CodeQL padrão](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types).
