@@ -60,6 +60,13 @@ homologação em tablet físico.
 
 ## Estado atual
 
+A reativação segura #669 está montada na página de contas com o contrato
+Local/Google do #530 incorporado. A API #668 também foi incorporada; as
+evidências de validação autenticada continuam vinculadas à composição testada.
+Contrato, tratamento de
+resultado incerto e critérios pendentes estão em
+[`docs/account-reactivation.md`](docs/account-reactivation.md).
+
 O candidato da #688 acrescenta Aluno, Terceirizado e Federal às nove categorias
 anteriores. A main `8b61ccd` já incorpora o suporte backend #696; isso não
 comprova a implantação. Federal aparece como Servidor federal, mantendo a chave

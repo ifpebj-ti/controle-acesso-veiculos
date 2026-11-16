@@ -14,6 +14,11 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Connect secure account reactivation to the validated administrative catalog:
+  Local credential reset, password-free Google reactivation, one-time disclosure,
+  bounded read-only reconciliation, persistent uncertain-write guards and focus/
+  applied-filter preservation. Acceptance evidence remains candidate-specific
+  (#672, Refs #669).
 - A read-only PR quality gate that verifies the applicable existing workflows
   and CodeQL result for the reviewed source, rejecting failed, cancelled or
   missing validations. Branch-protection activation is tracked in #661.
