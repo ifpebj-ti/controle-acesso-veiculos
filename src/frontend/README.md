@@ -62,6 +62,13 @@ homologação em tablet físico.
 
 A #689 integra o contrato de condutores vinculados incorporado na main `8b61ccd`: nomes, vínculo, nascimento confirmado e veículo. A rota `/condutores-vinculados` é destinada a Administrador/Transporte, sem criação de conta. A busca existente da entrada usa sugestões com fonte e expiração. A integração ainda depende de candidato identificado e critérios pendentes; consulte [`docs/person-preregistration.md`](docs/person-preregistration.md).
 
+A reativação segura #669 está montada na página de contas com o contrato
+Local/Google do #530 incorporado. A API #668 também foi incorporada; as
+evidências de validação autenticada continuam vinculadas à composição testada.
+Contrato, tratamento de
+resultado incerto e critérios pendentes estão em
+[`docs/account-reactivation.md`](docs/account-reactivation.md).
+
 O candidato da #688 acrescenta Aluno, Terceirizado e Federal às nove categorias
 anteriores. A main `8b61ccd` já incorpora o suporte backend #696; isso não
 comprova a implantação. Federal aparece como Servidor federal, mantendo a chave

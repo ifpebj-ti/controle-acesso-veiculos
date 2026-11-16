@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 
@@ -86,6 +86,28 @@ def requires_codeql(paths):
         path.endswith(suffixes) or path.startswith(".github/workflows/")
         for path in paths
     )
+
+
+def verify_codeql_base(event, repository, token):
+    """Fail early when this repository's default setup cannot scan the PR base.
+
+    Eligibility never proves analysis success; assess still requires the exact
+    CodeQL check from GitHub Advanced Security for the reviewed source.
+    """
+    base_ref = event["pull_request"]["base"]["ref"]
+    default_ref = event["repository"]["default_branch"]
+    if not isinstance(base_ref, str) or not base_ref or not isinstance(default_ref, str) or not default_ref:
+        raise GateError("Missing CodeQL base eligibility metadata")
+    if base_ref == default_ref:
+        return
+    branch = api_get(repository, "branches/" + quote(base_ref, safe=""), token)
+    if branch.get("name") != base_ref or branch.get("protected") is not True:
+        raise GateError(
+            "CodeQL default setup cannot scan this unprotected stacked PR base. "
+            "Keep the child blocked; after the parent is reviewed and incorporated, "
+            "retarget the child to the default branch and validate the new composition. "
+            "Do not bypass the required analysis or repeat this unchanged gate."
+        )
 
 
 def assess(required, runs, checks, head, base, number, codeql):
@@ -169,6 +191,8 @@ def run_gate(event, root, repository, token, timeout, interval):
     paths = [path for path in paths if path]
     required = required_workflows(paths, root)
     codeql = requires_codeql(paths)
+    if codeql:
+        verify_codeql_base(event, repository, token)
     print("Required workflows: " + ", ".join(required), flush=True)
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
