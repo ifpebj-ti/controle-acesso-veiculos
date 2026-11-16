@@ -1,6 +1,6 @@
 # Balanço das entregas e da segurança — 15/11/2026
 
-Rastreabilidade #728. Main `b2b922b`, após a incorporação do #721.
+Rastreabilidade #728/#732. Main `2fe61b1`, após #722/#725/#729.
 Homologação identificada com frontend `67ad6b8`, backend `f7ee701` e 22 migrations.
 
 Este balanço cruza o documento de pendências da Unidade 1, a matriz da Unidade 2
@@ -18,7 +18,7 @@ O original permanece privado. As descrições abaixo são sanitizadas.
 | Automação de tag, release e changelog         | #701 incorporou o ciclo revisável, com testes do helper.                                                                                       | Executar sua primeira publicação completa nas #713/#686.                                                                |
 | Releases frequentes e VM atualizada           | Imagens semânticas publicadas até `0.4.0`. Draft `0.5.0` preparado. A VM recebeu candidatos identificados.                                     | Publicar a próxima versão revisada e promovê-la com sua tag e evidências.                                               |
 | Alertas verificáveis                          | Consulta autenticada de 15/11 retornou zero alertas abertos no Dependabot e zero no code scanning.                                             | Repetir a fotografia na entrega e conservar a triagem de novos alertas.                                                 |
-| Gate de qualidade obrigatório                 | #722 implementa e testa o contexto `Quality Gate`.                                                                                             | Após incorporação, ativar o contexto obrigatório e branch atualizada na #661.                                           |
+| Gate de qualidade obrigatório                 | #722 implementa e testa o contexto `Quality Gate`.                                                                                             | Ativado em 15/11: Quality Gate do GitHub Actions e strict=true; exceção administrativa preservada (#661).               |
 | Compose de produção com imagens do GHCR       | `docker-compose.production.yml` referencia imagens versionadas e usa configuração protegida.                                                   | Usar a versão efetivamente publicada no próximo rollout.                                                                |
 | Backend/frontend com a mesma versão legível   | Tags semânticas e validação de manifests existem nas publicações.                                                                              | Fechar e publicar `0.5.0`; atualizar referências após a publicação.                                                     |
 | Apagar branches após merge                    | `delete_branch_on_merge=true` conferido na API.                                                                                                | Manter limpeza limitada aos ramos incorporados ou ensaios encerrados.                                                   |
@@ -26,7 +26,7 @@ O original permanece privado. As descrições abaixo são sanitizadas.
 | Fullscreen API                                | Controles e convite incorporados, com comportamento dependente do navegador e ação explícita.                                                  | Conservar a validação no tablet e nos navegadores do piloto.                                                            |
 | Contas de teste por perfil                    | Houve ensaios locais/HTTPS com os quatro perfis e janelas fictícias delimitadas.                                                               | Agendar nova janela quando os avaliadores estiverem disponíveis. A fixture de Transporte de 15/11 expirou às 03h01 BRT. |
 | Swagger/OpenAPI                               | Configurados na API em Development, com esquema Bearer e documentação dos endpoints.                                                           | Usar o ambiente de desenvolvimento no estudo/teste do contrato.                                                         |
-| Reliability e Maintainability                 | A conferência #684 registrou nove notes e zero warnings, compatível com Good naquele snapshot.                                                 | Atualizar a evidência do portal e atender o critério da Unidade 2 acima de Good.                                        |
+| Reliability e Maintainability                 | API em 15/11: nove notes de Reliability e três de manutenção, sem warnings; três imports tratados no #731.                                     | Atualizar a evidência do portal e atender o critério da Unidade 2 acima de Good.                                        |
 | WAF e HTTPS                                   | Borda OCI, origem privada, proxy e certificado público foram aplicados. A consulta HTTPS desta revisão funcionou com validação de certificado. | Concluir os retestes de borda e a renovação automática #509.                                                            |
 | k6, monitoramento e operação                  | Há candidatos e instrumentação, com ensaios locais atribuídos.                                                                                 | Executar carga na nuvem #502, observabilidade #500 e gestão protegida #501.                                             |
 
@@ -75,7 +75,7 @@ continua exigindo conclusão operacional.
 | CAV-14 — datas extremas                      | Validação incorporada e instalada, com respostas 400 e testes nos limites do resumo operacional.                                                   | Reteste independente e regressões para novos filtros de data.                                |
 | CAV-15 — NUL em texto                        | Validações incorporadas para os recortes de entrada, consultas e campos revisados. A implantação posterior preservou essas correções.              | Conservar a validação nos campos novos e executar o reteste do avaliador.                    |
 | CAV-16 — correlação fornecida pelo cliente   | A consulta de 15/11 confirmou que um GUID de correlação válido enviado pelo cliente é refletido.                                                   | Separar identidade interna e correlação externa, com análise de observabilidade.             |
-| CAV-17 — redirect para HTTP/porta interna    | Confirmado no site em 15/11. Correção candidata #725 usa redirect relativo e passou no Nginx real local.                                           | Incorporar, promover e repetir a consulta pública pela #686.                                 |
+| CAV-17 — redirect para HTTP/porta interna    | Confirmado no site em 15/11. Correção incorporada #725 usa redirect relativo e passou no Nginx real local.                                         | Promover e repetir a consulta pública pela #686.                                             |
 | CAV-28 — credencial temporária e soft-delete | Entrega única, prazo, troca obrigatória e desativação preservando autoria são controles existentes. A reativação Local recebeu recuperação segura. | Concluir a interface, o procedimento de entrega e a governança da limpeza fictícia/retenção. |
 
 ## Relatório externo — dez achados informativos
@@ -101,9 +101,9 @@ continua exigindo conclusão operacional.
 - O primeiro ensaio detectou que CodeQL pode emitir `neutral` enquanto ainda
   recebe uma configuração. O agregador passou a aguardar um resultado definitivo,
   com regressão específica. A suíte local possui 47 testes, incluindo 20 do gate.
-- A leitura da proteção da main encontrou uma revisão obrigatória e nenhum
-  check obrigatório. A #661 acompanha a ativação de `Quality Gate` após o merge
-  humano do workflow e a decisão institucional sobre exceções administrativas.
+- Após o merge humano, a proteção da main passou a exigir `Quality Gate` do
+  GitHub Actions e branch atualizada, preservando uma revisão obrigatória. A
+  #661 registra a ativação e a exceção administrativa que já existia.
 - #725 corrige três achados de resposta e o recurso estático ausente. Cinco
   verificações falharam com a configuração anterior e passaram na candidata,
   usando Nginx real e upstream de teste. O smoke da CI usa a API real.
@@ -134,11 +134,27 @@ conclusão dos respectivos fluxos.
 
 - [Promoção de segurança e 162 verificações HTTPS](backend-security-rollout-2026-11-10.md).
 - [Composição atual e testes de papel/revisão](continuity-2026-11-15.md).
-- [Correções de resposta do frontend](https://github.com/ifpebj-ti/controle-acesso-veiculos/blob/10abedce01b3be08df3228c9d2e8e6360e01ef7f/docs/security/frontend-response-hardening.md), no candidato #725.
-- [Gate obrigatório e configuração consultada](https://github.com/ifpebj-ti/controle-acesso-veiculos/blob/3aaf16974c1287558660c65aac542636e27cc437/docs/development/required-quality-gate.md), no candidato #722.
+- [Correções de resposta do frontend](https://github.com/ifpebj-ti/controle-acesso-veiculos/blob/10abedce01b3be08df3228c9d2e8e6360e01ef7f/docs/security/frontend-response-hardening.md), incorporadas no #725.
+- [Gate obrigatório e configuração consultada](https://github.com/ifpebj-ti/controle-acesso-veiculos/blob/3aaf16974c1287558660c65aac542636e27cc437/docs/development/required-quality-gate.md), incorporado no #722.
 - [Análises SAST, DAST e componentes](../security/security-analysis.md).
 - [Quadro da organização](https://github.com/orgs/ifpebj-ti/projects/43), acesso privado.
 
 Os dois documentos candidatos acima passam a integrar suas referências após a
 incorporação dos respectivos PRs. O avaliador poderá repetir os cenários do
 relatório na versão promovida e registrar seu parecer de encerramento.
+
+## Complemento de governança após os merges
+
+#722, #725 e #729 foram incorporados por José. A proteção efetiva agora exige
+Quality Gate do GitHub Actions e branch atualizada, preservando uma revisão e a
+exceção administrativa anterior. Isso não promove imagens nem atualiza a VM.
+A consulta do Code Quality retornou 12 notes: três imports de testes Python
+(#730/#731) e nove de Reliability. Os sete caminhos de arquivos dos testes usam
+componentes controlados; os dois catches preservam cancelamento e convertem
+falhas em respostas seguras nas fronteiras de relatórios/readiness. Não houve
+supressão de regras nem retirada desses controles para elevar a nota.
+
+O Projects #43 continua privado. As visões de trabalho ocultam itens encerrados;
+o histórico completo continua disponível. O inventário inicial continha 400
+itens, 357 encerrados/finalizados e 43 abertos, sem divergência de estado. Nenhum
+item foi apagado e nenhuma validação institucional foi marcada por organização.

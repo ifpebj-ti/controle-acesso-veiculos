@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 import unittest
-from unittest import mock
+import unittest.mock
 
 spec = importlib.util.spec_from_file_location('release_lifecycle', Path(__file__).resolve().parents[1] / 'release_lifecycle.py')
 release = importlib.util.module_from_spec(spec)
@@ -64,19 +64,19 @@ class ReleaseTests(unittest.TestCase):
 
     def test_existing_wrong_tag_never_written(self):
         ref = {'object': {'type': 'commit', 'sha': 'a' * 40}}
-        with mock.patch.object(release, 'api', return_value=ref) as api:
+        with unittest.mock.patch.object(release, 'api', return_value=ref) as api:
             with self.assertRaises(ValueError):
                 release.verify_or_create_tag('0.5.0', 'b' * 40, 'Notes')
             self.assertEqual(api.call_count, 1)
 
     def test_existing_matching_tag_preserved(self):
         ref = {'object': {'type': 'commit', 'sha': 'a' * 40}}
-        with mock.patch.object(release, 'api', return_value=ref) as api:
+        with unittest.mock.patch.object(release, 'api', return_value=ref) as api:
             release.verify_or_create_tag('0.5.0', 'a' * 40, 'Notes')
             self.assertEqual(api.call_count, 1)
 
     def test_new_tag_is_annotated_without_force_update(self):
-        with mock.patch.object(release, 'api', side_effect=[None, {'sha': 't' * 40}, {}]) as api:
+        with unittest.mock.patch.object(release, 'api', side_effect=[None, {'sha': 't' * 40}, {}]) as api:
             release.verify_or_create_tag('0.5.0', 'a' * 40, 'Notes')
             self.assertEqual(api.call_args_list[1].args[0], 'git/tags')
             self.assertEqual(api.call_args_list[2].args[0], 'git/refs')
@@ -91,8 +91,8 @@ class ReleaseTests(unittest.TestCase):
             results = [subprocess.CompletedProcess([], 0, '{"state":"OPEN"}', '')]
             results += [subprocess.CompletedProcess([], 0, '', '')] * 4
             results += [subprocess.CompletedProcess([], 1, '', 'GitHub Actions is not permitted to create pull requests')]
-            with mock.patch.object(release, 'run', side_effect=results) as run, \
-                 mock.patch.dict(release.os.environ, {'GITHUB_STEP_SUMMARY': str(summary)}):
+            with unittest.mock.patch.object(release, 'run', side_effect=results) as run, \
+                 unittest.mock.patch.dict(release.os.environ, {'GITHUB_STEP_SUMMARY': str(summary)}):
                 self.assertEqual(release.main(['propose', '--plan', str(plan)]), 0)
             self.assertIn('/compare/main...chore/issue-698-release-v0.4.1', summary.read_text(encoding='utf-8'))
             self.assertEqual(run.call_count, 6)
@@ -105,11 +105,11 @@ class ReleaseTests(unittest.TestCase):
             results = [subprocess.CompletedProcess([], 0, '{"state":"OPEN"}', '')]
             results += [subprocess.CompletedProcess([], 0, '', '')] * 4
             results += [subprocess.CompletedProcess([], 1, '', 'Network unreachable')]
-            with mock.patch.object(release, 'run', side_effect=results), self.assertRaises(RuntimeError):
+            with unittest.mock.patch.object(release, 'run', side_effect=results), self.assertRaises(RuntimeError):
                 release.main(['propose', '--plan', str(plan)])
 
     def test_source_must_be_full_sha_before_any_git_or_api_call(self):
-        with mock.patch.object(release, 'run') as run:
+        with unittest.mock.patch.object(release, 'run') as run:
             with self.assertRaises(ValueError):
                 release.source_notes('HEAD; echo bad', '0.5.0')
             run.assert_not_called()
