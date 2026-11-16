@@ -104,7 +104,7 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 | Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                                      | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado                                  |
 | Plataforma de gerenciamento de contêineres  | não provisionada                                                                                                    | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação                                   |
 | Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não                             | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas                                |
-| Teste de carga com k6 e análise de gargalos | três perfis locais fictícios executados: 975 requisições, zero erro/429, thresholds aprovados (#515/#736)                                       | Parcial — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | executar na OCI com janela, WAF/LB e recursos medidos; o ensaio local não comprova capacidade do piloto                                |
+| Teste de carga com k6 e análise de gargalos | três perfis locais fictícios executados: 975 requisições, zero erro/429, thresholds aprovados (#515/#736)           | Parcial — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502)  | executar na OCI com janela, WAF/LB e recursos medidos; o ensaio local não comprova capacidade do piloto                         |
 | Software implantado, acessível e utilizável | candidato HTTPS com 111 verificações técnicas; lista de contas corrigida, tarefas humanas/aceite completo pendentes | Parcial                                                                             | observar tarefas com perfis autorizados; janela sintética anterior expirada; Administrador local disponível e Google habilitado |
 
 ## Estimativa auditável
@@ -115,16 +115,15 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na reavaliação de **13/11/2026**, os 17 itens ficam em **8 atendidos,
+Na consolidação de **15/11/2026**, com evidência local de 13/11,, os 17 itens ficam em **8 atendidos,
 8 parciais e 1 pendente**. A estimativa é `(8 + 8 × 0,5) / 17 = 70,6%`, cerca
 de **71% concluído e 29% restante**, com incerteza de **±5 pontos**.
 
 O item de indicadores passa de pendente para parcial pela conferência registrada
 na #684, com zero warnings e nove notes, compatível com Good. A comprovação dos
 dois indicadores e do critério acadêmico acima de Good continua pendente no
-portal. A cobertura publicada atualiza a evidência de outro item parcial. A
-variação é uma reavaliação da matriz e corresponde a aproximadamente 3 pontos
-percentuais em relação aos 64,7% anteriores.
+portal. A cobertura publicada atualiza a evidência de outro item parcial. O k6 local acrescenta meio critério à fotografia anterior de 67,6%, chegando
+a 70,6%; o teste OCI continua pendente na parte operacional da #502.
 
 Essa régua mede critérios consolidados da matéria, não esforço, linhas de código,
 segurança absoluta ou nota garantida. Os 17 itens e pesos foram mantidos para não

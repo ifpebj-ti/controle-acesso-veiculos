@@ -6,7 +6,7 @@ ativação conferida sobre main `2fe61b1` em 15/11/2026.
 O workflow `CI - Quality Gate` executa em cada PR, inclusive documental, e produz
 o contexto `Quality Gate`. O helper lê o diff entre a base e a origem do evento,
 incluindo os dois lados de uma renomeação. Os filtros `pull_request.paths` dos
-oito workflows existentes determinam quais resultados serão exigidos.
+nove workflows existentes determinam quais resultados serão exigidos.
 
 Para documentação na raiz ou em `docs/`, o gate exige Dependency Review e executa
 as regressões do próprio agregador. Backend, frontend, containers, dados fictícios,
@@ -29,7 +29,7 @@ fluxo próprio de tag/release. O agregador usa somente leitura da API.
 O leitor valida o formato atual de listas de caminhos entre aspas duplas.
 Filtros adicionais, padrões negativos ou outra representação YAML exigem
 atualização do leitor e dos testes na mesma revisão. Uma representação não
-suportada produz falha explícita. Os testes percorrem os oito workflows reais
+suportada produz falha explícita. Os testes percorrem os nove workflows reais
 para detectar divergência entre configuração e seleção do gate.
 
 ## Ativação na proteção da main
@@ -90,3 +90,7 @@ a documentação ou reexecutar o gate antigo não cria a análise ausente. Não
 proteger branches temporárias nem mudar configuração do scanner como atalho.
 
 Referência: [disparos do CodeQL padrão](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types).
+
+A entrega técnica k6 (#736/#515) inclui `ci-load-testing.yml` na seleção do
+gate. Esse workflow inspeciona configuração e rejeições sem executar carga ou
+autenticar. Uma alteração nos scripts não pode omitir sua própria validação.

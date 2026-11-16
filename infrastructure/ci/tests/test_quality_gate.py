@@ -55,6 +55,13 @@ class QualityGateTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(set(gate.required_workflows([path], ROOT)), expected)
 
+    def test_load_tooling_requires_its_network_free_validation(self):
+        for path in ["infrastructure/load-testing/k6/baseline.js",
+                     ".github/workflows/ci-load-testing.yml"]:
+            with self.subTest(path=path):
+                self.assertIn("ci-load-testing.yml", gate.required_workflows([path], ROOT))
+        self.assertFalse("ci-load-testing.yml" in gate.required_workflows(["README.md"], ROOT))
+
     def test_compose_change_requires_every_existing_dependent_workflow(self):
         self.assertEqual(set(gate.required_workflows(["infrastructure/docker/docker-compose.yml"], ROOT)),
                          {"ci-containers.yml", "ci-demo-data.yml", "ci-database-recovery.yml", "dependency-review.yml"})

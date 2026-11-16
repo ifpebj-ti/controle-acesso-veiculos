@@ -22,6 +22,7 @@ WORKFLOWS = (
     "ci-database-recovery.yml",
     "ci-oci-backup.yml",
     "ci-oci-homologation.yml",
+    "ci-load-testing.yml",
     "dependency-review.yml",
 )
 
