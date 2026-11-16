@@ -179,3 +179,15 @@ Divergências de horário, pessoa ou placa exigem tratamento próprio acompanhad
 na #100. A revisão descritiva da #607 não altera esses campos. O módulo atual
 preserva a recusa e a evidência e não oferece uma edição irrestrita desses fatos.
 A integração visual segue na #712, separada da hospedagem atual e da release 0.5.0.
+
+## Entrega técnica e aceite operacional
+
+A #737 acompanha a revisão/incorporação do backend aditivo no #611. A #100
+continua aberta para a contingência integrada e observada; a #712 entrega a
+interface. Incorporar o contrato não aplica a migration na VM, não implanta a
+tela e não confirma treinamento ou rotina de conferência diária.
+
+A composição isolada `d23ed42` verificou revisão + papel em PostgreSQL, com
+649 testes e preservação de proveniência/autoria da saída. Essa evidência não
+significa que #607/#613 ou a composição foram incorporados. A promoção futura
+precisa de backup, migration revisada e ensaio próprio no candidato identificado.
