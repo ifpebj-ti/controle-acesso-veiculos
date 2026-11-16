@@ -457,3 +457,14 @@ Falsificação do papel físico, conteúdo não conferido e omissão de uma linh
 são provados pelo hash técnico da intenção. A referência/guarda da folha e a
 conferência diária precisam do procedimento humano e do exercício institucional.
 Backups externos e integração com a revisão de correções permanecem pendentes.
+
+## Agregação candidata de checks — #661, 15/11/2026
+
+O contexto `Quality Gate` confere resultados dos workflows aplicáveis ao diff,
+PR e composição identificados, além do aplicativo esperado para o CodeQL.
+Execução ausente, cancelada ou com falha impede aprovação pelo agregador.
+O token usa somente leitura e o checkout remove a persistência de credenciais.
+O acesso de escrita para publicação permanece nos jobs de release existentes.
+O risco de alteração maliciosa do próprio workflow continua sujeito à revisão,
+CODEOWNERS e proteção efetiva da branch. A ativação do check obrigatório e as
+exceções administrativas ficam registradas na #661 após o ensaio do candidato.
