@@ -14,6 +14,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Campus-driver registration and vehicle association for Administrator and
+  Transportation, with explicit homonym confirmation and uncertain-write
+  protection; extend the existing entry search with source-aware, expiring
+  suggestions and current driver/objective confirmation (#704, Refs #689).
 - Persist paper incidents and attributed import/review transactions with replay
   protection, observed-time event checks, scoped queues and PostgreSQL constraints
   (#611, Refs #100). Frontend and hosted rollout remain separately reviewed.
