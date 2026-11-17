@@ -49,7 +49,10 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
             }
         }
 
-        Assert.Equal(13, tables.Count);
+        Assert.Equal(15, tables.Count);
+        Assert.Contains("incidentes_contingencia", tables);
+        Assert.Contains("reconciliacoes_contingencia", tables);
+        Assert.Contains("20261114132630_AddPaperReconciliation", migrations);
         Assert.Contains("eventos_acesso", tables);
         Assert.Contains("autorizacoes_veiculos_eventos", tables);
         Assert.Contains("sessoes_autenticacao", tables);

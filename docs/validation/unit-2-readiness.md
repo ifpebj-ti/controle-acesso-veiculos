@@ -12,8 +12,8 @@
 > com 607 testes e 93,60% de cobertura de linhas. Interface #712, composição com
 > #607/#613 e ensaio observado continuam pendentes. O servidor mantém 22 migrations.
 >
-> A régua permanece em 17 critérios, com 8 atendidos, 7 parciais e 2 pendentes,
-> aproximadamente 68% ±5 pontos. A publicação `v0.5.0`, a carga na nuvem e as
+> A régua permanece em 17 critérios, com 8 atendidos, 8 parciais e 1 pendente,
+> aproximadamente 71% ±5 pontos. A publicação `v0.5.0`, a carga na nuvem e as
 > evidências de operação continuam em acompanhamento.
 
 > Complemento técnico desta continuidade — #607/94078c7 passou 561 testes e
@@ -104,7 +104,7 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 | Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                                      | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado                                  |
 | Plataforma de gerenciamento de contêineres  | não provisionada                                                                                                    | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação                                   |
 | Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não                             | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas                                |
-| Teste de carga com k6 e análise de gargalos | script preparado no candidato #515; nenhuma execução observada foi comprovada                                       | Pendente — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502) | criar cenário autorizado, executar cargas baixa/média/intensa e registrar resultados e melhorias                                |
+| Teste de carga com k6 e análise de gargalos | três perfis locais fictícios executados: 975 requisições, zero erro/429, thresholds aprovados (#515/#736)           | Parcial — [#502](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/502)  | executar na OCI com janela, WAF/LB e recursos medidos; o ensaio local não comprova capacidade do piloto                         |
 | Software implantado, acessível e utilizável | candidato HTTPS com 111 verificações técnicas; lista de contas corrigida, tarefas humanas/aceite completo pendentes | Parcial                                                                             | observar tarefas com perfis autorizados; janela sintética anterior expirada; Administrador local disponível e Google habilitado |
 
 ## Estimativa auditável
@@ -115,16 +115,15 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na reavaliação de **13/11/2026**, os 17 itens ficam em **8 atendidos,
-7 parciais e 2 pendentes**. A estimativa é `(8 + 7 × 0,5) / 17 = 67,6%`, cerca
-de **68% concluído e 32% restante**, com incerteza de **±5 pontos**.
+Na consolidação de **15/11/2026**, com evidência local de 13/11,, os 17 itens ficam em **8 atendidos,
+8 parciais e 1 pendente**. A estimativa é `(8 + 8 × 0,5) / 17 = 70,6%`, cerca
+de **71% concluído e 29% restante**, com incerteza de **±5 pontos**.
 
 O item de indicadores passa de pendente para parcial pela conferência registrada
 na #684, com zero warnings e nove notes, compatível com Good. A comprovação dos
 dois indicadores e do critério acadêmico acima de Good continua pendente no
-portal. A cobertura publicada atualiza a evidência de outro item parcial. A
-variação é uma reavaliação da matriz e corresponde a aproximadamente 3 pontos
-percentuais em relação aos 64,7% anteriores.
+portal. A cobertura publicada atualiza a evidência de outro item parcial. O k6 local acrescenta meio critério à fotografia anterior de 67,6%, chegando
+a 70,6%; o teste OCI continua pendente na parte operacional da #502.
 
 Essa régua mede critérios consolidados da matéria, não esforço, linhas de código,
 segurança absoluta ou nota garantida. Os 17 itens e pesos foram mantidos para não
@@ -171,3 +170,12 @@ prático e a sequência de dependências. A auditoria ampla da Wiki está na #54
 6. executar k6, analisar gargalos e registrar melhorias;
 7. atualizar o manual, ensaiar os quatro perfis e conduzir o piloto acompanhado;
 8. revisar documentação, Wiki e changelog e publicar a próxima release candidata.
+
+## Evidência local k6 incorporada ao recorte técnico
+
+O candidato #515/#736 acrescenta o [ensaio local de 13/11](k6-local-baseline-2026-11-13.md).
+Os três perfis completaram 975 requisições, zero erros/429 e thresholds aprovados.
+A evidência pertence à API local 8b61ccd, sem WAF/LB nem medição de recursos da
+VM. Esse resultado torna carga parcial na régua (8 atendidos, 8 parciais e 1
+pendente, 12/17 ou 70,6% ±5 pontos). A #502 continua aberta para a execução OCI.
+Não é medição nova da hospedagem nem aumento de capacidade declarado.
