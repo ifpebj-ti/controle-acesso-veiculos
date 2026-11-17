@@ -60,6 +60,9 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Run local k6 baselines with the native executable so loopback reaches the host
+  API; validate target URLs before authentication and preserve separate profile
+  summaries without changing load thresholds (Refs #502).
 - Keep frontend API-root redirects relative, emit one DENY frame policy and
   revalidate SPA HTML while caching hashed bundles immutably. Missing static
   resources return 404; integrated smoke verifies these responses (#723).
