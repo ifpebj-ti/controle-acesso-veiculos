@@ -15,6 +15,7 @@ public static class EventAuthorizationEndpoints
         group.MapGet(string.Empty, SearchAsync)
             .WithName("SearchEventAuthorizations")
             .WithSummary("Consulta autorizações de eventos")
+            .WithDescription("Sem filtro, retorna ativos. Use active=true ou active=false; para ambos os estados, use status=all sem active. Filtros, totais e paginação continuam no servidor.")
             .Produces<PagedEventAuthorizations>(StatusCodes.Status200OK)
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -56,15 +57,26 @@ public static class EventAuthorizationEndpoints
 
     private static async Task<IResult> SearchAsync(
         [AsParameters] SearchEventAuthorizationsRequest request,
+        HttpContext httpContext,
         EventAuthorizationService service,
         CancellationToken cancellationToken)
     {
+        var allStatuses = httpContext.Request.Query.ContainsKey("status");
+        if (allStatuses && (!string.Equals(request.Status, "all", StringComparison.OrdinalIgnoreCase)
+            || httpContext.Request.Query.ContainsKey("active")))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["status"] = ["Use status=all sem o parâmetro active para consultar todos os estados."]
+            });
+        }
+
         var result = await service.SearchAsync(
             new SearchEventAuthorizationsCommand(
                 request.FromUtc,
                 request.ToUtc,
                 request.Name,
-                request.Active,
+                allStatuses ? null : request.Active,
                 request.Page,
                 request.PageSize),
             cancellationToken);
@@ -199,7 +211,8 @@ public sealed record SearchEventAuthorizationsRequest(
     string? Name = null,
     bool? Active = true,
     int Page = 1,
-    int PageSize = 25);
+    int PageSize = 25,
+    string? Status = null);
 
 public sealed record EventAuthorizationRequest(
     string? Name,
