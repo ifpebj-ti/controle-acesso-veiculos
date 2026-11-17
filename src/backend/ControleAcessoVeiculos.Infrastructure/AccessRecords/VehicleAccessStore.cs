@@ -22,236 +22,247 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
 
         try
         {
-            Veiculo? vehicle;
-            Pessoa? person = null;
-
-            if (entry.VehicleId.HasValue && entry.PersonId.HasValue)
-            {
-                var activeOn = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(entryAtUtc, institutionalTimeZone));
-                var selectedCandidate = await (
-                    from relationship in dbContext.PessoasVeiculos
-                    join candidateVehicle in dbContext.Veiculos
-                        on relationship.VeiculoId equals candidateVehicle.Id
-                    join candidatePerson in dbContext.Pessoas
-                        on relationship.PessoaId equals candidatePerson.Id
-                    where relationship.VeiculoId == entry.VehicleId.Value &&
-                        relationship.PessoaId == entry.PersonId.Value &&
-                        relationship.TipoRelacao == "Condutor" &&
-                        relationship.Ativo &&
-                        (!relationship.DataInicio.HasValue ||
-                            relationship.DataInicio.Value <= activeOn) &&
-                        (!relationship.DataFim.HasValue ||
-                            relationship.DataFim.Value >= activeOn) &&
-                        candidateVehicle.Ativo &&
-                        !candidateVehicle.EhInstitucional &&
-                        candidateVehicle.Placa != null &&
-                        candidatePerson.Ativo &&
-                        (candidatePerson.CadastroCampusConferidoEm == null || candidatePerson.CadastroCampusAtivo) &&
-                        (!candidatePerson.DataNascimento.HasValue || candidatePerson.DataNascimento <= activeOn.AddYears(-18))
-                    select new
-                    {
-                        Vehicle = candidateVehicle,
-                        Person = candidatePerson
-                    }).SingleOrDefaultAsync(cancellationToken);
-
-                if (selectedCandidate is null)
-                {
-                    return Conflict(
-                        VehicleAccessStoreRegistrationStatus.CandidateUnavailable);
-                }
-
-                vehicle = selectedCandidate.Vehicle;
-                person = selectedCandidate.Person;
-            }
-            else
-            {
-                vehicle = await dbContext.Veiculos.SingleOrDefaultAsync(
-                    item => item.Placa == entry.Plate,
-                    cancellationToken);
-            }
-
-            if (vehicle is not null && !vehicle.Ativo)
-            {
-                return Conflict();
-            }
-
-            if (vehicle is not null && await dbContext.RegistrosAcesso.AnyAsync(
-                    item => item.VeiculoId == vehicle.Id &&
-                        item.Status == StatusRegistroAcesso.Aberto,
-                    cancellationToken))
-            {
-                return Conflict();
-            }
-
-            EventoAcesso? eventAuthorization = null;
-            AutorizacaoVeiculoEvento? eventVehicleRule = null;
-            if (entry.EventAuthorizationId.HasValue)
-            {
-                eventAuthorization = await dbContext.EventosAcesso
-                    .FromSqlInterpolated(
-                        $"SELECT * FROM dbo.eventos_acesso WHERE id = {entry.EventAuthorizationId.Value} FOR UPDATE")
-                    .SingleOrDefaultAsync(cancellationToken);
-
-                if (eventAuthorization is null)
-                {
-                    return Conflict(VehicleAccessStoreRegistrationStatus.EventNotFound);
-                }
-
-                if (!eventAuthorization.Ativo)
-                {
-                    return Conflict(VehicleAccessStoreRegistrationStatus.EventInactive);
-                }
-
-                if (entryAtUtc < eventAuthorization.Inicio ||
-                    entryAtUtc > eventAuthorization.Fim)
-                {
-                    return Conflict(VehicleAccessStoreRegistrationStatus.EventOutsideWindow);
-                }
-
-                var rules = await dbContext.AutorizacoesVeiculosEventos
-                    .Where(rule => rule.EventoAcessoId == eventAuthorization.Id)
-                    .ToListAsync(cancellationToken);
-                var effectivePlate = vehicle?.Placa ?? entry.Plate;
-                eventVehicleRule = rules.FirstOrDefault(rule => rule.Placa == effectivePlate);
-
-                if (eventVehicleRule is null)
-                {
-                    var vehicleType = vehicle?.Tipo ?? entry.VehicleType;
-                    if (!string.IsNullOrWhiteSpace(vehicleType))
-                    {
-                        var normalizedVehicleType = vehicleType.Trim().ToUpperInvariant();
-                        eventVehicleRule = rules.FirstOrDefault(rule =>
-                            rule.Placa == null &&
-                            rule.TipoVeiculo == normalizedVehicleType);
-                    }
-                }
-
-                if (eventVehicleRule is null)
-                {
-                    return Conflict(
-                        VehicleAccessStoreRegistrationStatus.EventVehicleNotAuthorized);
-                }
-
-                var consumedQuantity = await dbContext.RegistrosAcesso.CountAsync(
-                    record => record.AutorizacaoVeiculoEventoId == eventVehicleRule.Id,
-                    cancellationToken);
-                if (consumedQuantity >= eventVehicleRule.Quantidade)
-                {
-                    return Conflict(VehicleAccessStoreRegistrationStatus.EventQuotaExceeded);
-                }
-            }
-
-            if (vehicle is null)
-            {
-                vehicle = new Veiculo(
-                    entry.Plate,
-                    entry.VehicleType,
-                    identificacaoVeiculo: null,
-                    ehInstitucional: false,
-                    entry.Brand,
-                    entry.Model,
-                    entry.Color,
-                    entry.Year);
-                dbContext.Veiculos.Add(vehicle);
-            }
-
-            if (person is null &&
-                entry.DocumentType is not null && entry.DocumentNumber is not null)
-            {
-                person = await dbContext.Pessoas.SingleOrDefaultAsync(
-                    item => item.DocumentoTipo == entry.DocumentType &&
-                        item.DocumentoNumero == entry.DocumentNumber,
-                    cancellationToken);
-            }
-
-            if (person is not null && (!person.Ativo ||
-                (person.CadastroCampusConferidoEm != null && !person.CadastroCampusAtivo)))
-            {
-                return Conflict();
-            }
-
-            if (person is null)
-            {
-                person = new Pessoa(
-                    entry.DriverName,
-                    entry.DocumentType,
-                    entry.DocumentNumber);
-                dbContext.Pessoas.Add(person);
-            }
-
-            var category = await dbContext.CategoriasAcesso.SingleOrDefaultAsync(
-                item => item.Nome == entry.CategoryName,
-                cancellationToken);
-
-            if (category is not null && !category.Ativo)
-            {
-                return Conflict();
-            }
-
-            if (category is null)
-            {
-                category = new CategoriaAcesso(
-                    entry.CategoryName,
-                    "Categoria preliminar do MVP; sujeita à validação do cliente.");
-                dbContext.CategoriasAcesso.Add(category);
-            }
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            var relationshipExists = await dbContext.PessoasVeiculos.AnyAsync(
-                item => item.PessoaId == person.Id &&
-                    item.VeiculoId == vehicle.Id &&
-                    item.TipoRelacao == "Condutor",
-                cancellationToken);
-
-            if (!relationshipExists)
-            {
-                dbContext.PessoasVeiculos.Add(new PessoaVeiculo(
-                    person.Id,
-                    vehicle.Id,
-                    "Condutor",
-                    DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(entryAtUtc, institutionalTimeZone))));
-            }
-
-            var accessRecord = new RegistroAcesso(
-                vehicle.Id,
-                person.Id,
-                category.Id,
-                entryAtUtc,
-                entry.Objective,
-                actorUserId,
-                entry.Observation,
-                eventVehicleRule?.Id);
-            dbContext.RegistrosAcesso.Add(accessRecord);
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            dbContext.Auditorias.Add(CreateEntryAudit(
-                accessRecord,
-                eventAuthorization,
-                actorUserId,
-                entryAtUtc));
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            return new VehicleAccessStoreRegistration(
-                VehicleAccessStoreRegistrationStatus.Success,
-                Map(
-                    accessRecord,
-                    vehicle,
-                    person,
-                    category,
-                    eventAuthorization));
+            var result = await RegisterEntryInTransactionAsync(entry, actorUserId, entryAtUtc,
+                null, entryAtUtc, cancellationToken);
+            if (result.Status == VehicleAccessStoreRegistrationStatus.Success)
+                await transaction.CommitAsync(cancellationToken);
+            return result;
         }
         catch (DbUpdateException exception)
-            when (exception.InnerException is PostgresException
-            {
-                SqlState: PostgresErrorCodes.UniqueViolation
-            })
+            when (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             await transaction.RollbackAsync(cancellationToken);
             return Conflict();
         }
+    }
+
+    internal async Task<VehicleAccessStoreRegistration> RegisterEntryInTransactionAsync(
+        VehicleEntryData entry, int actorUserId, DateTime entryAtUtc,
+        DateTime? observedExitAtUtc, DateTime auditAtUtc, CancellationToken cancellationToken)
+    {
+        if (dbContext.Database.CurrentTransaction is null)
+            throw new InvalidOperationException("Registration requires a caller-owned transaction.");
+        Veiculo? vehicle;
+        Pessoa? person = null;
+
+        if (entry.VehicleId.HasValue && entry.PersonId.HasValue)
+        {
+            var activeOn = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(entryAtUtc, institutionalTimeZone));
+            var selectedCandidate = await (
+                from relationship in dbContext.PessoasVeiculos
+                join candidateVehicle in dbContext.Veiculos
+                    on relationship.VeiculoId equals candidateVehicle.Id
+                join candidatePerson in dbContext.Pessoas
+                    on relationship.PessoaId equals candidatePerson.Id
+                where relationship.VeiculoId == entry.VehicleId.Value &&
+                    relationship.PessoaId == entry.PersonId.Value &&
+                    relationship.TipoRelacao == "Condutor" &&
+                    relationship.Ativo &&
+                    (!relationship.DataInicio.HasValue ||
+                        relationship.DataInicio.Value <= activeOn) &&
+                    (!relationship.DataFim.HasValue ||
+                        relationship.DataFim.Value >= activeOn) &&
+                    candidateVehicle.Ativo &&
+                    !candidateVehicle.EhInstitucional &&
+                    candidateVehicle.Placa != null &&
+                    candidatePerson.Ativo &&
+                    (candidatePerson.CadastroCampusConferidoEm == null || candidatePerson.CadastroCampusAtivo) &&
+                    (!candidatePerson.DataNascimento.HasValue || candidatePerson.DataNascimento <= activeOn.AddYears(-18))
+                select new
+                {
+                    Vehicle = candidateVehicle,
+                    Person = candidatePerson
+                }).SingleOrDefaultAsync(cancellationToken);
+
+            if (selectedCandidate is null)
+            {
+                return Conflict(
+                    VehicleAccessStoreRegistrationStatus.CandidateUnavailable);
+            }
+
+            vehicle = selectedCandidate.Vehicle;
+            person = selectedCandidate.Person;
+        }
+        else
+        {
+            vehicle = await dbContext.Veiculos.SingleOrDefaultAsync(
+                item => item.Placa == entry.Plate,
+                cancellationToken);
+        }
+
+        if (vehicle is not null && !vehicle.Ativo)
+        {
+            return Conflict();
+        }
+
+        if (!observedExitAtUtc.HasValue && vehicle is not null && await dbContext.RegistrosAcesso.AnyAsync(
+                item => item.VeiculoId == vehicle.Id &&
+                    item.Status == StatusRegistroAcesso.Aberto,
+                cancellationToken))
+        {
+            return Conflict();
+        }
+
+        EventoAcesso? eventAuthorization = null;
+        AutorizacaoVeiculoEvento? eventVehicleRule = null;
+        if (entry.EventAuthorizationId.HasValue)
+        {
+            eventAuthorization = await dbContext.EventosAcesso
+                .FromSqlInterpolated(
+                    $"SELECT * FROM dbo.eventos_acesso WHERE id = {entry.EventAuthorizationId.Value} FOR UPDATE")
+                .SingleOrDefaultAsync(cancellationToken);
+
+            if (eventAuthorization is null)
+            {
+                return Conflict(VehicleAccessStoreRegistrationStatus.EventNotFound);
+            }
+
+            if (!eventAuthorization.Ativo)
+            {
+                return Conflict(VehicleAccessStoreRegistrationStatus.EventInactive);
+            }
+
+            if (entryAtUtc < eventAuthorization.Inicio ||
+                entryAtUtc > eventAuthorization.Fim)
+            {
+                return Conflict(VehicleAccessStoreRegistrationStatus.EventOutsideWindow);
+            }
+
+            var rules = await dbContext.AutorizacoesVeiculosEventos
+                .Where(rule => rule.EventoAcessoId == eventAuthorization.Id)
+                .ToListAsync(cancellationToken);
+            var effectivePlate = vehicle?.Placa ?? entry.Plate;
+            eventVehicleRule = rules.FirstOrDefault(rule => rule.Placa == effectivePlate);
+
+            if (eventVehicleRule is null)
+            {
+                var vehicleType = vehicle?.Tipo ?? entry.VehicleType;
+                if (!string.IsNullOrWhiteSpace(vehicleType))
+                {
+                    var normalizedVehicleType = vehicleType.Trim().ToUpperInvariant();
+                    eventVehicleRule = rules.FirstOrDefault(rule =>
+                        rule.Placa == null &&
+                        rule.TipoVeiculo == normalizedVehicleType);
+                }
+            }
+
+            if (eventVehicleRule is null)
+            {
+                return Conflict(
+                    VehicleAccessStoreRegistrationStatus.EventVehicleNotAuthorized);
+            }
+
+            var consumedQuantity = await dbContext.RegistrosAcesso.CountAsync(
+                record => record.AutorizacaoVeiculoEventoId == eventVehicleRule.Id,
+                cancellationToken);
+            if (consumedQuantity >= eventVehicleRule.Quantidade)
+            {
+                return Conflict(VehicleAccessStoreRegistrationStatus.EventQuotaExceeded);
+            }
+        }
+
+        if (vehicle is null)
+        {
+            vehicle = new Veiculo(
+                entry.Plate,
+                entry.VehicleType,
+                identificacaoVeiculo: null,
+                ehInstitucional: false,
+                entry.Brand,
+                entry.Model,
+                entry.Color,
+                entry.Year);
+            dbContext.Veiculos.Add(vehicle);
+        }
+
+        if (person is null &&
+            entry.DocumentType is not null && entry.DocumentNumber is not null)
+        {
+            person = await dbContext.Pessoas.SingleOrDefaultAsync(
+                item => item.DocumentoTipo == entry.DocumentType &&
+                    item.DocumentoNumero == entry.DocumentNumber,
+                cancellationToken);
+        }
+
+        if (person is not null && (!person.Ativo ||
+            (person.CadastroCampusConferidoEm != null && !person.CadastroCampusAtivo)))
+        {
+            return Conflict();
+        }
+
+        if (person is null)
+        {
+            person = new Pessoa(
+                entry.DriverName,
+                entry.DocumentType,
+                entry.DocumentNumber);
+            dbContext.Pessoas.Add(person);
+        }
+
+        var category = await dbContext.CategoriasAcesso.SingleOrDefaultAsync(
+            item => item.Nome == entry.CategoryName,
+            cancellationToken);
+
+        if (category is not null && !category.Ativo)
+        {
+            return Conflict();
+        }
+
+        if (category is null)
+        {
+            category = new CategoriaAcesso(
+                entry.CategoryName,
+                "Categoria preliminar do MVP; sujeita à validação do cliente.");
+            dbContext.CategoriasAcesso.Add(category);
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        var relationshipExists = await dbContext.PessoasVeiculos.AnyAsync(
+            item => item.PessoaId == person.Id &&
+                item.VeiculoId == vehicle.Id &&
+                item.TipoRelacao == "Condutor",
+            cancellationToken);
+
+        if (!relationshipExists)
+        {
+            dbContext.PessoasVeiculos.Add(new PessoaVeiculo(
+                person.Id,
+                vehicle.Id,
+                "Condutor",
+                DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(entryAtUtc, institutionalTimeZone))));
+        }
+
+        var accessRecord = new RegistroAcesso(
+            vehicle.Id,
+            person.Id,
+            category.Id,
+            entryAtUtc,
+            entry.Objective,
+            actorUserId,
+            entry.Observation,
+            eventVehicleRule?.Id);
+        if (observedExitAtUtc.HasValue)
+            accessRecord.RegistrarSaida(observedExitAtUtc.Value, actorUserId);
+        dbContext.RegistrosAcesso.Add(accessRecord);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        dbContext.Auditorias.Add(CreateEntryAudit(
+            accessRecord,
+            eventAuthorization,
+            actorUserId,
+            auditAtUtc));
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new VehicleAccessStoreRegistration(
+            VehicleAccessStoreRegistrationStatus.Success,
+            Map(
+                accessRecord,
+                vehicle,
+                person,
+                category,
+                eventAuthorization));
     }
 
     public async Task<IReadOnlyList<VehicleAccessRecord>> ListOpenAsync(
@@ -581,7 +592,7 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             actorUserId,
             dadosNovos: JsonSerializer.Serialize(new
             {
-                status = StatusRegistroAcesso.Aberto.ToString(),
+                status = accessRecord.Status.ToString(),
                 vehicleId = accessRecord.VeiculoId,
                 personId = accessRecord.PessoaId,
                 accessCategoryId = accessRecord.CategoriaAcessoId,
@@ -675,6 +686,9 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
             equals (int?)eventAuthorization.Id
             into eventAuthorizations
         from eventAuthorization in eventAuthorizations.DefaultIfEmpty()
+        join reconciliation in dbContext.ReconciliacoesContingencia.AsNoTracking()
+            on accessRecord.Id equals reconciliation.RegistroAcessoId into reconciliations
+        from reconciliation in reconciliations.DefaultIfEmpty()
         select new VehicleAccessRecord(
             accessRecord.Id,
             vehicle.Id,
@@ -700,7 +714,8 @@ public sealed class VehicleAccessStore(ControleAcessoVeiculosDbContext dbContext
                 : accessRecord.MotivoEncerramentoExcepcional.ToString(),
             accessRecord.ObservacaoEncerramentoExcepcional,
             accessRecord.DataHoraRegularizacao,
-            vehicle.Tipo);
+            vehicle.Tipo,
+            reconciliation == null ? null : reconciliation.Status.ToString());
 
     private static VehicleAccessRecord Map(
         RegistroAcesso accessRecord,

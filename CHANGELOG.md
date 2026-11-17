@@ -18,6 +18,10 @@ See the [release policy](docs/operations/release-cadence.md).
   Transportation, with explicit homonym confirmation and uncertain-write
   protection; extend the existing entry search with source-aware, expiring
   suggestions and current driver/objective confirmation (#704, Refs #689).
+- Persist paper incidents and attributed import/review transactions with replay
+  protection, observed-time event checks, scoped queues and PostgreSQL constraints
+  (#611, Refs #100). Frontend and hosted rollout remain separately reviewed.
+
 - Connect secure account reactivation to the validated administrative catalog:
   Local credential reset, password-free Google reactivation, one-time disclosure,
   bounded read-only reconciliation, persistent uncertain-write guards and focus/
@@ -60,6 +64,13 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Add explicit `status=all` event queries while preserving the active-only default
+  and boolean filters; reject ambiguous queries and retain server-side totals
+  and pagination (Refs #743).
+
+- Run local k6 baselines with the native executable so loopback reaches the host
+  API; validate target URLs before authentication and preserve separate profile
+  summaries without changing load thresholds (Refs #502).
 - Keep frontend API-root redirects relative, emit one DENY frame policy and
   revalidate SPA HTML while caching hashed bundles immutably. Missing static
   resources return 404; integrated smoke verifies these responses (#723).

@@ -44,3 +44,12 @@ PDF e uso de senha anterior após vínculo Google. A suíte conjunta com cadastr
 A promoção exige coordenar o frontend com a API candidata e conferir os fluxos
 com os quatro perfis. A hospedagem mantém a composição identificada no runbook
 até a implantação de uma versão revisada.
+
+## Complemento candidato de papel — #611/#100, 14/11/2026
+
+Os quatro perfis podem transcrever as linhas de um incidente já cadastrado.
+Transporte/Admin cadastram o incidente e conferem as linhas de outra pessoa.
+Quem importa fica impedido de aprovar o próprio lançamento, inclusive quando tem
+perfil de gestão ou muda de perfil depois. Operadores consultam suas transcrições;
+gestores consultam a fila. Esses endpoints pertencem ao candidato #611 e ainda
+não estão na main/hospedagem. Ver [contrato](../development/paper-reconciliation-contract.md).
