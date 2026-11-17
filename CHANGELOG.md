@@ -68,6 +68,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Capture the optional paper-import vehicle ID before the EF query and use the
+  supported parameterized SQL execution API, preserving transaction locks and
+  the self-review constraint test; clarify the load-workflow assertion (#747).
+
 - Add explicit `status=all` event queries while preserving the active-only default
   and boolean filters; reject ambiguous queries and retain server-side totals
   and pagination (Refs #743).

@@ -284,7 +284,7 @@ public sealed class PaperReconciliationTests(ApiFactory factory)
         var receipt = await ImportAsync(client, Request(incident.IncidentId, true));
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
-        var error = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => db.Database.ExecuteSqlInterpolatedAsync(
+        var error = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => db.Database.ExecuteSqlAsync(
             $"UPDATE dbo.reconciliacoes_contingencia SET status = 'Conferida', conferido_por_id = {actor}, conferido_em_utc = {DateTime.UtcNow}, motivo_conferencia = {Reason} WHERE registro_acesso_id = {receipt.AccessRecordId}", Ct));
         Assert.Equal(Npgsql.PostgresErrorCodes.CheckViolation, error.SqlState);
         Assert.Equal(StatusConferenciaContingencia.Pendente, (await db.ReconciliacoesContingencia.SingleAsync(x => x.RegistroAcessoId == receipt.AccessRecordId, Ct)).Status);
