@@ -56,6 +56,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Add explicit `status=all` event queries while preserving the active-only default
+  and boolean filters; reject ambiguous queries and retain server-side totals
+  and pagination (Refs #743).
+
 - Run local k6 baselines with the native executable so loopback reaches the host
   API; validate target URLs before authentication and preserve separate profile
   summaries without changing load thresholds (Refs #502).
