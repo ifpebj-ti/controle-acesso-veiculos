@@ -14,6 +14,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Added
 
+- Persist paper incidents and attributed import/review transactions with replay
+  protection, observed-time event checks, scoped queues and PostgreSQL constraints
+  (#611, Refs #100). Frontend and hosted rollout remain separately reviewed.
+
 - Connect secure account reactivation to the validated administrative catalog:
   Local credential reset, password-free Google reactivation, one-time disclosure,
   bounded read-only reconciliation, persistent uncertain-write guards and focus/
