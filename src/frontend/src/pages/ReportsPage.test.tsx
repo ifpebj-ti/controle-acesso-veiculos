@@ -107,6 +107,26 @@ describe("ReportsPage", () => {
       ).toBeGreaterThan(0);
     },
   );
+  it("allows Transportation consultation without asking for a Google or unverified local password", async () => {
+    vi.mocked(useAuthenticatedSession).mockReturnValue({
+      user: {
+        id: 2,
+        email: "transporte.ficticio@example.test",
+        profileName: "SetorTransporte",
+        requiresPasswordChange: false,
+      },
+    } as ReturnType<typeof useAuthenticatedSession>);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText("Pessoa Fictícia");
+    const button = screen.getByRole("button", { name: "Exportar PDF" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription(/consulta está disponível/);
+    await user.click(button);
+    expect(screen.queryByLabelText(/senha/i)).not.toBeInTheDocument();
+    expect(exportVehicleMovementReport).not.toHaveBeenCalled();
+    expect(searchVehicleMovementReport).toHaveBeenCalledOnce();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     administrator();
