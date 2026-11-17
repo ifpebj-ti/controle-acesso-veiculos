@@ -40,8 +40,8 @@ public sealed class PaperReconciliationStore(
                 return Conflict("paper_outside_incident");
 
             // Serialize paper imports for one vehicle; ordinary open-entry uniqueness remains enforced by PostgreSQL.
-            var selectedPlate = data.Entry.VehicleId.HasValue
-                ? await db.Veiculos.Where(x => x.Id == data.Entry.VehicleId.Value).Select(x => x.Placa).SingleOrDefaultAsync(cancellationToken)
+            var selectedPlate = data.Entry.VehicleId is int vehicleId
+                ? await db.Veiculos.Where(x => x.Id == vehicleId).Select(x => x.Placa).SingleOrDefaultAsync(cancellationToken)
                 : data.Entry.Plate;
             if (selectedPlate is null) return Conflict("paper_vehicle_unavailable");
             await LockAsync($"paper/vehicle/{selectedPlate}", cancellationToken);
@@ -56,7 +56,7 @@ public sealed class PaperReconciliationStore(
             var result = await accessStore.RegisterEntryInTransactionAsync(data.Entry, actorUserId,
                 data.ObservedEntryAtUtc, data.ObservedExitAtUtc, importedAtUtc, cancellationToken);
             if (result.Status != VehicleAccessStoreRegistrationStatus.Success)
-                return Conflict("paper_entry_" + result.Status.ToString());
+                return Conflict("paper_entry_" + result.Status);
             var row = new ReconciliacaoContingencia(data.IncidentId, data.LineNumber,
                 result.AccessRecord!.Id, data.PaperAuthorReference, actorUserId,
                 data.ObservedEntryAtUtc, data.ObservedExitAtUtc, Microseconds(importedAtUtc),
@@ -175,7 +175,7 @@ public sealed class PaperReconciliationStore(
     }
 
     private Task<int> LockAsync(string key, CancellationToken ct) =>
-        db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", ct);
+        db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))", ct);
     private static DateTime Microseconds(DateTime value) => value.AddTicks(-(value.Ticks % 10));
     private static bool IsUniqueViolation(DbUpdateException exception) =>
         exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
