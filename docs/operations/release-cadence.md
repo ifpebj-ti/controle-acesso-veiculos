@@ -1,5 +1,10 @@
 # Cadência de releases e promoção da homologação
 
+## Atualização em 18/11/2026
+
+A main aa22c49 reúne o lote incorporado. O #754 foi integrado, gerando a tag v0.5.0 na fonte eaccd72. A publicação das imagens está em andamento e a release estável continua v0.4.0 na conferência. Correções compatíveis seguintes podem seguir em 0.5.1, 0.5.2 e posteriores. Consulte o
+[balanço atual](../validation/presentation-status-2026-11-18.md).
+
 ## Política — Issue #681
 
 Atualizar `Unreleased` no PR que entrega a mudança. Durante o piloto, revisar
