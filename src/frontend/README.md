@@ -309,6 +309,15 @@ exatamente um veículo; cota por tipo pode representar de 1 a 1000 veículos.
 Cancelamento é lógico, exige confirmação e não é descrito como exclusão do
 histórico.
 
+Na consulta de eventos, Todos envia `status=all` sem `active`; Ativos e
+Cancelados enviam `active=true` ou `active=false`, sem `status`. Nome, período,
+totais e paginação continuam vindo da consulta do servidor, sem concatenar páginas
+no navegador. A seleção de evento na entrada continua consultando somente ativos.
+O contrato e as rejeições de combinações ambíguas estão em
+[`event-authorization-query.md`](../../docs/development/event-authorization-query.md).
+A integração #743 exige API compatível; sua presença na main não comprova que
+o site hospedado já oferece esse contrato.
+
 Os períodos são preenchidos com controles nativos de data e hora e possuem uma
 instrução textual associada. Essa escolha evita introduzir um calendário
 customizado sem suporte de teclado comprovado e segue as recomendações de
