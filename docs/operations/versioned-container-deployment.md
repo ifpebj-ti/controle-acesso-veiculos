@@ -2,8 +2,12 @@
 
 ## Atualização em 18/11/2026
 
-O #754 foi integrado e criou a tag 0.5.0 na fonte eaccd72. A promoção considera a transição de 22 para 23 migrations. A hospedagem identificada é 67ad6b8/f7ee701. O reteste de 18/11 confirmou serviço saudável e apontou os itens de borda que devem ser conferidos após a promoção. Consulte o
-[balanço atual](../validation/presentation-status-2026-11-18.md).
+A release `0.5.0` está publicada e instalada na homologação, fonte `eaccd72`,
+frontend/backend GHCR fixados por digest e 23 migrations. Backup restaurado,
+SQL transacional/idempotente, 46 verificações HTTPS e controles HTTP do
+frontend passaram. Google e dados foram preservados. A autenticação Google
+pelo titular após a promoção e as demais evidências operacionais mantêm seus
+limites próprios. Consulte o [registro da promoção](../validation/release-050-rollout-2026-11-18.md).
 
 ## Objetivo e limite
 

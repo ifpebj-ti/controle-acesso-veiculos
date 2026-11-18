@@ -23,18 +23,18 @@ Esses números pertencem a fontes específicas e não são somados como uma suí
 
 ## Publicação e hospedagem
 
-A release estável publicada continua v0.4.0. A preparação 0.5.0 foi incorporada pelo #754,
-com changelog datado e plano de promoção. A tag v0.5.0 foi criada na fonte
-eaccd72. A publicação das imagens está em andamento e a release permanece
-draft na conferência registrada. Os manifests, scans e SBOMs precisam ser
-conferidos após a conclusão do pipeline.
+A release `v0.5.0` foi publicada e promovida à homologação em 18/11, fonte
+eaccd72, com imagens GHCR versionadas/digests conferidos e 23 migrations.
+O pipeline de publicação passou nas duas arquiteturas. Backup restaurado,
+proveniência assinada e quatro SBOMs foram conferidos. Passaram 46 verificações
+HTTPS e o roteiro HTTP de redirect, frames e cache do frontend. A confirmação
+de login Google pelo titular após a promoção permanece separada.
 
-A hospedagem identificada mantém frontend 67ad6b8, backend f7ee701 e 22
-migrations. A main tem 23 migrations, incluindo a adição do papel. A promoção
-precisa do conjunto de imagem/configuração, backup, revisão da migration e
-recuperação compatível. A consulta pública de 18/11 confirmou login/readiness
-200 e Google habilitado. Redirect de /api para HTTP/8080, cache e política de
-referência continuam aguardando a promoção da configuração #725.
+O [registro da promoção](release-050-rollout-2026-11-18.md) preserva identidades,
+limites e rollback. Não houve novo ensaio físico ou aceite institucional. As
+notas públicas seguem o padrão resumido anterior e incluem os comandos Docker;
+o changelog completo permanece vinculado. Rótulos internos das imagens serão
+corrigidos na #761, sem mover os artefatos imutáveis já publicados.
 
 ## Segurança e qualidade
 
