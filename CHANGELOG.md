@@ -344,7 +344,8 @@ Changes merged before this changelog was introduced remain traceable through the
 Git history, Pull Requests, Issues, and project Wiki. They must not be
 retroactively presented as a published release without an evidence-based review.
 
-[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.2.0
