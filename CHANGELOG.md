@@ -14,6 +14,9 @@ from its first published release.
   commands, verified semantic/source manifest digests, architecture checks and
   explicit pending/deployment limits; protect existing published releases
   without requiring retroactive review files (Refs #763).
+- Identify application version, checked-out source and repository in final OCI
+  image labels; verify metadata for development/release builds before scanning
+  and publication on both architectures (Refs #761).
 
 ## [0.5.0] - 2026-11-18
 
