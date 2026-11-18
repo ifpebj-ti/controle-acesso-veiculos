@@ -11,6 +11,8 @@ on:
       - ".dockerignore"
       - "infrastructure/docker/**"
       - "infrastructure/security/**"
+      - "infrastructure/ci/container_metadata.py"
+      - "infrastructure/ci/tests/test_container_metadata.py"
       - "src/backend/**"
       - "src/frontend/**"
       - ".github/workflows/ci-containers.yml"
@@ -19,6 +21,8 @@ on:
       - ".dockerignore"
       - "infrastructure/docker/**"
       - "infrastructure/security/**"
+      - "infrastructure/ci/container_metadata.py"
+      - "infrastructure/ci/tests/test_container_metadata.py"
       - "src/backend/**"
       - "src/frontend/**"
       - ".github/workflows/ci-containers.yml"
@@ -69,6 +73,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
+      - name: Identify checked-out application metadata
+        id: image-metadata
+        run: |
+          python3 -m unittest discover -s infrastructure/ci/tests -p test_container_metadata.py
+          python3 infrastructure/ci/container_metadata.py
+
       - name: Build image without publishing
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -78,9 +88,17 @@ jobs:
           load: true
           push: false
           pull: true
+          build-args: |
+            IMAGE_VERSION=${{ steps.image-metadata.outputs.version }}
+            IMAGE_REVISION=${{ steps.image-metadata.outputs.revision }}
           tags: controle-acesso-veiculos/${{ matrix.image }}:${{ github.sha }}-${{ matrix.architecture }}
           cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.architecture }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.architecture }}
+
+      - name: Verify application labels in built image
+        env:
+          IMAGE_REF: "controle-acesso-veiculos/${{ matrix.image }}:${{ github.sha }}-${{ matrix.architecture }}"
+        run: python3 infrastructure/ci/container_metadata.py --verify-image "$IMAGE_REF"
 
       - name: Reject all critical vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -614,6 +632,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
+      - name: Identify checked-out application metadata
+        id: image-metadata
+        run: |
+          python3 -m unittest discover -s infrastructure/ci/tests -p test_container_metadata.py
+          python3 infrastructure/ci/container_metadata.py
+
       - name: Build image for publication
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -623,9 +647,17 @@ jobs:
           load: true
           push: false
           pull: true
+          build-args: |
+            IMAGE_VERSION=${{ steps.image-metadata.outputs.version }}
+            IMAGE_REVISION=${{ steps.image-metadata.outputs.revision }}
           tags: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}-${{ matrix.architecture }}
           cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.architecture }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.architecture }}
+
+      - name: Verify application labels in built image
+        env:
+          IMAGE_REF: "${{ env.IMAGE_NAME }}:sha-${{ github.sha }}-${{ matrix.architecture }}"
+        run: python3 infrastructure/ci/container_metadata.py --verify-image "$IMAGE_REF"
 
       - name: Reject all critical vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0

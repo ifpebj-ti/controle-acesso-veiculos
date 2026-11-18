@@ -8,6 +8,12 @@ from its first published release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Identify application version, checked-out source and repository in final OCI
+  image labels; verify metadata for development/release builds before scanning
+  and publication on both architectures (Refs #761).
+
 ## [0.5.0] - 2026-11-18
 
 ### Added
