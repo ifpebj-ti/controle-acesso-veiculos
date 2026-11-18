@@ -1,5 +1,10 @@
 # Preparação para a Unidade 2
 
+## Atualização em 18/11/2026
+
+A main aa22c49 incorpora pré-cadastro/Transporte, o filtro de eventos e os filtros próprios dos relatórios. O #754 foi integrado e gerou a tag 0.5.0; publicação e promoção seguem na #686. Os critérios operacionais desta matriz conservam suas evidências e pendências. Consulte o
+[balanço atual](presentation-status-2026-11-18.md).
+
 > Atualização de 15/11/2026 após os merges #717/#716/#719/#702, main `8e223d3`.
 > Homologação com frontend `67ad6b8`, backend `f7ee701` e 22 migrations.
 > A composição inclui #672/#702/#704/#705/#716/#717/#719. Passaram 966 testes
@@ -115,7 +120,7 @@ Para acompanhamento, cada um dos 17 itens obrigatórios consolidados recebe:
 - `0,5` quando parcial;
 - `0` quando pendente.
 
-Na consolidação de **15/11/2026**, com evidência local de 13/11,, os 17 itens ficam em **8 atendidos,
+Na consolidação de **15/11/2026**, com evidência local de 13/11, os 17 itens ficam em **8 atendidos,
 8 parciais e 1 pendente**. A estimativa é `(8 + 8 × 0,5) / 17 = 70,6%`, cerca
 de **71% concluído e 29% restante**, com incerteza de **±5 pontos**.
 
