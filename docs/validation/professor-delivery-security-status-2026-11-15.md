@@ -25,9 +25,24 @@ seguintes avanços e pendências.
 | CAV-17/CAV-22/CAV-23/CAV-27        | Configuração Nginx #725 incorporada. Promoção e reteste público permanecem na #686, incluindo redirects, headers, cache e política efetiva das camadas.                                                                                  |
 
 A última hospedagem identificada continua frontend `67ad6b8`, backend `f7ee701`
-e 22 migrations. A verificação remota não foi repetida nesta tarefa. O rascunho
+e 22 migrations, conforme a última conferência administrativa. O rascunho
 `0.5.0` está em preparação na #713, com PR #754. O encerramento dos itens
 operacionais depende das respectivas evidências de implantação e uso.
+
+## Consulta pública em 18/11/2026
+
+Cinco GETs sem autenticação, com validação TLS e redirects desabilitados,
+confirmaram login 200, readiness 200 e googleEnabled=true. O módulo público
+index-Dqbj1ol2.js manteve SHA-256
+a1a84cc6f0de37e82a2ae3cef530c1bda1068f27e958706bab419212b75795e4,
+igual ao artefato público anteriormente identificado.
+
+GET /api respondeu 308 com Location para HTTP e porta 8080. Login e bundle
+continuaram sem Cache-Control explícito; a política Referrer-Policy observada
+foi strict-origin-when-cross-origin. CAV-17/CAV-23/CAV-27 seguem aguardando a
+promoção da configuração revisada e novo reteste. Readiness e providers
+conservaram no-store. A consulta não autenticada não inspecionou imagens,
+banco, cookies de sessão ou permissões de usuários.
 
 ## Solicitações dos professores
 
