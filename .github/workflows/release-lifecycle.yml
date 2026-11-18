@@ -18,6 +18,7 @@ on:
     types: [opened, synchronize, reopened, closed]
     paths:
       - CHANGELOG.md
+      - "docs/releases/**"
       - infrastructure/ci/release_lifecycle.py
       - infrastructure/ci/tests/test_release_lifecycle.py
       - .github/workflows/release-lifecycle.yml
@@ -38,6 +39,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: python3 -m unittest discover -s infrastructure/ci/tests -p test_release_lifecycle.py
+      - name: Require reviewed notes before preparation can merge
+        env:
+          RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: python3 infrastructure/ci/release_lifecycle.py check-proposal --branch "$RELEASE_BRANCH"
 
   prepare:
     if: github.event_name == 'workflow_dispatch'
