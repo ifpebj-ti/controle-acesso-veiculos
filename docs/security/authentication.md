@@ -75,7 +75,8 @@ locais do perfil Administrador depois da transição.
   réplicas e protegido por certificado X.509 externo ao repositório. Produção e
   containers locais falham ao iniciar se volume, certificado ou senha não forem
   configurados, evitando fallback silencioso para chaves efêmeras.
-- O token contém apenas identificador do usuário, e-mail, perfil e identificador único do token.
+- O token contém identificador do usuário, e-mail, perfil, versão da credencial,
+  exigência de troca de senha, identificador único do token e família de sessão.
 - A política global exige autenticação. Login, health checks e OpenAPI em desenvolvimento são exceções explícitas.
 - OpenAPI não é publicado fora do ambiente `Development`.
 - O primeiro administrador é criado somente por comando explícito, fora da superfície HTTP.
@@ -92,17 +93,33 @@ locais do perfil Administrador depois da transição.
 - Desativação e reativação são auditadas atomicamente sem duplicar nome ou e-mail.
 - Criação administrativa registra o Administrador como ator; o bootstrap registra origem `Bootstrap` com ator nulo, pois ainda não existe usuário autenticado.
 
-O servidor possui renovação, rotação, revogação e logout, mas não mantém uma lista de JWTs: o access token continua curto e a API confirma conta, perfil e versão da credencial em cada requisição. A família persistida controla a renovação, enquanto a versão invalida em conjunto os JWTs anteriores após troca de senha. Não armazenar JWT ou refresh token em `localStorage`, `sessionStorage`, logs ou mensagens de erro. A identidade retornada ajuda a montar a interface, mas o frontend não decide autorização: cada operação continua sendo validada pelas políticas da API. A auditoria de autenticação não guarda e-mail, senha, JWT, refresh token, hash, cookie, IP ou tentativas para usuário inexistente. Se a persistência obrigatória de sessão e auditoria de um login válido falhar, a API não emite credencial.
+O access token continua curto e inclui `sid`, o identificador estável da família
+de sessão. A API confirma conta, perfil, versão da credencial e sucessor ativo
+daquela família em cada requisição. Logout e revogação por reuso impedem também
+o uso dos access tokens da família, sem aguardar seu TTL. Rotação normal mantém
+a família válida; sessões independentes são preservadas. A versão da credencial
+continua invalidando todas as famílias após uma troca de senha. Tokens legados
+sem `sid` são recusados; consultar a [ADR 0001](../architecture/decisions/0001-secure-session-lifecycle.md)
+para compatibilidade e implantação.
+
+Não armazenar JWT ou refresh token em `localStorage`, `sessionStorage`, logs ou
+mensagens de erro. A identidade retornada ajuda a montar a interface, mas o
+frontend não decide autorização. A auditoria não guarda e-mail, senha, JWT,
+refresh token, hash, cookie, IP ou tentativas de usuário inexistente. Falha na
+persistência obrigatória de sessão e auditoria impede emitir a credencial.
 
 O procedimento de armazenamento, rotação, resposta a comprometimento, backup e
 restauração do key ring está registrado na
 [ADR 0003](../architecture/decisions/0003-protected-data-protection-key-ring.md).
 
-A integração Google ainda não é declarada homologada: faltam credenciais OAuth
-separadas por ambiente, callback HTTPS real, gestão administrativa da pré-autorização,
-integração da tela e testes observados. Enquanto `Authentication:Google:Enabled`
-for `false`, os endpoints de início e conclusão respondem como indisponíveis e o
-comportamento atual não é alterado.
+A homologação completa do Google mantém os critérios e as fontes dos ensaios
+registrados, sem confundir configuração com aceite. A
+[promoção de 11/11](../validation/backend-runtime-rollout-2026-11-11.md)
+identifica frontend `7dd02a6` e backend `812b71e`, com sucesso e uma recarga
+relatados por José como Porteiro; não é observação independente do agente nem
+validação de todos os cenários. Enquanto `Authentication:Google:Enabled` for
+`false`, os endpoints de início e conclusão respondem como indisponíveis e o
+frontend mantém a ação Google visível e desabilitada.
 
 O procedimento planejado para indisponibilidade do provedor, uso individual de
 contas de emergência, retorno ao serviço e preservação de evidências está no
@@ -130,11 +147,27 @@ ensaio necessário para distinguir configuração pronta de login homologado.
 
 ## Integração do frontend
 
-A Issue #117 aplica essa decisão no frontend React. O formulário usa e-mail e
-senha porque esse é o contrato vigente de `POST /auth/login`; a preferência
-visual anterior por nome de usuário não altera silenciosamente a API. A resposta
-é validada antes de criar a sessão, e somente `id`, e-mail, perfil e expiração
-compõem a identidade local.
+A Issue #461 integra a decisão no frontend React. A tela consulta
+`GET /auth/providers` sem cache. “Continuar com Google” só permite iniciar o
+acesso quando a resposta validada informa `googleEnabled: true`. Com `false`,
+o botão permanece visível e desabilitado, com mensagem de indisponibilidade.
+A ausência de contas autorizadas não controla a exibição; a API verifica o
+acesso após a autenticação. Falha na descoberta mantém o estado de erro e não
+habilita o botão. O início usa navegação completa
+para `/auth/google/start`, sem `fetch`, popup ou SDK Google. O formulário de
+e-mail e senha só aparece depois da ação “Entrar com usuário e senha”, indicada
+como “Acesso administrativo”, em uma visualização exclusiva na mesma rota. A
+ação “Voltar” apaga o formulário e restaura o foco ao acionador. O acesso permanece
+exclusivo do perfil Administrador; o backend continua impondo o método aceito.
+
+No retorno `/login?status=success`, o frontend remove o parâmetro e restaura a
+sessão local pelo ciclo CSRF e refresh existente. `status=denied`, descoberta
+indisponível e retorno sem sessão válida produzem mensagens genéricas e
+acessíveis. Nenhum parâmetro concede perfil, e-mail e domínio não são usados
+para inferir autorização. HTTPS, domínio e cliente OAuth são configuração externa;
+sua disponibilidade já registrada não encerra os critérios pendentes. A correlação
+do cenário de conta não pré-autorizada continua limitada pelas evidências existentes:
+uma mensagem genérica não comprova retrospectivamente o ramo interno da negação.
 
 O access token fica em uma variável de módulo e no contexto React apenas durante
 a aba aberta. Ele é anexado pelo interceptor do Axios, nunca é colocado em URL,
@@ -321,3 +354,41 @@ A Issue #542 corrige a serialização numérica identificada no ensaio real do
 candidato frontend #530, que valida esse campo estritamente. A regressão integrada
 verifica o JSON de contas Local e Google e o conjunto de propriedades expostas.
 Não há mudança de perfil, persistência ou regra de autenticação nesta correção.
+
+## Recuperação na reativação — candidato #663
+
+A reativação simples `POST /users/{id}/reactivation` permanece disponível para
+contas Google e preserva seu vínculo. Para uma conta Local suspensa, o candidato
+retorna HTTP 409 com `local_reactivation_requires_credential_reset`, sem ativá-la.
+Isso evita restabelecer uma senha possivelmente comprometida.
+
+O novo `POST /users/{id}/reactivation-with-reset` exige `users:manage` e corpo
+`{ "reason": "SuspeitaComprometimento" }`, ou outro motivo do catálogo de
+redefinição já existente. Em conta Local inativa, reativação, nova credencial,
+incremento de versão, revogação de sessões e auditoria são gravados na mesma
+transação, sob bloqueio da conta. A resposta 200 usa o contrato
+`{ temporaryCredential, temporaryCredentialExpiresAtUtc }`, entregue uma vez,
+com `no-store`; a senha anterior não autentica. O primeiro uso consome a
+credencial e restringe a sessão à troca obrigatória conforme a política existente.
+
+Conta já ativa ou Google e auto-operação retornam conflito; motivo inválido
+retorna 400; conta inexistente retorna 404. A operação usa o limitador de troca
+de senha já adotado. Não é recuperação automática por e-mail nem redefinição
+da senha do provedor. O fluxo de conta ativa em `temporary-credential` mantém
+seu contrato. A auditoria não contém a nova credencial, hash ou identificador Google.
+
+Se a resposta se perder após o commit, não repetir a reativação automaticamente:
+ela já pode ter concluído. Conferir o estado; um Administrador pode emitir outra
+credencial pelo fluxo de redefinição de conta ativa, com nova justificativa.
+Concorrentes não recebem duas credenciais pela reativação: só uma transação
+pode converter o estado inativo em ativo.
+
+A interface precisa distinguir Local/Google, exibir a credencial nova uma única
+vez e orientar sua entrega protegida. **Este contrato é candidato, não está
+implantado e depende de integração com o frontend antes da liberação.** O botão
+antigo não deve ser apresentado como capaz de concluir uma reativação Local.
+A validação local inclui falha de auditoria injetada, verificando rollback do
+estado, hash e versão; o ensaio integrado com a interface permanece pendente.
+
+Referências: [OWASP — recuperação de conta](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
+e [OWASP — autenticação](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html).

@@ -24,6 +24,7 @@ function renderLayout(
           expiresAtUtc: "2026-09-03T23:59:59.000Z",
           login: vi.fn(),
           logout,
+          restoreExternalSession: vi.fn(),
           sessionEndReason: null,
           sessionNotice,
           status: "authenticated",
@@ -62,6 +63,7 @@ function renderNavigableLayout() {
           expiresAtUtc: "2026-09-03T23:59:59.000Z",
           login: vi.fn(),
           logout: vi.fn(),
+          restoreExternalSession: vi.fn(),
           sessionEndReason: null,
           status: "authenticated",
           user: {
@@ -94,6 +96,32 @@ function renderNavigableLayout() {
 }
 
 describe("AppLayout", () => {
+  it.each<ProfileName>([
+    "Porteiro",
+    "Vigilante",
+    "SetorTransporte",
+    "Administrador",
+  ])(
+    "shows voluntary password change only for the administrator in both menus (%s)",
+    async (profile) => {
+      const user = userEvent.setup();
+      renderLayout(profile);
+      const sidebar = screen.getByRole("complementary");
+      const expectedLinks = profile === "Administrador" ? 1 : 0;
+      expect(
+        within(sidebar).queryAllByRole("link", { name: "Alterar senha" }),
+      ).toHaveLength(expectedLinks);
+
+      screen.getByRole("button", { name: "Abrir menu" }).focus();
+      await user.keyboard("{Enter}");
+      const dialog = screen.getByRole("dialog", { name: "Menu principal" });
+      expect(
+        within(dialog).queryAllByRole("link", { name: "Alterar senha" }),
+      ).toHaveLength(expectedLinks);
+      await user.keyboard("{Escape}");
+      expect(screen.getByRole("button", { name: "Abrir menu" })).toHaveFocus();
+    },
+  );
   it.each<ProfileName>([
     "Porteiro",
     "Vigilante",
@@ -230,6 +258,35 @@ describe("AppLayout", () => {
     await expectNoSeriousAccessibilityViolations(container);
   });
 
+  it("discloses appearance during mandatory change and returns focus with Escape", async () => {
+    const user = userEvent.setup();
+    renderLayout("Porteiro", null, true);
+    const trigger = screen.getByRole("button", {
+      name: "Aparência",
+    });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("button", { name: "Escuro" }),
+    ).not.toBeInTheDocument();
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await user.click(screen.getByRole("button", { name: "Escuro" }));
+    expect(screen.getByRole("button", { name: "Escuro" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.keyboard("{Escape}");
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("button", { name: "Escuro" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("does not repeat development status inside authenticated pages", () => {
     renderLayout();
 
@@ -279,20 +336,25 @@ describe("AppLayout", () => {
       within(dialog).getByRole("link", { name: "Histórico de acessos" }),
     ).toBeVisible();
     expect(
-      within(dialog).queryByRole("link", { name: "Registrar entrada" }),
+      within(dialog).getByRole("link", { name: "Registrar entrada" }),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("link", { name: "Acessos em aberto" }),
+    ).toBeVisible();
+    expect(
+      within(dialog).queryByRole("link", {
+        name: /Usuários e permissões|Contas de acesso/,
+      }),
     ).not.toBeInTheDocument();
     expect(
-      within(dialog).queryByRole("link", { name: "Acessos em aberto" }),
-    ).not.toBeInTheDocument();
+      within(dialog).getByRole("link", { name: "Relatórios" }),
+    ).toBeVisible();
     expect(
-      within(dialog).queryByRole("link", { name: "Usuários e permissões" }),
-    ).not.toBeInTheDocument();
+      within(dialog).getByRole("link", { name: "Trilha de auditoria" }),
+    ).toBeVisible();
     expect(
-      within(dialog).queryByRole("link", { name: "Relatórios" }),
+      within(dialog).queryByRole("link", { name: "Alterar senha" }),
     ).not.toBeInTheDocument();
-    expect(
-      within(dialog).getByRole("link", { name: "Alterar senha" }),
-    ).toHaveAttribute("href", "/conta/senha");
   });
 
   it("announces collapsible groups and preserves a clear active item", async () => {

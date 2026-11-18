@@ -15,6 +15,92 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 public sealed class EventAuthorizationTests(ApiFactory factory)
 {
     [Fact]
+    public async Task ExplicitAllStatusPreservesServerPaginationAndLegacyActiveFilters()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.TransportationDepartment, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var prefix = $"Status {Guid.NewGuid():N}";
+        var starts = DateTimeOffset.UtcNow.AddDays(3);
+        var ends = starts.AddHours(2);
+        var expected = new List<int>();
+        for (var i = 0; i < 3; i++)
+        {
+            using var response = await client.PostAsJsonAsync("/event-authorizations",
+                Request($"{prefix} {i}", "Responsável fictício", TestPlate.From(Guid.NewGuid().ToString("N")), starts, ends),
+                cancellationToken: TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            var row = await response.Content.ReadFromJsonAsync<EventAuthorizationResponse>(TestContext.Current.CancellationToken);
+            Assert.NotNull(row);
+            expected.Add(row.Id);
+        }
+        using var cancelled = await client.DeleteAsync($"/event-authorizations/{expected[1]}", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.NoContent, cancelled.StatusCode);
+        var query = $"/event-authorizations?name={Uri.EscapeDataString(prefix)}"
+            + $"&fromUtc={Uri.EscapeDataString(starts.AddHours(-1).ToString("O"))}"
+            + $"&toUtc={Uri.EscapeDataString(ends.AddHours(1).ToString("O"))}";
+        var observed = new List<EventAuthorizationResponse>();
+        for (var page = 1; page <= 3; page++)
+        {
+            using var response = await client.GetAsync($"{query}&status=all&pageSize=1&page={page}", TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var result = await response.Content.ReadFromJsonAsync<EventAuthorizationPage>(TestContext.Current.CancellationToken);
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.Equal(3, result.TotalPages);
+            Assert.Equal(page, result.Page);
+            observed.Add(Assert.Single(result.Items));
+        }
+        Assert.Equal(expected.Order(), observed.Select(row => row.Id).Order());
+        Assert.Single(observed, row => !row.Active);
+        foreach (var (filter, total, active) in new[] { ("", 2, true), ("&active=true", 2, true), ("&active=false", 1, false) })
+        {
+            using var response = await client.GetAsync(query + filter, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var result = await response.Content.ReadFromJsonAsync<EventAuthorizationPage>(TestContext.Current.CancellationToken);
+            Assert.NotNull(result);
+            Assert.Equal(total, result.TotalCount);
+            Assert.All(result.Items, row => Assert.Equal(active, row.Active));
+        }
+    }
+
+    [Theory]
+    [InlineData("status=all&active=true")]
+    [InlineData("status=all&active=false")]
+    [InlineData("status=unknown")]
+    [InlineData("status=")]
+    public async Task AmbiguousOrInvalidEventStatusIsRejected(string query)
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Administrator, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        using var response = await client.GetAsync($"/event-authorizations?{query}", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("status", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Theory]
+    [InlineData("%00")]
+    [InlineData("Evento%00Teste")]
+    public async Task EventSearchRejectsNullCharacter(string encodedName)
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Administrator, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+
+        var response = await client.GetAsync(
+            $"/event-authorizations?name={encodedName}", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("name", json);
+        Assert.DoesNotContain("Evento", json);
+    }
+
+    [Fact]
     public async Task AdministratorCanManageAndDoormanCanReadEvent()
     {
         const string password = "Test-only-password-123!";
@@ -100,7 +186,7 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
     [InlineData(ProfileNames.Doorman)]
     [InlineData(ProfileNames.SecurityGuard)]
     [InlineData(ProfileNames.TransportationDepartment)]
-    public async Task NonAdministratorProfilesCanReadButCannotManageEvents(string profileName)
+    public async Task EventManagementFollowsUpdatedProfileMatrix(string profileName)
     {
         const string password = "Test-only-password-123!";
         var (_, email) = await CreateUserAsync(profileName, password);
@@ -110,6 +196,21 @@ public sealed class EventAuthorizationTests(ApiFactory factory)
         Assert.Equal(
             HttpStatusCode.OK,
             (await client.GetAsync("/event-authorizations", TestContext.Current.CancellationToken)).StatusCode);
+        if (profileName == ProfileNames.TransportationDepartment)
+        {
+            var plate = TestPlate.From(Guid.NewGuid().ToString("N"));
+            var created = await client.PostAsJsonAsync("/event-authorizations", Request(
+                "Evento Fictício", "Responsável Fictício", plate,
+                DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow.AddDays(2)), TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            using var json = System.Text.Json.JsonDocument.Parse(await created.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            var id = json.RootElement.GetProperty("id").GetInt32();
+            Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync($"/event-authorizations/{id}", Request(
+                "Evento Fictício Atualizado", "Responsável Fictício", plate,
+                DateTimeOffset.UtcNow.AddDays(1), DateTimeOffset.UtcNow.AddDays(2)), TestContext.Current.CancellationToken)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/event-authorizations/{id}", TestContext.Current.CancellationToken)).StatusCode);
+            return;
+        }
         Assert.Equal(
             HttpStatusCode.Forbidden,
             (await client.PostAsJsonAsync("/event-authorizations", Request(

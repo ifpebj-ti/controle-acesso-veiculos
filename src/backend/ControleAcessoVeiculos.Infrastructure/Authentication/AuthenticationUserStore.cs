@@ -9,7 +9,8 @@ namespace ControleAcessoVeiculos.Infrastructure.Authentication;
 
 public sealed class AuthenticationUserStore(
     ControleAcessoVeiculosDbContext dbContext,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    AuthenticationSessionPolicy sessionPolicy)
     : IAuthenticationUserStore
 {
     public async Task<AuthenticationUser?> FindByEmailAsync(
@@ -58,15 +59,24 @@ public sealed class AuthenticationUserStore(
     public Task<bool> IsAuthenticationStateValidAsync(
         int userId,
         int credentialVersion,
+        Guid sessionFamilyId,
         CancellationToken cancellationToken)
     {
         var now = timeProvider.GetUtcNow().UtcDateTime;
+        var inactivityCutoff = now.Subtract(sessionPolicy.InactivityTimeout);
         return dbContext.Usuarios
             .AsNoTracking()
             .Where(user =>
                 user.Id == userId &&
                 user.Ativo &&
                 user.VersaoCredencial == credentialVersion &&
+                dbContext.SessoesAutenticacao.Any(session =>
+                    session.UsuarioId == user.Id &&
+                    session.FamiliaId == sessionFamilyId &&
+                    session.RevogadaEm == null &&
+                    session.ConsumidaEm == null &&
+                    session.ExpiraEm > now &&
+                    session.UltimaAtividadeEm > inactivityCutoff) &&
                 (!user.TrocaSenhaObrigatoria ||
                  user.CredencialTemporariaExpiraEm > now))
             .Join(

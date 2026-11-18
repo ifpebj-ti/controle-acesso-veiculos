@@ -32,12 +32,12 @@ IFPE — Campus Belo Jardim.
 O projeto substitui formulários repetitivos e consultas manuais por um fluxo
 rastreável de entrada e saída de veículos. O MVP atende quatro perfis:
 
-| Perfil              | Responsabilidade atual                                    |
-| ------------------- | --------------------------------------------------------- |
-| Porteiro            | opera entradas, saídas e consultas necessárias à portaria |
-| Vigilante           | assume o mesmo fluxo do Porteiro durante a substituição   |
-| Setor de Transporte | supervisiona históricos e mantém frota e motoristas       |
-| Administrador       | gerencia contas, eventos e operações técnicas autorizadas |
+| Perfil              | Responsabilidade atual                                        |
+| ------------------- | ------------------------------------------------------------- |
+| Porteiro            | opera entradas, saídas e consultas necessárias à portaria     |
+| Vigilante           | assume o mesmo fluxo do Porteiro durante a substituição       |
+| Setor de Transporte | opera acessos e mantém cadastros, frota, motoristas e eventos |
+| Administrador       | reúne as funções de negócio e gerencia contas e permissões    |
 
 O sistema inclui acesso geral, acessos em aberto, histórico e correção auditada,
 frota institucional, motoristas autorizados, utilizações, eventos, resumo diário,
@@ -46,6 +46,44 @@ cancelas e fluxo de pedestres não pertencem ao MVP atual.
 
 O estado confirmado, as hipóteses e as pendências estão na página
 [Status do Projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Status-do-Projeto).
+
+## Estado em 17/11/2026
+
+A main `506d06f` incorpora o pré-cadastro e as sugestões de entrada (#704), a
+navegação e as ações de negócio do Transporte (#705), a reativação de contas
+pela interface (#672) e os incrementos anteriores. Gestão de contas e concessão
+de perfis permanecem exclusivas do Administrador.
+
+O backend de contingência em papel (#611) e a consulta de eventos com
+`status=all` (#745) também estão incorporados. A interface de papel (#712),
+o ajuste do filtro de eventos no frontend (#743) e a confirmação de exportação
+PDF por identidade Google (#699) continuam separados e pendentes.
+
+A última composição identificada na homologação usa frontend candidato
+`67ad6b8` e backend `f7ee701`, com 22 migrations. Essa composição já inclui as
+interfaces de pré-cadastro e Transporte, mas não comprova a implantação dos
+novos contratos de papel e consulta de eventos. As evidências HTTPS, snapshots
+e autoria estão registradas nos respectivos PRs e no
+[Status do Projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Status-do-Projeto).
+Um merge não atualiza automaticamente a VM.
+
+A release estável publicada continua `v0.4.0`; `v0.5.0` está em preparação
+(#686/#713). Código incorporado e candidato de homologação não equivalem a uma
+nova release publicada nem à autorização para operação institucional.
+
+Os contratos de categorias, pré-cadastro e permissões estão no
+[guia de pré-cadastro](docs/development/campus-driver-registry-contract.md)
+e na [matriz de permissões](docs/architecture/transport-authorization-matrix.md).
+Transporte e Administrador podem manter o pré-cadastro. O nascimento conferido
+é usado na verificação de maioridade. A portaria confirma pessoa e objetivo
+antes da nova entrada.
+
+A CI publica o resumo de [cobertura backend](docs/development/backend-coverage-gate.md)
+e aplica piso de 70%. A execução 43343801016, na main `8b61ccd`, mediu 93,50%
+das linhas, com migrations geradas excluídas. Cada candidato posterior mantém
+sua medição própria. O [ciclo de releases](docs/operations/release-automation.md)
+prepara changelog, tag e publicação após os gates das imagens. A release publicada
+é `v0.4.0`. A preparação de `0.5.0` está nas #713/#686 e inclui a conclusão do #672.
 
 ## Arquitetura
 

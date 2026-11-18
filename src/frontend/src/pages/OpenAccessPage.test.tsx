@@ -90,6 +90,7 @@ function mockProfile(profileName: ProfileName) {
     expiresAtUtc: "2030-06-10T22:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),
+    restoreExternalSession: vi.fn(),
     sessionEndReason: null,
     status: "authenticated",
     user: {
@@ -439,7 +440,7 @@ describe("OpenAccessPage", () => {
     },
   );
 
-  it("does not offer exceptional closure to Transportation", async () => {
+  it("offers exceptional closure to Transportation", async () => {
     vi.mocked(listOpenAccessRecords).mockResolvedValue([record]);
     renderPage("SetorTransporte");
 
@@ -449,7 +450,7 @@ describe("OpenAccessPage", () => {
       within(mobileList()).queryByRole("button", {
         name: /Regularizar saída não registrada/,
       }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
   });
 
   it("applies the canonical exceptional response before list revalidation", async () => {

@@ -8,7 +8,7 @@ import { CorrectionDialog } from "../../access-corrections/CorrectionDialog";
 import { CorrectionComparison } from "../../access-corrections/CorrectionComparison";
 import { useCorrectionSubmission } from "../../access-corrections/useCorrectionSubmission";
 import type { CorrectionRequest } from "../../access-corrections/schemas";
-import { generalAccessCategories } from "../model/accessCategories";
+import { generalAccessCategoryOptions } from "../model/accessCategories";
 import {
   accessCorrectionFormSchema,
   type AccessCorrectionFormValues,
@@ -146,10 +146,7 @@ function ProposalDialog({
             disabled={locked}
             value={values.categoryName}
             onValueChange={(value) => update("categoryName", value)}
-            options={generalAccessCategories.map((value) => ({
-              label: value,
-              value,
-            }))}
+            options={generalAccessCategoryOptions}
             aria-invalid={!!errors.categoryName}
             aria-describedby="correction-category-error"
           />

@@ -101,8 +101,9 @@ export function UserAccountForm({
           Criar conta
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
-          Informe os dados da pessoa. O sistema criará uma credencial temporária
-          somente depois que a conta for cadastrada com sucesso.
+          Informe os dados da pessoa. Após o cadastro, o sistema informará o
+          método de acesso e exibirá uma credencial temporária somente quando
+          ela for emitida.
         </p>
       </div>
 

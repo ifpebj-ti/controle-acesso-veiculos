@@ -1,3 +1,4 @@
+using ControleAcessoVeiculos.Infrastructure.Search;
 using System.Text.Json;
 using ControleAcessoVeiculos.Application.EventAuthorizations;
 using ControleAcessoVeiculos.Domain.Entities;
@@ -74,7 +75,7 @@ public sealed class EventAuthorizationStore(
         if (criteria.Name is not null)
         {
             query = query.Where(entity =>
-                EF.Functions.ILike(entity.Nome, $"%{criteria.Name}%"));
+                EF.Functions.ILike(entity.Nome, LiteralLikePattern.Contains(criteria.Name), "\\"));
         }
 
         if (criteria.Active is { } active)

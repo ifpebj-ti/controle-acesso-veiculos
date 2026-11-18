@@ -33,10 +33,8 @@ public sealed class AdministrativeReportExportSecurity(
 
         if (actor is null ||
             !actor.User.PodeAutenticarComSenha(timeProvider.GetUtcNow().UtcDateTime) ||
-            !string.Equals(
-                actor.ProfileName,
-                ProfileNames.Administrator,
-                StringComparison.Ordinal))
+            (actor.ProfileName != ProfileNames.Administrator &&
+             actor.ProfileName != ProfileNames.TransportationDepartment))
         {
             passwordHashService.PerformDummyVerification(password);
             return AdministrativeReportExportConfirmation.Unauthorized();

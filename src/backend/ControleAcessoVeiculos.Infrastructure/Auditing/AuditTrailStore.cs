@@ -1,3 +1,4 @@
+using ControleAcessoVeiculos.Infrastructure.Search;
 using ControleAcessoVeiculos.Application.Auditing;
 using ControleAcessoVeiculos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +25,7 @@ public sealed class AuditTrailStore(ControleAcessoVeiculosDbContext dbContext)
 
         if (criteria.Entity is not null)
         {
-            query = query.Where(audit => EF.Functions.ILike(audit.Entidade, criteria.Entity));
+            query = query.Where(audit => EF.Functions.ILike(audit.Entidade, LiteralLikePattern.Escape(criteria.Entity), "\\"));
         }
 
         if (criteria.RecordId is { } recordId)

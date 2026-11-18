@@ -1,8 +1,21 @@
 import { StrictMode } from "react";
 import { AxiosError } from "axios";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
+import {
+  MemoryRouter,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const humanActivityHarness = vi.hoisted(() => ({
@@ -108,6 +121,7 @@ function deferred<T>() {
 
 function renderRestrictedApplication(
   initialEntry: string | { pathname: string; state?: unknown } = "/login",
+  rehearseAccountSwitch = false,
 ) {
   return render(
     <AppearanceProvider>
@@ -115,10 +129,26 @@ function renderRestrictedApplication(
         <MemoryRouter initialEntries={[initialEntry]}>
           <Routes>
             <Route element={<RouteTransitionManager />}>
-              <Route element={<LoginPage />} path="/login" />
+              <Route
+                element={
+                  <>
+                    <LoginPage />
+                    {rehearseAccountSwitch && <CallbackRehearsal />}
+                  </>
+                }
+                path="/login"
+              />
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route element={<ProfileRoute />}>
+                    <Route
+                      element={<h1>Relatórios fictícios</h1>}
+                      path="/relatorios"
+                    />
+                    <Route
+                      element={<h1>Usuários fictícios</h1>}
+                      path="/administracao"
+                    />
                     <Route
                       element={<h1>Painel operacional fictício</h1>}
                       path="/visao-geral"
@@ -139,6 +169,21 @@ function renderRestrictedApplication(
         </MemoryRouter>
       </SessionProvider>
     </AppearanceProvider>,
+  );
+}
+
+function CallbackRehearsal() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  return (
+    <>
+      <output aria-label="Intenção de retorno">
+        {JSON.stringify(location.state)}
+      </output>
+      <button type="button" onClick={() => navigate("/login?status=success")}>
+        Retorno Google fictício
+      </button>
+    </>
   );
 }
 
@@ -203,6 +248,9 @@ function renderAuthenticationFlow(
 
 async function submitCredentials() {
   const user = userEvent.setup();
+  await user.click(
+    await screen.findByRole("button", { name: "Entrar com usuário e senha" }),
+  );
   await user.type(
     await screen.findByLabelText("E-mail:"),
     "operator@example.test",
@@ -225,9 +273,14 @@ beforeEach(() => {
       ),
     },
   });
-  vi.spyOn(api, "get").mockRejectedValue({
-    isAxiosError: true,
-    response: { status: 401 },
+  vi.spyOn(api, "get").mockImplementation(async (url) => {
+    if (url === "/auth/providers") {
+      return { data: { googleEnabled: true } };
+    }
+    return Promise.reject({
+      isAxiosError: true,
+      response: { status: 401 },
+    });
   });
 });
 
@@ -249,6 +302,154 @@ function seedRestorableSession() {
 }
 
 describe("authentication flow", () => {
+  it.each(["/conta/senha", "/conta/senha/"])(
+    "does not resume the password form after administrator login from %s",
+    async (pathname) => {
+      const post = vi
+        .spyOn(api, "post")
+        .mockResolvedValue(responseFor("Administrador"));
+      renderRestrictedApplication({
+        pathname: "/login",
+        state: { from: { pathname } },
+      });
+      await submitCredentials();
+      const heading = await screen.findByRole("heading", {
+        name: "Painel operacional fictício",
+      });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+      expect(post.mock.calls.map(([url]) => url)).toEqual(["/auth/login"]);
+    },
+  );
+
+  it("returns to overview after mandatory password change and a new administrator login", async () => {
+    seedRestorableSession();
+    vi.mocked(api.get).mockImplementation(async (url) => ({
+      data:
+        url === "/auth/providers"
+          ? { googleEnabled: true }
+          : { requestToken: "test-only-csrf-token" },
+    }));
+    const post = vi.spyOn(api, "post").mockImplementation(async (url) => {
+      if (url === "/auth/refresh")
+        return responseFor("Administrador", 60_000, true);
+      if (url === "/auth/password") return { data: undefined };
+      if (url === "/auth/login") return responseFor("Administrador");
+      throw new Error("Unexpected test request");
+    });
+    const user = userEvent.setup();
+    renderRestrictedApplication("/conta/senha");
+    await screen.findByRole("heading", { name: "Crie sua senha permanente" });
+    await user.type(
+      screen.getByLabelText("Senha atual"),
+      "temporary-test-password",
+    );
+    await user.type(
+      screen.getByLabelText("Nova senha"),
+      "new-test-password-value",
+    );
+    await user.type(
+      screen.getByLabelText("Confirmar nova senha"),
+      "new-test-password-value",
+    );
+    await user.click(screen.getByRole("button", { name: "Alterar senha" }));
+    await screen.findByText(
+      "Senha alterada com segurança. Entre novamente usando a nova senha.",
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Entrar com usuário e senha" }),
+    );
+    await user.type(
+      await screen.findByLabelText("E-mail:"),
+      "operator@example.test",
+    );
+    await user.type(screen.getByLabelText("Senha:"), "new-test-password-value");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+    const heading = await screen.findByRole("heading", {
+      name: "Painel operacional fictício",
+    });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+    expect(
+      post.mock.calls.filter(([url]) => url === "/auth/password"),
+    ).toHaveLength(1);
+    expect(
+      post.mock.calls.filter(([url]) => url === "/auth/login"),
+    ).toHaveLength(1);
+  });
+
+  it.each(["/relatorios", "/administracao"])(
+    "clears the previous account destination on logout from %s",
+    async (pathname) => {
+      seedRestorableSession();
+      vi.mocked(api.get).mockImplementation(async (url) => ({
+        data:
+          url === "/auth/providers"
+            ? { googleEnabled: true }
+            : { requestToken: "test-only-csrf-token" },
+      }));
+      let refreshes = 0;
+      const post = vi.spyOn(api, "post").mockImplementation(async (url) => {
+        if (url === "/auth/refresh")
+          return responseFor(refreshes++ === 0 ? "Administrador" : "Porteiro");
+        if (url === "/auth/logout") return { data: null };
+        throw new Error("Unexpected test request");
+      });
+      const keyboard = userEvent.setup();
+      renderRestrictedApplication(pathname, true);
+      await screen.findByRole("heading", {
+        name:
+          pathname === "/relatorios"
+            ? "Relatórios fictícios"
+            : "Usuários fictícios",
+      });
+      await keyboard.click(screen.getByRole("button", { name: "Sair" }));
+      await screen.findByRole("heading", { name: "Bem-vindo(a)!" });
+      expect(screen.getByLabelText("Intenção de retorno")).toHaveTextContent(
+        "null",
+      );
+      await keyboard.click(
+        screen.getByRole("button", { name: "Retorno Google fictício" }),
+      );
+      const heading = await screen.findByRole("heading", {
+        name: "Painel operacional fictício",
+      });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(
+        screen.queryByRole("heading", { name: /Acesso negado/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        post.mock.calls.filter(([url]) => url === "/auth/logout"),
+      ).toHaveLength(1);
+      expect(
+        post.mock.calls.filter(([url]) => url === "/auth/refresh"),
+      ).toHaveLength(2);
+    },
+  );
+  it.each<ProfileName>(["Porteiro", "Vigilante", "SetorTransporte"])(
+    "restores %s at a direct password URL without exposing or submitting the form",
+    async (profileName) => {
+      seedRestorableSession();
+      vi.mocked(api.get).mockResolvedValue({
+        data: { requestToken: "test-only-csrf-token" },
+      });
+      const post = vi
+        .spyOn(api, "post")
+        .mockResolvedValue(responseFor(profileName));
+
+      renderRestrictedApplication("/conta/senha");
+
+      const heading = await screen.findByRole("heading", {
+        name: "Painel operacional fictício",
+      });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Alterar senha" }),
+      ).not.toBeInTheDocument();
+      expect(post.mock.calls.map(([url]) => url)).toEqual(["/auth/refresh"]);
+    },
+  );
   it("restores a renewable session before rendering protected content", async () => {
     seedRestorableSession();
     vi.mocked(api.get).mockResolvedValue({
@@ -307,6 +508,36 @@ describe("authentication flow", () => {
     expect(post.mock.calls.some(([url]) => url === "/auth/refresh")).toBe(
       false,
     );
+  });
+
+  it("restores a Google callback session without preexisting browser continuity", async () => {
+    vi.mocked(api.get).mockImplementation(async (url) => {
+      if (url === "/auth/providers") {
+        return { data: { googleEnabled: true } };
+      }
+      if (url === "/auth/csrf") {
+        return { data: { requestToken: "google-callback-csrf-token" } };
+      }
+      return Promise.reject(new Error("unexpected request"));
+    });
+    const post = vi
+      .spyOn(api, "post")
+      .mockResolvedValue(responseFor("Vigilante"));
+
+    renderAuthenticationFlow("/login?status=success");
+
+    expect(
+      await screen.findByText("operator@example.test — Vigilante"),
+    ).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith("/auth/refresh", null, {
+      headers: { "X-CSRF-TOKEN": "google-callback-csrf-token" },
+      skipSessionRefresh: true,
+    });
+    expect(post.mock.calls.some(([url]) => url === "/auth/login")).toBe(false);
+    expect(window.sessionStorage).toHaveLength(0);
+    const continuity = window.localStorage.getItem(sessionContinuityStorageKey);
+    expect(continuity).not.toBeNull();
+    expect(continuity).not.toMatch(/token|email|profile|password|user/i);
   });
 
   it("does not request refresh with expired continuity metadata", async () => {
@@ -556,7 +787,7 @@ describe("authentication flow", () => {
     expect(window.localStorage).toHaveLength(0);
   });
 
-  it("shows an explicit access denied state for an incompatible profile", async () => {
+  it("discards an incompatible return destination after login", async () => {
     vi.spyOn(api, "post").mockResolvedValue(responseFor("SetorTransporte"));
 
     renderAuthenticationFlow({
@@ -565,6 +796,22 @@ describe("authentication flow", () => {
     });
     await submitCredentials();
 
+    expect(
+      await screen.findByText("operator@example.test — SetorTransporte"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Acesso negado" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Administração")).not.toBeInTheDocument();
+  });
+
+  it("still denies a direct authenticated visit to an incompatible route", async () => {
+    seedRestorableSession();
+    vi.mocked(api.get).mockResolvedValue({
+      data: { requestToken: "test-only-csrf-token" },
+    });
+    vi.spyOn(api, "post").mockResolvedValue(responseFor("SetorTransporte"));
+    renderAuthenticationFlow("/administracao");
     expect(
       await screen.findByRole("heading", { name: "Acesso negado" }),
     ).toBeInTheDocument();
@@ -605,6 +852,9 @@ describe("authentication flow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Senha alterada com segurança. Entre novamente usando a nova senha.",
     );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+    );
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-describedby",
       "login-status-message",
@@ -628,6 +878,9 @@ describe("authentication flow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "A sessão foi encerrada neste dispositivo, mas não foi possível confirmar a saída no servidor.",
     );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+    );
     expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
       "aria-describedby",
       "login-status-message",
@@ -648,6 +901,9 @@ describe("authentication flow", () => {
       vi.spyOn(api, "post").mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -689,6 +945,9 @@ describe("authentication flow", () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
       });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       const email = screen.getByLabelText("E-mail:");
       fireEvent.change(email, {
         target: { value: "operator@example.test" },
@@ -732,6 +991,9 @@ describe("authentication flow", () => {
         .mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -795,6 +1057,9 @@ describe("authentication flow", () => {
       );
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -859,6 +1124,9 @@ describe("authentication flow", () => {
         .mockResolvedValue(responseFor("Porteiro", 120_000));
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -931,6 +1199,9 @@ describe("authentication flow", () => {
         );
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -1003,6 +1274,9 @@ describe("authentication flow", () => {
 
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -1026,8 +1300,13 @@ describe("authentication flow", () => {
         await vi.advanceTimersByTimeAsync(15 * 60_000);
       });
 
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+      expect(
+        screen.getByText(
+          "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+        ),
+      ).toHaveAttribute("role", "alert");
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
       );
       expect(screen.getByLabelText("E-mail:")).toHaveAttribute(
         "aria-describedby",
@@ -1069,6 +1348,9 @@ describe("authentication flow", () => {
 
       renderAuthenticationFlow();
       await act(async () => vi.advanceTimersByTimeAsync(0));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+      );
       fireEvent.change(screen.getByLabelText("E-mail:"), {
         target: { value: "operator@example.test" },
       });
@@ -1093,9 +1375,11 @@ describe("authentication flow", () => {
       refreshResponse.resolve(responseFor("Vigilante", 15 * 60_000));
       await act(async () => vi.advanceTimersByTimeAsync(0));
 
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Sua sessão terminou por inatividade. Entre novamente para continuar.",
-      );
+      expect(
+        screen.getByText(
+          "Sua sessão terminou por inatividade. Entre novamente para continuar.",
+        ),
+      ).toHaveAttribute("role", "alert");
       expect(
         screen.queryByText("operator@example.test — Vigilante"),
       ).not.toBeInTheDocument();

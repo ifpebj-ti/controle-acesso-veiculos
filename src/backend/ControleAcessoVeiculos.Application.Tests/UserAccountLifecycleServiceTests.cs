@@ -7,6 +7,34 @@ public sealed class UserAccountLifecycleServiceTests
     private static readonly DateTimeOffset FixedNow =
         new(2026, 8, 30, 12, 0, 0, TimeSpan.Zero);
 
+    [Theory]
+    [InlineData("\0")]
+    [InlineData("Conta\0Teste")]
+    [InlineData(" Conta\0 ")]
+    public async Task SearchRejectsNullCharacterBeforeCallingStore(string search)
+    {
+        var store = new FakeStore();
+        var result = await CreateService(store).SearchAsync(
+            new SearchUserAccountsCommand(Search: search),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(SearchUserAccountsStatus.Invalid, result.Status);
+        Assert.Contains("search", result.Errors.Keys);
+        Assert.Null(store.SearchCriteria);
+    }
+
+    [Fact]
+    public async Task SearchPreservesUnicodeAndPunctuation()
+    {
+        var store = new FakeStore();
+        var result = await CreateService(store).SearchAsync(
+            new SearchUserAccountsCommand(Search: "  JOÃO D'ÁVILA  "),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(SearchUserAccountsStatus.Success, result.Status);
+        Assert.Equal("joão d'ávila", store.SearchCriteria?.Search);
+    }
+
     [Fact]
     public async Task SearchValidatesPaginationBeforeCallingStore()
     {

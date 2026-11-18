@@ -17,6 +17,20 @@ public sealed class OperationalSummaryTests(ApiFactory factory)
     private const string Password = "Test-only-password-123!";
 
     [Theory]
+    [InlineData("0001-01-01")]
+    [InlineData("0001-01-13")]
+    [InlineData("9999-12-31")]
+    public async Task UnsupportedDatesReturnValidationProblem(string date)
+    {
+        using var client = await CreateAuthenticatedClientAsync(ProfileNames.Administrator);
+        using var response = await client.GetAsync($"/operations/daily-summary?date={date}", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        using var body = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.True(body.RootElement.GetProperty("errors").TryGetProperty("date", out _));
+    }
+
+    [Theory]
     [InlineData(ProfileNames.Doorman)]
     [InlineData(ProfileNames.SecurityGuard)]
     [InlineData(ProfileNames.TransportationDepartment)]

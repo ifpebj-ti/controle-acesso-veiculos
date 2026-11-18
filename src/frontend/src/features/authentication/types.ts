@@ -19,6 +19,10 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface AuthenticationProviders {
+  googleEnabled: boolean;
+}
+
 export interface AuthenticatedUser {
   id: number;
   email: string;

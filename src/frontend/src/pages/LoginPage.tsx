@@ -1,42 +1,29 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useForm, useWatch } from "react-hook-form";
+import { useEffect, useRef, useState } from "react";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 
 import { Brand } from "../components/ui/Brand";
 import { Button } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
-import { TextField } from "../components/ui/TextField";
 import { SessionLoadingState } from "../components/ui/SessionLoadingState";
 import {
-  AuthenticationContractError,
+  startGoogleAuthentication,
   type SessionEndReason,
   useSession,
 } from "../features/authentication";
-import {
-  loginSchema,
-  type LoginFormValues,
-} from "../features/authentication/schemas/loginSchema";
-import { describeApiError } from "../services/api-errors";
+import { AdministrativeLoginForm } from "../features/authentication/components/AdministrativeLoginForm";
+import { GoogleBrandIcon } from "../features/authentication/components/GoogleBrandIcon";
+import { useAuthenticationProviders } from "../features/authentication/hooks/useAuthenticationProviders";
+import { getLoginDestination } from "../routes/loginDestination";
 
 interface LoginLocationState {
   from?: {
     pathname?: string;
   };
-}
-
-function loginErrorMessage(error: unknown) {
-  if (error instanceof AuthenticationContractError) {
-    return "A resposta de autenticação não pôde ser validada. Tente novamente mais tarde.";
-  }
-
-  const apiError = describeApiError(error);
-
-  if (apiError.status === 401) {
-    return "E-mail ou senha incorretos.";
-  }
-
-  return apiError.message;
 }
 
 function sessionEndMessage(reason: SessionEndReason) {
@@ -59,82 +46,248 @@ function sessionEndMessage(reason: SessionEndReason) {
 }
 
 export function LoginPage() {
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [callbackError, setCallbackError] = useState<string | null>(null);
+  const [isAdministrativeAccessOpen, setIsAdministrativeAccessOpen] =
+    useState(false);
+  const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
+  const googleRedirectPending = useRef(false);
+  const googleLoginRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreGoogleFocus = useRef(false);
+  const callbackHandled = useRef(false);
+  const administrativeAccessRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreAdministrativeFocus = useRef(false);
+  const statusMessageRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, sessionEndReason, status, user } = useSession();
-  const {
-    control,
-    formState: { errors, isSubmitting },
-    handleSubmit,
-    register,
-    setError,
-  } = useForm<LoginFormValues>({
-    defaultValues: { email: "", password: "" },
-    resolver: zodResolver(loginSchema),
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { retry, state: providersState } = useAuthenticationProviders();
+  const { restoreExternalSession, sessionEndReason, status, user } =
+    useSession();
   const locationState = location.state as LoginLocationState | null;
-  const redirectTo = locationState?.from?.pathname ?? "/visao-geral";
-  const emailValue = useWatch({ control, name: "email" });
-  const passwordValue = useWatch({ control, name: "password" });
+  const requestedPath = locationState?.from?.pathname;
+  const authenticationReturnStatus = searchParams.get("status");
+  const isGoogleCallbackReturn =
+    authenticationReturnStatus === "success" ||
+    authenticationReturnStatus === "denied";
+
+  useEffect(() => {
+    function restoreGoogleAction(event: PageTransitionEvent) {
+      if (!event.persisted || !googleRedirectPending.current) return;
+
+      googleRedirectPending.current = false;
+      shouldRestoreGoogleFocus.current = true;
+      setIsGoogleRedirecting(false);
+      retry();
+    }
+
+    window.addEventListener("pageshow", restoreGoogleAction);
+    return () => window.removeEventListener("pageshow", restoreGoogleAction);
+  }, [retry]);
+
+  useEffect(() => {
+    if (
+      !shouldRestoreGoogleFocus.current ||
+      isGoogleRedirecting ||
+      providersState.status === "loading"
+    ) {
+      return;
+    }
+
+    shouldRestoreGoogleFocus.current = false;
+    if (
+      status !== "unauthenticated" ||
+      isGoogleCallbackReturn ||
+      isAdministrativeAccessOpen ||
+      (document.activeElement !== document.body &&
+        document.activeElement !== googleLoginRef.current)
+    ) {
+      return;
+    }
+
+    const target =
+      providersState.status === "ready" && providersState.googleEnabled
+        ? googleLoginRef.current
+        : providersState.status === "unavailable"
+          ? document.querySelector<HTMLButtonElement>(
+              "#provider-discovery-retry",
+            )
+          : administrativeAccessRef.current;
+    target?.focus();
+  }, [
+    isAdministrativeAccessOpen,
+    isGoogleCallbackReturn,
+    isGoogleRedirecting,
+    providersState,
+    status,
+  ]);
+
+  useEffect(() => {
+    if (
+      callbackHandled.current ||
+      status === "restoring" ||
+      (authenticationReturnStatus !== "success" &&
+        authenticationReturnStatus !== "denied")
+    ) {
+      return;
+    }
+
+    callbackHandled.current = true;
+    if (status === "authenticated") return;
+
+    const remainingSearchParams = new URLSearchParams(searchParams);
+    remainingSearchParams.delete("status");
+    setSearchParams(remainingSearchParams, {
+      replace: true,
+      state: location.state,
+    });
+
+    if (authenticationReturnStatus === "denied") {
+      queueMicrotask(() => {
+        setCallbackError(
+          "Não foi possível concluir o acesso. Verifique sua conta autorizada e tente novamente.",
+        );
+        window.setTimeout(() => statusMessageRef.current?.focus());
+      });
+      return;
+    }
+
+    void restoreExternalSession()
+      .then((authenticatedUser) => {
+        navigate(getLoginDestination(authenticatedUser, requestedPath), {
+          replace: true,
+        });
+      })
+      .catch(() => {
+        setCallbackError(
+          "Não foi possível confirmar uma sessão válida. Inicie o acesso novamente.",
+        );
+        window.setTimeout(() => statusMessageRef.current?.focus());
+      });
+  }, [
+    authenticationReturnStatus,
+    location.state,
+    navigate,
+    requestedPath,
+    restoreExternalSession,
+    searchParams,
+    setSearchParams,
+    status,
+  ]);
+
+  useEffect(() => {
+    if (
+      status !== "unauthenticated" ||
+      authenticationReturnStatus ||
+      providersState.status === "loading"
+    ) {
+      return;
+    }
+
+    const focusTimeout = window.setTimeout(() => {
+      if (document.activeElement !== document.body) return;
+
+      const targetId =
+        providersState.status === "ready" && providersState.googleEnabled
+          ? "google-login"
+          : providersState.status === "unavailable"
+            ? "provider-discovery-retry"
+            : "administrative-access-toggle";
+      document.querySelector<HTMLElement>(`#${targetId}`)?.focus();
+    });
+
+    return () => window.clearTimeout(focusTimeout);
+  }, [authenticationReturnStatus, providersState, status]);
+
+  useEffect(() => {
+    if (isAdministrativeAccessOpen) {
+      document.querySelector<HTMLElement>("#email")?.focus();
+    } else if (shouldRestoreAdministrativeFocus.current) {
+      shouldRestoreAdministrativeFocus.current = false;
+      administrativeAccessRef.current?.focus();
+    }
+  }, [isAdministrativeAccessOpen]);
 
   if (status === "restoring") {
-    return <SessionLoadingState title="Verificando sua sessão" />;
-  }
-
-  if (user && status === "authenticated") {
     return (
-      <Navigate
-        replace
-        to={user.requiresPasswordChange ? "/conta/senha" : redirectTo}
+      <SessionLoadingState
+        title={
+          authenticationReturnStatus === "success"
+            ? "Concluindo seu acesso"
+            : "Verificando sua sessão"
+        }
       />
     );
   }
 
-  const submitLogin = handleSubmit(async (values) => {
-    try {
-      const authenticatedUser = await login(values);
-      navigate(
-        authenticatedUser.requiresPasswordChange ? "/conta/senha" : redirectTo,
-        { replace: true },
-      );
-    } catch (error) {
-      setError("root.server", { message: loginErrorMessage(error) });
-    }
-  });
+  if (user && status === "authenticated") {
+    return <Navigate replace to={getLoginDestination(user, requestedPath)} />;
+  }
+
   const loginStatusMessage =
-    errors.root?.server?.message ??
+    callbackError ??
     (sessionEndReason ? sessionEndMessage(sessionEndReason) : null);
-  const emailDescriptionIds = [
-    errors.email ? "email-error" : null,
-    loginStatusMessage ? "login-status-message" : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const openAdministrativeAccess = () => {
+    shouldRestoreAdministrativeFocus.current = true;
+    setIsAdministrativeAccessOpen(true);
+  };
+  const closeAdministrativeAccess = () => {
+    setIsAdministrativeAccessOpen(false);
+  };
+  const beginGoogleAccess = () => {
+    if (
+      googleRedirectPending.current ||
+      status !== "unauthenticated" ||
+      isGoogleCallbackReturn ||
+      providersState.status !== "ready" ||
+      !providersState.googleEnabled
+    ) {
+      return;
+    }
+
+    googleRedirectPending.current = true;
+    setCallbackError(null);
+    setIsGoogleRedirecting(true);
+    try {
+      startGoogleAuthentication();
+    } catch {
+      googleRedirectPending.current = false;
+      setIsGoogleRedirecting(false);
+      setCallbackError(
+        "Não foi possível iniciar o acesso agora. Tente novamente mais tarde.",
+      );
+      window.setTimeout(() => statusMessageRef.current?.focus());
+    }
+  };
 
   return (
-    <main className="login-page relative min-h-svh overflow-x-hidden bg-background text-text">
+    <main className="login-page relative min-h-dvh overflow-x-hidden bg-background text-text">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-1 bg-primary"
       />
 
-      <div className="login-shell relative z-10 flex min-h-svh w-full items-stretch">
-        <section className="login-composition grid min-h-svh w-full overflow-hidden bg-surface-raised lg:grid-cols-[minmax(34rem,54%)_minmax(28rem,46%)]">
+      <div className="login-shell relative z-10 flex min-h-dvh w-full items-stretch">
+        <section className="login-composition grid min-h-dvh w-full overflow-hidden bg-surface-raised lg:grid-cols-[minmax(34rem,54%)_minmax(28rem,46%)]">
           <div className="login-form-panel order-2 flex min-h-full flex-col bg-surface-subtle px-6 py-8 sm:px-12 sm:py-10 lg:order-1 lg:px-[clamp(4rem,7vw,9rem)] lg:py-12">
             <Brand className="login-brand hidden w-fit max-w-[19rem] lg:flex" />
 
-            <div className="my-auto py-8 sm:py-9 lg:py-8">
+            <div className="login-form-content my-auto py-8 sm:py-9 lg:py-8">
               <header>
                 <p className="mb-3 text-sm font-bold uppercase tracking-[0.16em] text-primary">
                   Controle de acesso
                 </p>
-                <h1 className="font-display text-4xl font-bold leading-tight text-text sm:text-5xl">
-                  Bem-vindo(a)!
+                <h1
+                  className="font-display text-4xl font-bold leading-tight text-text sm:text-5xl"
+                  id="login-view-title"
+                >
+                  {isAdministrativeAccessOpen
+                    ? "Acesso administrativo"
+                    : "Bem-vindo(a)!"}
                 </h1>
                 <p className="mt-4 max-w-xl text-base leading-7 text-text-muted">
-                  Acesse sua conta para registrar e acompanhar a movimentação de
-                  veículos no campus.
+                  {isAdministrativeAccessOpen
+                    ? "Entre com e-mail e senha. Exclusivo para contas do perfil Administrador."
+                    : "Entre para acompanhar os acessos ao campus."}
                 </p>
               </header>
 
@@ -142,152 +295,138 @@ export function LoginPage() {
                 <div
                   className="mt-7 w-full max-w-xl rounded-xl border border-danger-border bg-danger-surface px-4 py-3 text-sm font-medium text-danger-text"
                   id="login-status-message"
+                  ref={statusMessageRef}
                   role="alert"
+                  tabIndex={-1}
                 >
                   {loginStatusMessage}
                 </div>
               )}
 
-              <form
-                className="mt-7 w-full max-w-xl space-y-5"
-                noValidate
-                onSubmit={submitLogin}
-              >
-                <div>
-                  <label
-                    className="text-sm font-semibold text-text"
-                    htmlFor="email"
-                  >
-                    E-mail:
-                  </label>
-                  <div className="relative mt-2">
-                    <span aria-hidden="true" className="login-field-icon">
-                      <Icon name="mail" size={21} />
-                    </span>
-                    <TextField
-                      aria-describedby={emailDescriptionIds || undefined}
-                      aria-invalid={Boolean(errors.email)}
-                      autoCapitalize="none"
-                      autoComplete="username"
-                      autoFocus
-                      className="login-field-input"
-                      data-filled={Boolean(emailValue)}
-                      id="email"
-                      inputMode="email"
-                      placeholder="nome@instituicao.edu.br"
-                      type="email"
-                      {...register("email")}
-                    />
-                  </div>
-                  {errors.email && (
-                    <p
-                      className="mt-2 text-sm font-semibold text-danger-text"
-                      id="email-error"
-                      role="alert"
-                    >
-                      {errors.email.message}
-                    </p>
-                  )}
-                </div>
+              {!isAdministrativeAccessOpen ? (
+                <>
+                  <div className="login-provider-options mt-7 w-full max-w-xl">
+                    {providersState.status === "loading" && (
+                      <div
+                        aria-live="polite"
+                        className="rounded-xl border border-border bg-surface px-4 py-4 text-sm text-text-muted"
+                        role="status"
+                      >
+                        Verificando as opções de acesso…
+                      </div>
+                    )}
 
-                <div>
-                  <label
-                    className="text-sm font-semibold text-text"
-                    htmlFor="password"
-                  >
-                    Senha:
-                  </label>
-                  <div className="relative mt-2">
-                    <span aria-hidden="true" className="login-field-icon">
-                      <Icon name="lock" size={21} />
-                    </span>
-                    <TextField
-                      aria-describedby={
-                        errors.password ? "password-error" : undefined
-                      }
-                      aria-invalid={Boolean(errors.password)}
-                      autoComplete="current-password"
-                      className="login-field-input login-password-field"
-                      data-filled={Boolean(passwordValue)}
-                      id="password"
-                      placeholder="Digite sua senha"
-                      type={isPasswordVisible ? "text" : "password"}
-                      {...register("password")}
-                    />
-                    <button
-                      aria-label={
-                        isPasswordVisible ? "Ocultar senha" : "Mostrar senha"
-                      }
-                      aria-pressed={isPasswordVisible}
-                      className="login-password-toggle"
-                      onClick={() =>
-                        setIsPasswordVisible((visible) => !visible)
-                      }
-                      type="button"
-                    >
-                      {isPasswordVisible ? (
-                        <svg
-                          aria-hidden="true"
-                          fill="none"
-                          focusable="false"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="m3 3 18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.2A11.3 11.3 0 0 1 12 4c5.2 0 8.5 4.6 9 6.3a1.8 1.8 0 0 1 0 1.4 10 10 0 0 1-2 3.3M6.2 6.2A11.6 11.6 0 0 0 3 10.3a1.8 1.8 0 0 0 0 1.4C3.5 13.4 6.8 18 12 18c1 0 2-.2 2.8-.5"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          aria-hidden="true"
-                          fill="none"
-                          focusable="false"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="M3 10.3C3.5 8.6 6.8 4 12 4s8.5 4.6 9 6.3a1.8 1.8 0 0 1 0 1.4C20.5 13.4 17.2 18 12 18s-8.5-4.6-9-6.3a1.8 1.8 0 0 1 0-1.4Z"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                          <circle
-                            cx="12"
-                            cy="11"
-                            r="2.5"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                        </svg>
+                    {providersState.status === "ready" &&
+                      providersState.googleEnabled && (
+                        <div>
+                          <Button
+                            aria-busy={isGoogleRedirecting}
+                            className="login-google-action"
+                            disabled={
+                              isGoogleRedirecting ||
+                              status !== "unauthenticated" ||
+                              isGoogleCallbackReturn
+                            }
+                            id="google-login"
+                            onClick={beginGoogleAccess}
+                            ref={googleLoginRef}
+                          >
+                            <GoogleBrandIcon />
+                            {isGoogleRedirecting
+                              ? "Redirecionando…"
+                              : "Continuar com Google"}
+                          </Button>
+                          <p className="mt-3 text-sm leading-6 text-text-muted">
+                            Use sua conta Google pessoal ou institucional, ativa
+                            e previamente autorizada pelo Administrador.
+                          </p>
+                        </div>
                       )}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p
-                      className="mt-2 text-sm font-semibold text-danger-text"
-                      id="password-error"
-                      role="alert"
-                    >
-                      {errors.password.message}
-                    </p>
-                  )}
-                </div>
 
-                <Button
-                  aria-busy={isSubmitting}
-                  className="w-full"
-                  disabled={isSubmitting}
-                  type="submit"
+                    {providersState.status === "ready" &&
+                      !providersState.googleEnabled && (
+                        <div>
+                          <Button
+                            aria-describedby="google-unavailable-message"
+                            className="login-google-action"
+                            disabled
+                            id="google-login"
+                          >
+                            <GoogleBrandIcon />
+                            Continuar com Google
+                          </Button>
+                          <p
+                            className="mt-3 text-sm leading-6 text-text-muted"
+                            id="google-unavailable-message"
+                            role="status"
+                          >
+                            O acesso com Google não está disponível neste
+                            ambiente.
+                          </p>
+                        </div>
+                      )}
+
+                    {providersState.status === "unavailable" && (
+                      <div
+                        className="rounded-xl border border-danger-border bg-danger-surface px-4 py-4 text-sm text-danger-text"
+                        role="alert"
+                      >
+                        <p>
+                          Não foi possível verificar as opções de acesso. Tente
+                          novamente.
+                        </p>
+                        <Button
+                          className="mt-3"
+                          id="provider-discovery-retry"
+                          onClick={retry}
+                          variant="secondary"
+                        >
+                          Tentar novamente
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <section
+                  aria-labelledby="login-view-title"
+                  className="mt-7 w-full max-w-xl"
                 >
-                  {isSubmitting && (
-                    <span aria-hidden="true" className="login-submit-spinner" />
-                  )}
-                  {isSubmitting ? "Entrando..." : "Entrar"}
-                  {!isSubmitting && <Icon name="arrow-right" size={20} />}
-                </Button>
-              </form>
+                  <AdministrativeLoginForm
+                    externalDescriptionId={
+                      loginStatusMessage ? "login-status-message" : undefined
+                    }
+                    onBack={closeAdministrativeAccess}
+                    onAuthenticated={(authenticatedUser) =>
+                      navigate(
+                        getLoginDestination(authenticatedUser, requestedPath),
+                        { replace: true },
+                      )
+                    }
+                  />
+                </section>
+              )}
             </div>
+
+            {!isAdministrativeAccessOpen && (
+              <div className="login-administrative-entry mt-6 w-full max-w-xl border-t border-border pt-5">
+                <p className="text-xs text-text-muted">Acesso administrativo</p>
+                <button
+                  className="mt-1 inline-flex min-h-11 items-center rounded-lg pr-2 text-sm font-semibold text-primary underline underline-offset-4 focus:outline-none focus-visible:ring-3 focus-visible:ring-focus"
+                  id="administrative-access-toggle"
+                  disabled={
+                    isGoogleRedirecting ||
+                    status === "authenticating" ||
+                    isGoogleCallbackReturn
+                  }
+                  onClick={openAdministrativeAccess}
+                  ref={administrativeAccessRef}
+                  type="button"
+                >
+                  Entrar com usuário e senha
+                </button>
+              </div>
+            )}
 
             <div className="login-support flex items-center gap-3 border-t border-border pt-5 text-xs leading-5 text-text-muted">
               <span
@@ -296,11 +435,14 @@ export function LoginPage() {
               >
                 <Icon name="lock" size={18} />
               </span>
-              <p>Utilize a conta individual cadastrada pelo administrador.</p>
+              <p>
+                O acesso é permitido somente a contas previamente autorizadas
+                pelo Administrador.
+              </p>
             </div>
           </div>
 
-          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden border-b border-border px-7 py-7 text-visual-text sm:min-h-[30rem] sm:px-10 sm:py-10 lg:order-2 lg:min-h-svh lg:border-b-0 lg:px-12 lg:py-12 lg:pl-40">
+          <div className="login-visual relative isolate order-1 flex min-h-[24rem] flex-col justify-between overflow-hidden px-7 pb-20 pt-7 text-visual-text sm:min-h-[30rem] sm:px-10 sm:pb-40 sm:pt-10 lg:order-2 lg:min-h-dvh lg:px-12 lg:py-12 lg:pl-40">
             <img
               alt=""
               className="login-visual-photo"
@@ -309,7 +451,7 @@ export function LoginPage() {
             <div aria-hidden="true" className="login-visual-photo-overlay" />
             <svg
               aria-hidden="true"
-              className="login-visual-divider"
+              className="login-visual-divider login-visual-divider--desktop"
               focusable="false"
               preserveAspectRatio="none"
               viewBox="0 0 190 1000"
@@ -329,6 +471,30 @@ export function LoginPage() {
               <path
                 className="login-visual-road-line"
                 d="M58 24C6 94 6 166 26 250C49 330 102 380 92 440C80 520 14 605 10 680C8 790 20 900 50 976"
+              />
+            </svg>
+            <svg
+              aria-hidden="true"
+              className="login-visual-divider login-visual-divider--mobile"
+              focusable="false"
+              preserveAspectRatio="none"
+              viewBox="0 0 1000 190"
+            >
+              <path
+                className="login-visual-divider-dark-band"
+                d="M0 45C70 110 150 125 250 102C315 87 380 62 440 71C510 80 585 117 680 130C790 145 900 120 1000 58L1000 190L0 190Z"
+              />
+              <path
+                className="login-visual-divider-light-band"
+                d="M0 78C75 145 155 157 250 128C320 110 378 65 440 74C520 86 600 148 680 160C790 173 910 145 1000 93L1000 190L0 190Z"
+              />
+              <path
+                className="login-visual-divider-surface"
+                d="M0 108C80 175 160 180 250 148C330 125 380 70 440 80C520 92 605 166 680 174C790 183 910 160 1000 120L1000 190L0 190Z"
+              />
+              <path
+                className="login-visual-road-line"
+                d="M24 132C94 184 166 184 250 164C330 141 380 88 440 98C520 110 605 176 680 180C790 182 900 170 976 140"
               />
             </svg>
 

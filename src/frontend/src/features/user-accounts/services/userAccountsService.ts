@@ -1,10 +1,13 @@
 import { api } from "../../../services/api";
 import {
+  changedAccountProfileSchema,
   createdUserAccountSchema,
   temporaryCredentialSchema,
   userAccountPageSchema,
 } from "../schemas/userAccountSchemas";
 import type {
+  ChangeAccountProfileInput,
+  ChangedAccountProfile,
   CreatedUserAccount,
   CredentialResetReason,
   CreateUserAccountInput,
@@ -60,6 +63,20 @@ export async function resetTemporaryCredential(
     { skipSessionRetry: true },
   );
   return parseContract(temporaryCredentialSchema.safeParse(response.data));
+}
+
+export async function changeAccountProfile(
+  accountId: number,
+  input: ChangeAccountProfileInput,
+): Promise<ChangedAccountProfile> {
+  const response = await api.put<unknown>(
+    `/users/${accountId}/profile`,
+    input,
+    {
+      skipSessionRetry: true,
+    },
+  );
+  return parseContract(changedAccountProfileSchema.safeParse(response.data));
 }
 
 export async function deactivateUserAccount(accountId: number): Promise<void> {
