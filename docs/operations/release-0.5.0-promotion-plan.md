@@ -1,16 +1,17 @@
 # Preparação e promoção da versão 0.5.0
 
 Rastreabilidade #713/#686. Preparação em 17/11/2026, com main de referência
-202b787. A composição final será conferida no head revisado do PR #754.
+3b9644b. A composição final será conferida no head revisado do PR #754.
 
 ## Composição e publicação
 
 A fonte de preparação contém Google, gestão de contas, reativação, pré-cadastro,
 navegação do Transporte, contrato status=all, backend de papel e as correções
 incorporadas desde 0.4.0. O changelog datado deve conter somente o lote escolhido.
-Os PRs #751/#752 e as atualizações de dependências ainda exigem incorporação
-antes de serem atribuídos a esta versão. Conferir o conjunto final após esses
-merges, preservando a distinção entre revisão técnica e aceite institucional.
+Os PRs #751/#752 estão incorporados e integram o changelog da versão. As
+atualizações de dependências e a correção de testes #757 seguem em revisão.
+Conferir o lote escolhido no fechamento da versão, preservando a distinção
+entre revisão técnica e aceite institucional.
 
 O merge da branch de preparação nomeada chore/issue-713-release-v0.5.0 aciona
 o workflow existente, que confere a fonte incorporada, cria a tag imutável e
