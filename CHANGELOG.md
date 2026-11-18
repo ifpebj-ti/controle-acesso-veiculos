@@ -68,6 +68,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Fixed
 
+- Send the explicit `status=all` event-authorization query for all states while
+  retaining `active=true/false` for individual states, preserving server totals,
+  filters and pagination without combining pages in the browser (Refs #743).
+
 - Capture the optional paper-import vehicle ID before the EF query and use the
   supported parameterized SQL execution API, preserving transaction locks and
   the self-review constraint test; clarify the load-workflow assertion (#747).
