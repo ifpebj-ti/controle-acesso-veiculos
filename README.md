@@ -49,7 +49,7 @@ O estado confirmado, as hipóteses e as pendências estão na página
 
 ## Estado em 18/11/2026
 
-A main `1801e0b` incorpora o pré-cadastro e as sugestões de entrada (#704), a
+A main `aa22c49` incorpora o pré-cadastro e as sugestões de entrada (#704), a
 navegação e as ações de negócio do Transporte (#705), a reativação de contas
 pela interface (#672) e os incrementos anteriores. Gestão de contas e concessão
 de perfis permanecem exclusivas do Administrador.
@@ -69,8 +69,8 @@ e autoria estão registradas nos respectivos PRs e no
 [Status do Projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Status-do-Projeto).
 Um merge não atualiza automaticamente a VM.
 
-A release estável publicada continua `v0.4.0`; `v0.5.0` está em preparação
-(#686/#713, PR #754). O [balanço de 18/11](docs/validation/presentation-status-2026-11-18.md)
+A release estável publicada continua `v0.4.0`. O #754 foi incorporado e criou
+a tag `v0.5.0`; a publicação das imagens está em andamento (#686/#713). O [balanço de 18/11](docs/validation/presentation-status-2026-11-18.md)
 reúne fontes, verificações e pendências. Código incorporado e candidato de homologação não equivalem a uma
 nova release publicada nem à autorização para operação institucional.
 

@@ -1,7 +1,7 @@
 # Balanço para a apresentação de 18/11/2026
 
-Rastreabilidade #758. Fonte incorporada de referência 1801e0b, após
-#751/#752/#755/#757/#738/#739. A Wiki acompanha os merges em tarefa própria.
+Rastreabilidade #758. Fonte incorporada de referência aa22c49, após
+#751/#752/#755/#757/#738/#739/#754/#742. A Wiki acompanha os merges em tarefa própria.
 
 ## Entregas incorporadas
 
@@ -23,10 +23,11 @@ Esses números pertencem a fontes específicas e não são somados como uma suí
 
 ## Publicação e hospedagem
 
-A release estável publicada continua v0.4.0. A preparação 0.5.0 está no #754,
-com changelog datado e plano de promoção. A main recente deve ser sincronizada
-e o lote escolhido conferido antes da revisão final da preparação. O merge
-aciona o fluxo existente de tag imutável e publicação condicionada das imagens.
+A release estável publicada continua v0.4.0. A preparação 0.5.0 foi incorporada pelo #754,
+com changelog datado e plano de promoção. A tag v0.5.0 foi criada na fonte
+eaccd72. A publicação das imagens está em andamento e a release permanece
+draft na conferência registrada. Os manifests, scans e SBOMs precisam ser
+conferidos após a conclusão do pipeline.
 
 A hospedagem identificada mantém frontend 67ad6b8, backend f7ee701 e 22
 migrations. A main tem 23 migrations, incluindo a adição do papel. A promoção

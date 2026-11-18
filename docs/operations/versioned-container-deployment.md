@@ -2,7 +2,7 @@
 
 ## Atualização em 18/11/2026
 
-A preparação #754 considera a main 1801e0b e a transição de 22 para 23 migrations. A hospedagem identificada é 67ad6b8/f7ee701. O reteste de 18/11 confirmou serviço saudável e apontou os itens de borda que devem ser conferidos após a promoção. Consulte o
+O #754 foi integrado e criou a tag 0.5.0 na fonte eaccd72. A promoção considera a transição de 22 para 23 migrations. A hospedagem identificada é 67ad6b8/f7ee701. O reteste de 18/11 confirmou serviço saudável e apontou os itens de borda que devem ser conferidos após a promoção. Consulte o
 [balanço atual](../validation/presentation-status-2026-11-18.md).
 
 ## Objetivo e limite

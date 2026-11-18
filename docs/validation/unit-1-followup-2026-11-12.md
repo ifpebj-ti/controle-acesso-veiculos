@@ -2,7 +2,7 @@
 
 ## Atualização em 18/11/2026
 
-Os merges de eventos, relatórios, testes e dependências estão incorporados na main 1801e0b. O quadro foi reconciliado e a release 0.5.0 está em preparação no #754. O checklist histórico abaixo preserva sua data e fonte. Consulte o
+Os merges de eventos, relatórios, testes e dependências estão incorporados na main aa22c49. O quadro foi reconciliado, o #754 foi integrado e a publicação das imagens 0.5.0 está em andamento. O checklist histórico abaixo preserva sua data e fonte. Consulte o
 [balanço atual](presentation-status-2026-11-18.md).
 
 Esta é uma conferência sanitizada do novo relatório recebido, não sua cópia nem

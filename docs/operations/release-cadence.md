@@ -2,7 +2,7 @@
 
 ## Atualização em 18/11/2026
 
-A main 1801e0b reúne o lote incorporado. O PR #754 prepara 0.5.0 com changelog e plano de migração/promoção. A publicação estável continua v0.4.0; correções compatíveis seguintes podem seguir em 0.5.1, 0.5.2 e posteriores. Consulte o
+A main aa22c49 reúne o lote incorporado. O #754 foi integrado, gerando a tag v0.5.0 na fonte eaccd72. A publicação das imagens está em andamento e a release estável continua v0.4.0 na conferência. Correções compatíveis seguintes podem seguir em 0.5.1, 0.5.2 e posteriores. Consulte o
 [balanço atual](../validation/presentation-status-2026-11-18.md).
 
 ## Política — Issue #681

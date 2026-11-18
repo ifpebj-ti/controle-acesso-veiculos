@@ -2,7 +2,7 @@
 
 ## Atualização em 18/11/2026
 
-A main 1801e0b incorpora pré-cadastro/Transporte, o filtro de eventos e os filtros próprios dos relatórios. A preparação 0.5.0 continua no #754. Os critérios operacionais desta matriz conservam suas evidências e pendências. Consulte o
+A main aa22c49 incorpora pré-cadastro/Transporte, o filtro de eventos e os filtros próprios dos relatórios. O #754 foi integrado e gerou a tag 0.5.0; publicação e promoção seguem na #686. Os critérios operacionais desta matriz conservam suas evidências e pendências. Consulte o
 [balanço atual](presentation-status-2026-11-18.md).
 
 > Atualização de 15/11/2026 após os merges #717/#716/#719/#702, main `8e223d3`.
