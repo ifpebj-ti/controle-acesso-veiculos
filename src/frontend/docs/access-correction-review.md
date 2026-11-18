@@ -6,7 +6,7 @@ Implementação de frontend baseada no contrato candidato do PR #607,
 `94078c77badbc71ae55fb4dcafdd5dd61758f387`, e em
 `docs/operations/access-correction-review.md` nessa branch. A base deste trabalho
 foi sincronizada por merge regular com a main
-`3b9644b9a71a7670104efacb90ab35769519f11b`, que já contém os PRs #751 e #752,
+`8089eb4de22533e6ebfca06f74d520d528572c64`, que já contém os PRs #751 e #752,
 além das categorias Aluno, Terceirizado e Federal. O runbook consultado no
 backend é idêntico ao snapshot anterior `b220177`. O backend
 candidato não foi incorporado a esta branch: nenhum arquivo de backend ou
@@ -66,16 +66,57 @@ de resposta é registrado em log por esta feature.
 
 ## Evidências e critérios pendentes
 
-Os testes automatizados usam dados fictícios e respostas controladas: não são
-prova de API hospedada. Cobrem contrato estrito, submissão única, cancelamento,
+### Ensaio local de 18/11/2026
+
+Frontend `d48975491f8b9eb7d3d791228802dfddd79b40c9`, após merge regular da main
+`8089eb4`, e API candidata `94078c77`, sem modificações no backend. O banco
+PostgreSQL e as contas eram exclusivos de QA local; solicitante e revisor eram
+dois Administradores Local fictícios distintos. Não foi usada a hospedagem ou
+uma conta compartilhada.
+
+- Suíte frontend sequencial: 1.020 testes em 84 arquivos; lint, build,
+  Prettier dos arquivos do PR e diff check aprovados nesse contexto.
+- Pela interface autenticada: envio criou pedido pendente sem mudar o registro;
+  aprovação por outro usuário reconsultou as 12 contagens e o histórico usando
+  os filtros aplicados, preservando um rascunho de filtro ainda não aplicado.
+  O registro saiu da categoria consultada, com aviso e foco acessíveis.
+- Por chamadas reais à API local: autoaprovação retornou 403, original
+  desatualizado retornou 409, recusa e cancelamento próprio foram confirmados.
+  A saída normal funcionou com pedido pendente e seu horário foi preservado
+  após aprovação. Esses casos de API não equivalem a todos os passos pela UI.
+- Perda de resposta provocada somente no cliente após POST real confirmado:
+  campos e chave preservados, novo envio bloqueado e reconciliação do mesmo
+  pedido por um GET. Não houve repetição automática nem queda observada da API.
+  O pedido fictício foi cancelado explicitamente após sua reconciliação.
+- Brave automatizado: 390×844, 768×1024 e 1440×1000, temas Claro/Escuro,
+  teclado, contenção de foco, Escape e retorno de foco após o frame do navegador,
+  sem overflow horizontal. Zoom nativo de 200% manteve a janela física e reduziu
+  a largura CSS de 1.424 para 712 px; não foi usado CSS zoom. Isso não comprova
+  tablet físico nem uso humano de leitor de tela.
+- As tentativas iniciais do roteiro de QA falharam por compartilhamento de
+  cookies com o preparador de fixtures e verificação de foco antes do frame.
+  O roteiro foi separado e corrigido sem alterar login, sessão ou foco do produto.
+- `npm audit` reportou 12 pacotes com severidade alta na cadeia de ferramentas
+  de desenvolvimento ligada a picomatch/Vite/Vitest/ESLint, recebida da main.
+  Não houve alteração de lockfile, audit fix, downgrade ou redução de gate
+  neste PR. A coordenação dessa dependência permanece separada.
+
+Os acessos fictícios usados foram encerrados e o revisor local desativado. Os
+roteiros, perfis descartáveis e registros privados do ensaio ficam fora do Git.
+O complemento posterior a esse snapshot altera somente esta documentação e o
+README; não representa nova execução humana nem ensaio HTTPS.
+
+Os testes unitários e de componentes usam dados fictícios e respostas controladas:
+não são prova de API hospedada. Cobrem contrato estrito, submissão única, cancelamento,
 consulta sem resultado, concorrência GET/POST, preservação de campos/chave,
 revisão própria/por outro perfil, filtros/página, foco, Escape e avisos acessíveis.
 Os ensaios de navegador local devem indicar snapshot, dimensões e uso de API
 simulada. Axe/teclado não equivalem a leitor de tela humano.
 
 Permanecem obrigatórios antes do aceite: composição HTTPS identificada com a API
-candidata, integração autenticada com solicitante e revisor distintos, conflitos
-reais, tablet físico, zoom real e leitor de tela. Evidências antigas do login não
+candidata, tarefas autenticadas e conferência de auditoria nesse candidato,
+tablet físico e leitor de tela. A integração local e o zoom nativo automatizado
+acima conservam seu ambiente e autoria. Evidências antigas do login não
 homologam estas telas. Não houve incorporação deste PR, deploy ou homologação
 institucional.
 

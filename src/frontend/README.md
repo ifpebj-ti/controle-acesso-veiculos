@@ -83,7 +83,7 @@ sem inventar zero. O contrato atual exige uma leitura de contagem por categoria
 (doze neste candidato), em lotes
 de até três, além da consulta de resultados. Trocar somente a categoria ou a
 página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
-correção salva atualizam as contagens, mesmo sem mudar o período, a placa,
+aprovação confirmada atualizam as contagens, mesmo sem mudar o período, a placa,
 o condutor ou a situação. Isso não cria um endpoint agregado nem mede
 desempenho em produção.
 
