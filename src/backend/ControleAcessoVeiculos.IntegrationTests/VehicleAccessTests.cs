@@ -606,6 +606,22 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var driverName = $"Condutor Histórico {suffix}";
         var accessIds = new List<int>();
 
+        // Another driver's historical use of this vehicle also matches its plate prefix.
+        var unrelatedEntry = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Outro condutor fictício {Guid.NewGuid():N}",
+            plate,
+            objective = "Visita anterior independente",
+            categoryName = AccessCategoryNames.Visitor,
+            vehicleType = "Automóvel"
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        unrelatedEntry.EnsureSuccessStatusCode();
+        var unrelated = await unrelatedEntry.Content.ReadFromJsonAsync<AccessRecordResponse>(
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(unrelated);
+        (await client.PostAsync($"/access-records/{unrelated.Id}/exit", null,
+            TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
+
         for (var index = 0; index < 3; index++)
         {
             var entryResponse = await client.PostAsJsonAsync("/access-records/entries", new
@@ -655,14 +671,14 @@ public sealed class VehicleAccessTests(ApiFactory factory)
 
         var prefix = plate[..3].ToLowerInvariant();
         var prefixResult = await client.GetFromJsonAsync<AccessHistoryResponse>(
-            $"/access-records/history?plate={prefix}&from={from}&to={to}",
+            $"/access-records/history?plate={prefix}&driverName={driverFilter}&from={from}&to={to}",
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(prefixResult);
         Assert.Equal(3, prefixResult.TotalCount);
         Assert.All(prefixResult.Items, item =>
             Assert.StartsWith(plate[..3], item.Plate, StringComparison.Ordinal));
 
-        var closed = await client.GetFromJsonAsync<AccessHistoryResponse>($"/access-records/history?plate={formattedPlate}&status=encerrado" +
+        var closed = await client.GetFromJsonAsync<AccessHistoryResponse>($"/access-records/history?plate={formattedPlate}&driverName={driverFilter}&status=encerrado" +
             $"&from={from}&to={to}&page=2&pageSize=1", cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(closed);
         Assert.Equal(2, closed.TotalCount);
