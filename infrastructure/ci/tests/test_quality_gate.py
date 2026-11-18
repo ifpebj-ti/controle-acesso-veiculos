@@ -60,7 +60,7 @@ class QualityGateTests(unittest.TestCase):
                      ".github/workflows/ci-load-testing.yml"]:
             with self.subTest(path=path):
                 self.assertIn("ci-load-testing.yml", gate.required_workflows([path], ROOT))
-        self.assertFalse("ci-load-testing.yml" in gate.required_workflows(["README.md"], ROOT))
+        self.assertNotIn("ci-load-testing.yml", gate.required_workflows(["README.md"], ROOT))
 
     def test_compose_change_requires_every_existing_dependent_workflow(self):
         self.assertEqual(set(gate.required_workflows(["infrastructure/docker/docker-compose.yml"], ROOT)),

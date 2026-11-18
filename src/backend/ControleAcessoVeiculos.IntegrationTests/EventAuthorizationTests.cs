@@ -14,6 +14,73 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 [Collection(IntegrationTestCollection.Name)]
 public sealed class EventAuthorizationTests(ApiFactory factory)
 {
+    [Fact]
+    public async Task ExplicitAllStatusPreservesServerPaginationAndLegacyActiveFilters()
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.TransportationDepartment, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var prefix = $"Status {Guid.NewGuid():N}";
+        var starts = DateTimeOffset.UtcNow.AddDays(3);
+        var ends = starts.AddHours(2);
+        var expected = new List<int>();
+        for (var i = 0; i < 3; i++)
+        {
+            using var response = await client.PostAsJsonAsync("/event-authorizations",
+                Request($"{prefix} {i}", "Responsável fictício", TestPlate.From(Guid.NewGuid().ToString("N")), starts, ends),
+                cancellationToken: TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            var row = await response.Content.ReadFromJsonAsync<EventAuthorizationResponse>(TestContext.Current.CancellationToken);
+            Assert.NotNull(row);
+            expected.Add(row.Id);
+        }
+        using var cancelled = await client.DeleteAsync($"/event-authorizations/{expected[1]}", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.NoContent, cancelled.StatusCode);
+        var query = $"/event-authorizations?name={Uri.EscapeDataString(prefix)}"
+            + $"&fromUtc={Uri.EscapeDataString(starts.AddHours(-1).ToString("O"))}"
+            + $"&toUtc={Uri.EscapeDataString(ends.AddHours(1).ToString("O"))}";
+        var observed = new List<EventAuthorizationResponse>();
+        for (var page = 1; page <= 3; page++)
+        {
+            using var response = await client.GetAsync($"{query}&status=all&pageSize=1&page={page}", TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var result = await response.Content.ReadFromJsonAsync<EventAuthorizationPage>(TestContext.Current.CancellationToken);
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalCount);
+            Assert.Equal(3, result.TotalPages);
+            Assert.Equal(page, result.Page);
+            observed.Add(Assert.Single(result.Items));
+        }
+        Assert.Equal(expected.Order(), observed.Select(row => row.Id).Order());
+        Assert.Single(observed, row => !row.Active);
+        foreach (var (filter, total, active) in new[] { ("", 2, true), ("&active=true", 2, true), ("&active=false", 1, false) })
+        {
+            using var response = await client.GetAsync(query + filter, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var result = await response.Content.ReadFromJsonAsync<EventAuthorizationPage>(TestContext.Current.CancellationToken);
+            Assert.NotNull(result);
+            Assert.Equal(total, result.TotalCount);
+            Assert.All(result.Items, row => Assert.Equal(active, row.Active));
+        }
+    }
+
+    [Theory]
+    [InlineData("status=all&active=true")]
+    [InlineData("status=all&active=false")]
+    [InlineData("status=unknown")]
+    [InlineData("status=")]
+    public async Task AmbiguousOrInvalidEventStatusIsRejected(string query)
+    {
+        const string password = "Test-only-password-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Administrator, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        using var response = await client.GetAsync($"/event-authorizations?{query}", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("status", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
+
     [Theory]
     [InlineData("%00")]
     [InlineData("Evento%00Teste")]

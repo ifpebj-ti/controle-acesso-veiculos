@@ -60,6 +60,8 @@ homologação em tablet físico.
 
 ## Estado atual
 
+A #689 integra o contrato de condutores vinculados incorporado na main `8b61ccd`: nomes, vínculo, nascimento confirmado e veículo. A rota `/condutores-vinculados` é destinada a Administrador/Transporte, sem criação de conta. A busca existente da entrada usa sugestões com fonte e expiração. A integração ainda depende de candidato identificado e critérios pendentes; consulte [`docs/person-preregistration.md`](docs/person-preregistration.md).
+
 A reativação segura #669 está montada na página de contas com o contrato
 Local/Google do #530 incorporado. A API #668 também foi incorporada; as
 evidências de validação autenticada continuam vinculadas à composição testada.
@@ -72,6 +74,7 @@ anteriores. A main `8b61ccd` já incorpora o suporte backend #696; isso não
 comprova a implantação. Federal aparece como Servidor federal, mantendo a chave
 canônica. Detalhes e limites de integração estão em
 [`docs/access-categories.md`](docs/access-categories.md).
+
 O histórico oferece as doze opções na mesma faixa horizontal,
 com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
 O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
@@ -141,8 +144,11 @@ A visão geral consulta o resumo operacional diário agregado da API. A área de
 administração consulta, cria, desativa e reativa contas pela API, mostra o
 estado mínimo das credenciais temporárias e permite ao Administrador redefinir
 a credencial de outra conta ativa. Credenciais emitidas pelo servidor aparecem
-uma única vez em memória, com cópia explícita e sem persistência no navegador. A
-mesma tela também consulta a trilha de auditoria em uma área separada.
+uma única vez em memória, com cópia explícita e sem persistência no navegador.
+Na branch da #703, a Trilha de auditoria possui uma única entrada no menu lateral,
+na rota `/auditoria`, para Administrador e Transporte. Usuários e permissões
+permanece dedicado às contas, sem aba de auditoria ou consulta a seus eventos.
+Esse recorte do candidato não significa implantação na URL pública.
 
 Fluxo sugerido para validação local:
 
@@ -707,3 +713,9 @@ npm run lint
 npm run build
 npm test
 ```
+
+## Funções de negócio do Transporte
+
+O alinhamento de navegação/ações ao contrato incorporado está documentado em
+[`docs/transport-business-ui.md`](docs/transport-business-ui.md), incluindo o
+limite temporário da confirmação de exportação e os ensaios pendentes.
