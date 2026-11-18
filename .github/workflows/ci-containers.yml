@@ -448,7 +448,10 @@ jobs:
           verify_headers "${frontend_headers}"
           verify_headers "${proxy_error_headers}"
 
-      - name: Verify frontend redirect, frame and cache responses
+      - name: Test frontend response probe rejection cases
+        run: python3 -m unittest discover -s infrastructure/security/tests -p test_frontend_response_verification.py
+
+      - name: Verify frontend redirect, frame, referrer and cache responses
         working-directory: infrastructure/docker
         shell: bash
         run: |
