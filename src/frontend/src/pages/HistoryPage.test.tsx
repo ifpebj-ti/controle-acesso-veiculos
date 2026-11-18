@@ -839,6 +839,46 @@ describe("HistoryPage", () => {
     expect(screen.getByLabelText("Categoria")).toHaveTextContent("Visitante");
     expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
   });
+  it("recounts every canonical category with applied filters after approval, ignoring unapplied drafts", async () => {
+    vi.mocked(searchAccessHistory).mockResolvedValue(pageResult([record]));
+    prepareReview();
+    const user = userEvent.setup();
+    renderPage("Administrador");
+    await screen.findAllByText(record.plate);
+    await user.type(
+      screen.getByLabelText("Condutor"),
+      "Filtro fictício aplicado",
+    );
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    await waitFor(() => expect(searchAccessHistory).toHaveBeenCalledTimes(2));
+    const applied = vi
+      .mocked(countAccessHistoryByCategory)
+      .mock.calls.at(-1)![0];
+    await user.clear(screen.getByLabelText("Condutor"));
+    await user.type(screen.getByLabelText("Condutor"), "Rascunho não aplicado");
+    const countBefore = vi.mocked(countAccessHistoryByCategory).mock.calls
+      .length;
+    await approveRequest(user);
+    await waitFor(() =>
+      expect(countAccessHistoryByCategory).toHaveBeenCalledTimes(
+        countBefore + 1,
+      ),
+    );
+    expect(countAccessHistoryByCategory).toHaveBeenLastCalledWith(
+      applied,
+      generalAccessCategories,
+    );
+    expect(searchAccessHistory).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        driverName: "Filtro fictício aplicado",
+        page: 1,
+      }),
+    );
+    expect(screen.getByLabelText("Condutor")).toHaveValue(
+      "Rascunho não aplicado",
+    );
+    expect(decideCorrectionRequest).toHaveBeenCalledTimes(1);
+  });
   it("preserves a valid applied page after approval", async () => {
     const other = { ...record, id: 11 };
     vi.mocked(searchAccessHistory)

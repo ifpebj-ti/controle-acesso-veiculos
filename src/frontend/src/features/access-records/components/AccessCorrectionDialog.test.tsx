@@ -79,6 +79,32 @@ describe("correction proposal dialog", () => {
     vi.resetAllMocks();
     vi.spyOn(crypto, "randomUUID").mockReturnValue(correctionKey);
   });
+  it("displays Servidor federal while submitting the canonical Federal category", async () => {
+    vi.mocked(submitCorrectionRequest).mockResolvedValue({
+      ...pendingCorrection,
+      proposed: { ...pendingCorrection.proposed, categoryName: "Federal" },
+    });
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole("button", { name: "Abrir solicitação" }));
+    await fill(user);
+    await user.click(screen.getByLabelText("Categoria"));
+    const federal = await screen.findByRole("option", {
+      name: "Servidor federal",
+    });
+    expect(federal).toHaveAttribute("data-value", "Federal");
+    await user.click(federal);
+    await user.click(
+      screen.getByRole("button", { name: "Enviar solicitação" }),
+    );
+    expect(await screen.findByText("Pedido #31: Pendente")).toBeInTheDocument();
+    expect(submitCorrectionRequest).toHaveBeenCalledExactlyOnceWith(10, {
+      requestKey: correctionKey,
+      original: pendingCorrection.original,
+      proposed: { ...pendingCorrection.proposed, categoryName: "Federal" },
+      justification: pendingCorrection.justification,
+    });
+  });
   it("submits the original canonical snapshot and proposed values without claiming an applied correction", async () => {
     vi.mocked(submitCorrectionRequest).mockResolvedValue(pendingCorrection);
     const user = userEvent.setup();

@@ -3,11 +3,12 @@
 ## Fonte e limite da integração
 
 Implementação de frontend baseada no contrato candidato do PR #607,
-`b220177118af5e76bf63b18293fda7ab450ad468`, e em
+`94078c77badbc71ae55fb4dcafdd5dd61758f387`, e em
 `docs/operations/access-correction-review.md` nessa branch. A base deste trabalho
 foi sincronizada por merge regular com a main
-`202a9133696109e317cd20e1a12e3d80ebed7a0a`, que contém a base informada
-`5db10221966a816a882b19ccaf4cf69a99054728` e a incorporação do #599. O backend
+`3b9644b9a71a7670104efacb90ab35769519f11b`, que já contém os PRs #751 e #752,
+além das categorias Aluno, Terceirizado e Federal. O runbook consultado no
+backend é idêntico ao snapshot anterior `b220177`. O backend
 candidato não foi incorporado a esta branch: nenhum arquivo de backend ou
 infraestrutura faz parte do diff. A promoção das duas partes precisa ser
 coordenada por José. O frontend antigo de PUT direto não é compatível com o
@@ -36,6 +37,8 @@ bloqueio padrão da API candidata.
   falha. Enviar uma proposta pendente, apenas trocar categoria ou paginar não
   dispara essa recontagem. Os filtros das contagens continuam independentes da
   categoria e da página selecionadas.
+- O catálogo canônico inclui as 12 categorias atuais. A seleção apresenta
+  “Servidor federal” e envia `Federal`, preservando a regra do contrato.
 
 ## Resultado incerto
 
@@ -73,7 +76,11 @@ simulada. Axe/teclado não equivalem a leitor de tela humano.
 Permanecem obrigatórios antes do aceite: composição HTTPS identificada com a API
 candidata, integração autenticada com solicitante e revisor distintos, conflitos
 reais, tablet físico, zoom real e leitor de tela. Evidências antigas do login não
-homologam estas telas. Não houve merge, deploy ou homologação institucional.
+homologam estas telas. Não houve incorporação deste PR, deploy ou homologação
+institucional.
 
-Fora do recorte: papel (#100), horários retroativos, placa, pessoa, documento,
-novos perfis, mudanças em API, migrations, contas ou infraestrutura.
+O contrato HTTP de papel já existe na main, com o guia
+`docs/development/paper-reconciliation-contract.md` e a ADR 0011. Sua interface
+pertence à #712 e não faz parte desta entrega. Fora do recorte: papel (#100/#712),
+horários retroativos, placa, pessoa, documento, novos perfis, mudanças em API,
+migrations, contas reais/compartilhadas ou infraestrutura hospedada.

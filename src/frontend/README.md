@@ -250,16 +250,18 @@ bloqueia o fluxo geral; conflitos retornados ao registrar preservam o formulári
 para conferência. O histórico identifica pelo nome somente os acessos que foram
 associados a uma autorização.
 
-No histórico geral, os quatro perfis podem abrir uma correção auditada para
-alterar somente objetivo, categoria e observação, sempre com uma justificativa
-obrigatória. Para o Setor de Transporte, essa capacidade permanece limitada à
-correção descritiva supervisionada e não concede entrada, saída ou encerramento
-excepcional. Placa, condutor, horários, situação, autoria original e eventual
-associação com evento permanecem como contexto textual imutável. A interface
-usa a resposta canônica de `PUT /access-records/{id}/correction` e revalida o
-histórico com os filtros efetivamente aplicados. A página atual é preservada
+No histórico geral, os quatro perfis podem solicitar uma correção de objetivo,
+categoria e observação, com original canônico, proposta e justificativa. O pedido
+pendente não modifica o acesso nem bloqueia a saída normal. Administrador ou
+Transporte distinto do solicitante decide com justificativa; o solicitante pode
+cancelar o próprio pedido pendente. Placa, condutor, horários, situação, autoria
+original e eventual associação com evento permanecem imutáveis neste fluxo.
+Após aprovação confirmada, a interface reconsulta o histórico e as contagens das
+categorias com os filtros efetivamente aplicados. A página atual é preservada
 enquanto continuar válida; caso deixe de existir, a última página válida é
-carregada. A autorização efetiva permanece sob responsabilidade do backend.
+carregada. Não há fallback para o PUT direto bloqueado pelo backend candidato.
+A autorização efetiva permanece sob responsabilidade do servidor, inclusive as
+demais operações de Transporte previstas na matriz vigente.
 
 Após uma resposta bem-sucedida, o operador pode continuar na mesma tela para
 registrar o próximo veículo ou abrir a lista de acessos. A continuidade limpa os
