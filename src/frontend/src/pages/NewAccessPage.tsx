@@ -1,4 +1,8 @@
 import { generalAccessCategoryOptions } from "../features/access-records/model/accessCategories";
+import { isEntrySuggestionCurrent } from "../features/person-preregistration/model/entrySuggestionExpiry";
+import { useAuthenticatedSession } from "../features/authentication";
+import type { EntrySuggestion as AccessEntryCandidate } from "../features/person-preregistration/schemas/campusDriverSchemas";
+import { useInstitutionalDay } from "../features/person-preregistration/model/institutionalDay";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -20,8 +24,8 @@ import {
   EntryVehicleTypeField,
   generalAccessCategories,
   registerAccessEntry,
+  quickAccessObjectives,
   type AccessEntryFormValues,
-  type AccessEntryCandidate,
   type RegisterAccessEntryInput,
   vehicleTypeOptions,
 } from "../features/access-records";
@@ -72,7 +76,15 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 }
 
 export function NewAccessPage() {
+  const { user } = useAuthenticatedSession();
+  const day = useInstitutionalDay();
+  return <NewAccessWorkspace key={`${user.id}:${user.profileName}:${day}`} />;
+}
+
+function NewAccessWorkspace() {
   const navigate = useNavigate();
+  const [driverConfirmed, setDriverConfirmed] = useState(false);
+  const [objectiveConfirmed, setObjectiveConfirmed] = useState(false);
   const [eventSectionOpen, setEventSectionOpen] = useState(false);
   const [additionalDetailsOpen, setAdditionalDetailsOpen] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -145,6 +157,26 @@ export function NewAccessPage() {
 
   function selectCandidate(candidate: AccessEntryCandidate) {
     setSelectedCandidate(candidate);
+    setDriverConfirmed(false);
+    setObjectiveConfirmed(false);
+    setValue("eventAuthorizationId", "", {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    setEventSectionOpen(false);
+    if (candidate.previousObjective) {
+      const known = quickAccessObjectives.find(
+        (item) => item === candidate.previousObjective,
+      );
+      setValue("objective", known ?? customEntryOption, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+      setValue("objectiveOther", known ? "" : candidate.previousObjective, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    }
     clearErrors(["plate", "driverName", "vehicleType", "vehicleTypeOther"]);
     setValue("plate", candidate.plate, {
       shouldDirty: true,
@@ -193,6 +225,42 @@ export function NewAccessPage() {
   async function submit(values: AccessEntryFormValues, intent: SubmitIntent) {
     setRequestError(null);
     setSuccessNotice(null);
+    if (selectedCandidate) {
+      const objective =
+        values.objective === customEntryOption
+          ? values.objectiveOther
+          : values.objective;
+      const expired = !isEntrySuggestionCurrent(selectedCandidate);
+      if (expired) {
+        setSelectedCandidate(null);
+        reset(defaultValues);
+        setRequestError("A sugestão diária expirou. Faça uma nova busca.");
+        return;
+      }
+      if (selectedCandidate.hasOpenAccess) {
+        setRequestError(
+          "Este veículo já tem acesso em aberto. Confira o registro existente antes de registrar outra entrada.",
+        );
+        return;
+      }
+      if (
+        !driverConfirmed ||
+        (!objectiveConfirmed &&
+          objective === selectedCandidate.previousObjective)
+      ) {
+        setRequestError(
+          "Confirme quem está dirigindo agora e confira o objetivo antes de registrar.",
+        );
+        document
+          .getElementById(
+            !driverConfirmed
+              ? "current-driver-confirmation"
+              : "objective-confirmation",
+          )
+          ?.focus();
+        return;
+      }
+    }
     setPendingIntent(intent);
 
     try {
@@ -346,9 +414,57 @@ export function NewAccessPage() {
           <div className="space-y-7 p-5 sm:p-7">
             <EntryCandidateSearch
               onClear={useManualEntry}
+              onExpire={() => {
+                reset(defaultValues);
+                setSelectedCandidate(null);
+                setEventSectionOpen(false);
+              }}
               onSelect={selectCandidate}
               selectedCandidate={selectedCandidate}
             />
+            {selectedCandidate && (
+              <div className="mt-4 grid gap-3 rounded-xl border border-border bg-surface p-4 text-sm leading-6">
+                <label className="flex items-start gap-3">
+                  <input
+                    checked={driverConfirmed}
+                    className="mt-1 size-5 shrink-0 accent-primary"
+                    id="current-driver-confirmation"
+                    onChange={(event) =>
+                      setDriverConfirmed(event.target.checked)
+                    }
+                    type="checkbox"
+                  />
+                  Confirmei quem está dirigindo agora.
+                </label>
+                {selectedCandidate.previousObjective && (
+                  <label className="flex items-start gap-3">
+                    <input
+                      checked={objectiveConfirmed}
+                      className="mt-1 size-5 shrink-0 accent-primary"
+                      id="objective-confirmation"
+                      onChange={(event) =>
+                        setObjectiveConfirmed(event.target.checked)
+                      }
+                      type="checkbox"
+                    />
+                    Conferi o objetivo anterior para esta nova entrada; também
+                    posso alterá-lo abaixo.
+                  </label>
+                )}
+                {selectedCandidate.hasOpenAccess && (
+                  <p role="status">
+                    Este veículo já tem acesso em aberto.{" "}
+                    <Link
+                      className="font-semibold underline"
+                      to="/acessos/abertos"
+                    >
+                      Conferir acesso existente
+                    </Link>
+                    .
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="grid gap-5 md:grid-cols-2">
               <div>
