@@ -8,9 +8,7 @@ from its first published release.
 
 ## [Unreleased]
 
-This section records increments since v0.4.0. Entries introduced by open PRs
-remain proposed until incorporation, not a published release or proof of deployment.
-See the [release policy](docs/operations/release-cadence.md).
+## [0.5.0] - 2026-11-17
 
 ### Added
 
