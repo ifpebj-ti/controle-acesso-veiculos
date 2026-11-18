@@ -542,6 +542,21 @@ não copia schemas nem depende da incorporação do login para testes locais.
 Testes com listas vazias não representam aprovação visual de itens populados;
 as fixtures e os ensaios locais não substituem a validação autenticada no HTTPS.
 
+## Filtros dos relatórios — Issue #746
+
+Movimentações gerais e Frota institucional compartilham somente o período.
+Placa, condutor, situação e demais filtros são preservados separadamente por
+tipo de relatório, inclusive os rascunhos ainda não aplicados. Alternar a aba
+consulta seus filtros aplicados na primeira página, sem aplicar texto ou datas
+em edição. O período aplicado é reutilizado na próxima consulta de cada tipo,
+sem copiar os demais campos; respostas antigas não substituem a consulta ativa.
+
+Limpar filtros limpa somente os campos próprios da aba ativa e mantém a regra
+anterior de restaurar o período padrão compartilhado. As escolhas da outra aba
+permanecem preservadas. O limite de 31 dias, a confirmação de exportação e os
+contratos de API não mudam. Os filtros permanecem apenas em memória, sem
+persistência de dados de consulta em localStorage ou sessionStorage.
+
 ## Testes e acessibilidade
 
 O [roteiro de homologação dos relatórios](../../docs/validation/administrative-report-homologation.md)

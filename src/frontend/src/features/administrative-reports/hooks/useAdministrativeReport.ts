@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { describeApiError } from "../../../services/api-errors";
 import {
@@ -18,10 +18,46 @@ import type {
 export type AdministrativeReportLoadStatus =
   "loading" | "ready" | "error" | "denied";
 
+type ReportPeriod = Pick<AdministrativeReportFilters, "from" | "to">;
+type ReportSpecificFilters = Omit<AdministrativeReportFilters, "from" | "to">;
+type ReportFilterPair = {
+  draft: ReportSpecificFilters;
+  applied: ReportSpecificFilters;
+};
+type ReportFilterState = {
+  draftPeriod: ReportPeriod;
+  appliedPeriod: ReportPeriod;
+  reports: Record<AdministrativeReportKind, ReportFilterPair>;
+};
+
+function createFilterState(): ReportFilterState {
+  const { from, to, ...specific } = createInitialReportFilters();
+  return {
+    draftPeriod: { from, to },
+    appliedPeriod: { from, to },
+    reports: {
+      movements: { draft: { ...specific }, applied: { ...specific } },
+      fleet: { draft: { ...specific }, applied: { ...specific } },
+    },
+  };
+}
+
+function resetPagination(filters: ReportFilterPair): ReportFilterPair {
+  return {
+    draft: { ...filters.draft, page: 1 },
+    applied: { ...filters.applied, page: 1 },
+  };
+}
+
 export function useAdministrativeReport() {
   const [kind, setKind] = useState<AdministrativeReportKind>("movements");
-  const [draft, setDraft] = useState(createInitialReportFilters);
-  const [applied, setApplied] = useState(createInitialReportFilters);
+  const [filters, setFilters] = useState(createFilterState);
+  const specific = filters.reports[kind];
+  const draft = { ...specific.draft, ...filters.draftPeriod };
+  const applied = useMemo(
+    () => ({ ...specific.applied, ...filters.appliedPeriod }),
+    [specific.applied, filters.appliedPeriod],
+  );
   const [page, setPage] = useState<AdministrativeReportResultPage | null>(null);
   const [status, setStatus] =
     useState<AdministrativeReportLoadStatus>("loading");
@@ -65,8 +101,13 @@ export function useAdministrativeReport() {
     if (nextKind === kind) return;
     prepareRequest();
     setKind(nextKind);
-    setDraft((current) => ({ ...current, page: 1, status: "" }));
-    setApplied((current) => ({ ...current, page: 1, status: "" }));
+    setFilters((current) => ({
+      ...current,
+      reports: {
+        ...current.reports,
+        [nextKind]: resetPagination(current.reports[nextKind]),
+      },
+    }));
     setValidationMessage(null);
   }
 
@@ -75,26 +116,64 @@ export function useAdministrativeReport() {
     setValidationMessage(error);
     if (error) return false;
     prepareRequest();
-    setApplied({ ...draft, page: 1 });
+    setFilters((current) => {
+      const reports = {
+        movements: resetPagination(current.reports.movements),
+        fleet: resetPagination(current.reports.fleet),
+      };
+      reports[kind].applied = { ...reports[kind].draft };
+      return {
+        ...current,
+        appliedPeriod: { ...current.draftPeriod },
+        reports,
+      };
+    });
     return true;
   }
 
   function clearFilters() {
-    const initial = createInitialReportFilters();
+    const initial = createFilterState();
     prepareRequest();
-    setDraft(initial);
-    setApplied(initial);
+    setFilters((current) => {
+      const reports = {
+        movements: resetPagination(current.reports.movements),
+        fleet: resetPagination(current.reports.fleet),
+      };
+      reports[kind] = initial.reports[kind];
+      return { ...initial, reports };
+    });
     setValidationMessage(null);
   }
 
   function goToPage(nextPage: number) {
     prepareRequest();
-    setApplied((current) => ({ ...current, page: nextPage }));
+    updateApplied({ ...specific.applied, page: nextPage });
   }
 
   function retry() {
     prepareRequest();
-    setApplied((current) => ({ ...current }));
+    updateApplied({ ...specific.applied });
+  }
+
+  function updateApplied(next: ReportSpecificFilters) {
+    setFilters((current) => ({
+      ...current,
+      reports: {
+        ...current.reports,
+        [kind]: { ...current.reports[kind], applied: next },
+      },
+    }));
+  }
+
+  function setDraft({ from, to, ...next }: AdministrativeReportFilters) {
+    setFilters((current) => ({
+      ...current,
+      draftPeriod: { from, to },
+      reports: {
+        ...current.reports,
+        [kind]: { ...current.reports[kind], draft: next },
+      },
+    }));
   }
 
   return {
@@ -108,7 +187,7 @@ export function useAdministrativeReport() {
     kind,
     page,
     retry,
-    setDraft: (filters: AdministrativeReportFilters) => setDraft(filters),
+    setDraft,
     status,
     validationMessage,
   };
