@@ -8,9 +8,7 @@ from its first published release.
 
 ## [Unreleased]
 
-This section records increments since v0.4.0. Entries introduced by open PRs
-remain proposed until incorporation, not a published release or proof of deployment.
-See the [release policy](docs/operations/release-cadence.md).
+## [0.5.0] - 2026-11-18
 
 ### Added
 
@@ -59,6 +57,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Changed
 
+- Refresh the .NET 10 authentication/EF packages, OpenTelemetry, QuestPDF and
+  Swagger UI dependencies, and update frontend build/form/request tooling
+  with the reviewed lockfiles (#738, #739).
+
 - Keep report-specific filters independent between general movements and fleet
   reports while sharing only draft/applied dates; preserve each tab's choices,
   reset pagination and retain the existing clear-period behavior (Refs #746).
@@ -71,6 +73,10 @@ See the [release policy](docs/operations/release-cadence.md).
   administrative action without changing authentication behavior.
 
 ### Fixed
+
+- Isolate the history pagination test from another driver's use of the same
+  vehicle while preserving partial-plate, order and exact-total assertions
+  (#757).
 
 - Send the explicit `status=all` event-authorization query for all states while
   retaining `active=true/false` for individual states, preserving server totals,
@@ -338,7 +344,8 @@ Changes merged before this changelog was introduced remain traceable through the
 Git history, Pull Requests, Issues, and project Wiki. They must not be
 retroactively presented as a published release without an evidence-based review.
 
-[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.2.0
