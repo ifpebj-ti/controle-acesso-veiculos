@@ -8,7 +8,7 @@ from its first published release.
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-11-17
+## [0.5.0] - 2026-11-18
 
 ### Added
 
@@ -57,6 +57,10 @@ from its first published release.
 
 ### Changed
 
+- Refresh the .NET 10 authentication/EF packages, OpenTelemetry, QuestPDF and
+  Swagger UI dependencies, and update frontend build/form/request tooling
+  with the reviewed lockfiles (#738, #739).
+
 - Keep report-specific filters independent between general movements and fleet
   reports while sharing only draft/applied dates; preserve each tab's choices,
   reset pagination and retain the existing clear-period behavior (Refs #746).
@@ -69,6 +73,10 @@ from its first published release.
   administrative action without changing authentication behavior.
 
 ### Fixed
+
+- Isolate the history pagination test from another driver's use of the same
+  vehicle while preserving partial-plate, order and exact-total assertions
+  (#757).
 
 - Send the explicit `status=all` event-authorization query for all states while
   retaining `active=true/false` for individual states, preserving server totals,
