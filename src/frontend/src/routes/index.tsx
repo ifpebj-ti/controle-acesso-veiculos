@@ -7,6 +7,15 @@ import { ProfileRoute } from "./ProfileRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { RouteTransitionManager } from "./RouteTransitionManager";
 
+const loadCampusDriversPage = () =>
+  import("../pages/CampusDriversPage").then(({ CampusDriversPage }) => ({
+    Component: CampusDriversPage,
+  }));
+
+const loadAuditPage = () =>
+  import("../pages/AuditPage").then(({ AuditPage }) => ({
+    Component: AuditPage,
+  }));
 const loadAdminPage = () =>
   import("../pages/AdminPage").then(({ AdminPage }) => ({
     Component: AdminPage,
@@ -92,7 +101,12 @@ export const router = createBrowserRouter([
                     lazy: loadInstitutionalDriversPage,
                   },
                   { path: "/eventos", lazy: loadEventsPage },
+                  {
+                    path: "/condutores-vinculados",
+                    lazy: loadCampusDriversPage,
+                  },
                   { path: "/administracao", lazy: loadAdminPage },
+                  { path: "/auditoria", lazy: loadAuditPage },
                   { path: "/relatorios", lazy: loadReportsPage },
                 ],
               },

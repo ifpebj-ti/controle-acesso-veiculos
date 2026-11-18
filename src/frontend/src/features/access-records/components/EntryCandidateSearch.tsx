@@ -1,10 +1,12 @@
+import { isEntrySuggestionCurrent as unexpired } from "../../person-preregistration/model/entrySuggestionExpiry";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "../../../components/ui/Button";
 import { Icon } from "../../../components/ui/Icon";
 import { TextField } from "../../../components/ui/TextField";
-import { searchAccessEntryCandidates } from "../services/accessRecordsService";
-import type { AccessEntryCandidate } from "../types";
+import { searchEntrySuggestions } from "../../person-preregistration/services/campusDriversService";
+import { affiliationLabel } from "../../person-preregistration/model/preregistrationPresentation";
+import type { EntrySuggestion as AccessEntryCandidate } from "../../person-preregistration/schemas/campusDriverSchemas";
 
 type SearchStatus = "idle" | "loading" | "ready" | "empty" | "error";
 
@@ -12,24 +14,23 @@ interface EntryCandidateSearchProps {
   onClear: () => void;
   onSelect: (candidate: AccessEntryCandidate) => void;
   selectedCandidate: AccessEntryCandidate | null;
+  onExpire?: () => void;
 }
 
 const debounceMilliseconds = 350;
 
 function describeVehicle(candidate: AccessEntryCandidate) {
-  const details = [
-    candidate.vehicleType,
-    candidate.brand,
-    candidate.model,
-    candidate.color,
-  ].filter((value): value is string => Boolean(value?.trim()));
-  return details.length > 0
-    ? details.join(" · ")
-    : "Detalhes do veículo não informados";
+  return candidate.vehicleType ?? "Tipo do veículo não informado";
+}
+function sourceLabel(candidate: AccessEntryCandidate) {
+  return candidate.source === "CampusRegistration"
+    ? `Pré-cadastro conferido · ${affiliationLabel(candidate.affiliation ?? "")}`
+    : "Retorno registrado por você hoje";
 }
 
 export function EntryCandidateSearch({
   onClear,
+  onExpire,
   onSelect,
   selectedCandidate,
 }: EntryCandidateSearchProps) {
@@ -46,6 +47,34 @@ export function EntryCandidateSearch({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const normalizedQuery = query.trim();
+  const [expiryNotice, setExpiryNotice] = useState("");
+  useEffect(() => {
+    const expiring = [
+      ...results,
+      ...(selectedCandidate ? [selectedCandidate] : []),
+    ]
+      .filter((item) => item.source === "SameDayVisit" && item.expiresAtUtc)
+      .map((item) => Date.parse(item.expiresAtUtc!));
+    if (!expiring.length) return;
+    const timer = window.setTimeout(
+      () => {
+        requestId.current++;
+        setResults((current) => current.filter(unexpired));
+        setActiveIndex(-1);
+        if (selectedCandidate && !unexpired(selectedCandidate)) {
+          (onExpire ?? onClear)();
+          setQuery("");
+          setOpen(false);
+          setStatus("idle");
+        }
+        setExpiryNotice(
+          "As sugestões diárias expiraram. Faça uma nova busca e confira os dados.",
+        );
+      },
+      Math.max(0, Math.min(...expiring) - Date.now() + 1),
+    );
+    return () => window.clearTimeout(timer);
+  }, [results, selectedCandidate, onExpire, onClear]);
 
   useEffect(
     () => () => {
@@ -55,7 +84,7 @@ export function EntryCandidateSearch({
   );
 
   useEffect(() => {
-    if (normalizedQuery.length < 3) {
+    if (normalizedQuery.length < 3 || normalizedQuery.length > 80) {
       return;
     }
 
@@ -67,13 +96,15 @@ export function EntryCandidateSearch({
       setActiveIndex(-1);
 
       try {
-        const candidates = await searchAccessEntryCandidates(
+        const candidates = await searchEntrySuggestions(
           normalizedQuery,
           controller.signal,
         );
-        if (requestId.current !== currentRequest) return;
-        setResults(candidates);
-        setStatus(candidates.length > 0 ? "ready" : "empty");
+        if (controller.signal.aborted || requestId.current !== currentRequest)
+          return;
+        const current = candidates.filter(unexpired);
+        setResults(current);
+        setStatus(current.length > 0 ? "ready" : "empty");
         setOpen(true);
       } catch {
         if (controller.signal.aborted || requestId.current !== currentRequest) {
@@ -92,6 +123,11 @@ export function EntryCandidateSearch({
   }, [normalizedQuery]);
 
   function selectCandidate(candidate: AccessEntryCandidate) {
+    if (!unexpired(candidate)) {
+      setResults((current) => current.filter(unexpired));
+      return;
+    }
+    requestId.current++;
     const selectionFocus = ++focusSequence.current;
     onSelect(candidate);
     setQuery("");
@@ -113,9 +149,14 @@ export function EntryCandidateSearch({
 
   function handleQueryChange(value: string) {
     focusSequence.current += 1;
+    requestId.current++;
+    setExpiryNotice("");
+    setResults([]);
+    setStatus("idle");
+    setActiveIndex(-1);
     setQuery(value);
     setOpen(true);
-    if (value.trim().length < 3) {
+    if (value.trim().length < 3 || value.trim().length > 80) {
       requestId.current += 1;
       setResults([]);
       setStatus("idle");
@@ -247,7 +288,8 @@ export function EntryCandidateSearch({
                     <span>{candidate.driverName}</span>
                   </span>
                   <span className="mt-1 block text-sm text-ink-soft">
-                    {describeVehicle(candidate)}
+                    {describeVehicle(candidate)} · {sourceLabel(candidate)}
+                    {candidate.hasOpenAccess && " · Acesso já em aberto"}
                   </span>
                 </li>
               );
@@ -270,6 +312,11 @@ export function EntryCandidateSearch({
         )}
       </p>
 
+      {expiryNotice && (
+        <p className="mt-3 text-sm text-text-muted" role="status">
+          {expiryNotice}
+        </p>
+      )}
       {status === "empty" && (
         <p className="mt-3 text-sm text-ink-soft">{statusMessage}</p>
       )}
@@ -290,6 +337,14 @@ export function EntryCandidateSearch({
               <p className="font-bold text-ink">
                 {selectedCandidate.plate} · {selectedCandidate.driverName}
               </p>
+              <p className="mt-1 text-sm text-ink-soft">
+                {sourceLabel(selectedCandidate)}
+              </p>
+              {selectedCandidate.previousObjective && (
+                <p className="mt-1 text-sm text-text-muted">
+                  Objetivo anterior: {selectedCandidate.previousObjective}
+                </p>
+              )}
               <p className="mt-1 text-sm text-ink-soft">
                 Dados recuperados para conferência. A seleção não autoriza a
                 entrada automaticamente.
