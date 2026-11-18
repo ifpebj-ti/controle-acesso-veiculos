@@ -8,6 +8,13 @@ from its first published release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve concise, reviewed Technical MVP release notes with both Docker
+  commands, verified semantic/source manifest digests, architecture checks and
+  explicit pending/deployment limits; protect existing published releases
+  without requiring retroactive review files (Refs #763).
+
 ## [0.5.0] - 2026-11-18
 
 ### Added
