@@ -8,6 +8,10 @@ from its first published release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Align edge Referrer-Policy with no-referrer and reject missing, divergent or duplicate effective headers in the HTTP smoke verification (Refs #772).
+
 ## [0.5.0] - 2026-11-18
 
 ### Added
