@@ -92,16 +92,14 @@ TLS ou carga OCI. A régua acadêmica permanece em 17 critérios, com as evidên
 operacionais próprias. Rastreabilidade: #686/#760; nenhuma incorporação de PR
 foi executada pelo agente.
 
-## Auditoria npm adicional ? mesma continuidade
+## Auditoria npm adicional — mesma continuidade
 
-A main 8089eb4 foi auditada independentemente ap?s o relato do #613: 12
-achados HIGH e zero CRITICAL, derivados de um ?nico advisory de picomatch
-4.0.7 na cadeia de ferramentas. `npm audit --omit=dev` retornou zero achados.
-O frontend final usa Nginx e arquivos dist, sem Node/node_modules. Isso delimita
-a exposi??o; n?o elimina o risco do build ou do desenvolvimento.
+A main 8089eb4 apresentou 12 achados HIGH e zero CRITICAL, derivados de um
+único advisory de picomatch 4.0.7 na cadeia de ferramentas. O audit omit=dev
+retornou zero. O frontend final usa Nginx/dist, sem Node/node_modules; o risco
+de build/desenvolvimento permanece na #765.
 
 O [advisory oficial](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
-indicava vers?es afetadas at? 4.0.7 e nenhuma vers?o corrigida publicada na
-consulta. A #765 acompanha o tratamento e a revis?o de superf?cies de globs.
-N?o foi executado audit fix --force, downgrade, fork n?o revisado ou bypass de
-gate. O scanner de imagem e o audit de ferramentas possuem escopos distintos.
+indicava versões afetadas até 4.0.7 e nenhuma versão corrigida na consulta.
+Não foi aplicado audit fix --force, downgrade, fork ou bypass de gate. Scanner
+da imagem e audit de ferramentas têm escopos distintos.

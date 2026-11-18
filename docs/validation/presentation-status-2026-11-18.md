@@ -42,11 +42,10 @@ A consulta autenticada de 18/11 retornou zero alertas abertos em Code Scanning
 e Dependabot. Code Quality foi consultado separadamente, com nove notes. A nota
 visual Maintainability/Reliability deve ser conferida no portal. A auditoria
 NuGet da composição #738 não apontou pacotes vulneráveis nas fontes consultadas.
-A auditoria npm adicional inicialmente excedeu o prazo. A execu??o posterior
-confirmou 12 achados HIGH derivados de um ?nico advisory de picomatch, todos
-na cadeia de ferramentas de desenvolvimento. `npm audit --omit=dev` retornou
-zero achados. A vers?o corrigida ainda n?o estava publicada na consulta; #765
-registra risco, limites e tratamento sem downgrade ou supress?o do scanner.
+A auditoria npm adicional confirmou 12 achados HIGH derivados de um único
+advisory de picomatch na cadeia de ferramentas; omit=dev retornou zero.
+A consulta oficial ainda não oferece versão corrigida; a #765 registra a
+exposição e o tratamento, sem downgrade ou supressão de scanner.
 
 CAV-04/05/06 seguem na #727 para limites e recuperação de autenticação. A revisão
 #607/#613, interface de papel #712 e confirmação PDF Google #699 continuam
