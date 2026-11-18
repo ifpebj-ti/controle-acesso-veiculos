@@ -1,5 +1,10 @@
 # Balanço das entregas e da segurança — 15/11/2026
 
+## Atualização em 18/11/2026
+
+A main 1801e0b incorpora #751/#752/#755/#757/#738/#739. O reteste público e os controles ainda pendentes continuam descritos abaixo. O quadro #43 recebeu reconciliação de cinco classificações e a preparação da release segue no #754. Consulte o
+[balanço atual](presentation-status-2026-11-18.md).
+
 Rastreabilidade #728/#732. Main `2fe61b1`, após #722/#725/#729.
 Homologação identificada com frontend `67ad6b8`, backend `f7ee701` e 22 migrations.
 
@@ -101,7 +106,7 @@ continua exigindo conclusão operacional.
 | ID                                           | Situação conferida                                                                                                                                 | O que falta                                                                                  |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | CAV-06 — tentativa de senha atual            | Troca autenticada possui limiter por usuário. A senha atual incorreta ainda não participa de um contador adicional na conta.                       | Política, implementação e ensaio da #727.                                                    |
-| CAV-07 — reativação Local                    | #668 incorporado. Backend de recuperação segura e obrigatoriedade de troca estão no candidato HTTPS. Interface #672 segue em revisão.              | Concluir as tarefas integradas restantes e o reteste do achado.                              |
+| CAV-07 — reativação Local                    | #668/#672 incorporados. Backend de recuperação segura, obrigatoriedade de troca e interface têm evidências na composição HTTPS identificada.       | Revalidar o procedimento de recuperação e a nova versão com o avaliador.                     |
 | CAV-08 — conteúdo da correção na auditoria   | #607 contém snapshots, proposta/decisão e auditoria transacional. #613 contém a interface candidata.                                               | Composição HTTPS e aceite da interface antes da promoção desse fluxo.                        |
 | CAV-09 — paridade Porteiro/Vigilante         | A mesma operação para os dois perfis foi aprovada como regra do produto. A API mantém autorização e autoria.                                       | Concluir revisão independente de correções #451 e observar o fluxo operacional.              |
 | CAV-10 — texto livre na auditoria            | Consulta restrita e no-store existem. Motivos e estados continuam exigindo finalidade e minimização.                                               | Revisão de privacidade e governança do conteúdo consultável.                                 |
@@ -126,7 +131,7 @@ continua exigindo conclusão operacional.
 | CAV-23 — cache dos bundles/HTML         | Ausência de política explícita confirmada em 15/11. #725 passou com HTML revalidável e bundles com hash imutáveis.                                               | Promoção e reteste dos assets servidos.                                        |
 | CAV-24 — respostas e cobertura de borda | WAF/proxy estão aplicados e possuem contrato operacional próprio. A aplicação trata validação literal.                                                           | Conferir erros 400/403/413/429, headers e limites efetivos por camada.         |
 | CAV-25 — mensagem de validação          | O login ainda agrupa entrada ausente, inválida ou excessiva em mensagem de obrigatoriedade.                                                                      | Ajustar validação de formato preservando negação genérica e acessibilidade.    |
-| CAV-26 — menu e policy                  | Permissões de negócio do Transporte foram ampliadas no backend. #705 adequa a interface e continua em revisão.                                                   | Concluir as tarefas autenticadas do Transporte e a incorporação do frontend.   |
+| CAV-26 — menu e policy                  | Permissões de negócio e interface do Transporte foram incorporadas em #693/#705, com auditoria e restrição de contas ao Administrador.                           | Revalidar as permissões na próxima versão promovida.                           |
 | CAV-27 — configuração efetiva           | A implantação tem fonte/imagem identificadas. A borda pública devolveu strict-origin-when-cross-origin em 15/11, enquanto o Nginx versionado define no-referrer. | Alinhar e registrar a política efetiva das camadas, com reteste após promoção. |
 
 ## Trabalho novo desta revisão

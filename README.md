@@ -47,17 +47,19 @@ cancelas e fluxo de pedestres não pertencem ao MVP atual.
 O estado confirmado, as hipóteses e as pendências estão na página
 [Status do Projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Status-do-Projeto).
 
-## Estado em 17/11/2026
+## Estado em 18/11/2026
 
-A main `506d06f` incorpora o pré-cadastro e as sugestões de entrada (#704), a
+A main `1801e0b` incorpora o pré-cadastro e as sugestões de entrada (#704), a
 navegação e as ações de negócio do Transporte (#705), a reativação de contas
 pela interface (#672) e os incrementos anteriores. Gestão de contas e concessão
 de perfis permanecem exclusivas do Administrador.
 
 O backend de contingência em papel (#611) e a consulta de eventos com
-`status=all` (#745) também estão incorporados. A interface de papel (#712),
-o ajuste do filtro de eventos no frontend (#743) e a confirmação de exportação
-PDF por identidade Google (#699) continuam separados e pendentes.
+`status=all` (#745/#751) também estão incorporados. Os relatórios preservam os
+filtros próprios de cada tipo, compartilhando somente o período (#752). A
+correção de isolamento dos testes #757 e as dependências #738/#739 foram
+incorporadas. A interface de papel (#712) e a confirmação de exportação PDF
+por identidade Google (#699) continuam pendentes.
 
 A última composição identificada na homologação usa frontend candidato
 `67ad6b8` e backend `f7ee701`, com 22 migrations. Essa composição já inclui as
@@ -68,7 +70,8 @@ e autoria estão registradas nos respectivos PRs e no
 Um merge não atualiza automaticamente a VM.
 
 A release estável publicada continua `v0.4.0`; `v0.5.0` está em preparação
-(#686/#713). Código incorporado e candidato de homologação não equivalem a uma
+(#686/#713, PR #754). O [balanço de 18/11](docs/validation/presentation-status-2026-11-18.md)
+reúne fontes, verificações e pendências. Código incorporado e candidato de homologação não equivalem a uma
 nova release publicada nem à autorização para operação institucional.
 
 Os contratos de categorias, pré-cadastro e permissões estão no

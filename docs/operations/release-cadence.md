@@ -1,5 +1,10 @@
 # Cadência de releases e promoção da homologação
 
+## Atualização em 18/11/2026
+
+A main 1801e0b reúne o lote incorporado. O PR #754 prepara 0.5.0 com changelog e plano de migração/promoção. A publicação estável continua v0.4.0; correções compatíveis seguintes podem seguir em 0.5.1, 0.5.2 e posteriores. Consulte o
+[balanço atual](../validation/presentation-status-2026-11-18.md).
+
 ## Política — Issue #681
 
 Atualizar `Unreleased` no PR que entrega a mudança. Durante o piloto, revisar
