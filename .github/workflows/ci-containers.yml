@@ -910,6 +910,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - name: Set up Docker Buildx for published manifest verification
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Validate reviewed release-note behavior
+        run: python3 -m unittest discover -s infrastructure/ci/tests -p test_release_lifecycle.py
       - name: Publish notes only after both image manifests passed
         env:
           GH_TOKEN: ${{ github.token }}
