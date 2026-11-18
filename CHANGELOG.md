@@ -59,6 +59,10 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Changed
 
+- Keep report-specific filters independent between general movements and fleet
+  reports while sharing only draft/applied dates; preserve each tab's choices,
+  reset pagination and retain the existing clear-period behavior (Refs #746).
+
 - Increase spacing between sign-in guidance and administrative access while
   retaining the established login alignment, typography and panel composition.
 - Cap the Google sign-in action at 18rem within the available width, retaining

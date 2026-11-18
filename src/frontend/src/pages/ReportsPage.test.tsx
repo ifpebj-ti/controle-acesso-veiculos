@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -241,6 +247,70 @@ describe("ReportsPage", () => {
     expect(searchInstitutionalFleetReport).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: "Concluido" }),
     );
+  });
+
+  it("restores each tab's filters and selection focus while sharing only the period", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByText("Pessoa Fictícia");
+    fireEvent.change(screen.getByLabelText("Data inicial"), {
+      target: { value: "2026-10-01" },
+    });
+    fireEvent.change(screen.getByLabelText("Data final"), {
+      target: { value: "2026-10-15" },
+    });
+    await user.type(screen.getByLabelText("Placa"), "ABC");
+    await user.type(screen.getByLabelText("Condutor"), "Pessoa Movimento");
+    await selectFieldOption(user, screen.getByLabelText("Situação"), "Aberto");
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    await waitFor(() =>
+      expect(searchVehicleMovementReport).toHaveBeenCalledTimes(2),
+    );
+    const fleetTab = screen.getByRole("button", {
+      name: "Frota institucional",
+    });
+    await user.click(fleetTab);
+    await screen.findByText("Nenhum registro encontrado");
+    expect(fleetTab).toHaveFocus();
+    expect(screen.getByLabelText("Data inicial")).toHaveValue("2026-10-01");
+    expect(screen.getByLabelText("Data final")).toHaveValue("2026-10-15");
+    expect(screen.getByLabelText("Placa")).toHaveValue("");
+    expect(screen.getByLabelText("Condutor")).toHaveValue("");
+    await user.type(screen.getByLabelText("Placa"), "XYZ");
+    await user.type(screen.getByLabelText("Condutor"), "Pessoa Frota");
+    await user.type(screen.getByLabelText("Identificação interna"), "FROTA");
+    await selectFieldOption(
+      user,
+      screen.getByLabelText("Situação"),
+      "Concluido",
+    );
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+    const movementsTab = screen.getByRole("button", {
+      name: "Movimentações gerais",
+    });
+    await user.click(movementsTab);
+    await screen.findAllByText("Pessoa Fictícia");
+    expect(movementsTab).toHaveFocus();
+    expect(screen.getByLabelText("Placa")).toHaveValue("ABC");
+    expect(screen.getByLabelText("Condutor")).toHaveValue("Pessoa Movimento");
+    expect(searchVehicleMovementReport).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        plate: "ABC",
+        driverName: "Pessoa Movimento",
+        status: "Aberto",
+        from: "2026-10-01",
+        to: "2026-10-15",
+      }),
+    );
+    await user.click(fleetTab);
+    await screen.findByText("Nenhum registro encontrado");
+    expect(screen.getByLabelText("Placa")).toHaveValue("XYZ");
+    expect(screen.getByLabelText("Condutor")).toHaveValue("Pessoa Frota");
+    expect(screen.getByLabelText("Identificação interna")).toHaveValue("FROTA");
+    expect(searchInstitutionalFleetReport).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: "Concluido", categoryName: "" }),
+    );
+    expect(exportVehicleMovementReport).not.toHaveBeenCalled();
   });
 
   it("clears the password after a failed confirmation without repeating the export", async () => {
