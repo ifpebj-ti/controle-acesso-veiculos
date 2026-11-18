@@ -176,6 +176,8 @@ def verified_manifests(version, commit):
         if not isinstance(entries, list) or len(entries) != 2 or any(
                 not isinstance(m, dict) or not isinstance(m.get("platform"), dict) for m in entries):
             raise ValueError("Release manifest must contain two platform descriptors")
+        if any(m["platform"].get("os") != "linux" or m["platform"].get("architecture") not in ("amd64", "arm64") for m in entries):
+            raise ValueError("Unsupported release manifest platform")
         platforms = {(m["platform"].get("os"), m["platform"].get("architecture")) for m in entries}
         if raw.get("schemaVersion") != 2 or platforms != {("linux", "amd64"), ("linux", "arm64")}:
             raise ValueError("Release manifest must contain exactly Linux AMD64 and ARM64")

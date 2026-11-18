@@ -175,7 +175,7 @@ class PublicationNotesTests(unittest.TestCase):
 
     def test_wrong_architecture_or_source_digest_blocks_publication(self):
         wrong = {"schemaVersion": 2, "manifests": [{"platform": {"os": "linux", "architecture": "amd64"}}]}
-        for replies in [[wrong], [RAW, DIGEST, "sha256:" + "c" * 64], [RAW, "not-a-digest"], [None]]:
+        for replies in [[wrong], [{"schemaVersion": 2, "manifests": [{"platform": {"os": [], "architecture": "amd64"}}] * 2}], [RAW, DIGEST, "sha256:" + "c" * 64], [RAW, "not-a-digest"], [None]]:
             results = [subprocess.CompletedProcess([], 0, json.dumps(x), "") for x in replies]
             with self.subTest(replies=replies), unittest.mock.patch.object(release, "run", side_effect=results), self.assertRaises(ValueError):
                 release.verified_manifests("0.5.1", SHA)
