@@ -31,11 +31,27 @@ limites próprios. Consulte o [registro da promoção](release-050-rollout-2026-
 > proveniência e autoria da saída. A matriz acadêmica conserva os critérios de
 > integração, implantação e observação registrados abaixo.
 
+## Conferência da régua oficial em 18/11/2026
+
+A página 21 do documento acadêmico original foi conferida, inclusive visualmente.
+São cinco critérios de Engenharia, cinco de Segurança e sete de Infraestrutura.
+O texto exige Maintainability e Reliability **acima de Good**; apenas Good não
+encerra esse critério. O quadro continua com 8 atendidos, 8 parciais e 1 pendente:
+(8 + 8 × 0,5) / 17 = 70,6%, arredondado para 71% ±5 pontos. A incerteza é de
+classificação/evidência, não estatística nem estimativa de horas.
+
+A release 0.5.0 e a promoção já foram concluídas. O reteste público de borda
+passou, incluindo a correção de Referrer-Policy aplicada separadamente em 18/11
+(#772/PR #774). Isso não comprova carga na OCI, observabilidade operada,
+restauração externa, 90% em todos os fluxos críticos ou aceite institucional.
+As notas históricas abaixo mantêm seu snapshot. O
+[balanço atual](delivery-closure-2026-11-18.md) distingue cada pendência.
+
 ## Objetivo e critério
 
 Esta matriz relaciona as 17 entregas consolidadas da Unidade 2 às evidências
 atuais, mantendo a régua de peso igual (1 atendido, 0,5 parcial, 0 pendente).
-A revisão documental atual parte da main `8089eb4`; a homologação executa
+A revisão documental atual parte da main `a4ffcc5`; a homologação executa
 frontend/backend `0.5.0`, fonte `eaccd72`, com 23 migrations. Os trechos datados
 abaixo preservam os snapshots anteriores; a promoção não substitui as evidências
 operacionais de cada critério.
@@ -92,7 +108,7 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 | Manual de uso                                 | [Wiki — Manual de Uso](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Manual-de-Uso)                                                 | Parcial                     | revisar após login Google, nome oficial, relatórios e validação final dos quatro perfis             |
 | Ligação story → PR → testes → pipeline → demo | Issues, PRs, commits `Refs/Closes`, checks e registros semanais                                                                                  | Atendido                    | manter a rastreabilidade nas próximas entregas e anexar evidência da demonstração quando solicitada |
 | Maintainability e Reliability acima de Good   | Última conferência #684 identificou nove notes e zero warnings, compatível com Good pelo critério oficial                                        | Parcial / validação externa | conferir ambos indicadores no portal e o critério acadêmico acima de Good                           |
-| Tags, releases e changelog                    | [`v0.4.0`](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0), imagens semânticas e [`CHANGELOG.md`](../../CHANGELOG.md) | Atendido                    | criar nova release somente após fechar o incremento que irá para a homologação                      |
+| Tags, releases e changelog                    | [`v0.5.0`](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.5.0), imagens semânticas e [`CHANGELOG.md`](../../CHANGELOG.md) | Atendido                    | manter incrementos revisados e promover imagens semânticas com rollback e evidências                |
 
 ## Segurança
 
