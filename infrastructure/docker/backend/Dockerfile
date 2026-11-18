@@ -50,6 +50,12 @@ FROM build AS publish
 RUN dotnet publish "ControleAcessoVeiculos.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+# Local builds are explicitly unidentified; CI supplies validated application metadata.
+ARG IMAGE_VERSION=dev
+ARG IMAGE_REVISION=unknown
+LABEL org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.revision="${IMAGE_REVISION}" \
+      org.opencontainers.image.source="https://github.com/ifpebj-ti/controle-acesso-veiculos"
 WORKDIR /app
 RUN mkdir -p /var/lib/controle-acesso-veiculos/data-protection \
     && chown -R "$APP_UID:$APP_UID" /var/lib/controle-acesso-veiculos

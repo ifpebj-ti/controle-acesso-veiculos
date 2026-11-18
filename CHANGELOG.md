@@ -11,6 +11,13 @@ from its first published release.
 ### Fixed
 
 - Align edge Referrer-Policy with no-referrer and reject missing, divergent or duplicate effective headers in the HTTP smoke verification (Refs #772).
+- Preserve concise, reviewed Technical MVP release notes with both Docker
+  commands, verified semantic/source manifest digests, architecture checks and
+  explicit pending/deployment limits; protect existing published releases
+  without requiring retroactive review files (Refs #763).
+- Identify application version, checked-out source and repository in final OCI
+  image labels; verify metadata for development/release builds before scanning
+  and publication on both architectures (Refs #761).
 
 ## [0.5.0] - 2026-11-18
 

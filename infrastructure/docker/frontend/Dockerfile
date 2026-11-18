@@ -6,6 +6,12 @@ COPY src/frontend/ .
 RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:stable-alpine-slim@sha256:5d8bb9437d74a600ec5dbf90c035451c724dc33eac8d3a71078f6f8612c345f6 AS final
+# Local builds are explicitly unidentified; CI supplies validated application metadata.
+ARG IMAGE_VERSION=dev
+ARG IMAGE_REVISION=unknown
+LABEL org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.revision="${IMAGE_REVISION}" \
+      org.opencontainers.image.source="https://github.com/ifpebj-ti/controle-acesso-veiculos"
 USER root
 RUN apk upgrade --no-cache
 USER nginx
