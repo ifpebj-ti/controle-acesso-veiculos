@@ -83,7 +83,7 @@ sem inventar zero. O contrato atual exige uma leitura de contagem por categoria
 (doze neste candidato), em lotes
 de até três, além da consulta de resultados. Trocar somente a categoria ou a
 página pelos atalhos reaproveita os totais. “Aplicar filtros”, nova tentativa e
-correção salva atualizam as contagens, mesmo sem mudar o período, a placa,
+aprovação confirmada atualizam as contagens, mesmo sem mudar o período, a placa,
 o condutor ou a situação. Isso não cria um endpoint agregado nem mede
 desempenho em produção.
 
@@ -250,16 +250,18 @@ bloqueia o fluxo geral; conflitos retornados ao registrar preservam o formulári
 para conferência. O histórico identifica pelo nome somente os acessos que foram
 associados a uma autorização.
 
-No histórico geral, os quatro perfis podem abrir uma correção auditada para
-alterar somente objetivo, categoria e observação, sempre com uma justificativa
-obrigatória. Para o Setor de Transporte, essa capacidade permanece limitada à
-correção descritiva supervisionada e não concede entrada, saída ou encerramento
-excepcional. Placa, condutor, horários, situação, autoria original e eventual
-associação com evento permanecem como contexto textual imutável. A interface
-usa a resposta canônica de `PUT /access-records/{id}/correction` e revalida o
-histórico com os filtros efetivamente aplicados. A página atual é preservada
+No histórico geral, os quatro perfis podem solicitar uma correção de objetivo,
+categoria e observação, com original canônico, proposta e justificativa. O pedido
+pendente não modifica o acesso nem bloqueia a saída normal. Administrador ou
+Transporte distinto do solicitante decide com justificativa; o solicitante pode
+cancelar o próprio pedido pendente. Placa, condutor, horários, situação, autoria
+original e eventual associação com evento permanecem imutáveis neste fluxo.
+Após aprovação confirmada, a interface reconsulta o histórico e as contagens das
+categorias com os filtros efetivamente aplicados. A página atual é preservada
 enquanto continuar válida; caso deixe de existir, a última página válida é
-carregada. A autorização efetiva permanece sob responsabilidade do backend.
+carregada. Não há fallback para o PUT direto bloqueado pelo backend candidato.
+A autorização efetiva permanece sob responsabilidade do servidor, inclusive as
+demais operações de Transporte previstas na matriz vigente.
 
 Após uma resposta bem-sucedida, o operador pode continuar na mesma tela para
 registrar o próximo veículo ou abrir a lista de acessos. A continuidade limpa os
@@ -729,6 +731,14 @@ permanecem inalterados. Trata-se de candidato local; sua existência não compro
 incorporação, implantação ou homologação autenticada.
 
 ## Validação
+
+### Pedidos de correção do histórico (candidato #610)
+
+O formulário prepara um pedido pendente com original/proposta e justificativa;
+somente aprovação por revisor distinto altera o registro efetivo. A integração
+depende da promoção coordenada do backend #607. O fluxo, a reconciliação somente
+por leitura e os ensaios ainda pendentes estão em
+[docs/access-correction-review.md](docs/access-correction-review.md).
 
 Na pasta `src/frontend`:
 
