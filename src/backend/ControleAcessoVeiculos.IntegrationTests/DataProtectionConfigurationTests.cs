@@ -14,12 +14,12 @@ public sealed class DataProtectionConfigurationTests
     [Fact]
     public void SharedEncryptedKeyRingSurvivesProviderReplacement()
     {
-        var testDirectory = Path.Combine(
+        var testDirectory = Path.Join(
             Path.GetTempPath(),
             $"controle-acesso-data-protection-{Guid.NewGuid():N}");
-        var keyRingPath = Path.Combine(testDirectory, "keys");
-        var certificatePath = Path.Combine(testDirectory, "key-encryption.pfx");
-        var certificatePasswordPath = Path.Combine(testDirectory, "certificate-password.txt");
+        var keyRingPath = Path.Join(testDirectory, "keys");
+        var certificatePath = Path.Join(testDirectory, "key-encryption.pfx");
+        var certificatePasswordPath = Path.Join(testDirectory, "certificate-password.txt");
         const string certificatePassword = "test-only-certificate-password";
         Directory.CreateDirectory(testDirectory);
 

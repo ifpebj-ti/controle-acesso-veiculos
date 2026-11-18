@@ -8,6 +8,10 @@ from its first published release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Clarify controlled security-fixture path concatenation with Path.Join while preserving negative cases and protective application catches (Refs #771).
+
 ## [0.5.0] - 2026-11-18
 
 ### Added

@@ -119,7 +119,7 @@ public sealed class RuntimeSecretFileConfigurationTests
     [Fact]
     public void AddRuntimeSecretFiles_RejectsMissingFile()
     {
-        var path = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}");
+        var path = Path.Join(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}");
         var configuration = CreateConfiguration(new Dictionary<string, string?>
         {
             ["Authentication:Google:ClientSecretFile"] = path
@@ -235,7 +235,7 @@ public sealed class RuntimeSecretFileConfigurationTests
 
         public string Create(string content)
         {
-            var path = Path.Combine(Path.GetTempPath(), $"cav-secret-{Guid.NewGuid():N}");
+            var path = Path.Join(Path.GetTempPath(), $"cav-secret-{Guid.NewGuid():N}");
             File.WriteAllText(path, content);
             _paths.Add(path);
             return path;
@@ -243,7 +243,7 @@ public sealed class RuntimeSecretFileConfigurationTests
 
         public string CreateSymbolicLink(string target)
         {
-            var path = Path.Combine(
+            var path = Path.Join(
                 Path.GetTempPath(),
                 $"cav-secret-link-{Guid.NewGuid():N}");
             File.CreateSymbolicLink(path, target);
