@@ -309,6 +309,15 @@ exatamente um veículo; cota por tipo pode representar de 1 a 1000 veículos.
 Cancelamento é lógico, exige confirmação e não é descrito como exclusão do
 histórico.
 
+Na consulta de eventos, Todos envia `status=all` sem `active`; Ativos e
+Cancelados enviam `active=true` ou `active=false`, sem `status`. Nome, período,
+totais e paginação continuam vindo da consulta do servidor, sem concatenar páginas
+no navegador. A seleção de evento na entrada continua consultando somente ativos.
+O contrato e as rejeições de combinações ambíguas estão em
+[`event-authorization-query.md`](../../docs/development/event-authorization-query.md).
+A integração #743 exige API compatível; sua presença na main não comprova que
+o site hospedado já oferece esse contrato.
+
 Os períodos são preenchidos com controles nativos de data e hora e possuem uma
 instrução textual associada. Essa escolha evita introduzir um calendário
 customizado sem suporte de teclado comprovado e segue as recomendações de
@@ -541,6 +550,21 @@ pertence ao PR #530. Esse PR mantém seu feedback específico de contas; a #603
 não copia schemas nem depende da incorporação do login para testes locais.
 Testes com listas vazias não representam aprovação visual de itens populados;
 as fixtures e os ensaios locais não substituem a validação autenticada no HTTPS.
+
+## Filtros dos relatórios — Issue #746
+
+Movimentações gerais e Frota institucional compartilham somente o período.
+Placa, condutor, situação e demais filtros são preservados separadamente por
+tipo de relatório, inclusive os rascunhos ainda não aplicados. Alternar a aba
+consulta seus filtros aplicados na primeira página, sem aplicar texto ou datas
+em edição. O período aplicado é reutilizado na próxima consulta de cada tipo,
+sem copiar os demais campos; respostas antigas não substituem a consulta ativa.
+
+Limpar filtros limpa somente os campos próprios da aba ativa e mantém a regra
+anterior de restaurar o período padrão compartilhado. As escolhas da outra aba
+permanecem preservadas. O limite de 31 dias, a confirmação de exportação e os
+contratos de API não mudam. Os filtros permanecem apenas em memória, sem
+persistência de dados de consulta em localStorage ou sessionStorage.
 
 ## Testes e acessibilidade
 

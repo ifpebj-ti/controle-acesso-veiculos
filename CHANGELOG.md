@@ -57,6 +57,10 @@ from its first published release.
 
 ### Changed
 
+- Keep report-specific filters independent between general movements and fleet
+  reports while sharing only draft/applied dates; preserve each tab's choices,
+  reset pagination and retain the existing clear-period behavior (Refs #746).
+
 - Increase spacing between sign-in guidance and administrative access while
   retaining the established login alignment, typography and panel composition.
 - Cap the Google sign-in action at 18rem within the available width, retaining
@@ -65,6 +69,10 @@ from its first published release.
   administrative action without changing authentication behavior.
 
 ### Fixed
+
+- Send the explicit `status=all` event-authorization query for all states while
+  retaining `active=true/false` for individual states, preserving server totals,
+  filters and pagination without combining pages in the browser (Refs #743).
 
 - Capture the optional paper-import vehicle ID before the EF query and use the
   supported parameterized SQL execution API, preserving transaction locks and

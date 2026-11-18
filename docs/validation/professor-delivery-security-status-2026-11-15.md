@@ -8,6 +8,42 @@ e os 28 IDs do relatório externo v1.2. O relatório contém fotografias de fase
 diferentes. O preâmbulo atualizado e a tabela canônica incluem CAV-28.
 O original permanece privado. As descrições abaixo são sanitizadas.
 
+## Atualização após os merges de 17/11/2026
+
+A referência atual desta atualização é a main `202b787`, após #750 e #749.
+As tabelas abaixo conservam o balanço de 15/11 e devem ser lidas junto aos
+seguintes avanços e pendências.
+
+| Tema                               | Estado confirmado e continuidade                                                                                                                                                                                                         |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CAV-07/CAV-28, reativação de conta | Backend #668 e interface #672 incorporados. A homologação identificada contém a composição de reativação. Entrega da credencial, finalidade, retenção e governança continuam exigindo o procedimento institucional.                      |
+| CAV-26, funções de Transporte      | #704 e #705 incorporados após os ensaios registrados. Transporte dispõe das ações de negócio, relatórios e auditoria. Gestão de contas/perfis continua exclusiva do Administrador. Confirmação de exportação Google permanece na #699.   |
+| Qualidade estática                 | #750 corrigiu os cinco apontamentos novos. A consulta posterior da API de Code Quality retorna nove achados abertos, todos note. A nota visual do painel deve ser conferida separadamente.                                               |
+| Contingência em papel              | Backend #611 incorporado com migration aditiva 20261114132630_AddPaperReconciliation. A UI #712 e o exercício institucional permanecem pendentes. A próxima promoção deve revisar a passagem de 22 para 23 migrations e sua recuperação. |
+| Eventos e relatórios               | Contrato status=all incorporado em #745. As interfaces #751/#752 estão em revisão, com ensaios locais atribuídos a Raíssa. A última API hospedada identificada f7ee701 ainda requer promoção compatível para esse contrato.              |
+| CAV-04/CAV-05/CAV-06               | A #727 continua aberta para política coordenada de disponibilidade, limites e falhas de confirmação de senha. Os merges recentes não encerram esses três achados.                                                                        |
+| CAV-17/CAV-22/CAV-23/CAV-27        | Configuração Nginx #725 incorporada. Promoção e reteste público permanecem na #686, incluindo redirects, headers, cache e política efetiva das camadas.                                                                                  |
+
+A última hospedagem identificada continua frontend `67ad6b8`, backend `f7ee701`
+e 22 migrations, conforme a última conferência administrativa. O rascunho
+`0.5.0` está em preparação na #713, com PR #754. O encerramento dos itens
+operacionais depende das respectivas evidências de implantação e uso.
+
+## Consulta pública em 18/11/2026
+
+Cinco GETs sem autenticação, com validação TLS e redirects desabilitados,
+confirmaram login 200, readiness 200 e googleEnabled=true. O módulo público
+index-Dqbj1ol2.js manteve SHA-256
+a1a84cc6f0de37e82a2ae3cef530c1bda1068f27e958706bab419212b75795e4,
+igual ao artefato público anteriormente identificado.
+
+GET /api respondeu 308 com Location para HTTP e porta 8080. Login e bundle
+continuaram sem Cache-Control explícito; a política Referrer-Policy observada
+foi strict-origin-when-cross-origin. CAV-17/CAV-23/CAV-27 seguem aguardando a
+promoção da configuração revisada e novo reteste. Readiness e providers
+conservaram no-store. A consulta não autenticada não inspecionou imagens,
+banco, cookies de sessão ou permissões de usuários.
+
 ## Solicitações dos professores
 
 | Solicitação                                   | Evidência e estado atual                                                                                                                       | Continuidade                                                                                                            |

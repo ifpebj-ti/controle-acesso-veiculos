@@ -529,6 +529,65 @@ describe("EventsPage", () => {
     expect(searchEventAuthorizations).toHaveBeenCalledTimes(1);
   });
 
+  it("shows active and cancelled server results in All while retaining applied filters across pages", async () => {
+    const cancelled = {
+      ...authorization,
+      active: false,
+      id: 8,
+      name: "Evento Cancelado Fictício",
+    };
+    const secondPage = { ...cancelled, id: 9, name: "Outro Evento Cancelado" };
+    const allPage = {
+      ...populatedPage,
+      items: [authorization, cancelled],
+      totalCount: 11,
+      totalPages: 2,
+    };
+    vi.mocked(searchEventAuthorizations)
+      .mockResolvedValueOnce(populatedPage)
+      .mockResolvedValueOnce(allPage)
+      .mockResolvedValueOnce({ ...allPage, items: [secondPage], page: 2 })
+      .mockResolvedValueOnce(allPage);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(authorization.name);
+    const name = screen.getByLabelText("Buscar pelo nome do evento");
+    const start = screen.getByLabelText("Início do período");
+    const end = screen.getByLabelText("Fim do período");
+    await user.type(name, "Evento");
+    fireEvent.change(start, { target: { value: "2030-05-01T00:00" } });
+    fireEvent.change(end, { target: { value: "2030-06-01T00:00" } });
+    await selectFieldOption(user, screen.getByLabelText("Situação"), "all");
+    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+
+    expect(await screen.findByText(cancelled.name)).toBeInTheDocument();
+    expect(screen.getByText(authorization.name)).toBeInTheDocument();
+    expect(
+      screen.getByText("Mostrando 2 de 11 autorização(ões)"),
+    ).toHaveAttribute("aria-live", "polite");
+    const applied = vi.mocked(searchEventAuthorizations).mock.lastCall?.[0];
+    expect(applied).toMatchObject({ active: "all", name: "Evento", page: 1 });
+
+    // Editing the draft must not change the filter used by pagination.
+    await user.type(name, " não aplicado");
+    await user.click(screen.getByRole("button", { name: "Próxima" }));
+    expect(await screen.findByText(secondPage.name)).toBeInTheDocument();
+    expect(searchEventAuthorizations).toHaveBeenLastCalledWith({
+      ...applied,
+      page: 2,
+    });
+    expect(
+      screen.getByText("Mostrando 1 de 11 autorização(ões)"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Anterior" }));
+    expect(await screen.findByText(cancelled.name)).toBeInTheDocument();
+    expect(searchEventAuthorizations).toHaveBeenLastCalledWith(applied);
+    expect(start).toHaveValue("2030-05-01T00:00");
+    expect(end).toHaveValue("2030-06-01T00:00");
+    expect(name).toHaveValue("Evento não aplicado");
+    expect(searchEventAuthorizations).toHaveBeenCalledTimes(4);
+  });
+
   it("blocks other actions while a creation is pending", async () => {
     let resolveCreation: ((value: EventAuthorization) => void) | undefined;
     vi.mocked(createEventAuthorization).mockReturnValue(
