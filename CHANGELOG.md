@@ -10,6 +10,10 @@ from its first published release.
 
 ### Fixed
 
+- Keep the operational overview in normal flow on mobile/tablet, constrain native
+  summary/history date controls and stack the entry event action without
+  compressing its description; preserve desktop context, themes, focus and
+  existing form/filter behavior (Refs #762).
 - Preserve concise, reviewed Technical MVP release notes with both Docker
   commands, verified semantic/source manifest digests, architecture checks and
   explicit pending/deployment limits; protect existing published releases

@@ -20,13 +20,13 @@ export function SummaryDateFilter({
 
   return (
     <form
-      className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end"
+      className="flex min-w-0 w-full max-w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-end"
       onSubmit={(event) => {
         event.preventDefault();
         onApply();
       }}
     >
-      <div>
+      <div className="min-w-0 max-w-full">
         <label
           className="block text-xs font-bold text-ink-soft"
           htmlFor="summary-date"
@@ -36,7 +36,7 @@ export function SummaryDateFilter({
         <TextField
           aria-describedby={error ? errorId : undefined}
           aria-invalid={error ? "true" : "false"}
-          className="mt-1 text-sm sm:w-44"
+          className="mt-1 block max-w-full text-sm sm:w-44"
           disabled={disabled}
           id="summary-date"
           onChange={(event) => onChange(event.target.value)}

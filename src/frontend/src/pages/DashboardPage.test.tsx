@@ -124,11 +124,12 @@ describe("DashboardPage", () => {
     vi.useRealTimers();
   });
 
-  it("keeps the daily context visible while the summary scrolls", () => {
+  it("keeps the daily context in normal flow below the desktop sidebar breakpoint", () => {
     const { container } = renderPage();
     const pageHeader = container.querySelector("header");
 
-    expect(pageHeader).toHaveClass("sticky", "top-16", "lg:top-0");
+    expect(pageHeader).toHaveClass("relative", "xl:sticky", "xl:top-0");
+    expect(pageHeader).not.toHaveClass("sticky", "top-16");
   });
 
   it.each<ProfileName>(["Porteiro", "Vigilante", "SetorTransporte"])(

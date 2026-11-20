@@ -37,6 +37,12 @@ institucional fica reservado principalmente às ações. Lógica de sessão, coo
 API, capacidades e armazenamento permanecem inalterados. A ativação de temas e a
 migração das páginas operacionais e administrativas continuam nas etapas seguintes.
 
+## Responsividade operacional móvel
+
+Os ajustes móveis das telas operacionais e seus limites de validação estão em
+[`docs/mobile-operational-layout.md`](docs/mobile-operational-layout.md) (Issue #762).
+O recorte preserva os controles nativos e os fluxos existentes; não inclui o login.
+
 ## Tela cheia opcional (candidato #620)
 
 A melhoria #622 acrescenta um convite não bloqueante na Visão geral, depois da
