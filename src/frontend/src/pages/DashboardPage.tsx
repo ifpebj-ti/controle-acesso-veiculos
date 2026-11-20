@@ -104,13 +104,13 @@ export function DashboardPage() {
 
   return (
     <div className="min-w-0">
-      <header className="dashboard-hero sticky top-16 z-10 flex flex-col gap-5 px-5 py-5 sm:px-7 sm:py-6 lg:top-0 lg:flex-row lg:items-end lg:justify-between">
+      <header className="dashboard-hero relative z-10 flex min-w-0 flex-col gap-4 px-4 py-4 sm:gap-5 sm:px-7 sm:py-6 lg:flex-row lg:items-end lg:justify-between xl:sticky xl:top-0">
         <InstitutionalAccent className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden h-full w-[min(42%,34rem)] opacity-80 sm:block" />
-        <div className="relative z-10 max-w-3xl">
+        <div className="relative z-10 min-w-0 max-w-3xl">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-dark">
             Controle de acesso • Campus Belo Jardim
           </p>
-          <h1 className="mt-2 text-3xl font-bold leading-tight text-text sm:text-4xl">
+          <h1 className="mt-2 text-2xl font-bold leading-tight text-text sm:text-4xl">
             {isAdministrator
               ? "Visão geral administrativa"
               : `${greetingForHour(currentInstitutionalTime.hour)}, ${profileLabels[user.profileName]}.`}
@@ -122,12 +122,12 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <div className="relative z-10 shrink-0 rounded-xl border border-border bg-surface/85 px-4 py-3 text-left shadow-sm backdrop-blur-sm lg:min-w-72 lg:text-right">
+        <div className="relative z-10 min-w-0 max-w-full shrink-0 rounded-xl border border-border bg-surface/85 px-4 py-3 text-left shadow-sm backdrop-blur-sm lg:min-w-72 lg:text-right">
           <p className="text-sm font-semibold text-ink-soft">
             {capitalize(currentInstitutionalTime.fullDate)}
           </p>
           <time
-            className="mt-1 block font-mono text-3xl font-semibold tracking-[0.08em] text-ink"
+            className="mt-1 block font-mono text-2xl font-semibold tracking-[0.08em] text-ink sm:text-3xl"
             dateTime={now.toISOString()}
           >
             {currentInstitutionalTime.clock}

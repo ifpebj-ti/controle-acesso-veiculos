@@ -1681,6 +1681,27 @@ button:disabled {
   box-shadow: none;
 }
 
+@media (width < 40rem) {
+  .entry-event-panel > .institutional-panel__header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .entry-event-panel
+    > .institutional-panel__header
+    > .institutional-panel__action {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .entry-event-panel .institutional-panel__action > .ui-button {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
 .institutional-guide {
   position: relative;
   isolation: isolate;

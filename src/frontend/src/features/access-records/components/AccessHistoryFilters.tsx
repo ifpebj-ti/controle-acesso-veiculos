@@ -165,8 +165,8 @@ export function AccessHistoryFilters({
           </div>
         </div>
 
-        <div className="history-period-filter mt-4 grid items-end gap-4 rounded-xl border p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-          <div>
+        <div className="history-period-filter mt-4 grid min-w-0 grid-cols-1 items-end gap-4 rounded-xl border p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <div className="min-w-0">
             <label
               className="text-sm font-semibold text-ink"
               htmlFor="history-from"
@@ -174,7 +174,7 @@ export function AccessHistoryFilters({
               Data inicial
             </label>
             <TextField
-              className="mt-2 text-sm"
+              className="mt-2 block max-w-full text-sm"
               id="history-from"
               max={draft.toDate}
               onChange={(event) =>
@@ -185,7 +185,7 @@ export function AccessHistoryFilters({
               value={draft.fromDate}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label
               className="text-sm font-semibold text-ink"
               htmlFor="history-to"
@@ -193,7 +193,7 @@ export function AccessHistoryFilters({
               Data final
             </label>
             <TextField
-              className="mt-2 text-sm"
+              className="mt-2 block max-w-full text-sm"
               id="history-to"
               min={draft.fromDate}
               onChange={(event) =>

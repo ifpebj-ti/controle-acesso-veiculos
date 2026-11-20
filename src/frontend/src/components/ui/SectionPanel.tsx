@@ -38,7 +38,11 @@ export function SectionPanel({
             </p>
           )}
         </div>
-        {action && <div className="ml-auto shrink-0">{action}</div>}
+        {action && (
+          <div className="institutional-panel__action ml-auto shrink-0">
+            {action}
+          </div>
+        )}
       </header>
       <div className="institutional-panel__body">{children}</div>
     </article>
