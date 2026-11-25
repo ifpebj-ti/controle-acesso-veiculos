@@ -308,6 +308,7 @@ describe("RouteTransitionManager", () => {
     });
 
     await waitFor(() => expect(heading).toHaveFocus());
+    expect(screen.getAllByRole("contentinfo")).toHaveLength(1);
     expect(document.title).toBe(
       "Página não encontrada | Controle de Acesso de Veículos",
     );
@@ -318,6 +319,7 @@ describe("RouteTransitionManager", () => {
     const heading = screen.getByRole("heading", { name: "Acesso negado" });
 
     await waitFor(() => expect(heading).toHaveFocus());
+    expect(screen.getAllByRole("contentinfo")).toHaveLength(1);
     expect(document.title).toBe(
       "Acesso negado | Controle de Acesso de Veículos",
     );

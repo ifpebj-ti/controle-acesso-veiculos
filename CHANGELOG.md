@@ -8,6 +8,12 @@ from its first published release.
 
 ## [Unreleased]
 
+### Added
+
+- Shared application footer with optional public build-version metadata and an
+  explicit unavailable-version fallback, without inferring the deployed release
+  from package placeholders or GitHub (Refs #782).
+
 ### Fixed
 
 - Preserve concise, reviewed Technical MVP release notes with both Docker

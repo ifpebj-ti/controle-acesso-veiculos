@@ -1,0 +1,10 @@
+.application-footer {
+  padding: 1rem 5rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  overflow-wrap: anywhere;
+}
+
+@media (width >= 80rem) {
+  .application-frame:has(.sidebar-scroll) > .application-footer {
+    padding-left: calc(18rem + 5rem);
+  }
+}

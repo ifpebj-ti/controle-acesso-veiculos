@@ -2,6 +2,31 @@
 
 Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jardim.
 
+## Versão no rodapé (Refs #782)
+
+O rodapé compartilhado apresenta `VITE_APP_VERSION`, incorporada ao JavaScript
+durante o build. O valor deve identificar o artefato que está sendo construído,
+incluindo o sufixo de pré-release quando aplicável. Não representa automaticamente
+a última release do GitHub nem a versão da API.
+
+Sem esse metadado, com valor inválido ou com o placeholder `0.0.0`, aparece
+“Versão não informada”. Nenhuma consulta de rede, storage ou inferência pela
+sessão é utilizada. A informação é pública: nunca fornecer segredos nessa variável.
+
+Exemplo exclusivamente fictício de build local em PowerShell:
+
+```powershell
+$env:VITE_APP_VERSION = "0.0.1-qa.782"
+npm run build
+Remove-Item Env:VITE_APP_VERSION
+```
+
+O processo de imagens atual ainda não fornece esse valor ao build frontend.
+A alimentação pela release exige coordenação separada com José; este recorte não
+altera Docker, workflows ou infraestrutura. Alterar a variável no servidor depois
+de construir os arquivos estáticos não modifica o rodapé: é necessário novo build.
+Validação local não comprova a versão hospedada ou uma implantação.
+
 ## Fundação visual
 
 O frontend possui um contrato de tokens semânticos para estrutura, texto,
