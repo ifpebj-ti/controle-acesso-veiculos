@@ -10,6 +10,9 @@ from its first published release.
 
 ### Fixed
 
+- Focus callback errors after the login message mounts, without interrupting
+  administrative input or moving focus to the initial Google action (Refs #786).
+
 - Preserve concise, reviewed Technical MVP release notes with both Docker
   commands, verified semantic/source manifest digests, architecture checks and
   explicit pending/deployment limits; protect existing published releases

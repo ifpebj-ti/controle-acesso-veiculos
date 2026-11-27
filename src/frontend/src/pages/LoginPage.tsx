@@ -146,7 +146,6 @@ export function LoginPage() {
         setCallbackError(
           "Não foi possível concluir o acesso. Verifique sua conta autorizada e tente novamente.",
         );
-        window.setTimeout(() => statusMessageRef.current?.focus());
       });
       return;
     }
@@ -161,7 +160,6 @@ export function LoginPage() {
         setCallbackError(
           "Não foi possível confirmar uma sessão válida. Inicie o acesso novamente.",
         );
-        window.setTimeout(() => statusMessageRef.current?.focus());
       });
   }, [
     authenticationReturnStatus,
@@ -175,9 +173,26 @@ export function LoginPage() {
   ]);
 
   useEffect(() => {
+    if (!callbackError) return;
+
+    const focusedElement = document.activeElement;
+    if (
+      focusedElement !== document.body &&
+      focusedElement !== googleLoginRef.current &&
+      focusedElement !== administrativeAccessRef.current &&
+      !focusedElement?.hasAttribute("data-route-focus-target")
+    ) {
+      return;
+    }
+
+    statusMessageRef.current?.focus();
+  }, [callbackError]);
+
+  useEffect(() => {
     if (
       status !== "unauthenticated" ||
       authenticationReturnStatus ||
+      callbackError ||
       providersState.status === "loading"
     ) {
       return;
@@ -196,7 +211,7 @@ export function LoginPage() {
     });
 
     return () => window.clearTimeout(focusTimeout);
-  }, [authenticationReturnStatus, providersState, status]);
+  }, [authenticationReturnStatus, callbackError, providersState, status]);
 
   useEffect(() => {
     if (isAdministrativeAccessOpen) {

@@ -4,6 +4,12 @@ Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jard
 
 ## Fundação visual
 
+O retorno de callback com erro (Refs #786) direciona o foco após a mensagem estar
+montada. A descoberta de provedores não reposiciona o foco na ação inicial depois
+desse erro. Se a pessoa já iniciou a digitação no formulário administrativo, a
+mensagem continua anunciada por `role="alert"`, preservando o campo em foco. O
+ajuste não altera sessão, contrato, autorização ou navegação do provedor.
+
 O frontend possui um contrato de tokens semânticos para estrutura, texto,
 ações, foco e estados. Os temas Claro, Escuro e Automático usam o mesmo contrato e
 preservam a hierarquia visual aprovada nas telas.

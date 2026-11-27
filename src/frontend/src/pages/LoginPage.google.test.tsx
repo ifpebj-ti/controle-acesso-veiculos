@@ -594,6 +594,70 @@ describe("LoginPage Google and administrative access", () => {
     ).toHaveBeenCalledOnce();
   });
 
+  it("keeps a denied message focused when provider discovery finishes later", async () => {
+    let resolveProviders!: (value: { googleEnabled: boolean }) => void;
+    authenticationService.getAuthenticationProviders.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProviders = resolve;
+        }),
+    );
+    renderLogin({ initialEntry: "/login?status=denied" });
+    const alert = await screen.findByRole("alert");
+    await waitFor(() => expect(alert).toHaveFocus());
+
+    await act(async () => resolveProviders({ googleEnabled: true }));
+    const google = await screen.findByRole("button", {
+      name: "Continuar com Google",
+    });
+
+    expect(alert).toHaveFocus();
+    expect(google).toBeEnabled();
+    expect(screen.getByLabelText("Localização atual")).toHaveTextContent("");
+    expect(
+      authenticationService.startGoogleAuthentication,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("does not interrupt administrative input when a callback restoration fails later", async () => {
+    authenticationService.getAuthenticationProviders.mockResolvedValue({
+      googleEnabled: true,
+    });
+    let rejectRestoration!: (reason: unknown) => void;
+    const restoreExternalSession = vi.fn<() => Promise<AuthenticatedUser>>(
+      () =>
+        new Promise((_, reject) => {
+          rejectRestoration = reject;
+        }),
+    );
+    const user = userEvent.setup();
+    renderLogin({
+      initialEntry: "/login?status=success",
+      restoreExternalSession,
+    });
+    await waitFor(() => expect(restoreExternalSession).toHaveBeenCalledOnce());
+    await user.click(
+      screen.getByRole("button", { name: "Entrar com usuário e senha" }),
+    );
+    const email = screen.getByLabelText("E-mail:");
+    await user.type(email, "fictitious@example.test");
+
+    await act(async () =>
+      rejectRestoration(new Error("fictional session failure")),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível confirmar uma sessão válida.",
+    );
+    await user.keyboard("x");
+
+    expect(email).toHaveFocus();
+    expect(email).toHaveValue("fictitious@example.testx");
+    expect(restoreExternalSession).toHaveBeenCalledOnce();
+    expect(
+      authenticationService.startGoogleAuthentication,
+    ).not.toHaveBeenCalled();
+  });
+
   it("restores the local session after a successful Google return", async () => {
     authenticationService.getAuthenticationProviders.mockResolvedValue({
       googleEnabled: true,
