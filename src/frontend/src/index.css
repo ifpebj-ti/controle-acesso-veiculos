@@ -2292,7 +2292,7 @@ body:has(.login-page),
 }
 
 .login-provider-options {
-  margin-top: 2rem;
+  margin-top: 3rem;
 }
 
 .login-provider-options .login-google-action + p {
