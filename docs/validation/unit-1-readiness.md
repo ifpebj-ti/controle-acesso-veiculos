@@ -1,12 +1,17 @@
 # Evidências da Unidade 1
 
+## Atualização de operação — 18/11/2026
+
+A homologação agora executa a release 0.5.0. O [registro da promoção](release-050-rollout-2026-11-18.md)
+separa publicação, implantação e verificações, sem alterar o marco acadêmico
+histórico nem declarar aceite institucional.
+
 ## Objetivo
 
 Este documento relaciona o marco acadêmico da Unidade 1 às evidências
-versionadas do projeto. A fotografia foi atualizada em **31 de outubro de 2026**
+versionadas do projeto. A fotografia histórica foi atualizada em **31 de outubro de 2026**
 após a publicação da release técnica `v0.4.0` e a implantação da homologação
-técnica na OCI. A main auditada é `ad54c41`; as imagens implantadas permanecem
-na release 0.4.0. Ela deve ser conferida novamente antes da apresentação.
+técnica na OCI. A main auditada é `ad54c41`; naquela data as imagens implantadas correspondiam à release 0.4.0.
 
 As classificações usadas são:
 

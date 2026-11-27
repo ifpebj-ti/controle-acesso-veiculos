@@ -2,8 +2,12 @@
 
 ## Atualização em 18/11/2026
 
-O #754 foi integrado e criou a tag 0.5.0 na fonte eaccd72. A promoção considera a transição de 22 para 23 migrations. A hospedagem identificada é 67ad6b8/f7ee701. O reteste de 18/11 confirmou serviço saudável e apontou os itens de borda que devem ser conferidos após a promoção. Consulte o
-[balanço atual](../validation/presentation-status-2026-11-18.md).
+A release `0.5.0` está publicada e instalada na homologação, fonte `eaccd72`,
+frontend/backend GHCR fixados por digest e 23 migrations. Backup restaurado,
+SQL transacional/idempotente, 46 verificações HTTPS e controles HTTP do
+frontend passaram. Google e dados foram preservados. A autenticação Google
+pelo titular após a promoção e as demais evidências operacionais mantêm seus
+limites próprios. Consulte o [registro da promoção](../validation/release-050-rollout-2026-11-18.md).
 
 ## Objetivo e limite
 
@@ -469,3 +473,16 @@ a revisão de uma falha persistente ou de scanner. O log não precisa expor
 configuração ou credenciais para distinguir a etapa de build da aplicação.
 
 Referência: [APT — error-on=any](https://manpages.ubuntu.com/manpages/noble/man8/apt-get.8.html).
+
+## Metadados da aplicação — Issue #761
+
+As próximas imagens recebem version/revision/source OCI explícitos no estágio
+final. A CI calcula o SHA do checkout real; uma tag vX.Y.Z gera versão X.Y.Z,
+enquanto PR/main recebem dev-SHA. O build local sem argumentos declara dev e
+unknown, em vez de herdar a versão Ubuntu/Nginx. A CI confere os rótulos por
+image inspect nas duas arquiteturas, antes de prosseguir aos scanners.
+
+Rótulos auxiliam identificação, mas não substituem digest ou proveniência
+assinada. Nenhuma imagem 0.5.0 será sobrescrita. A mudança exige revisão e uma
+próxima versão para chegar à hospedagem. ARG contém somente metadados públicos,
+nunca segredos. Referência: [escopo de argumentos Docker](https://docs.docker.com/build/building/variables/).

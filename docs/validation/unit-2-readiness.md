@@ -2,8 +2,12 @@
 
 ## Atualização em 18/11/2026
 
-A main aa22c49 incorpora pré-cadastro/Transporte, o filtro de eventos e os filtros próprios dos relatórios. O #754 foi integrado e gerou a tag 0.5.0; publicação e promoção seguem na #686. Os critérios operacionais desta matriz conservam suas evidências e pendências. Consulte o
-[balanço atual](presentation-status-2026-11-18.md).
+A release `0.5.0` está publicada e instalada na homologação, fonte `eaccd72`,
+frontend/backend GHCR fixados por digest e 23 migrations. Backup restaurado,
+SQL transacional/idempotente, 46 verificações HTTPS e controles HTTP do
+frontend passaram. Google e dados foram preservados. A autenticação Google
+pelo titular após a promoção e as demais evidências operacionais mantêm seus
+limites próprios. Consulte o [registro da promoção](release-050-rollout-2026-11-18.md).
 
 > Atualização de 15/11/2026 após os merges #717/#716/#719/#702, main `8e223d3`.
 > Homologação com frontend `67ad6b8`, backend `f7ee701` e 22 migrations.
@@ -31,10 +35,10 @@ A main aa22c49 incorpora pré-cadastro/Transporte, o filtro de eventos e os filt
 
 Esta matriz relaciona as 17 entregas consolidadas da Unidade 2 às evidências
 atuais, mantendo a régua de peso igual (1 atendido, 0,5 parcial, 0 pendente).
-A revisão atual parte da main `8e223d3`. A hospedagem contém o frontend
-`67ad6b8` e o backend `f7ee701`. #672/#704/#705 integram o ensaio e continuam
-em revisão. A release estável continua `v0.4.0`.
-Uma atualização de código exige promoção explícita da imagem para chegar ao site.
+A revisão documental atual parte da main `8089eb4`; a homologação executa
+frontend/backend `0.5.0`, fonte `eaccd72`, com 23 migrations. Os trechos datados
+abaixo preservam os snapshots anteriores; a promoção não substitui as evidências
+operacionais de cada critério.
 
 O [balanço de 04/11](homologation-test-balance-2026-11-04.md) registra 111/111
 verificações HTTPS/contrato antes e depois da limpeza autorizada, sem somar
@@ -105,7 +109,7 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 | Entrega                                     | Evidência atual                                                                                                     | Estado                                                                              | Próxima comprovação                                                                                                             |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | VM IaaS em nuvem pública                    | VM privada provisionada na OCI                                                                                      | Atendido                                                                            | manter custo, acesso e configuração sob revisão                                                                                 |
-| Aplicação conteinerizada na VM              | frontend/API `f7ee701`, PostgreSQL saudável, 22 migrations; release estável `0.4.0`                                 | Atendido                                                                            | promover uma nova versão somente por release revisada                                                                           |
+| Aplicação conteinerizada na VM              | frontend/API `0.5.0` (`eaccd72`), PostgreSQL preservado, 23 migrations                                              | Atendido                                                                            | promover uma nova versão somente por release revisada                                                                           |
 | Nome de domínio com resolução funcional     | hostname temporário resolve publicamente para a borda protegida da homologação                                      | Atendido                                                                            | substituir pelo nome institucional somente após aprovação; isso não impede o piloto controlado                                  |
 | Plataforma de gerenciamento de contêineres  | não provisionada                                                                                                    | Pendente — [#501](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/501) | selecionar Portainer, Dockge/Dockhand ou equivalente, proteger o acesso e documentar operação                                   |
 | Observabilidade com métricas, logs e traces | instrumentação OTLP e logs estruturados existem; collector, armazenamento e painéis não                             | Parcial — [#500](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues/500)  | implantar stack simples, comprovar CPU, memória, disco, logs e traces e definir retenção/alertas                                |
