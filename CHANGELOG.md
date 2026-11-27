@@ -10,6 +10,10 @@ from its first published release.
 
 ### Fixed
 
+- Group login guidance, Google action and administrative access with bounded
+  spacing instead of distributing empty space across tall screens; preserve
+  authentication and existing focus indicators (Refs #768).
+
 - Preserve concise, reviewed Technical MVP release notes with both Docker
   commands, verified semantic/source manifest digests, architecture checks and
   explicit pending/deployment limits; protect existing published releases
