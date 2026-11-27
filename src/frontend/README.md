@@ -4,6 +4,14 @@ Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jard
 
 ## Fundação visual
 
+A proposta de composição da Issue #768 agrupa orientação, Google e acesso
+administrativo por espaçamentos definidos, sem distribuir os vazios conforme a
+altura da janela. Mantém o contorno aprovado do botão, uma divisão para o acesso
+administrativo, a identidade IFPE e as duas visualizações de entrada. Não altera
+autenticação, contratos, textos, estados ou foco. Aceite visual e ensaios físicos
+desta proposta devem ser registrados com fonte e autoria; não são inferidos de
+testes antigos do login.
+
 O frontend possui um contrato de tokens semânticos para estrutura, texto,
 ações, foco e estados. Os temas Claro, Escuro e Automático usam o mesmo contrato e
 preservam a hierarquia visual aprovada nas telas.
