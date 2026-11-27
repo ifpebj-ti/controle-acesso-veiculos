@@ -150,6 +150,22 @@ na rota `/auditoria`, para Administrador e Transporte. Usuários e permissões
 permanece dedicado às contas, sem aba de auditoria ou consulta a seus eventos.
 Esse recorte do candidato não significa implantação na URL pública.
 
+Na trilha, resumos em português usam somente a ação, a entidade e os estados
+estruturados de `GET /audits`. Uma ação de login não comprova sucesso: o resultado
+é apresentado somente quando o estado contém um código reconhecido. Mensagens
+livres, inclusive descrições JSON de relatórios, não são interpretadas como novos
+contratos ou traduzidas por comparação de texto. Quando faltam dados suficientes,
+o resumo permanece genérico.
+
+“Estado anterior” e “Novo estado” apresentam campos conhecidos de contas com
+rótulos legíveis, preservando nomes, justificativas e valores livres. Campos,
+formatos e entidades não reconhecidos permanecem conferíveis em “Dados originais”.
+“Detalhes técnicos originais” mantém a entidade e a descrição recebidas, como
+texto, sem HTML executável. Essas expansões não alteram filtros, paginação,
+autoria ou autorização. Um resumo específico de exportação, por exemplo, depende
+de um discriminador estruturado estável do backend; a interface não deduz seu
+resultado da descrição livre. Refs #638.
+
 Fluxo sugerido para validação local:
 
 1. iniciar a API e acessar `/login`; com Google desabilitado, confirmar que a
