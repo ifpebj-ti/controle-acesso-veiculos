@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import axios from "axios";
 
 import { api } from "../../../services/api";
 import {
@@ -112,7 +113,7 @@ describe("eventAuthorizationsService", () => {
     });
     expect(api.get).toHaveBeenCalledWith("/event-authorizations", {
       params: {
-        active: undefined,
+        status: "all",
         fromUtc: undefined,
         name: undefined,
         page: 1,
@@ -139,6 +140,48 @@ describe("eventAuthorizationsService", () => {
       name: "EventAuthorizationsContractError",
     });
   });
+
+  it.each(["all", "true", "false"] as const)(
+    "serializes %s without ambiguous state parameters and keeps the server page",
+    async (active) => {
+      const cancelled = { ...event, active: false, id: 8 };
+      const serverPage = {
+        items:
+          active === "all"
+            ? [event, cancelled]
+            : [active === "true" ? event : cancelled],
+        page: 2,
+        pageSize: 10,
+        totalCount: active === "all" ? 12 : 11,
+        totalPages: 2,
+      };
+      vi.mocked(api.get).mockResolvedValue({ data: serverPage });
+
+      const result = await searchEventAuthorizations({
+        active,
+        fromUtc: "2030-05-01T00:00:00Z",
+        toUtc: "2030-06-01T00:00:00Z",
+        name: " Evento ",
+        page: 2,
+        pageSize: 10,
+      });
+      const [url, config] = vi.mocked(api.get).mock.calls[0];
+      const query = new URL(
+        axios.getUri({ ...config, url }),
+        "https://example.test",
+      ).searchParams;
+
+      expect(query.get(active === "all" ? "status" : "active")).toBe(active);
+      expect(query.has(active === "all" ? "active" : "status")).toBe(false);
+      expect(query.get("name")).toBe("Evento");
+      expect(query.get("fromUtc")).toBe("2030-05-01T00:00:00Z");
+      expect(query.get("toUtc")).toBe("2030-06-01T00:00:00Z");
+      expect(query.get("page")).toBe("2");
+      expect(query.get("pageSize")).toBe("10");
+      expect(api.get).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(serverPage);
+    },
+  );
 
   it("accepts the documented defaults returned for a legacy event", async () => {
     vi.mocked(api.get).mockResolvedValue({

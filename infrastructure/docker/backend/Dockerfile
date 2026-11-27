@@ -1,12 +1,22 @@
 # Keep the shipped runtime explicit; a cached floating tag can retain a vulnerable patch.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.15 AS base
 WORKDIR /app
 EXPOSE 8080
 
 # Protect the first APT download too: the inherited client may predate USN-8996-1.
 # Keep archive signature/TLS verification enabled and upgrade only affected packages.
 RUN sed -i 's|http://|https://|g' /etc/apt/sources.list.d/ubuntu.sources \
-    && apt-get -o Acquire::Retries=0 update \
+    && for attempt in 1 2 3; do \
+        echo "Refreshing APT indexes (attempt ${attempt}/3)."; \
+        if apt-get -o Acquire::Retries=0 -o Acquire::https::Timeout=15 --error-on=any update; then \
+            break; \
+        fi; \
+        if [ "$attempt" -eq 3 ]; then \
+            echo "APT index refresh failed after three attempts; refusing package installation." >&2; \
+            exit 1; \
+        fi; \
+        sleep "$attempt"; \
+    done \
     && apt-get -o Acquire::Retries=0 install --only-upgrade --no-install-recommends -y \
         apt \
         libapt-pkg6.0t64 \
@@ -40,6 +50,12 @@ FROM build AS publish
 RUN dotnet publish "ControleAcessoVeiculos.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+# Local builds are explicitly unidentified; CI supplies validated application metadata.
+ARG IMAGE_VERSION=dev
+ARG IMAGE_REVISION=unknown
+LABEL org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.revision="${IMAGE_REVISION}" \
+      org.opencontainers.image.source="https://github.com/ifpebj-ti/controle-acesso-veiculos"
 WORKDIR /app
 RUN mkdir -p /var/lib/controle-acesso-veiculos/data-protection \
     && chown -R "$APP_UID:$APP_UID" /var/lib/controle-acesso-veiculos

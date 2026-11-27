@@ -48,6 +48,7 @@ function mount(requiresPasswordChange = false) {
           expiresAtUtc: "2099-01-01T00:00:00Z",
           login: vi.fn(),
           logout: vi.fn(),
+          restoreExternalSession: vi.fn(),
           sessionEndReason: null,
           status: "authenticated",
           user: {
@@ -145,15 +146,16 @@ describe("authenticated layout fullscreen scope (mocked API)", () => {
       screen.getByRole("button", { name: "Sair da tela cheia" }),
     ).toBeInTheDocument();
   });
-  it("also offers the optional control in the mandatory-password layout", async () => {
+  it("keeps only the floating control in the mandatory-password layout", async () => {
     const user = userEvent.setup();
     mount(true);
     expect(mock.request).not.toHaveBeenCalled();
-    await user.click(
-      screen.getByRole("button", { name: "Entrar em tela cheia" }),
-    );
     expect(
-      await screen.findByRole("button", { name: "Sair da tela cheia" }),
+      screen.queryByRole("button", { name: "Entrar em tela cheia" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Ativar tela cheia" }));
+    expect(
+      await screen.findByRole("button", { name: "Desativar tela cheia" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Formulário fictício" }),

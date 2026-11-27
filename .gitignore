@@ -66,3 +66,7 @@ crash.*.log
 # Logs
 logs/
 *.log
+
+# Python QA helper bytecode
+__pycache__/
+*.py[cod]

@@ -1,3 +1,4 @@
+import { reactivateLocalAccount } from "../features/user-accounts/reactivation/accountReactivationService";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -8,7 +9,7 @@ import {
   type ProfileName,
   useAuthenticatedSession,
 } from "../features/authentication";
-import { searchAuditTrail, type AuditTrailPage } from "../features/audit-trail";
+import { searchAuditTrail } from "../features/audit-trail";
 import {
   createUserAccount,
   deactivateUserAccount,
@@ -36,22 +37,41 @@ vi.mock("../features/authentication", () => ({
   profileNames: ["Porteiro", "Vigilante", "SetorTransporte", "Administrador"],
   useAuthenticatedSession: vi.fn(),
 }));
-vi.mock("../features/user-accounts/services/userAccountsService", () => ({
-  createUserAccount: vi.fn(),
-  deactivateUserAccount: vi.fn(),
-  reactivateUserAccount: vi.fn(),
-  resetTemporaryCredential: vi.fn(),
-  searchUserAccounts: vi.fn(),
-}));
+vi.mock(
+  "../features/user-accounts/services/userAccountsService",
+  async (original) => ({
+    ...(await original<
+      typeof import("../features/user-accounts/services/userAccountsService")
+    >()),
+    changeAccountProfile: vi.fn(),
+    createUserAccount: vi.fn(),
+    deactivateUserAccount: vi.fn(),
+    reactivateUserAccount: vi.fn(),
+    resetTemporaryCredential: vi.fn(),
+    searchUserAccounts: vi.fn(),
+  }),
+);
 vi.mock("../features/audit-trail/services/auditTrailService", () => ({
   searchAuditTrail: vi.fn(),
 }));
+vi.mock(
+  "../features/user-accounts/reactivation/accountReactivationService",
+  async (original) => ({
+    ...(await original<
+      typeof import("../features/user-accounts/reactivation/accountReactivationService")
+    >()),
+    reactivateLocalAccount: vi.fn(),
+    reactivateGoogleAccount: vi.fn(),
+  }),
+);
 vi.mock("../services/api-errors", () => ({
   describeApiError: vi.fn(),
   getApiValidationErrors: vi.fn(),
 }));
 
 const activeAccount: UserAccount = {
+  authenticationMethod: "Local",
+  externalIdentityLinked: false,
   active: true,
   createdAtUtc: "2030-06-10T11:00:00Z",
   email: "porteiro.ficticio@example.test",
@@ -83,33 +103,13 @@ const accountPage: UserAccountPage = {
   totalPages: 1,
 };
 
-const auditPage: AuditTrailPage = {
-  items: [
-    {
-      action: "Alteracao",
-      actorType: "Human",
-      actorUserId: 1,
-      details: "Conta fictícia desativada.",
-      entity: "Usuario",
-      id: 31,
-      newState: { active: false },
-      occurredAtUtc: "2030-06-10T11:00:00Z",
-      previousState: { active: true },
-      recordId: 8,
-    },
-  ],
-  page: 1,
-  pageSize: 25,
-  totalCount: 1,
-  totalPages: 1,
-};
-
 function mockAuthenticatedProfile(profileName: ProfileName) {
   vi.mocked(useAuthenticatedSession).mockReturnValue({
     completePasswordChange: vi.fn(),
     expiresAtUtc: "2030-06-10T22:00:00Z",
     login: vi.fn(),
     logout: vi.fn(),
+    restoreExternalSession: vi.fn(),
     sessionEndReason: null,
     status: "authenticated",
     user: {
@@ -150,7 +150,6 @@ describe("AdminPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(searchUserAccounts).mockResolvedValue(accountPage);
-    vi.mocked(searchAuditTrail).mockResolvedValue(auditPage);
     vi.mocked(describeApiError).mockReturnValue({
       kind: "network",
       message: "Não foi possível consultar as contas.",
@@ -172,37 +171,20 @@ describe("AdminPage", () => {
     },
   );
 
-  it("loads the audit trail only when the administrator opens it", async () => {
-    const user = userEvent.setup();
+  it("keeps accounts separate from the dedicated audit route", async () => {
     renderPage();
     await screen.findAllByText(activeAccount.name);
-    expect(searchAuditTrail).not.toHaveBeenCalled();
-
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-
     expect(
-      await screen.findByRole("heading", { name: "Alteração" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Usuário #1")).toBeInTheDocument();
-    expect(searchAuditTrail).toHaveBeenCalledTimes(1);
-    expect(
-      screen.queryByRole("button", { name: "Nova conta" }),
+      screen.queryByRole("navigation", { name: "Áreas administrativas" }),
     ).not.toBeInTheDocument();
-
-    const auditSummary = screen.getByRole("region", {
-      name: "Resumo da trilha de auditoria",
-    });
     expect(
-      within(auditSummary).getByText("Total de registros").nextSibling,
-    ).toHaveTextContent("1");
+      screen.queryByRole("button", { name: "Trilha de auditoria" }),
+    ).not.toBeInTheDocument();
     expect(
-      within(auditSummary).getByText("Alterações").nextSibling,
-    ).toHaveTextContent("1");
-    expect(
-      within(auditSummary).getByText("Logins").nextSibling,
-    ).toHaveTextContent("0");
+      screen.queryByRole("button", { name: "Contas de acesso" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nova conta" })).toBeVisible();
+    expect(searchAuditTrail).not.toHaveBeenCalled();
   });
 
   it("summarizes account results without treating the page as a global breakdown", async () => {
@@ -227,203 +209,6 @@ describe("AdminPage", () => {
     ).toHaveTextContent("4");
   });
 
-  it("keeps valid audit results when a local period is invalid", async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByText(activeAccount.name);
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-    await screen.findByRole("heading", { name: "Alteração" });
-    const from = screen.getByLabelText("Início do período");
-    const to = screen.getByLabelText("Fim do período");
-    await user.clear(from);
-    await user.type(from, "2030-06-11T08:00");
-    await user.clear(to);
-    await user.type(to, "2030-06-10T08:00");
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
-
-    const error = screen.getByText(/O início deve ser anterior ao fim/);
-    expect(from).toHaveAttribute("aria-invalid", "true");
-    expect(from).toHaveAttribute(
-      "aria-describedby",
-      expect.stringContaining(error.id),
-    );
-    expect(
-      screen.getByRole("heading", { name: "Alteração" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Tentar novamente" }),
-    ).not.toBeInTheDocument();
-    expect(searchAuditTrail).toHaveBeenCalledTimes(1);
-  });
-
-  it("associates API validation errors and clears them after correction", async () => {
-    vi.mocked(searchAuditTrail)
-      .mockResolvedValueOnce(auditPage)
-      .mockRejectedValueOnce(new Error("validation"));
-    vi.mocked(describeApiError).mockReturnValue({
-      kind: "validation",
-      message: "Revise os filtros.",
-      status: 400,
-    });
-    vi.mocked(getApiValidationErrors).mockReturnValue({
-      entity: "A entidade informada é inválida.",
-    });
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByText(activeAccount.name);
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-    await screen.findByRole("heading", { name: "Alteração" });
-    const entity = screen.getByLabelText("Entidade");
-    await user.type(entity, "Invalida");
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
-
-    const error = await screen.findByText("A entidade informada é inválida.");
-    expect(entity).toHaveAttribute("aria-invalid", "true");
-    expect(entity).toHaveAttribute("aria-describedby", error.id);
-    expect(
-      screen.getByRole("heading", { name: "Alteração" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Tentar novamente" }),
-    ).not.toBeInTheDocument();
-
-    await user.type(entity, " corrigida");
-    expect(error).not.toBeInTheDocument();
-    expect(entity).toHaveAttribute("aria-invalid", "false");
-  });
-
-  it("clears stale audit results after a real failure and retries the query", async () => {
-    vi.mocked(searchAuditTrail)
-      .mockResolvedValueOnce(auditPage)
-      .mockRejectedValueOnce(new Error("network"))
-      .mockResolvedValueOnce(auditPage);
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByText(activeAccount.name);
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-    await screen.findByRole("heading", { name: "Alteração" });
-    await user.type(screen.getByLabelText("Entidade"), "Usuario");
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Não foi possível consultar as contas.",
-    );
-    expect(
-      screen.queryByRole("heading", { name: "Alteração" }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(/0 evento/)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Nenhum evento encontrado"),
-    ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    expect(
-      await screen.findByRole("heading", { name: "Alteração" }),
-    ).toBeInTheDocument();
-    expect(searchAuditTrail).toHaveBeenCalledTimes(3);
-  });
-
-  it("renders audit states as text and preserves applied filters on pagination", async () => {
-    const unsafeValue = '<img src=x onerror="alert(1)">';
-    vi.mocked(searchAuditTrail).mockResolvedValue({
-      ...auditPage,
-      items: [
-        {
-          ...auditPage.items[0],
-          details: unsafeValue,
-          newState: { note: unsafeValue },
-        },
-      ],
-      totalCount: 26,
-      totalPages: 2,
-    });
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByText(activeAccount.name);
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-    await screen.findByRole("heading", { name: "Alteração" });
-    expect(screen.getByText(unsafeValue)).not.toBeVisible();
-    await user.click(screen.getByText("Detalhes técnicos originais"));
-    expect(screen.getByText(unsafeValue)).toBeVisible();
-    expect(document.querySelector("img[src='x']")).toBeNull();
-    await user.type(screen.getByLabelText("Entidade"), "Usuario");
-    await selectFieldOption(user, screen.getByLabelText("Ação"), "Alteracao");
-    await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
-    await waitFor(() => expect(searchAuditTrail).toHaveBeenCalledTimes(2));
-    await user.click(screen.getByRole("button", { name: "Próxima" }));
-
-    await waitFor(() =>
-      expect(searchAuditTrail).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          action: "Alteracao",
-          entity: "Usuario",
-          page: 2,
-        }),
-      ),
-    );
-  });
-
-  it("shows the empty state only after a successful audit response", async () => {
-    vi.mocked(searchAuditTrail).mockResolvedValue({
-      ...auditPage,
-      items: [],
-      totalCount: 0,
-      totalPages: 0,
-    });
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByText(activeAccount.name);
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-
-    expect(
-      await screen.findByRole("heading", { name: "Nenhum evento encontrado" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("0 evento(s) encontrado(s)")).toBeInTheDocument();
-  });
-
-  it("presents the API access barrier without audit data", async () => {
-    vi.mocked(searchAuditTrail).mockRejectedValue(new Error("forbidden"));
-    vi.mocked(describeApiError).mockReturnValue({
-      kind: "access-denied",
-      message: "Seu perfil não possui permissão para consultar a auditoria.",
-      status: 403,
-    });
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findAllByText(activeAccount.name);
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-
-    expect(
-      await screen.findByRole("heading", { name: "Acesso negado" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Alteração" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("has no serious automated accessibility violations in the audit area", async () => {
-    const user = userEvent.setup();
-    const { container } = renderPage();
-    await screen.findAllByText(activeAccount.name);
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-    await screen.findByRole("heading", { name: "Alteração" });
-
-    await expectNoSeriousAccessibilityViolations(container);
-  });
-
   it("searches and filters the real account catalog", async () => {
     const user = userEvent.setup();
     renderPage();
@@ -443,7 +228,7 @@ describe("AdminPage", () => {
     );
   });
 
-  it("preserves account filters and results across administrative areas", async () => {
+  it("preserves account filters and results while opening and cancelling creation", async () => {
     vi.mocked(searchUserAccounts)
       .mockResolvedValueOnce(accountPage)
       .mockResolvedValueOnce({
@@ -461,11 +246,9 @@ describe("AdminPage", () => {
     await waitFor(() => expect(searchUserAccounts).toHaveBeenCalledTimes(2));
     expect(screen.queryByText(inactiveAccount.name)).not.toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: "Trilha de auditoria" }),
-    );
-    await screen.findByRole("heading", { name: "Alteração" });
-    await user.click(screen.getByRole("button", { name: "Contas de acesso" }));
+    await user.click(screen.getByRole("button", { name: "Nova conta" }));
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(searchAuditTrail).not.toHaveBeenCalled();
 
     expect(screen.getByLabelText("Nome ou e-mail")).toHaveValue("porteiro");
     expect(screen.getByLabelText("Situação")).toHaveTextContent("Ativas");
@@ -513,6 +296,7 @@ describe("AdminPage", () => {
 
   it("retries a failed refresh without creating the account again", async () => {
     vi.mocked(createUserAccount).mockResolvedValue({
+      authenticationMethod: "Local",
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
@@ -552,6 +336,7 @@ describe("AdminPage", () => {
 
   it("creates an account without a password and reveals the credential only once", async () => {
     vi.mocked(createUserAccount).mockResolvedValue({
+      authenticationMethod: "Local",
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
@@ -615,6 +400,7 @@ describe("AdminPage", () => {
 
   it("announces clipboard success and failure without persisting the credential", async () => {
     vi.mocked(createUserAccount).mockResolvedValue({
+      authenticationMethod: "Local",
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
@@ -738,6 +524,7 @@ describe("AdminPage", () => {
 
   it("clears a disclosed credential when administrative access is lost", async () => {
     vi.mocked(createUserAccount).mockResolvedValue({
+      authenticationMethod: "Local",
       email: "nova.pessoa@example.test",
       id: 10,
       profileName: "SetorTransporte",
@@ -949,19 +736,33 @@ describe("AdminPage", () => {
     expect(reactivateUserAccount).not.toHaveBeenCalled();
   });
 
-  it("confirms and reactivates an inactive account", async () => {
-    vi.mocked(reactivateUserAccount).mockResolvedValue();
+  it("confirms Local reactivation with a reason and the prepared secure boundary", async () => {
+    vi.mocked(reactivateLocalAccount).mockResolvedValue({
+      temporaryCredential: "CREDENCIAL_FICTICIA_NAO_UTILIZAVEL",
+      temporaryCredentialExpiresAtUtc: "2030-06-10T11:30:00Z",
+    });
     const user = userEvent.setup();
     renderPage();
     await screen.findAllByText(inactiveAccount.name);
     await user.click(screen.getAllByRole("button", { name: "Reativar" })[0]);
-
-    const dialog = await screen.findByRole("alertdialog");
+    const dialog = await screen.findByRole("dialog", {
+      name: "Reativar com nova credencial?",
+    });
     expect(dialog).toHaveTextContent(inactiveAccount.name);
-    await user.click(
-      within(dialog).getByRole("button", { name: "Reativar conta" }),
+    await selectFieldOption(
+      user,
+      within(dialog).getByLabelText("Motivo da reativação"),
+      "Esquecimento",
     );
-    await waitFor(() => expect(reactivateUserAccount).toHaveBeenCalledWith(9));
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: "Confirmar reativação com nova credencial",
+      }),
+    );
+    await waitFor(() =>
+      expect(reactivateLocalAccount).toHaveBeenCalledWith(9, "Esquecimento"),
+    );
+    expect(reactivateUserAccount).not.toHaveBeenCalled();
     expect(deactivateUserAccount).not.toHaveBeenCalled();
   });
 
@@ -1015,6 +816,7 @@ describe("AdminPage", () => {
 
   it("blocks duplicate creation while the request is pending", async () => {
     let resolveCreation!: (value: {
+      authenticationMethod: "Local";
       id: number;
       email: string;
       profileName: "SetorTransporte";
@@ -1042,6 +844,7 @@ describe("AdminPage", () => {
 
     await act(async () =>
       resolveCreation({
+        authenticationMethod: "Local",
         email: "nova.pessoa@example.test",
         id: 10,
         profileName: "SetorTransporte",

@@ -7,10 +7,11 @@ import { StatusBadge } from "../../../components/ui/StatusBadge";
 import type { UserAccount, UserAccountPage } from "../types";
 
 interface UserAccountCatalogProps {
+  onChangeProfile: (account: UserAccount, trigger: HTMLElement) => void;
   currentUserId: number;
   onPageChange: (page: number) => void;
   onResetCredential: (account: UserAccount, trigger: HTMLElement) => void;
-  onToggle: (account: UserAccount) => void;
+  onToggle: (account: UserAccount, trigger: HTMLElement) => void;
   page: UserAccountPage | null;
   pendingAction: string | null;
   status: "idle" | "loading" | "ready" | "error" | "denied" | "filter-error";
@@ -37,6 +38,7 @@ function accountInitials(name: string) {
 }
 
 export function UserAccountCatalog({
+  onChangeProfile,
   currentUserId,
   onPageChange,
   onResetCredential,
@@ -106,6 +108,7 @@ export function UserAccountCatalog({
       <div className="account-catalog-grid grid gap-3 p-4 sm:p-5 md:grid-cols-2 2xl:hidden">
         {page.items.map((account) => (
           <AccountCard
+            onChangeProfile={onChangeProfile}
             account={account}
             currentUserId={currentUserId}
             key={account.id}
@@ -180,14 +183,23 @@ export function UserAccountCatalog({
                   {dateFormatter.format(new Date(account.createdAtUtc))}
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
                     {account.active && account.id !== currentUserId && (
-                      <ResetButton
+                      <ProfileButton
                         account={account}
-                        onResetCredential={onResetCredential}
+                        onChangeProfile={onChangeProfile}
                         pendingAction={pendingAction}
                       />
                     )}
+                    {account.active &&
+                      account.id !== currentUserId &&
+                      account.authenticationMethod === "Local" && (
+                        <ResetButton
+                          account={account}
+                          onResetCredential={onResetCredential}
+                          pendingAction={pendingAction}
+                        />
+                      )}
                     <ToggleButton
                       account={account}
                       onToggle={onToggle}
@@ -239,7 +251,7 @@ function ToggleButton({
   pendingAction,
 }: {
   account: UserAccount;
-  onToggle: (account: UserAccount) => void;
+  onToggle: (account: UserAccount, trigger: HTMLElement) => void;
   pendingAction: string | null;
 }) {
   const pending = pendingAction?.endsWith(`-${account.id}`) ?? false;
@@ -247,7 +259,8 @@ function ToggleButton({
     <Button
       className="px-3 text-xs"
       disabled={pendingAction !== null}
-      onClick={() => onToggle(account)}
+      onClick={(event) => onToggle(account, event.currentTarget)}
+      data-toggle-account-id={account.id}
       variant={account.active ? "danger" : "secondary"}
     >
       {pending ? "Processando…" : account.active ? "Desativar" : "Reativar"}
@@ -256,6 +269,7 @@ function ToggleButton({
 }
 
 function AccountCard({
+  onChangeProfile,
   account,
   currentUserId,
   onResetCredential,
@@ -263,10 +277,11 @@ function AccountCard({
   pendingAction,
   currentTime,
 }: {
+  onChangeProfile: UserAccountCatalogProps["onChangeProfile"];
   account: UserAccount;
   currentUserId: number;
   onResetCredential: (account: UserAccount, trigger: HTMLElement) => void;
-  onToggle: (account: UserAccount) => void;
+  onToggle: (account: UserAccount, trigger: HTMLElement) => void;
   pendingAction: string | null;
   currentTime: number;
 }) {
@@ -301,12 +316,21 @@ function AccountCard({
         </span>
         <div className="flex flex-wrap justify-end gap-2">
           {account.active && account.id !== currentUserId && (
-            <ResetButton
+            <ProfileButton
               account={account}
-              onResetCredential={onResetCredential}
+              onChangeProfile={onChangeProfile}
               pendingAction={pendingAction}
             />
           )}
+          {account.active &&
+            account.id !== currentUserId &&
+            account.authenticationMethod === "Local" && (
+              <ResetButton
+                account={account}
+                onResetCredential={onResetCredential}
+                pendingAction={pendingAction}
+              />
+            )}
           <ToggleButton
             account={account}
             onToggle={onToggle}
@@ -325,6 +349,15 @@ function CredentialStatus({
   account: UserAccount;
   currentTime: number;
 }) {
+  if (account.authenticationMethod === "Google") {
+    return (
+      <span className="text-xs text-ink-soft">
+        {account.externalIdentityLinked
+          ? "Google vinculado"
+          : "Google: vínculo pendente"}
+      </span>
+    );
+  }
   if (!account.requiresPasswordChange) {
     return <span className="text-xs text-ink-soft">Sem troca pendente</span>;
   }
@@ -346,6 +379,28 @@ function CredentialStatus({
         </p>
       )}
     </div>
+  );
+}
+
+function ProfileButton({
+  account,
+  onChangeProfile,
+  pendingAction,
+}: {
+  account: UserAccount;
+  onChangeProfile: UserAccountCatalogProps["onChangeProfile"];
+  pendingAction: string | null;
+}) {
+  return (
+    <Button
+      className="px-3 text-xs"
+      data-profile-account-id={account.id}
+      disabled={pendingAction !== null}
+      onClick={(event) => onChangeProfile(account, event.currentTarget)}
+      variant="secondary"
+    >
+      Alterar perfil
+    </Button>
   );
 }
 

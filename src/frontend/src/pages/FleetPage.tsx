@@ -176,15 +176,20 @@ export function FleetPage() {
       }
 
       const description = describeApiError(error);
+      const vehicleConflict =
+        operationForm.mode === "edit" && description.kind === "conflict"
+          ? validationErrors.vehicle?.trim()
+          : undefined;
       if (description.kind === "access-denied") {
         setStatus("denied");
         setErrorMessage(description.message);
       } else {
         setServerErrors(nextServerErrors);
         setFormError(
-          Object.keys(nextServerErrors).length > 0
-            ? "Revise os campos destacados e tente novamente."
-            : description.message,
+          vehicleConflict ||
+            (Object.keys(nextServerErrors).length > 0
+              ? "Revise os campos destacados e tente novamente."
+              : description.message),
         );
       }
     } finally {

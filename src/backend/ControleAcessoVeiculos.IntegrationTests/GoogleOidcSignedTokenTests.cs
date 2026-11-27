@@ -167,7 +167,13 @@ public sealed class GoogleOidcSignedTokenTests
         SecurityKey key,
         TokenResponseHandler handler,
         string completionPath = "/login") =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        new SignedTokenFactory(key, handler, completionPath);
+
+    private sealed class SignedTokenFactory(
+        SecurityKey key, TokenResponseHandler handler, string completionPath)
+        : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:DefaultConnection",
@@ -189,7 +195,8 @@ public sealed class GoogleOidcSignedTokenTests
                 options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(configuration);
                 options.Backchannel = new HttpClient(handler, disposeHandler: false);
             }));
-        });
+        }
+    }
 
     private sealed class TokenResponseHandler : HttpMessageHandler
     {
