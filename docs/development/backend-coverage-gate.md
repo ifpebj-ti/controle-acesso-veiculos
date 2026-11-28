@@ -80,3 +80,12 @@ com testes e métricas mais estritos. Este recorte adiciona consolidação globa
 backend em outra issue e não descarta o trabalho existente. Ao sincronizar o
 #507, manter a consolidação deste arquivo e seus passos da CI, junto aos gates
 críticos, sem duplicar execução desnecessária ou reduzir limites.
+
+## Badges do README
+
+A CI aprovada da `main` gera `coverage-lines.svg` e `coverage-branches.svg`
+a partir da saída Cobertura mesclada das suítes .NET e publica os dois arquivos
+na branch `coverage-badges`. Os SVGs aparecem após a primeira execução bem-sucedida.
+Os valores usam o escopo bruto do relatório mesclado, que inclui código gerado,
+e podem diferir do piso de linhas escritas à mão de 70%. O escopo é backend.
+Os números publicados seguem o último build aprovado que gerou os badges.
