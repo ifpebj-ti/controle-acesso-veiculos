@@ -3,8 +3,6 @@
   overflow-wrap: anywhere;
 }
 
-@media (width >= 80rem) {
-  .application-frame:has(.sidebar-scroll) > .application-footer {
-    padding-left: calc(18rem + 5rem);
-  }
+.application-frame:has(.authenticated-navigation-layout) > .application-footer {
+  display: none;
 }

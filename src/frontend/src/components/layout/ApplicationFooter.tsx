@@ -18,10 +18,18 @@ function getVersionLabel(value: unknown): string {
   return `Versão ${version}`;
 }
 
+export function ApplicationVersion({ className }: { className?: string }) {
+  return (
+    <p className={className}>
+      {getVersionLabel(import.meta.env.VITE_APP_VERSION)}
+    </p>
+  );
+}
+
 export function ApplicationFooter() {
   return (
     <footer className="application-footer border-t border-border bg-background text-center text-sm text-text-muted">
-      <p>{getVersionLabel(import.meta.env.VITE_APP_VERSION)}</p>
+      <ApplicationVersion />
     </footer>
   );
 }

@@ -2,10 +2,12 @@
 
 Frontend do sistema Controle de Acesso de Veículos do IFPE – Campus Belo Jardim.
 
-## Versão no rodapé (Refs #782)
+## Versão da aplicação (Refs #782)
 
-O rodapé compartilhado apresenta `VITE_APP_VERSION`, incorporada ao JavaScript
-durante o build. O valor deve identificar o artefato que está sendo construído,
+Na área autenticada, a versão aparece após a navegação lateral em desktop e
+abaixo da barra superior em telas menores. As telas sem a navegação padrão
+exibem a versão no rodapé. O rótulo usa `VITE_APP_VERSION`, incorporada ao
+JavaScript durante o build. O valor deve identificar o artefato que está sendo construído,
 incluindo o sufixo de pré-release quando aplicável. Não representa automaticamente
 a última release do GitHub nem a versão da API.
 
