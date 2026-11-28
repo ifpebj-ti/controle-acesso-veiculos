@@ -1,3 +1,5 @@
+using ControleAcessoVeiculos.Application.Contingency;
+using ControleAcessoVeiculos.Infrastructure.Contingency;
 using ControleAcessoVeiculos.Application.CampusDrivers;
 using ControleAcessoVeiculos.Infrastructure.CampusDrivers;
 using ControleAcessoVeiculos.API.Health;
@@ -353,6 +355,8 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthorizationPolicies.ManageEventAuthorizations, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment,
         ProfileNames.Administrator))
+    .AddPolicy(AuthorizationPolicies.ManagePaperReconciliation, policy => policy.RequireRole(
+        ProfileNames.TransportationDepartment, ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageCampusDrivers, policy => policy.RequireRole(
         ProfileNames.TransportationDepartment, ProfileNames.Administrator))
     .AddPolicy(AuthorizationPolicies.ManageUsers, policy => policy.RequireRole(
@@ -379,7 +383,13 @@ builder.Services.AddScoped<IUserAccountStore, UserAccountStore>();
 builder.Services.AddScoped<IUserAccountReactivationStore, UserAccountStore>();
 builder.Services.AddScoped<UserAccountReactivationService>();
 builder.Services.AddScoped<IAccountProfileStore, UserAccountStore>();
-builder.Services.AddScoped<IVehicleAccessStore, VehicleAccessStore>();
+builder.Services.AddScoped<VehicleAccessStore>();
+builder.Services.AddScoped<IVehicleAccessStore>(sp => sp.GetRequiredService<VehicleAccessStore>());
+builder.Services.AddScoped<PaperReconciliationStore>();
+builder.Services.AddScoped<IPaperReconciliationStore>(sp => sp.GetRequiredService<PaperReconciliationStore>());
+builder.Services.AddScoped<IPaperReconciliationCatalog>(sp => sp.GetRequiredService<PaperReconciliationStore>());
+builder.Services.AddScoped<PaperReconciliationService>();
+builder.Services.AddScoped<PaperIncidentService>();
 builder.Services.AddScoped<IAccessCorrectionReviewStore, AccessCorrectionReviewStore>();
 builder.Services.AddScoped<AccessCorrectionReviewService>();
 builder.Services.AddOptions<AccessCorrectionReviewOptions>()
@@ -515,6 +525,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     .DisableRateLimiting();
 
 app.MapVehicleAccessEndpoints();
+app.MapPaperReconciliationEndpoints();
 app.MapAccessCorrectionReviewEndpoints();
 app.MapCampusDriverEndpoints();
 app.MapInstitutionalVehicleUsageEndpoints();

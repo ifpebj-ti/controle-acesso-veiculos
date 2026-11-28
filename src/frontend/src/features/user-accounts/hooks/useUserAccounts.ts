@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useManagedAccountReactivation } from "../reactivation/useManagedAccountReactivation";
 import { useAccountProfileChange } from "./useAccountProfileChange";
 import { profileLabels } from "../../authentication";
 
@@ -11,7 +12,6 @@ import {
 import {
   createUserAccount,
   deactivateUserAccount,
-  reactivateUserAccount,
   resetTemporaryCredential,
   searchUserAccounts,
   UserAccountsContractError,
@@ -99,7 +99,11 @@ export function useUserAccounts() {
   }
 
   const load = useCallback(
-    async (filters: UserAccountFilters, persistedMessage?: string) => {
+    async (
+      filters: UserAccountFilters,
+      persistedMessage?: string,
+      reconcilePage = false,
+    ) => {
       const currentRequest = ++requestId.current;
       setStatus("loading");
       setPage(null);
@@ -107,8 +111,16 @@ export function useUserAccounts() {
       setFilterError(null);
       if (!persistedMessage) setNotice(null);
       try {
-        const result = await searchUserAccounts(filters);
+        let result = await searchUserAccounts(filters);
         if (requestId.current !== currentRequest) return;
+        const lastPage = Math.max(1, result.totalPages);
+        if (reconcilePage && filters.page > lastPage) {
+          const corrected = { ...filters, page: lastPage };
+          setApplied(corrected);
+          setDraft((current) => ({ ...current, page: lastPage }));
+          result = await searchUserAccounts(corrected);
+          if (requestId.current !== currentRequest) return;
+        }
         setPage(result);
         setStatus("ready");
         if (persistedMessage) setNotice(persistedMessage);
@@ -326,8 +338,27 @@ export function useUserAccounts() {
     }
   }
 
-  async function changeAccountState(account: UserAccount) {
+  const reactivation = useManagedAccountReactivation({
+    pendingAction,
+    ready: status === "ready",
+    loading: status === "loading",
+    setPendingAction,
+    onReload: (message) => load(applied, message, true),
+    onOpen: () => {
+      setNotice(null);
+      setErrorMessage(null);
+    },
+  });
+
+  async function changeAccountState(
+    account: UserAccount,
+    trigger?: HTMLElement | null,
+  ) {
     if (pendingAction) return;
+    if (!account.active) {
+      reactivation.open(account, trigger ?? null);
+      return;
+    }
     const action = account.active ? "desativar" : "reativar";
     const confirmed = await confirmAction({
       confirmLabel: account.active ? "Desativar conta" : "Reativar conta",
@@ -344,8 +375,7 @@ export function useUserAccounts() {
     setNotice(null);
     setErrorMessage(null);
     try {
-      if (account.active) await deactivateUserAccount(account.id);
-      else await reactivateUserAccount(account.id);
+      await deactivateUserAccount(account.id);
       await load(
         applied,
         `Conta de ${account.name} ${account.active ? "desativada" : "reativada"} com sucesso.`,
@@ -397,6 +427,7 @@ export function useUserAccounts() {
   });
 
   return {
+    reactivation,
     profileChange,
     applyFilters,
     changeAccountState,

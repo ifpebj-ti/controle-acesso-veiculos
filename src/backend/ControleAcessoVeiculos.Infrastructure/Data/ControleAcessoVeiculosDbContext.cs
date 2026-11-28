@@ -23,6 +23,8 @@ public class ControleAcessoVeiculosDbContext(
     public DbSet<EventoAcesso> EventosAcesso => Set<EventoAcesso>();
     public DbSet<AutorizacaoVeiculoEvento> AutorizacoesVeiculosEventos =>
         Set<AutorizacaoVeiculoEvento>();
+    public DbSet<IncidenteContingencia> IncidentesContingencia => Set<IncidenteContingencia>();
+    public DbSet<ReconciliacaoContingencia> ReconciliacoesContingencia => Set<ReconciliacaoContingencia>();
     public DbSet<Auditoria> Auditorias => Set<Auditoria>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

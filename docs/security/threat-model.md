@@ -418,6 +418,20 @@ Isso não equivale a provar que o fluxo está implantado: a interface e o ensaio
 HTTPS continuam pendentes. A nova tabela não replica documento ou credencial;
 texto livre fica restrito à solicitação, sem cópia integral na auditoria.
 
+### Contingência em papel — incremento candidato #100/#611 (04/11/2026)
+
+A orquestração de aplicação candidata separa importação por Porteiro/Vigilante da
+conferência por Transporte/Administrador. O payload não escolhe ator ou horário
+de digitação. Datas observadas são preservadas e normalizadas; dados inválidos
+não alcançam a porta de persistência. Falha incerta não produz retry automático.
+Esses controles têm testes unitários, mas não estão registrados na API/DI.
+
+Os riscos de falsificação de autoria, replay, corrida, autoaprovação e perda de
+auditoria permanecem abertos para implementação e verificação transacional no
+PostgreSQL. `IPaperReconciliationStore` apenas especifica essas obrigações.
+Não há novo fluxo de dados em execução, nova fronteira implantada, redução de
+pontuação STRIDE ou evidência de importação/backup externo por este incremento.
+
 ## Complemento candidato — reativação Local (#663)
 
 Risco tratado: reativar uma conta suspensa sem substituir uma credencial
@@ -463,3 +477,34 @@ troca de perfil, credencial, reativação e desativação pelo Transporte.
 A exportação preserva confirmação local e auditoria. O método Google exige a
 confirmação compatível acompanhada pela #699. A renovação da sessão não constitui
 prova de autenticação recente. Ver a [matriz candidata](../architecture/transport-authorization-matrix.md).
+
+## Controles candidatos de contingência — #100/#611, 14/11/2026
+
+O novo fluxo autentica o digitador, preserva autor do papel e horários observados,
+e separa conferência da saída operacional. Locks transacionais e unicidade de
+incidente/linha e ator/intenção impedem gravações duplicadas concorrentes. Replay
+com conteúdo divergente é negado; revisão terminal exige outro gestor e motivo.
+Acesso, proveniência e auditoria são gravados na mesma transação. Eventos e quotas
+são revalidados no horário observado, com o lock existente do evento.
+
+As consultas são paginadas e operadores veem somente suas transcrições. Dados de
+identidade/justificativa não são copiados integralmente para logs ou auditoria.
+FKs Restrict preservam referências. Datas HTTP exigem offset e recebem validação;
+instantes de digitação/conferência vêm do servidor. Migração e downgrade foram
+reservados ao ensaio em banco fictício, sem alteração da hospedagem atual.
+
+Falsificação do papel físico, conteúdo não conferido e omissão de uma linha não
+são provados pelo hash técnico da intenção. A referência/guarda da folha e a
+conferência diária precisam do procedimento humano e do exercício institucional.
+Backups externos e integração com a revisão de correções permanecem pendentes.
+
+## Agregação candidata de checks — #661, 15/11/2026
+
+O contexto `Quality Gate` confere resultados dos workflows aplicáveis ao diff,
+PR e composição identificados, além do aplicativo esperado para o CodeQL.
+Execução ausente, cancelada ou com falha impede aprovação pelo agregador.
+O token usa somente leitura e o checkout remove a persistência de credenciais.
+O acesso de escrita para publicação permanece nos jobs de release existentes.
+O risco de alteração maliciosa do próprio workflow continua sujeito à revisão,
+CODEOWNERS e proteção efetiva da branch. A ativação do check obrigatório e as
+exceções administrativas ficam registradas na #661 após o ensaio do candidato.

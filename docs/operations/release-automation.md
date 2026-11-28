@@ -2,9 +2,10 @@
 
 ## Estado e limites
 
-Candidato de automação, ainda não executado para publicar uma release real.
-A #686 continua acompanhando a composição e promoção de 0.5.0; não a publicar
-antes de preservar o frontend Google/contas e fechar os critérios correspondentes.
+O ciclo publicou 0.5.0 na execução 44234320324, fonte eaccd72, e a promoção
+foi registrada separadamente na #686. O ajuste #763 acrescenta notas resumidas
+revisáveis, comandos de instalação e conferência de manifests antes da publicação.
+Esse ajuste é candidato até revisão/merge e não modifica a release 0.5.0.
 Não há deploy automático à Oracle, novo PAT, token duradouro ou merge por agente.
 
 ## Fluxo
@@ -16,7 +17,10 @@ Não há deploy automático à Oracle, novo PAT, token duradouro ou merge por ag
    `minor` e o número da issue. A versão é calculada pela última seção datada do
    changelog: 0.4.0 → patch 0.4.1 ou minor 0.5.0; depois 0.5.1, 0.5.2 etc.
 3. O workflow move somente o lote Unreleased incorporado para uma seção datada,
-   cria branch `chore/issue-N-release-vX.Y.Z` e tenta abrir PR **draft**. Se a
+   cria também `docs/releases/X.Y.Z.md`, abre branch `chore/issue-N-release-vX.Y.Z`
+   e tenta abrir PR **draft**. O resumo inicial exige edição humana dos destaques
+   e limites: remover REVIEW_REQUIRED e substituir a instrução genérica. O check
+   da proposta e a criação da tag recusam notas ainda não revisadas. Se a
    política impedir PRs de bot, entrega o link para um responsável abrir a
    proposta. A branch preparada não é PR aprovado nem release. Não cria tag,
    publica imagens, aprova ou incorpora esse PR.
@@ -32,8 +36,11 @@ Não há deploy automático à Oracle, novo PAT, token duradouro ou merge por ag
 6. O pipeline existente continua construindo e analisando as duas arquiteturas,
    executando smoke/ZAP e publicando os manifests de backend/frontend.
    A GitHub Release é publicada **somente depois de ambos manifests passarem**.
-   Um draft existente é atualizado com notas da fonte real; release publicada
-   é preservada. Tag com outro SHA causa falha, nunca force-update.
+   Os manifests semânticos e sha-COMMIT devem ter digests iguais e conter
+   exatamente Linux AMD64/ARM64. As notas incluem comandos Docker, digests reais,
+   fonte, links e limites. A prévia não afirma gates concluídos. Um draft existente
+   é atualizado com as notas revisadas da fonte; release publicada é preservada,
+   sem consultar ou sobrescrever novamente suas notas/imagens. Tag com outro SHA causa falha, nunca force-update.
 7. Conferir os artefatos e promover a versão à VM segundo o
    [runbook](versioned-container-deployment.md), com backup/rollback e evidências.
    Atualizar referências de instalação/Wiki separadamente após publicação real.
@@ -67,8 +74,8 @@ as chamadas mutantes da API. `prepare`/`notes` podem ser testados sem API extern
   nova versão após correção; não sobrescrever imagem para obter verde.
 - Falha ao abrir PR pode deixar apenas a branch de preparação. Conferir estado
   antes de repetir; nenhum caminho faz force-push ou altera a main diretamente.
-- A integração GitHub real e a primeira release desse fluxo precisam de evidência
-  própria na #686. Testes locais dos parsers não comprovam essa execução.
+- A primeira publicação real está registrada na #686. Os testes locais da
+  alteração #763 não comprovam sua futura publicação em uma nova release.
 
 ## Validação local
 
@@ -95,3 +102,13 @@ ou workflow e publicação parcial. As mitigações são branch protegida, CODEO
 validação de fonte/notas, gates preservados, imutabilidade e recuperação explícita.
 Execuções iniciadas pelo token podem aguardar aprovação humana conforme a
 política efetiva do GitHub. Os checks precisam concluir no SHA revisado. Ver [procedimento e limites](../operations/release-automation.md).
+
+## Padrão público de notas — #763
+
+O changelog permanece detalhado; `docs/releases/X.Y.Z.md` contém resumo e
+limites revisados. A publicação acrescenta os dados técnicos já verificados,
+sem copiar todo o changelog para a página da release. Consulte o
+[formato das notas](../releases/README.md). Criar um arquivo revisado não é uma
+aprovação automática: CODEOWNERS, revisão humana e gates continuam exigidos.
+Os metadados Docker são lidos com comandos estruturados, sem shell construído
+com valores de eventos. Nenhum segredo deve entrar em notas ou argumentos.

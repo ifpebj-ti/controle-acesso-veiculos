@@ -8,11 +8,40 @@ from its first published release.
 
 ## [Unreleased]
 
-This section records increments since v0.4.0. Entries introduced by open PRs
-remain proposed until incorporation, not a published release or proof of deployment.
-See the [release policy](docs/operations/release-cadence.md).
+### Fixed
+
+- Preserve concise, reviewed Technical MVP release notes with both Docker
+  commands, verified semantic/source manifest digests, architecture checks and
+  explicit pending/deployment limits; protect existing published releases
+  without requiring retroactive review files (Refs #763).
+- Identify application version, checked-out source and repository in final OCI
+  image labels; verify metadata for development/release builds before scanning
+  and publication on both architectures (Refs #761).
+
+## [0.5.0] - 2026-11-18
 
 ### Added
+
+- Transportation navigation and actions aligned with the incorporated business
+  matrix, including independent audit queries without user management and report
+  consultation; keep PDF export unavailable until compatible confirmation is
+  available, without asking for a Google password (#705, Refs #703).
+- Campus-driver registration and vehicle association for Administrator and
+  Transportation, with explicit homonym confirmation and uncertain-write
+  protection; extend the existing entry search with source-aware, expiring
+  suggestions and current driver/objective confirmation (#704, Refs #689).
+- Persist paper incidents and attributed import/review transactions with replay
+  protection, observed-time event checks, scoped queues and PostgreSQL constraints
+  (#611, Refs #100). Frontend and hosted rollout remain separately reviewed.
+
+- Connect secure account reactivation to the validated administrative catalog:
+  Local credential reset, password-free Google reactivation, one-time disclosure,
+  bounded read-only reconciliation, persistent uncertain-write guards and focus/
+  applied-filter preservation. Acceptance evidence remains candidate-specific
+  (#672, Refs #669).
+- A read-only PR quality gate that verifies the applicable existing workflows
+  and CodeQL result for the reviewed source, rejecting failed, cancelled or
+  missing validations. Branch-protection activation is tracked in #661.
 
 - Frontend support for Aluno, Terceirizado and Federal across access forms,
   history categories/counts, open accesses, summaries and reports, displaying
@@ -41,6 +70,14 @@ See the [release policy](docs/operations/release-cadence.md).
 
 ### Changed
 
+- Refresh the .NET 10 authentication/EF packages, OpenTelemetry, QuestPDF and
+  Swagger UI dependencies, and update frontend build/form/request tooling
+  with the reviewed lockfiles (#738, #739).
+
+- Keep report-specific filters independent between general movements and fleet
+  reports while sharing only draft/applied dates; preserve each tab's choices,
+  reset pagination and retain the existing clear-period behavior (Refs #746).
+
 - Increase spacing between sign-in guidance and administrative access while
   retaining the established login alignment, typography and panel composition.
 - Cap the Google sign-in action at 18rem within the available width, retaining
@@ -52,6 +89,29 @@ See the [release policy](docs/operations/release-cadence.md).
 
 - Preserve the original exit author after descriptive corrections, using
   unambiguous closure audit evidence for legacy attribution (#609).
+
+- Isolate the history pagination test from another driver's use of the same
+  vehicle while preserving partial-plate, order and exact-total assertions
+  (#757).
+
+- Send the explicit `status=all` event-authorization query for all states while
+  retaining `active=true/false` for individual states, preserving server totals,
+  filters and pagination without combining pages in the browser (Refs #743).
+
+- Capture the optional paper-import vehicle ID before the EF query and use the
+  supported parameterized SQL execution API, preserving transaction locks and
+  the self-review constraint test; clarify the load-workflow assertion (#747).
+
+- Add explicit `status=all` event queries while preserving the active-only default
+  and boolean filters; reject ambiguous queries and retain server-side totals
+  and pagination (Refs #743).
+
+- Run local k6 baselines with the native executable so loopback reaches the host
+  API; validate target URLs before authentication and preserve separate profile
+  summaries without changing load thresholds (Refs #502).
+- Keep frontend API-root redirects relative, emit one DENY frame policy and
+  revalidate SPA HTML while caching hashed bundles immutably. Missing static
+  resources return 404; integrated smoke verifies these responses (#723).
 
 - Require one-time credential recovery for suspended Local accounts while
   preserving method-aware Google reactivation and transactional auditing (#663).
@@ -300,7 +360,8 @@ Changes merged before this changelog was introduced remain traceable through the
 Git history, Pull Requests, Issues, and project Wiki. They must not be
 retroactively presented as a published release without an evidence-based review.
 
-[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ifpebj-ti/controle-acesso-veiculos/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.2.0

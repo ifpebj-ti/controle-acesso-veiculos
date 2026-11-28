@@ -60,11 +60,21 @@ homologação em tablet físico.
 
 ## Estado atual
 
+A #689 integra o contrato de condutores vinculados incorporado na main `8b61ccd`: nomes, vínculo, nascimento confirmado e veículo. A rota `/condutores-vinculados` é destinada a Administrador/Transporte, sem criação de conta. A busca existente da entrada usa sugestões com fonte e expiração. A integração ainda depende de candidato identificado e critérios pendentes; consulte [`docs/person-preregistration.md`](docs/person-preregistration.md).
+
+A reativação segura #669 está montada na página de contas com o contrato
+Local/Google do #530 incorporado. A API #668 também foi incorporada; as
+evidências de validação autenticada continuam vinculadas à composição testada.
+Contrato, tratamento de
+resultado incerto e critérios pendentes estão em
+[`docs/account-reactivation.md`](docs/account-reactivation.md).
+
 O candidato da #688 acrescenta Aluno, Terceirizado e Federal às nove categorias
 anteriores. A main `8b61ccd` já incorpora o suporte backend #696; isso não
 comprova a implantação. Federal aparece como Servidor federal, mantendo a chave
 canônica. Detalhes e limites de integração estão em
 [`docs/access-categories.md`](docs/access-categories.md).
+
 O histórico oferece as doze opções na mesma faixa horizontal,
 com rolagem por toque, controles laterais e navegação por Tab, setas, Home e End.
 O seletor dos filtros permanece disponível. Os contadores vêm exclusivamente
@@ -134,8 +144,11 @@ A visão geral consulta o resumo operacional diário agregado da API. A área de
 administração consulta, cria, desativa e reativa contas pela API, mostra o
 estado mínimo das credenciais temporárias e permite ao Administrador redefinir
 a credencial de outra conta ativa. Credenciais emitidas pelo servidor aparecem
-uma única vez em memória, com cópia explícita e sem persistência no navegador. A
-mesma tela também consulta a trilha de auditoria em uma área separada.
+uma única vez em memória, com cópia explícita e sem persistência no navegador.
+Na branch da #703, a Trilha de auditoria possui uma única entrada no menu lateral,
+na rota `/auditoria`, para Administrador e Transporte. Usuários e permissões
+permanece dedicado às contas, sem aba de auditoria ou consulta a seus eventos.
+Esse recorte do candidato não significa implantação na URL pública.
 
 Fluxo sugerido para validação local:
 
@@ -295,6 +308,15 @@ as entradas já consumidas e a quantidade restante. Placa específica representa
 exatamente um veículo; cota por tipo pode representar de 1 a 1000 veículos.
 Cancelamento é lógico, exige confirmação e não é descrito como exclusão do
 histórico.
+
+Na consulta de eventos, Todos envia `status=all` sem `active`; Ativos e
+Cancelados enviam `active=true` ou `active=false`, sem `status`. Nome, período,
+totais e paginação continuam vindo da consulta do servidor, sem concatenar páginas
+no navegador. A seleção de evento na entrada continua consultando somente ativos.
+O contrato e as rejeições de combinações ambíguas estão em
+[`event-authorization-query.md`](../../docs/development/event-authorization-query.md).
+A integração #743 exige API compatível; sua presença na main não comprova que
+o site hospedado já oferece esse contrato.
 
 Os períodos são preenchidos com controles nativos de data e hora e possuem uma
 instrução textual associada. Essa escolha evita introduzir um calendário
@@ -529,6 +551,21 @@ não copia schemas nem depende da incorporação do login para testes locais.
 Testes com listas vazias não representam aprovação visual de itens populados;
 as fixtures e os ensaios locais não substituem a validação autenticada no HTTPS.
 
+## Filtros dos relatórios — Issue #746
+
+Movimentações gerais e Frota institucional compartilham somente o período.
+Placa, condutor, situação e demais filtros são preservados separadamente por
+tipo de relatório, inclusive os rascunhos ainda não aplicados. Alternar a aba
+consulta seus filtros aplicados na primeira página, sem aplicar texto ou datas
+em edição. O período aplicado é reutilizado na próxima consulta de cada tipo,
+sem copiar os demais campos; respostas antigas não substituem a consulta ativa.
+
+Limpar filtros limpa somente os campos próprios da aba ativa e mantém a regra
+anterior de restaurar o período padrão compartilhado. As escolhas da outra aba
+permanecem preservadas. O limite de 31 dias, a confirmação de exportação e os
+contratos de API não mudam. Os filtros permanecem apenas em memória, sem
+persistência de dados de consulta em localStorage ou sessionStorage.
+
 ## Testes e acessibilidade
 
 O [roteiro de homologação dos relatórios](../../docs/validation/administrative-report-homologation.md)
@@ -700,3 +737,9 @@ npm run lint
 npm run build
 npm test
 ```
+
+## Funções de negócio do Transporte
+
+O alinhamento de navegação/ações ao contrato incorporado está documentado em
+[`docs/transport-business-ui.md`](docs/transport-business-ui.md), incluindo o
+limite temporário da confirmação de exportação e os ensaios pendentes.

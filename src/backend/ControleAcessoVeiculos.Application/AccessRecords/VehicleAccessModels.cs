@@ -86,7 +86,8 @@ public sealed record VehicleAccessRecord(
     string? ExceptionalClosureReason = null,
     string? ExceptionalClosureObservation = null,
     DateTime? RegularizedAtUtc = null,
-    string? VehicleType = null);
+    string? VehicleType = null,
+    string? PaperReviewStatus = null);
 
 public sealed record ExceptionallyCloseVehicleAccessCommand(
     string Reason,

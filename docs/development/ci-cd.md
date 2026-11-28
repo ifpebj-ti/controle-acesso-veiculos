@@ -20,6 +20,11 @@ portas da API ou do PostgreSQL.
 
 ## Workflows
 
+O candidato da #661 acrescenta o contexto estável `Quality Gate`, com seleção
+pelos filtros dos workflows existentes e confirmação dos resultados do mesmo PR,
+SHA e base. O [procedimento de ativação](required-quality-gate.md) registra a
+proteção consultada, os testes e a configuração ainda necessária na main.
+
 | Workflow                | Gatilho                                                                   | Verificações                                                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CI - Backend            | Alterações do backend, do runner e de suas regras de formato              | restore, `dotnet format`, build Release com warnings como erros, suíte xUnit v3 na Microsoft Testing Platform, resultados TRX e cobertura Cobertura                                                              |

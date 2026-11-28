@@ -13,7 +13,7 @@ IFPE — Campus Belo Jardim.
 
 [Wiki](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki) ·
 [Documentação](#documentação) ·
-[Release atual](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.4.0) ·
+[Release atual](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases/tag/v0.5.0) ·
 [Issues](https://github.com/ifpebj-ti/controle-acesso-veiculos/issues)
 
 </div>
@@ -47,25 +47,42 @@ cancelas e fluxo de pedestres não pertencem ao MVP atual.
 O estado confirmado, as hipóteses e as pendências estão na página
 [Status do Projeto](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Status-do-Projeto).
 
-## Incrementos incorporados em 12/11/2026
+## Estado em 18/11/2026
 
-A main `8b61ccd` incorpora o catálogo de doze categorias, o pré-cadastro de
-condutores vinculados e as sugestões de retorno diário. Transporte e Administrador
-podem manter esses cadastros. O nascimento conferido fica restrito à verificação
-de maioridade do condutor. A portaria confirma a pessoa e o objetivo antes de
-registrar a nova entrada.
+A main de referência `8089eb4` incorpora o pré-cadastro e as sugestões de entrada (#704), a
+navegação e as ações de negócio do Transporte (#705), a reativação de contas
+pela interface (#672) e os incrementos anteriores. Gestão de contas e concessão
+de perfis permanecem exclusivas do Administrador.
 
-Os contratos estão no [guia de pré-cadastro](docs/development/campus-driver-registry-contract.md)
+O backend de contingência em papel (#611) e a consulta de eventos com
+`status=all` (#745/#751) também estão incorporados. Os relatórios preservam os
+filtros próprios de cada tipo, compartilhando somente o período (#752). A
+correção de isolamento dos testes #757 e as dependências #738/#739 foram
+incorporadas. A interface de papel (#712) e a confirmação de exportação PDF
+por identidade Google (#699) continuam pendentes.
+
+A release técnica `v0.5.0` está publicada e foi promovida à homologação em
+18/11, fonte `eaccd72`, com frontend/backend versionados e 23 migrations.
+Backup restaurado em banco separado, configuração protegida e rollback foram
+conferidos; 46 verificações HTTPS da API e a conferência HTTP do frontend passaram.
+As notas incluem os comandos Docker dos dois serviços. As evidências e limites
+estão no [registro da promoção](docs/validation/release-050-rollout-2026-11-18.md).
+A implantação continua explícita: um merge não atualiza automaticamente a VM.
+Isso não declara autorização para operação institucional.
+
+Os contratos de categorias, pré-cadastro e permissões estão no
+[guia de pré-cadastro](docs/development/campus-driver-registry-contract.md)
 e na [matriz de permissões](docs/architecture/transport-authorization-matrix.md).
-As interfaces correspondentes estão em revisão nos PRs #702/#704/#705. A promoção
-à homologação será acompanhada pela #686.
+Transporte e Administrador podem manter o pré-cadastro. O nascimento conferido
+é usado na verificação de maioridade. A portaria confirma pessoa e objetivo
+antes da nova entrada.
 
 A CI publica o resumo de [cobertura backend](docs/development/backend-coverage-gate.md)
-e aplica piso de 70%. A execução 43343801016, na main `8b61ccd`, mediu 93,50% das
-linhas do backend, com migrations geradas excluídas. A automação de
-[releases revisáveis](docs/operations/release-automation.md) prepara changelog,
-tag e publicação após os gates das imagens. A primeira publicação desse fluxo
-continua em acompanhamento na #686.
+e aplica piso de 70%. A execução 43343801016, na main `8b61ccd`, mediu 93,50%
+das linhas, com migrations geradas excluídas. Cada candidato posterior mantém
+sua medição própria. O [ciclo de releases](docs/operations/release-automation.md)
+prepara changelog, tag e publicação após os gates das imagens. A release publicada
+é `v0.5.0`, promovida na #686; #713 registra a preparação incorporada.
 
 ## Arquitetura
 
@@ -179,28 +196,28 @@ docker compose down
 
 ## Imagens versionadas
 
-A release técnica publicada é `v0.4.0`. Os comandos pedidos para consumo humano
+A release técnica publicada é `v0.5.0`. Os comandos pedidos para consumo humano
 e para o Compose de implantação são:
 
 ```bash
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.4.0
-docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.4.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.5.0
+docker pull ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.5.0
 ```
 
 As duas tags foram verificadas como manifestos para `linux/amd64` e
-`linux/arm64`. Elas representam a release publicada em 23 de outubro de 2026 UTC
-(22 de outubro no fuso do projeto), não o estado mais recente da branch `main`.
+`linux/arm64`. Elas representam a release publicada em 18 de novembro de 2026,
+não atualizações posteriores da branch `main`.
 
-| Componente | Digest verificado da release `0.4.0`                                      |
+| Componente | Digest verificado da release `0.5.0`                                      |
 | ---------- | ------------------------------------------------------------------------- |
-| Backend    | `sha256:c14ec8fe6b6c6719755924ec687b69dabbc486bdeb25d3d1cf3d87558a808c48` |
-| Frontend   | `sha256:c39240dcff6ad9d9db157118099dc7b18ece0dcfabf59420f1838408c50ee620` |
+| Backend    | `sha256:1534ee794f47772299d85f396257f9e7043ba0151678fdb72fbb1a4397abb2f8` |
+| Frontend   | `sha256:805b4585ef3568f9b797ece0cf784b6db0500da4e11812498752609758e973c8` |
 
 ### Qual referência usar
 
 | Referência       | Uso                                 | Exemplo            |
 | ---------------- | ----------------------------------- | ------------------ |
-| versão semântica | implantação de uma release revisada | `:0.4.0`           |
+| versão semântica | implantação de uma release revisada | `:0.5.0`           |
 | commit           | rastreabilidade técnica da CI       | `:sha-<commit>`    |
 | digest           | fixação criptográfica exata         | `@sha256:<digest>` |
 
@@ -247,7 +264,7 @@ partir da primeira release publicada:
 - `MINOR`: funcionalidade compatível adicionada;
 - `PATCH`: correção compatível.
 
-`v0.4.0` e as imagens `0.4.0` são imutáveis por política. Mudanças posteriores
+`v0.5.0` e as imagens `0.5.0` são imutáveis por política. Mudanças posteriores
 ficam em [`Unreleased`](CHANGELOG.md#unreleased) até um Pull Request próprio de
 release revisar o changelog, escolher a versão e criar a tag Git. Releases
 anteriores, incluindo `v0.2.0`, permanecem disponíveis como histórico imutável.
@@ -358,9 +375,9 @@ Containers:
 ```bash
 docker compose -f infrastructure/docker/docker-compose.yml config --quiet
 docker buildx imagetools inspect \
-  ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.4.0
+  ghcr.io/ifpebj-ti/controle-acesso-veiculos-backend:0.5.0
 docker buildx imagetools inspect \
-  ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.4.0
+  ghcr.io/ifpebj-ti/controle-acesso-veiculos-frontend:0.5.0
 ```
 
 ## Estrutura do repositório

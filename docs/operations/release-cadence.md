@@ -1,5 +1,14 @@
 # Cadência de releases e promoção da homologação
 
+## Atualização em 18/11/2026
+
+A release `0.5.0` está publicada e instalada na homologação, fonte `eaccd72`,
+frontend/backend GHCR fixados por digest e 23 migrations. Backup restaurado,
+SQL transacional/idempotente, 46 verificações HTTPS e controles HTTP do
+frontend passaram. Google e dados foram preservados. A autenticação Google
+pelo titular após a promoção e as demais evidências operacionais mantêm seus
+limites próprios. Consulte o [registro da promoção](../validation/release-050-rollout-2026-11-18.md).
+
 ## Política — Issue #681
 
 Atualizar `Unreleased` no PR que entrega a mudança. Durante o piloto, revisar
@@ -11,7 +20,7 @@ Usar `MAJOR.MINOR.PATCH`, mantendo o zero inicial durante o desenvolvimento:
 `0.4.1` corrige comportamento compatível; `0.5.0` acrescenta funcionalidade;
 `0.5.1` e `0.5.2` entregam correções seguintes. Não é necessário saltar para
 `5.0.0`. O lote desde `0.4.0` contém novas funcionalidades, por isso `0.5.0` é a
-versão proposta, ainda não publicada. Revisar o escopo no commit liberado.
+versão publicada em 18/11/2026. Revisar o escopo no commit liberado.
 
 Tags publicadas são imutáveis. Não apontar `0.4.0` para código novo nem
 sobrescrever imagens versionadas. A versão descreve o escopo, não o esforço.

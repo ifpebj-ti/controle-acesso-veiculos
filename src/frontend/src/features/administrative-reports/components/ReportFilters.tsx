@@ -148,7 +148,8 @@ export function ReportFilters({
       )}
       <p className="text-xs leading-5 text-ink-soft sm:col-span-2 xl:col-span-4">
         O período considera todos os horários das datas selecionadas e pode ter
-        no máximo 31 dias.
+        no máximo 31 dias. O período vale para os dois relatórios; os demais
+        filtros são independentes em cada aba.
       </p>
       <div className="flex flex-wrap justify-end gap-2 sm:col-span-2 xl:col-span-4">
         <Button onClick={onClear} type="button" variant="secondary">

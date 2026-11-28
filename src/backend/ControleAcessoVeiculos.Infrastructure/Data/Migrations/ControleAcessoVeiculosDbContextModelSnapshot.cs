@@ -291,6 +291,53 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.IncidenteContingencia", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("ChaveIncidente")
+                        .HasColumnType("uuid")
+                        .HasColumnName("chave_incidente");
+
+                    b.Property<DateTime>("CriadoEmUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em_utc");
+
+                    b.Property<int>("CriadoPorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("criado_por_id");
+
+                    b.Property<DateTime>("FimUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fim_utc");
+
+                    b.Property<DateTime>("InicioUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio_utc");
+
+                    b.Property<string>("ReferenciaPapel")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("referencia_papel");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CriadoPorId");
+
+                    b.HasIndex("InicioUtc", "Id");
+
+                    b.ToTable("incidentes_contingencia", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("ck_incidentes_contingencia_datas", "inicio_utc <= fim_utc AND fim_utc <= criado_em_utc");
+                        });
+                });
+
             modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.MotoristaInstitucional", b =>
                 {
                     b.Property<int>("Id")
@@ -546,6 +593,99 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                     b.ToTable("pessoas_veiculos", "dbo", t =>
                         {
                             t.HasCheckConstraint("ck_pessoas_veiculos_periodo", "data_fim IS NULL OR data_inicio IS NULL OR data_fim >= data_inicio");
+                        });
+                });
+
+            modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.ReconciliacaoContingencia", b =>
+                {
+                    b.Property<int>("RegistroAcessoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("registro_acesso_id");
+
+                    b.Property<string>("AssinaturaIntencao")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("assinatura_intencao");
+
+                    b.Property<Guid>("ChaveIntencao")
+                        .HasColumnType("uuid")
+                        .HasColumnName("chave_intencao");
+
+                    b.Property<DateTime?>("ConferidoEmUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("conferido_em_utc");
+
+                    b.Property<int?>("ConferidoPorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("conferido_por_id");
+
+                    b.Property<DateTime>("DigitadoEmUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("digitado_em_utc");
+
+                    b.Property<int>("DigitadoPorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("digitado_por_id");
+
+                    b.Property<DateTime>("EntradaObservadaUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("entrada_observada_utc");
+
+                    b.Property<Guid>("IncidenteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("incidente_id");
+
+                    b.Property<string>("Justificativa")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("justificativa");
+
+                    b.Property<string>("MotivoConferencia")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_conferencia");
+
+                    b.Property<int>("NumeroLinha")
+                        .HasColumnType("integer")
+                        .HasColumnName("numero_linha");
+
+                    b.Property<string>("ReferenciaAutorPapel")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("referencia_autor_papel");
+
+                    b.Property<DateTime?>("SaidaObservadaNoPapelUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("saida_observada_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("RegistroAcessoId");
+
+                    b.HasIndex("ConferidoPorId");
+
+                    b.HasIndex("DigitadoPorId", "ChaveIntencao")
+                        .IsUnique();
+
+                    b.HasIndex("IncidenteId", "NumeroLinha")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "DigitadoEmUtc", "RegistroAcessoId");
+
+                    b.ToTable("reconciliacoes_contingencia", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("ck_reconciliacoes_conferencia", "(status = 'Pendente' AND conferido_por_id IS NULL AND conferido_em_utc IS NULL AND motivo_conferencia IS NULL) OR (status IN ('Conferida','Recusada') AND conferido_por_id IS NOT NULL AND conferido_por_id <> digitado_por_id AND conferido_em_utc IS NOT NULL AND conferido_em_utc >= digitado_em_utc AND motivo_conferencia IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_reconciliacoes_datas", "entrada_observada_utc <= digitado_em_utc AND (saida_observada_utc IS NULL OR (saida_observada_utc >= entrada_observada_utc AND saida_observada_utc <= digitado_em_utc))");
+
+                            t.HasCheckConstraint("ck_reconciliacoes_linha", "numero_linha > 0");
                         });
                 });
 
@@ -1190,6 +1330,15 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_eventos_acesso_usuarios_criado_por");
                 });
 
+            modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.IncidenteContingencia", b =>
+                {
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("CriadoPorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.MotoristaInstitucional", b =>
                 {
                     b.HasOne("ControleAcessoVeiculos.Domain.Entities.Usuario", null)
@@ -1236,6 +1385,33 @@ namespace ControleAcessoVeiculos.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pessoas_veiculos_veiculos");
+                });
+
+            modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.ReconciliacaoContingencia", b =>
+                {
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("ConferidoPorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("DigitadoPorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.IncidenteContingencia", null)
+                        .WithMany()
+                        .HasForeignKey("IncidenteId")
+                        .HasPrincipalKey("ChaveIncidente")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ControleAcessoVeiculos.Domain.Entities.RegistroAcesso", null)
+                        .WithOne()
+                        .HasForeignKey("ControleAcessoVeiculos.Domain.Entities.ReconciliacaoContingencia", "RegistroAcessoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ControleAcessoVeiculos.Domain.Entities.RegistroAcesso", b =>
