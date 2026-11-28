@@ -119,6 +119,10 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
             .HasColumnName("atualizado_por_id")
             .HasColumnType("integer");
 
+        builder.Property(registro => registro.EncerradoPorId)
+            .HasColumnName("encerrado_por_id")
+            .HasColumnType("integer");
+
         builder.Property(registro => registro.Observacao)
             .HasColumnName("observacao")
             .HasColumnType("character varying(1000)")
@@ -153,6 +157,9 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
 
         builder.HasIndex(registro => registro.AtualizadoPorId)
             .HasDatabaseName("ix_registros_acesso_atualizado_por_id");
+
+        builder.HasIndex(registro => registro.EncerradoPorId)
+            .HasDatabaseName("ix_registros_acesso_encerrado_por_id");
 
         builder.HasIndex(registro => registro.Status)
             .HasDatabaseName("ix_registros_acesso_status");
@@ -200,5 +207,11 @@ public class RegistroAcessoConfiguration : IEntityTypeConfiguration<RegistroAces
             .HasForeignKey(registro => registro.AtualizadoPorId)
             .OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("fk_registros_acesso_usuarios_atualizado_por_id");
+
+        builder.HasOne<Usuario>()
+            .WithMany()
+            .HasForeignKey(registro => registro.EncerradoPorId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("fk_registros_acesso_usuarios_encerrado_por_id");
     }
 }

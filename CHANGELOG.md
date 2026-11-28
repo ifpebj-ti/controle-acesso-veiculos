@@ -65,6 +65,9 @@ from its first published release.
   responses and expiry states; scheduling, renewal and alert delivery remain
   operational work (#556).
 
+- Audited access correction requests with immutable snapshots, scoped queries,
+  independent decisions and transactional approval/audit (#451).
+
 ### Changed
 
 - Refresh the .NET 10 authentication/EF packages, OpenTelemetry, QuestPDF and
@@ -83,6 +86,9 @@ from its first published release.
   administrative action without changing authentication behavior.
 
 ### Fixed
+
+- Preserve the original exit author after descriptive corrections, using
+  unambiguous closure audit evidence for legacy attribution (#609).
 
 - Isolate the history pagination test from another driver's use of the same
   vehicle while preserving partial-plate, order and exact-total assertions

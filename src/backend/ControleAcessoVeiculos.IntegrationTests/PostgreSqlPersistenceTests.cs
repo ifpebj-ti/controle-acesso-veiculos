@@ -30,6 +30,7 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
         Assert.Contains("20260830204741_LinkEventAuthorizationsToAccessRecords", migrations);
         Assert.Contains("20260913185634_AddSecureAuthenticationSessions", migrations);
         Assert.Contains("20261015023225_AddEventContactAndParking", migrations);
+        Assert.Contains("20261103160537_AddAccessCorrectionReview", migrations);
 
         await dbContext.Database.OpenConnectionAsync(cancellationToken: TestContext.Current.CancellationToken);
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
@@ -49,7 +50,8 @@ public sealed class PostgreSqlPersistenceTests(ApiFactory factory)
             }
         }
 
-        Assert.Equal(15, tables.Count);
+        Assert.Equal(16, tables.Count);
+        Assert.Contains("solicitacoes_correcao_acesso", tables);
         Assert.Contains("incidentes_contingencia", tables);
         Assert.Contains("reconciliacoes_contingencia", tables);
         Assert.Contains("20261114132630_AddPaperReconciliation", migrations);

@@ -269,6 +269,25 @@ public sealed class TechnicalEndpointsTests(ApiFactory factory)
             ResponseCodes(paths, "/reports/institutional-fleet/pdf", "post"));
     }
 
+    [Fact]
+    public async Task DevelopmentOpenApiPublishesCorrectionReviewContracts()
+    {
+        using var developmentFactory = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
+        using var client = developmentFactory.CreateClient();
+        using var document = JsonDocument.Parse(await client.GetStringAsync(
+            "/openapi/v1.json", TestContext.Current.CancellationToken));
+        var paths = document.RootElement.GetProperty("paths");
+        Assert.Equal(["200", "201", "400", "401", "403", "404", "409"],
+            ResponseCodes(paths, "/access-records/{accessRecordId}/correction-requests", "post"));
+        Assert.Equal(["200", "400", "401", "403", "404", "409"],
+            ResponseCodes(paths, "/access-correction-requests/{id}/decision", "post"));
+        var schemas = document.RootElement.GetProperty("components").GetProperty("schemas");
+        Assert.True(schemas.TryGetProperty("SubmitAccessCorrectionCommand", out var submission));
+        Assert.True(submission.GetProperty("properties").TryGetProperty("requestKey", out _));
+        Assert.False(submission.GetProperty("properties").TryGetProperty("actorUserId", out _));
+        Assert.True(schemas.TryGetProperty("AccessCorrectionRecord", out _));
+    }
+
     private static string[] ResponseCodes(
         JsonElement paths,
         string path,
