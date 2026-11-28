@@ -314,8 +314,14 @@ describe("ReportsPage", () => {
   });
 
   it("clears the password after a failed confirmation without repeating the export", async () => {
-    vi.mocked(exportVehicleMovementReport).mockRejectedValue(
-      new ReportExportReauthenticationError(),
+    let rejectExport: (error: Error) => void = () => {
+      throw new Error("Export was not requested");
+    };
+    vi.mocked(exportVehicleMovementReport).mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectExport = reject;
+        }),
     );
     const user = userEvent.setup();
     renderPage();
@@ -328,11 +334,20 @@ describe("ReportsPage", () => {
       within(dialog).getByRole("button", { name: "Exportar PDF" }),
     );
 
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
-      "sessão continua ativa",
-    );
+    expect(input).toBeDisabled();
     expect(input).toHaveValue("");
-    await waitFor(() => expect(input).toHaveFocus());
+    const frame = vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
+    try {
+      rejectExport(new ReportExportReauthenticationError());
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        "sessão continua ativa",
+      );
+      expect(input).toBeEnabled();
+      expect(input).toHaveValue("");
+      await waitFor(() => expect(input).toHaveFocus());
+    } finally {
+      frame.mockRestore();
+    }
     expect(exportVehicleMovementReport).toHaveBeenCalledTimes(1);
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
