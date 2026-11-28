@@ -62,6 +62,61 @@ public sealed class AdministrativeCredentialResetServiceTests
         Assert.Null(result.TemporaryCredential);
     }
 
+    [Theory]
+    [InlineData(0, 20, CredentialResetReasons.SuspectedCompromise, AdministrativeCredentialResetStatus.Validation)]
+    [InlineData(10, 0, CredentialResetReasons.SuspectedCompromise, AdministrativeCredentialResetStatus.Validation)]
+    [InlineData(10, 20, null, AdministrativeCredentialResetStatus.Validation)]
+    [InlineData(10, 20, "arbitrary reason", AdministrativeCredentialResetStatus.Validation)]
+    [InlineData(10, 10, CredentialResetReasons.SuspectedCompromise, AdministrativeCredentialResetStatus.SelfReset)]
+    public async Task ReactivationRejectsInvalidRequestsBeforeGeneratingCredentials(
+        int userId, int actorId, string? reason, AdministrativeCredentialResetStatus expected)
+    {
+        var store = new FakeStore(AdministrativeCredentialResetStoreStatus.Success);
+        var generator = new FakeGenerator();
+        var service = CreateReactivationService(store, generator);
+
+        var result = await service.ReactivateAsync(userId, actorId, reason, TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, result.Status);
+        Assert.Equal(0, generator.Calls);
+        Assert.Null(store.PasswordHash);
+    }
+
+    [Theory]
+    [InlineData(AdministrativeCredentialResetStoreStatus.NotFound, AdministrativeCredentialResetStatus.NotFound)]
+    [InlineData(AdministrativeCredentialResetStoreStatus.SelfReset, AdministrativeCredentialResetStatus.SelfReset)]
+    [InlineData(AdministrativeCredentialResetStoreStatus.ExternalAuthentication, AdministrativeCredentialResetStatus.ExternalAuthentication)]
+    [InlineData(AdministrativeCredentialResetStoreStatus.AlreadyActive, AdministrativeCredentialResetStatus.AlreadyActive)]
+    public async Task ReactivationReturnsNoCredentialWhenPersistenceDeclines(
+        AdministrativeCredentialResetStoreStatus storeStatus, AdministrativeCredentialResetStatus expected)
+    {
+        var service = CreateReactivationService(new FakeStore(storeStatus), new FakeGenerator());
+
+        var result = await service.ReactivateAsync(10, 20, CredentialResetReasons.SuspectedCompromise,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, result.Status);
+        Assert.Null(result.TemporaryCredential);
+    }
+
+    [Fact]
+    public async Task ReactivationReturnsTemporaryCredentialAndPersistsItsHash()
+    {
+        var store = new FakeStore(AdministrativeCredentialResetStoreStatus.Success);
+        var service = CreateReactivationService(store, new FakeGenerator());
+
+        var result = await service.ReactivateAsync(10, 20, CredentialResetReasons.SuspectedCompromise,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(AdministrativeCredentialResetStatus.Success, result.Status);
+        Assert.NotNull(result.TemporaryCredential);
+        Assert.Equal($"HASH::{result.TemporaryCredential}", store.PasswordHash);
+    }
+
+    private static UserAccountReactivationService CreateReactivationService(FakeStore store, FakeGenerator generator) =>
+        new(store, new FakePasswordHashService(), generator,
+            new TemporaryCredentialPolicy(TimeSpan.FromMinutes(30)), new FixedTimeProvider(FixedNow));
+
     private static AdministrativeCredentialResetService CreateService(
         FakeStore store,
         FakeGenerator? generator = null) =>
@@ -73,7 +128,7 @@ public sealed class AdministrativeCredentialResetServiceTests
             new FixedTimeProvider(FixedNow));
 
     private sealed class FakeStore(
-        AdministrativeCredentialResetStoreStatus status) : IUserAccountStore
+        AdministrativeCredentialResetStoreStatus status) : IUserAccountStore, IUserAccountReactivationStore
     {
         public string? PasswordHash { get; private set; }
         public string? Reason { get; private set; }
@@ -91,6 +146,12 @@ public sealed class AdministrativeCredentialResetServiceTests
             Reason = reason;
             return Task.FromResult(new AdministrativeCredentialResetStoreResult(status));
         }
+
+        public Task<AdministrativeCredentialResetStoreResult> TryReactivateWithCredentialAsync(
+            int userId, int actorUserId, string passwordHash, DateTime occurredAtUtc,
+            DateTime expiresAtUtc, string reason, CancellationToken cancellationToken) =>
+            TryResetCredentialAsync(userId, actorUserId, passwordHash, occurredAtUtc,
+                expiresAtUtc, reason, cancellationToken);
 
         public Task<bool> HasAnyUserAsync(CancellationToken cancellationToken) =>
             throw new NotSupportedException();

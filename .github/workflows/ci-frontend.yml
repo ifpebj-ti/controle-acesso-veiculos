@@ -45,9 +45,20 @@ jobs:
         working-directory: src/frontend
         run: npm run lint
 
-      - name: Test
+      - name: Test with coverage
         working-directory: src/frontend
-        run: npm test
+        run: npm run test:coverage
+
+      - name: Upload coverage evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-coverage-${{ github.run_number }}
+          path: |
+            src/frontend/coverage/coverage-summary.json
+            src/frontend/coverage/cobertura-coverage.xml
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Build
         working-directory: src/frontend

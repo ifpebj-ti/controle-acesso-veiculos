@@ -71,6 +71,44 @@ jobs:
           --results-directory artifacts/test-results
           --verbosity normal
 
+      - name: Measure critical unit coverage independently
+        shell: pwsh
+        run: |
+          dotnet test src/backend/ControleAcessoVeiculos.Domain.Tests/ControleAcessoVeiculos.Domain.Tests.csproj `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --coverage `
+            --coverage-output-format cobertura `
+            --results-directory artifacts/coverage-gate/domain
+
+          dotnet test src/backend/ControleAcessoVeiculos.Application.Tests/ControleAcessoVeiculos.Application.Tests.csproj `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --coverage `
+            --coverage-output-format cobertura `
+            --results-directory artifacts/coverage-gate/application
+
+      - name: Verify coverage gate rejection cases
+        shell: pwsh
+        run: ./infrastructure/ci/Test-CoberturaThreshold.ps1
+
+      - name: Enforce critical coverage ratchet
+        shell: pwsh
+        run: |
+          ./infrastructure/ci/Assert-CoberturaThreshold.ps1 `
+            -ReportDirectory artifacts/coverage-gate/domain `
+            -PackageName ControleAcessoVeiculos.Domain `
+            -MinimumLineCoverage 90 `
+            -MinimumBranchCoverage 90
+
+          ./infrastructure/ci/Assert-CoberturaThreshold.ps1 `
+            -ReportDirectory artifacts/coverage-gate/application `
+            -PackageName ControleAcessoVeiculos.Application `
+            -MinimumLineCoverage 90 `
+            -MinimumBranchCoverage 90
+
       - name: Verify coverage consolidation regression cases
         run: python3 -m unittest discover -s infrastructure/ci/tests -p 'test_backend_coverage.py'
 
@@ -94,6 +132,7 @@ jobs:
           name: backend-test-results-${{ github.run_number }}
           path: |
             artifacts/test-results/**
+            artifacts/coverage-gate/**
             artifacts/backend-coverage-summary/**
           if-no-files-found: error
           retention-days: 14
