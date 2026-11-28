@@ -3,6 +3,7 @@ import {
   type RefObject,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -37,7 +38,7 @@ export function ReportExportDialog({
 }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string } | null>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const busyRef = useRef(false);
@@ -74,6 +75,12 @@ export function ReportExportDialog({
     };
   }, [onClose, returnFocusTo]);
 
+  useLayoutEffect(() => {
+    if (!busy && message) {
+      passwordRef.current?.focus();
+    }
+  }, [busy, message]);
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!password || busyRef.current) return;
@@ -95,11 +102,10 @@ export function ReportExportDialog({
         error instanceof ReportExportReauthenticationError
           ? "A senha não confirmou esta exportação. A sessão continua ativa; revise a senha e tente novamente."
           : describeApiError(error).message;
-      setMessage(nextMessage);
+      setMessage({ text: nextMessage });
     } finally {
       busyRef.current = false;
       setBusy(false);
-      requestAnimationFrame(() => passwordRef.current?.focus());
     }
   }
 
@@ -152,7 +158,7 @@ export function ReportExportDialog({
             className="mt-3 min-h-6 text-sm font-semibold text-danger-text"
             role={message ? "alert" : undefined}
           >
-            {message}
+            {message?.text}
           </div>
           <div className="mt-5 flex flex-wrap justify-end gap-3">
             <Button disabled={busy} onClick={onClose} variant="secondary">
