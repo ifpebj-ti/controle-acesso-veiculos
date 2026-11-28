@@ -5,7 +5,7 @@ RUN npm ci
 COPY src/frontend/ .
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:stable-alpine-slim@sha256:5d8bb9437d74a600ec5dbf90c035451c724dc33eac8d3a71078f6f8612c345f6 AS final
+FROM ghcr.io/nginx/nginx-unprivileged:1.30.8-alpine-slim@sha256:04c98c78c1de60ddeada00d7d2207dcd146ecd07b61b9941c9a5799cfb258d28 AS final
 # Local builds are explicitly unidentified; CI supplies validated application metadata.
 ARG IMAGE_VERSION=dev
 ARG IMAGE_REVISION=unknown
