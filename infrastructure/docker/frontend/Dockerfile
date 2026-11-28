@@ -3,7 +3,9 @@ WORKDIR /app
 COPY src/frontend/package*.json src/frontend/.npmrc ./
 RUN npm ci
 COPY src/frontend/ .
-RUN npm run build
+# The same CI-validated build argument also provides the public release label.
+ARG IMAGE_VERSION=dev
+RUN VITE_APP_VERSION="$IMAGE_VERSION" npm run build
 
 FROM nginxinc/nginx-unprivileged:stable-alpine-slim@sha256:5d8bb9437d74a600ec5dbf90c035451c724dc33eac8d3a71078f6f8612c345f6 AS final
 # Local builds are explicitly unidentified; CI supplies validated application metadata.
