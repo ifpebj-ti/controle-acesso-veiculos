@@ -1,5 +1,13 @@
 # Balanço das entregas e da segurança — 15/11/2026
 
+## Complemento de 28/11/2026
+
+O [balanço de entregas](delivery-closure-2026-11-18.md#complemento-de-28112026)
+registra a conferência do relatório de cobertura enviado pelos professores,
+a versão visível na aplicação, os badges e a atualização candidata do Nginx.
+A CI do #792 aprovou os scans das duas arquiteturas e o smoke integrado.
+A publicação de uma nova release e sua promoção permanecem etapas separadas.
+
 ## Atualização atual em 18/11/2026
 
 Main `a4ffcc5`, após #764/#767. Release `0.5.0` publicada e instalada,

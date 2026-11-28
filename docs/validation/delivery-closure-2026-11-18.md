@@ -4,6 +4,27 @@ Rastreabilidade: #775. Main de referência `a4ffcc5`; aplicação instalada 0.5.
 fonte `eaccd72`, frontend/backend por digest, 23 migrations. Uma proposta em PR
 não muda automaticamente a main ou o servidor.
 
+## Complemento de 28/11/2026
+
+A main `fccc58b` já incorpora #769 e #770. A release publicada continua 0.5.0.
+Os incrementos seguintes estão em revisão no GitHub:
+
+| Entrega                               | Evidência de 28/11                                                                                                                                   |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base Nginx 1.30.8, #792               | AMD64, ARM64, smoke integrado, CodeQL e Quality Gate passaram no SHA `d479372`. Candidato ainda em revisão.                                          |
+| Versão abaixo da navegação, #783/#793 | 54 testes focados do frontend, lint, build e versão de exemplo no bundle. Falta verificar a composição da imagem candidata e a posição no navegador. |
+| Badges do backend, #794               | Dois SVGs gerados a partir do Cobertura mesclado. A primeira publicação automática depende da execução na main depois da incorporação.               |
+| Configuração de sessão, #795          | 13 testes focados novos aprovados. A nova cobertura global depende da execução consolidada.                                                          |
+| ZAP na CI                             | O smoke usa o Baseline passivo. A evidência cobre as requisições visitadas pelo roteiro.                                                             |
+
+A [CI da main](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/runs/44353086524)
+publicou 93,67% de linhas escritas à mão (9.504/10.146). O Cobertura mesclado
+registrou 87,25% de ramificações (3.509/4.022) com código gerado. O relatório
+separado recebido dos professores indica 95,7% de linhas e 84,6% de ramificações,
+também incluindo código gerado. Os relatórios têm recortes distintos.
+A conferência mecânica dos 109 Markdown da main encontrou zero links relativos
+sem destino. A revisão de conteúdo priorizou release, cobertura e pendências.
+
 ## Solicitações dos professores
 
 | Solicitação                                             | Evidência atual                                                         | Pendência real                                                                   |
@@ -68,7 +89,7 @@ do piloto. Uma restauração no mesmo host não comprova recuperação após per
 da VM. Não é necessário redesenhar o MVP inteiro: o maior trabalho restante é
 concluir fluxos candidatos e provar operação, recuperação e uso real com segurança.
 
-## Ordem de revisão
+## Ordem de revisão registrada em 18/11
 
 #769 → sincronização regular do #770 com main → #770. #773 e #774 são diffs
 independentes de comportamento, mas compartilham a seção Unreleased; preservar

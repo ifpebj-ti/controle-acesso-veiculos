@@ -47,6 +47,14 @@ restauração externa, 90% em todos os fluxos críticos ou aceite institucional.
 As notas históricas abaixo mantêm seu snapshot. O
 [balanço atual](delivery-closure-2026-11-18.md) distingue cada pendência.
 
+## Cobertura e versão em 28/11/2026
+
+A última execução da main confirmou 9.504/10.146 linhas escritas à mão
+(93,67%). O relatório Cobertura mesclado registrou 87,25% de ramificações
+com código gerado. A meta dos fluxos críticos permanece na #499. Os badges
+estão em revisão no #794. Consulte o
+[balanço atualizado](delivery-closure-2026-11-18.md#complemento-de-28112026).
+
 ## Objetivo e critério
 
 Esta matriz relaciona as 17 entregas consolidadas da Unidade 2 às evidências
@@ -104,7 +112,7 @@ uma única vez nesta estimativa para evitar percentual artificialmente elevado.
 
 | Entrega                                       | Evidência atual                                                                                                                                  | Estado                      | Próxima comprovação                                                                                 |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- | --------------------------------------------------------------------------------------------------- |
-| Estratégia de testes                          | Wiki, CI e cobertura backend publicados em 8b61ccd, 93,50% de linhas e piso global de 70% pelo #697                                              | Parcial                     | concluir o recorte crítico de 90% e frontend na #499/#507                                           |
+| Estratégia de testes                          | Wiki e CI do backend: 93,67% de linhas escritas à mão na main fccc58b; piso global de 70% pelo #697                                              | Parcial                     | concluir o recorte crítico de 90% e frontend na #499/#507                                           |
 | Manual de uso                                 | [Wiki — Manual de Uso](https://github.com/ifpebj-ti/controle-acesso-veiculos/wiki/Manual-de-Uso)                                                 | Parcial                     | revisar após login Google, nome oficial, relatórios e validação final dos quatro perfis             |
 | Ligação story → PR → testes → pipeline → demo | Issues, PRs, commits `Refs/Closes`, checks e registros semanais                                                                                  | Atendido                    | manter a rastreabilidade nas próximas entregas e anexar evidência da demonstração quando solicitada |
 | Maintainability e Reliability acima de Good   | Última conferência #684 identificou nove notes e zero warnings, compatível com Good pelo critério oficial                                        | Parcial / validação externa | conferir ambos indicadores no portal e o critério acadêmico acima de Good                           |
