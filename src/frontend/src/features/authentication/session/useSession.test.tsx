@@ -13,6 +13,7 @@ function contextValue(
     expiresAtUtc: null,
     login: vi.fn(),
     logout: vi.fn(),
+    restoreExternalSession: vi.fn(),
     sessionEndReason: null,
     status: "unauthenticated",
     user: null,

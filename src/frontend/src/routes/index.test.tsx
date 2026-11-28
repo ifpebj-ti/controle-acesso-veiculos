@@ -28,7 +28,9 @@ describe("application route registry", () => {
       "/frota",
       "/motoristas-institucionais",
       "/eventos",
+      "/condutores-vinculados",
       "/administracao",
+      "/auditoria",
       "/relatorios",
       "*",
     ]);
@@ -52,7 +54,7 @@ describe("application route registry", () => {
       }),
     );
 
-    expect(loadedPages).toHaveLength(11);
+    expect(loadedPages).toHaveLength(13);
     for (const page of loadedPages) {
       expect(page.path).toMatch(/^\//);
       expect(page.result.Component).toEqual(expect.any(Function));
