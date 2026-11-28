@@ -65,6 +65,10 @@ Não há base para afirmar que todos os pontos já foram encerrados.
   advisory picomatch; audit de produção zero. Não há correção publicada confirmada
   naquele snapshot. Não forçar downgrade, suprimir advisory ou declarar resolvido.
 
+Em 28/11, a #765 foi encerrada como não aplicável após a retirada do advisory
+pela fonte. O audit npm completo e o audit de produção retornaram zero alertas
+no lockfile da main fccc58b. O resultado de 18/11 acima é histórico.
+
 ## Unidade 2 e implantação institucional
 
 O checklist original tem 17 critérios consolidados. Permanecem 8 atendidos,
