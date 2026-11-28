@@ -17,6 +17,80 @@ namespace ControleAcessoVeiculos.IntegrationTests;
 public sealed class VehicleAccessTests(ApiFactory factory)
 {
     [Fact]
+    public async Task TransportationCanReadAuditButCannotManageAccountsOrElevateItself()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        const string password = "Fictitious-Test-Only-123!";
+        var (userId, email) = await CreateUserAsync(ProfileNames.TransportationDepartment, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/audits", ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/users", ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync("/users", new { }, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PutAsJsonAsync($"/users/{userId}/profile",
+            new { profileName = "Administrador", reason = "Tentativa controlada de elevação de privilégio." }, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync($"/users/{userId}/temporary-credential", new { }, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync($"/users/{userId}/reactivation", new { }, ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.DeleteAsync($"/users/{userId}", ct)).StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Aluno")]
+    [InlineData("Terceirizado")]
+    [InlineData("Federal")]
+    public async Task NewCategoriesRoundTripThroughEntryAndHistory(string category)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        const string password = "Fictitious-Test-Only-123!";
+        var (_, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var plate = TestPlate.From(Guid.NewGuid().ToString("N"));
+        var response = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = "Condutor Fictício",
+            plate,
+            objective = "Atendimento fictício",
+            categoryName = category,
+            vehicleType = "Automóvel"
+        }, ct);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        Assert.Equal(category, body.RootElement.GetProperty("categoryName").GetString());
+        var history = await client.GetAsync("/access-records/history?plate=" + plate + "&categoryName=" + Uri.EscapeDataString(category), ct);
+        Assert.Equal(HttpStatusCode.OK, history.StatusCode);
+        using var rows = JsonDocument.Parse(await history.Content.ReadAsStringAsync(ct));
+        Assert.Equal(1, rows.RootElement.GetProperty("totalCount").GetInt32());
+    }
+
+    [Theory]
+    [InlineData("driverName")]
+    [InlineData("observation")]
+    public async Task NullTextReturnsValidationWithoutCreatingAccess(string field)
+    {
+        const string password = "Test-only-password-123!";
+        var ct = TestContext.Current.CancellationToken;
+        var (actorId, email) = await CreateUserAsync(ProfileNames.Doorman, password);
+        using var client = factory.CreateClient();
+        await AuthenticateClientAsync(client, email, password);
+        var request = new Dictionary<string, object?>
+        {
+            ["driverName"] = "QA driver",
+            ["plate"] = TestPlate.From(Guid.NewGuid().ToString("N")),
+            ["objective"] = "Visita",
+            ["categoryName"] = AccessCategoryNames.Visitor,
+            [field] = "QA\0text"
+        };
+        using var response = await client.PostAsJsonAsync("/access-records/entries", request, ct);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+        Assert.True(body.RootElement.GetProperty("errors").TryGetProperty(field, out _));
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        Assert.False(await db.RegistrosAcesso.AnyAsync(access => access.CriadoPorId == actorId, ct));
+    }
+
+    [Fact]
     public async Task EntryRejectsNumericOnlyPlate()
     {
         const string password = "Test-only-password-123!";
@@ -497,7 +571,7 @@ public sealed class VehicleAccessTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task TransportationProfileCannotOperateGeneralAccess()
+    public async Task TransportationProfileCanOperateGeneralAccess()
     {
         const string password = "Test-only-password-123!";
         var (_, email) = await CreateUserAsync(
@@ -508,15 +582,16 @@ public sealed class VehicleAccessTests(ApiFactory factory)
 
         var entry = await client.PostAsJsonAsync("/access-records/entries", new
         {
-            driverName = "Condutor não autorizado",
-            plate = "TST1A23",
-            objective = "Operação não autorizada",
+            driverName = "Condutor Fictício",
+            plate = TestPlate.From(Guid.NewGuid().ToString("N")),
+            objective = "Operação de transporte autorizada",
             categoryName = AccessCategoryNames.Visitor
         }, cancellationToken: TestContext.Current.CancellationToken);
-        var exit = await client.PostAsync("/access-records/1/exit", null, TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.Forbidden, entry.StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, exit.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, entry.StatusCode);
+        using var created = JsonDocument.Parse(await entry.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var id = created.RootElement.GetProperty("id").GetInt32();
+        var exit = await client.PostAsync($"/access-records/{id}/exit", null, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, exit.StatusCode);
     }
 
     [Fact]
@@ -530,6 +605,22 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         var plate = TestPlate.From(suffix);
         var driverName = $"Condutor Histórico {suffix}";
         var accessIds = new List<int>();
+
+        // Another driver's historical use of this vehicle also matches its plate prefix.
+        var unrelatedEntry = await client.PostAsJsonAsync("/access-records/entries", new
+        {
+            driverName = $"Outro condutor fictício {Guid.NewGuid():N}",
+            plate,
+            objective = "Visita anterior independente",
+            categoryName = AccessCategoryNames.Visitor,
+            vehicleType = "Automóvel"
+        }, cancellationToken: TestContext.Current.CancellationToken);
+        unrelatedEntry.EnsureSuccessStatusCode();
+        var unrelated = await unrelatedEntry.Content.ReadFromJsonAsync<AccessRecordResponse>(
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(unrelated);
+        (await client.PostAsync($"/access-records/{unrelated.Id}/exit", null,
+            TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
 
         for (var index = 0; index < 3; index++)
         {
@@ -580,14 +671,14 @@ public sealed class VehicleAccessTests(ApiFactory factory)
 
         var prefix = plate[..3].ToLowerInvariant();
         var prefixResult = await client.GetFromJsonAsync<AccessHistoryResponse>(
-            $"/access-records/history?plate={prefix}&from={from}&to={to}",
+            $"/access-records/history?plate={prefix}&driverName={driverFilter}&from={from}&to={to}",
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(prefixResult);
         Assert.Equal(3, prefixResult.TotalCount);
         Assert.All(prefixResult.Items, item =>
             Assert.StartsWith(plate[..3], item.Plate, StringComparison.Ordinal));
 
-        var closed = await client.GetFromJsonAsync<AccessHistoryResponse>($"/access-records/history?plate={formattedPlate}&status=encerrado" +
+        var closed = await client.GetFromJsonAsync<AccessHistoryResponse>($"/access-records/history?plate={formattedPlate}&driverName={driverFilter}&status=encerrado" +
             $"&from={from}&to={to}&page=2&pageSize=1", cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(closed);
         Assert.Equal(2, closed.TotalCount);
@@ -686,8 +777,8 @@ public sealed class VehicleAccessTests(ApiFactory factory)
         using var transportationClient = factory.CreateClient();
         await AuthenticateClientAsync(transportationClient, transportationEmail, password);
         Assert.Equal(
-            HttpStatusCode.Forbidden,
-            (await transportationClient.PostAsJsonAsync("/access-records/1/exceptional-closure", request, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
+            HttpStatusCode.BadRequest,
+            (await transportationClient.PostAsJsonAsync("/access-records/1/exceptional-closure", new { reason = "Desconhecido", observation = "curta" }, cancellationToken: TestContext.Current.CancellationToken)).StatusCode);
 
         var (_, administratorEmail) = await CreateUserAsync(
             ProfileNames.Administrator,

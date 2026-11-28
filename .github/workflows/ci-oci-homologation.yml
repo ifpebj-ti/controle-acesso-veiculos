@@ -32,6 +32,12 @@ jobs:
           --start-directory infrastructure/oci/homologation/scripts/tests
           --pattern 'test_public_tls.py' --verbose
 
+      - name: Test authentication rate-limit scope without cloud credentials
+        run: |
+          python3 -m venv "$RUNNER_TEMP/waf-scope-tests"
+          "$RUNNER_TEMP/waf-scope-tests/bin/python" -m pip install --require-hashes --only-binary=:all: -r infrastructure/oci/homologation/scripts/tests/requirements-waf.txt
+          "$RUNNER_TEMP/waf-scope-tests/bin/python" -B -m unittest discover --start-directory infrastructure/oci/homologation/scripts/tests --pattern 'test_waf_authentication_scope.py' --verbose
+
       - name: Initialize providers without a backend
         run: >-
           docker run --rm

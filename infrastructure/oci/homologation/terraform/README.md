@@ -28,8 +28,8 @@ responsável pela conta.
   certificado do OCI Certificates service;
 - OCI WAF regional associado ao Load Balancer, com proteção colaborativa gerenciada
   contra XSS e SQL injection, inspeção dos primeiros 8 KiB do corpo e bloqueio de
-  requisições que ultrapassem esse limite, além do limite inicial das rotas de
-  autenticação;
+  requisições que ultrapassem esse limite, além do limite inicial das tentativas
+  interativas de login e dos retornos Google;
 - uma VM flexível, por padrão Arm com 1 OCPU, 6 GiB e boot volume de 50 GiB;
 - OCI Bastion com origem administrativa restrita e sessões máximas de 30 minutos;
 - Dynamic Group limitada à VM de homologação e política IAM de menor
@@ -42,6 +42,36 @@ não recebe IP público e aceita a porta interna `8088` somente da subnet do Loa
 Balancer. A aplicação e as credenciais são instaladas em etapa posterior e
 controlada; o DNS temporário e o certificado público confiável foram ativados
 por esse procedimento separado e não integram o estado do Terraform.
+
+## Escopo do limite de autenticação
+
+A Issue #588 separa a cota de tentativas interativas do ciclo normal de sessão.
+A regra `authentication-per-source` conta `POST /api/auth/login`, início e
+conclusão Google e `/signin-google`. Consultas de provedores, CSRF, renovação e
+logout não consomem essa cota. O limite global da API, os limites próprios dos
+endpoints e as verificações de sessão/rotação continuam aplicados no backend.
+
+O limite inicial permanece em 30 requisições por minuto, com bloqueio de cinco
+minutos; não é uma capacidade homologada para a rede compartilhada do campus.
+Uma sequência de recargas recebeu HTTP 429 na descoberta de provedores com a
+regra anterior, que abrangia todo `/api/auth/`. Essa evidência não demonstra a
+causa de todo encerramento de sessão: concorrência e interrupção de renovação
+precisam de investigação separada. Não enfraquecer a detecção de reutilização de
+refresh token para ocultar o problema.
+
+Após uma correção operacional da política existente, atualizar o pacote do
+Resource Manager antes do próximo plano; não aplicar um ZIP antigo que restaure
+a condição abrangente. Rever o plano e preservar as proteções XSS/SQL injection.
+
+A CI executa a expressão JMESPath contra 31 casos de métodos e caminhos,
+incluindo variações de caixa, barras finais, consultas de sessão e prefixos
+parecidos. O teste usa somente a biblioteca de consulta fixada por hash, sem
+credenciais nem tráfego OCI. Ele não simula os contadores do WAF. No ensaio de
+02/11/2026, após atualizar a política existente com ETag e snapshot para rollback,
+35 consultas públicas consecutivas de provedores responderam 200; a política
+permaneceu ativa, com as ações e proteções de conteúdo anteriores preservadas.
+
+Referência: [condições JMESPath do OCI WAF](https://docs.oracle.com/en-us/iaas/Content/WAF/Concepts/understanding_conditions.htm).
 
 ## Gate financeiro
 

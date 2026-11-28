@@ -54,17 +54,69 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task NonAdministratorCannotReadReports()
+    public async Task GoogleTransportCannotBypassExportConfirmationWithAnOldLocalPassword()
     {
-        var (_, email) = await CreateUserAsync(ProfileNames.TransportationDepartment);
+        var ct = TestContext.Current.CancellationToken;
+        var (userId, _) = await CreateUserAsync(ProfileNames.TransportationDepartment);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculosDbContext>();
+        var user = await db.Usuarios.SingleAsync(x => x.Id == userId, ct);
+        user.VincularIdentidadeGoogle("fictitious-google-subject-" + Guid.NewGuid().ToString("N"), DateTime.UtcNow);
+        await db.SaveChangesAsync(ct);
+        var security = scope.ServiceProvider.GetRequiredService<ControleAcessoVeiculos.Application.AdministrativeReports.IAdministrativeReportExportSecurity>();
+        var confirmation = await security.ConfirmLocalPasswordAsync(userId, Password, ct);
+        Assert.Equal(ControleAcessoVeiculos.Application.AdministrativeReports.AdministrativeReportExportConfirmationStatus.Unauthorized, confirmation.Status);
+    }
+
+    [Theory]
+    [InlineData(ProfileNames.Doorman, "GET", "vehicle-movements")]
+    [InlineData(ProfileNames.Doorman, "GET", "institutional-fleet")]
+    [InlineData(ProfileNames.Doorman, "POST", "vehicle-movements/pdf")]
+    [InlineData(ProfileNames.Doorman, "POST", "institutional-fleet/pdf")]
+    [InlineData(ProfileNames.SecurityGuard, "GET", "vehicle-movements")]
+    [InlineData(ProfileNames.SecurityGuard, "GET", "institutional-fleet")]
+    [InlineData(ProfileNames.SecurityGuard, "POST", "vehicle-movements/pdf")]
+    [InlineData(ProfileNames.SecurityGuard, "POST", "institutional-fleet/pdf")]
+    [InlineData(ProfileNames.TransportationDepartment, "GET", "vehicle-movements")]
+    [InlineData(ProfileNames.TransportationDepartment, "GET", "institutional-fleet")]
+    [InlineData(ProfileNames.TransportationDepartment, "POST", "vehicle-movements/pdf")]
+    [InlineData(ProfileNames.TransportationDepartment, "POST", "institutional-fleet/pdf")]
+    public async Task ReportAuthorizationFollowsUpdatedProfileMatrix(
+        string profileName,
+        string method,
+        string endpoint)
+    {
+        var (_, email) = await CreateUserAsync(profileName);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email);
+        using var request = new HttpRequestMessage(
+            new HttpMethod(method),
+            $"/reports/{endpoint}?from=2001-01-01&to=2001-01-02");
+        if (method == "POST")
+        {
+            request.Content = JsonContent.Create(new
+            {
+                from = "2001-01-01",
+                to = "2001-01-02",
+                currentPassword = Password
+            });
+        }
 
-        var response = await client.GetAsync(
-            "/reports/vehicle-movements?from=2001-01-01&to=2001-01-02",
+        using var response = await client.SendAsync(
+            request,
             TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        if (profileName == ProfileNames.TransportationDepartment)
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            if (method == "POST")
+                Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
+        }
+        else
+        {
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+            Assert.NotEqual("application/pdf", response.Content.Headers.ContentType?.MediaType);
+        }
     }
 
     [Fact]
@@ -109,10 +161,12 @@ public sealed class AdministrativeReportTests(ApiFactory factory)
         Assert.DoesNotContain(Password, audit.Detalhes, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task PdfExportRejectsWrongPasswordWithoutReturningAFile()
+    [Theory]
+    [InlineData(ProfileNames.Administrator)]
+    [InlineData(ProfileNames.TransportationDepartment)]
+    public async Task PdfExportRejectsWrongPasswordWithoutReturningAFile(string profileName)
     {
-        var (administratorId, email) = await CreateUserAsync(ProfileNames.Administrator);
+        var (administratorId, email) = await CreateUserAsync(profileName);
         using var client = factory.CreateClient();
         await AuthenticateClientAsync(client, email);
 

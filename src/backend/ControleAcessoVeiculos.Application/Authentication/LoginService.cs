@@ -37,11 +37,14 @@ public sealed class LoginService(
             normalizedEmail,
             cancellationToken);
         var now = timeProvider.GetUtcNow().UtcDateTime;
+        var isTemporaryTestAccess = authenticationUser is not null &&
+            authenticationMethodPolicy.TestAccess?.Allows(
+                normalizedEmail, authenticationUser.ProfileName, now) == true;
 
         if (authenticationUser is null ||
             !authenticationUser.User.PodeAutenticarComSenha(now) ||
             (authenticationMethodPolicy.OperationalGoogleOnly &&
-             authenticationUser.ProfileName != ProfileNames.Administrator) ||
+             authenticationUser.ProfileName != ProfileNames.Administrator && !isTemporaryTestAccess) ||
             !authenticationUser.ProfileIsActive)
         {
             passwordHashService.PerformDummyVerification(password);
@@ -83,12 +86,15 @@ public sealed class LoginService(
 
         authenticationUser.User.RegistrarAutenticacaoBemSucedida(now);
         var refreshToken = refreshTokenService.Create();
+        var absoluteDeadline = now.Add(sessionPolicy.AbsoluteLifetime);
+        if (isTemporaryTestAccess && authenticationMethodPolicy.TestAccess!.ExpiresAtUtc < absoluteDeadline)
+            absoluteDeadline = authenticationMethodPolicy.TestAccess.ExpiresAtUtc;
         var session = new SessaoAutenticacao(
             authenticationUser.User.Id,
             Guid.NewGuid(),
             refreshToken.Hash,
             now,
-            now.Add(sessionPolicy.AbsoluteLifetime));
+            absoluteDeadline);
         sessionStore.Add(session);
         await userStore.SaveChangesAsync(
             new AuthenticationAudit(
@@ -102,7 +108,8 @@ public sealed class LoginService(
             authenticationUser.User.Email,
             authenticationUser.ProfileName,
             authenticationUser.User.VersaoCredencial,
-            authenticationUser.User.TrocaSenhaObrigatoria);
+            authenticationUser.User.TrocaSenhaObrigatoria,
+            session.FamiliaId);
 
         return LoginResult.Success(
             token,

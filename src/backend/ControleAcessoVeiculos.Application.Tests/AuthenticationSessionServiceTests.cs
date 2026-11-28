@@ -313,6 +313,7 @@ public sealed class AuthenticationSessionServiceTests
         public Task<bool> IsAuthenticationStateValidAsync(
             int userId,
             int credentialVersion,
+            Guid sessionFamilyId,
             CancellationToken cancellationToken) => Task.FromResult(true);
 
         public Task SaveChangesAsync(
@@ -344,7 +345,8 @@ public sealed class AuthenticationSessionServiceTests
             string email,
             string profileName,
             int credentialVersion,
-            bool requiresPasswordChange) =>
+            bool requiresPasswordChange,
+            Guid sessionFamilyId) =>
             new("access-token", FixedNow.UtcDateTime.AddMinutes(15));
     }
 

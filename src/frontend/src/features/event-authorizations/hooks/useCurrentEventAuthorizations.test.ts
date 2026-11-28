@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { AxiosError } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -123,7 +124,7 @@ describe("useCurrentEventAuthorizations", () => {
 
   it("keeps network and access-denied failures distinct without automatic retry", async () => {
     vi.mocked(searchEventAuthorizations).mockRejectedValueOnce(
-      new Error("network"),
+      new AxiosError("network", "ERR_NETWORK"),
     );
     const network = renderHook(() => useCurrentEventAuthorizations(true));
     await waitFor(() => expect(network.result.current.status).toBe("error"));

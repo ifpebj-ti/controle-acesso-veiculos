@@ -31,7 +31,9 @@ export async function searchEventAuthorizations(
 ): Promise<EventAuthorizationPage> {
   const response = await api.get<unknown>("/event-authorizations", {
     params: {
-      active: filters.active === "all" ? undefined : filters.active,
+      ...(filters.active === "all"
+        ? { status: "all" }
+        : { active: filters.active }),
       fromUtc: filters.fromUtc || undefined,
       name: filters.name.trim() || undefined,
       page: filters.page,

@@ -1,16 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useManagedAccountReactivation } from "../reactivation/useManagedAccountReactivation";
+import { useAccountProfileChange } from "./useAccountProfileChange";
+import { profileLabels } from "../../authentication";
 
 import { useConfirmation } from "../../../components/ui/confirmationContext";
 import {
   describeApiError,
   getApiValidationErrors,
+  type ApiErrorDescription,
 } from "../../../services/api-errors";
 import {
   createUserAccount,
   deactivateUserAccount,
-  reactivateUserAccount,
   resetTemporaryCredential,
   searchUserAccounts,
+  UserAccountsContractError,
 } from "../services/userAccountsService";
 import type {
   CredentialResetReason,
@@ -32,6 +36,17 @@ const initialFilters: UserAccountFilters = {
 };
 
 const createFields = ["email", "name", "profileName"] as const;
+
+function describeAccountError(error: unknown): ApiErrorDescription {
+  if (error instanceof UserAccountsContractError) {
+    return {
+      kind: "unexpected",
+      message:
+        "Não foi possível confirmar os dados recebidos. Atualize a lista antes de tentar novamente.",
+    };
+  }
+  return describeApiError(error);
+}
 
 interface CredentialDisclosure {
   accountId?: number;
@@ -84,7 +99,11 @@ export function useUserAccounts() {
   }
 
   const load = useCallback(
-    async (filters: UserAccountFilters, persistedMessage?: string) => {
+    async (
+      filters: UserAccountFilters,
+      persistedMessage?: string,
+      reconcilePage = false,
+    ) => {
       const currentRequest = ++requestId.current;
       setStatus("loading");
       setPage(null);
@@ -92,14 +111,22 @@ export function useUserAccounts() {
       setFilterError(null);
       if (!persistedMessage) setNotice(null);
       try {
-        const result = await searchUserAccounts(filters);
+        let result = await searchUserAccounts(filters);
         if (requestId.current !== currentRequest) return;
+        const lastPage = Math.max(1, result.totalPages);
+        if (reconcilePage && filters.page > lastPage) {
+          const corrected = { ...filters, page: lastPage };
+          setApplied(corrected);
+          setDraft((current) => ({ ...current, page: lastPage }));
+          result = await searchUserAccounts(corrected);
+          if (requestId.current !== currentRequest) return;
+        }
         setPage(result);
         setStatus("ready");
         if (persistedMessage) setNotice(persistedMessage);
       } catch (error) {
         if (requestId.current !== currentRequest) return;
-        const description = describeApiError(error);
+        const description = describeAccountError(error);
         const validationErrors = getApiValidationErrors(error);
         if (description.kind === "validation" && validationErrors.search) {
           setFilterError(validationErrors.search);
@@ -128,7 +155,7 @@ export function useUserAccounts() {
       })
       .catch((error: unknown) => {
         if (requestId.current !== currentRequest) return;
-        const description = describeApiError(error);
+        const description = describeAccountError(error);
         setStatus(description.kind === "access-denied" ? "denied" : "error");
         setErrorMessage(description.message);
       });
@@ -202,22 +229,31 @@ export function useUserAccounts() {
     setServerErrors({});
     try {
       const created = await createUserAccount(input);
-      const credential = {
-        temporaryCredential: created.temporaryCredential,
-        temporaryCredentialExpiresAtUtc:
-          created.temporaryCredentialExpiresAtUtc,
-      };
-      setCredentialDisclosure({
-        accountId: created.id,
-        accountName: input.name,
-        credential,
-        returnFocusTo: formReturnFocusTo,
-      });
+      if (
+        created.temporaryCredential &&
+        created.temporaryCredentialExpiresAtUtc
+      ) {
+        setCredentialDisclosure({
+          accountId: created.id,
+          accountName: input.name,
+          credential: {
+            temporaryCredential: created.temporaryCredential,
+            temporaryCredentialExpiresAtUtc:
+              created.temporaryCredentialExpiresAtUtc,
+          },
+          returnFocusTo: formReturnFocusTo,
+        });
+      }
       setFormReturnFocusTo(null);
       setFormOpen(false);
-      await load(applied, "Conta criada com sucesso.");
+      await load(
+        applied,
+        created.authenticationMethod === "Google"
+          ? "Conta criada com sucesso. O acesso será pelo Google, sem senha local."
+          : "Conta criada com sucesso.",
+      );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       const fieldErrors = createFieldErrors(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
@@ -244,7 +280,13 @@ export function useUserAccounts() {
     account: UserAccount,
     trigger?: HTMLElement | null,
   ) {
-    if (pendingAction || status !== "ready" || !account.active) return;
+    if (
+      pendingAction ||
+      status !== "ready" ||
+      !account.active ||
+      account.authenticationMethod === "Google"
+    )
+      return;
     setResetError(null);
     setResetReturnFocusTo(trigger ?? null);
     setResetTarget(account);
@@ -279,7 +321,7 @@ export function useUserAccounts() {
         `Credencial de ${account.name} redefinida com sucesso.`,
       );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
         setStatus("denied");
@@ -296,8 +338,27 @@ export function useUserAccounts() {
     }
   }
 
-  async function changeAccountState(account: UserAccount) {
+  const reactivation = useManagedAccountReactivation({
+    pendingAction,
+    ready: status === "ready",
+    loading: status === "loading",
+    setPendingAction,
+    onReload: (message) => load(applied, message, true),
+    onOpen: () => {
+      setNotice(null);
+      setErrorMessage(null);
+    },
+  });
+
+  async function changeAccountState(
+    account: UserAccount,
+    trigger?: HTMLElement | null,
+  ) {
     if (pendingAction) return;
+    if (!account.active) {
+      reactivation.open(account, trigger ?? null);
+      return;
+    }
     const action = account.active ? "desativar" : "reativar";
     const confirmed = await confirmAction({
       confirmLabel: account.active ? "Desativar conta" : "Reativar conta",
@@ -314,14 +375,13 @@ export function useUserAccounts() {
     setNotice(null);
     setErrorMessage(null);
     try {
-      if (account.active) await deactivateUserAccount(account.id);
-      else await reactivateUserAccount(account.id);
+      await deactivateUserAccount(account.id);
       await load(
         applied,
         `Conta de ${account.name} ${account.active ? "desativada" : "reativada"} com sucesso.`,
       );
     } catch (error) {
-      const description = describeApiError(error);
+      const description = describeAccountError(error);
       if (description.kind === "access-denied") {
         clearSensitiveTransientState();
         setStatus("denied");
@@ -332,7 +392,43 @@ export function useUserAccounts() {
     }
   }
 
+  const profileChange = useAccountProfileChange({
+    pendingAction,
+    ready: status === "ready",
+    setPendingAction,
+    onReload: () => void load(applied),
+    onDenied: (message) => {
+      clearSensitiveTransientState();
+      setStatus("denied");
+      setErrorMessage(message);
+    },
+    onSuccess: async (account, result, trigger) => {
+      setNotice(null);
+      if (
+        result.temporaryCredential &&
+        result.temporaryCredentialExpiresAtUtc
+      ) {
+        setCredentialDisclosure({
+          accountId: account.id,
+          accountName: account.name,
+          credential: {
+            temporaryCredential: result.temporaryCredential,
+            temporaryCredentialExpiresAtUtc:
+              result.temporaryCredentialExpiresAtUtc,
+          },
+          returnFocusTo: trigger,
+        });
+      }
+      await load(
+        applied,
+        `Perfil alterado para ${profileLabels[result.currentProfileName]}. As sessões anteriores da conta foram encerradas.`,
+      );
+    },
+  });
+
   return {
+    reactivation,
+    profileChange,
     applyFilters,
     changeAccountState,
     closeCredentialDisclosure,

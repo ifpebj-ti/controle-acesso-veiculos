@@ -297,6 +297,14 @@ O estado da Issue #69 usa janela fixa em memória por instância: 300 requisiç�
 por minuto por usuário/IP na API e 30 por minuto por IP no login. Os valores são
 configuráveis e inválidos impedem o startup.
 
+Na borda OCI, a cota interativa da Issue #588 cobre tentativas de login e
+retornos Google. Descoberta de provedores, CSRF, refresh e logout não devem
+consumir essa mesma cota. Eles continuam sujeitos aos controles da API. O ensaio
+real encontrou um falso positivo com a regra anterior para todo `/api/auth/`;
+isso não autoriza desligar o WAF, remover a rotação nem aceitar reutilização de
+refresh token. Recargas concorrentes precisam de diagnóstico próprio. O escopo
+e as evidências estão no [guia Terraform da homologação](../../infrastructure/oci/homologation/terraform/README.md#escopo-do-limite-de-autenticação).
+
 Referência: [ASP.NET Core rate limiting](https://learn.microsoft.com/aspnet/core/performance/rate-limit?view=aspnetcore-10.0).
 
 ## Frontend

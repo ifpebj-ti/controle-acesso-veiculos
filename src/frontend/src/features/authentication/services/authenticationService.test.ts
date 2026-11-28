@@ -4,8 +4,10 @@ import { api } from "../../../services/api";
 import {
   AuthenticationContractError,
   authenticate,
+  getAuthenticationProviders,
   logoutAuthentication,
   refreshAuthentication,
+  startGoogleAuthentication,
 } from "./authenticationService";
 
 const session = {
@@ -28,6 +30,48 @@ const sessionHeaders = {
 afterEach(() => vi.restoreAllMocks());
 
 describe("authentication session service", () => {
+  it.each([true, false])(
+    "validates the Google provider discovery contract when enabled is %s",
+    async (googleEnabled) => {
+      const get = vi
+        .spyOn(api, "get")
+        .mockResolvedValue({ data: { googleEnabled } });
+
+      await expect(getAuthenticationProviders()).resolves.toEqual({
+        googleEnabled,
+      });
+      expect(get).toHaveBeenCalledWith("/auth/providers", {
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+        skipSessionRefresh: true,
+      });
+    },
+  );
+
+  it.each([
+    {},
+    { googleEnabled: "true" },
+    { googleEnabled: true, role: "Admin" },
+  ])("rejects an invalid provider discovery response", async (data) => {
+    vi.spyOn(api, "get").mockResolvedValue({ data });
+
+    await expect(getAuthenticationProviders()).rejects.toBeInstanceOf(
+      AuthenticationContractError,
+    );
+  });
+
+  it("builds the full-navigation Google start URL without making a request", () => {
+    const navigate = vi.fn();
+    const get = vi.spyOn(api, "get");
+
+    startGoogleAuthentication(navigate);
+
+    expect(navigate).toHaveBeenCalledWith("/api/auth/google/start");
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it("gets a fresh CSRF token before refreshing with cookies enabled globally", async () => {
     const get = vi
       .spyOn(api, "get")

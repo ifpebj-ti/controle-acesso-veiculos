@@ -12,6 +12,14 @@ public sealed class OperationalSummaryService(
         CancellationToken cancellationToken = default)
     {
         var selectedDate = localDate ?? CurrentLocalDate();
+        if (selectedDate.DayNumber < TrendDays - 1 ||
+            selectedDate == DateOnly.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(localDate),
+                "A data deve comportar os 14 dias da tendência e o início do dia seguinte.");
+        }
+
         var periodStartUtc = ConvertStartToUtc(selectedDate);
         var periodEndUtc = ConvertStartToUtc(selectedDate.AddDays(1));
         var trendStartDate = selectedDate.AddDays(-(TrendDays - 1));

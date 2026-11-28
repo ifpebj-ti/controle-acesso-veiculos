@@ -141,10 +141,12 @@ resource "oci_waf_web_app_firewall_policy" "homologation" {
 
   request_rate_limiting {
     rules {
-      name               = "authentication-per-source"
-      type               = "REQUEST_RATE_LIMITING"
-      action_name        = "block-rate-limit"
-      condition          = "i_starts_with(http.request.url.path, '/api/auth/')"
+      name        = "authentication-per-source"
+      type        = "REQUEST_RATE_LIMITING"
+      action_name = "block-rate-limit"
+      # Discovery, CSRF, refresh and logout must not consume the interactive-login quota.
+      # Match complete paths (including ASP.NET's trailing-slash variant), case-insensitively.
+      condition          = "(http.request.method == 'POST' && i_contains(['/api/auth/login', '/api/auth/login/'], http.request.url.path)) || (http.request.method == 'GET' && i_contains(['/api/auth/google/start', '/api/auth/google/start/', '/api/auth/google/complete', '/api/auth/google/complete/', '/auth/google/complete'], http.request.url.path)) || (contains(['GET', 'POST'], http.request.method) && i_equals(http.request.url.path, '/signin-google'))"
       condition_language = "JMESPATH"
 
       configurations {

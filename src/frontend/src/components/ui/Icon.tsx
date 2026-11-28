@@ -15,7 +15,9 @@ export type IconName =
   | "lock"
   | "log-out"
   | "mail"
+  | "maximize"
   | "menu"
+  | "minimize"
   | "motorcycle"
   | "package"
   | "pickup"
@@ -38,6 +40,8 @@ interface IconProps extends SVGProps<SVGSVGElement> {
 }
 
 const paths: Record<IconName, ReactNode> = {
+  maximize: <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" />,
+  minimize: <path d="M3 8h5V3M16 3v5h5M21 16h-5v5M8 21v-5H3" />,
   ambulance: (
     <>
       <path d="M3 7h11v10H3zM14 10h4l3 4v3h-7z" />

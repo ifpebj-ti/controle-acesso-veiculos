@@ -5,6 +5,51 @@ namespace ControleAcessoVeiculos.Application.Tests;
 
 public sealed class VehicleAccessServiceTests
 {
+    [Theory]
+    [InlineData("driverName")]
+    [InlineData("objective")]
+    [InlineData("documentType")]
+    [InlineData("documentNumber")]
+    [InlineData("vehicleType")]
+    [InlineData("brand")]
+    [InlineData("model")]
+    [InlineData("color")]
+    [InlineData("observation")]
+    public async Task EntryRejectsNullCharactersBeforePersistence(string field)
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+        var command = new RegisterVehicleEntryCommand("QA driver", "ABC1D23", "Visita", AccessCategoryNames.Visitor);
+        command = field switch
+        {
+            "driverName" => command with { DriverName = "QA\0driver" },
+            "objective" => command with { Objective = "QA\0objective" },
+            "documentType" => command with { DocumentType = "CPF\0", DocumentNumber = "12345678900" },
+            "documentNumber" => command with { DocumentType = "CPF", DocumentNumber = "123\0" },
+            "vehicleType" => command with { VehicleType = "Moto\0" },
+            "brand" => command with { Brand = "QA\0" },
+            "model" => command with { Model = "QA\0" },
+            "color" => command with { Color = "QA\0" },
+            _ => command with { Observation = "QA\0note" }
+        };
+        var result = await service.RegisterEntryAsync(command, 7, TestContext.Current.CancellationToken);
+        Assert.Equal(RegisterVehicleEntryStatus.Invalid, result.Status);
+        Assert.Contains(field.StartsWith("document", StringComparison.Ordinal) ? "document" : field, result.Errors.Keys);
+        Assert.Equal(0, store.RegisterCalls);
+    }
+
+    [Fact]
+    public async Task EntryPreservesUnicodeAndMultilineObservation()
+    {
+        var store = new FakeVehicleAccessStore();
+        var service = new VehicleAccessService(store, new FixedTimeProvider(FixedNow));
+        const string note = "Observação de teste\nSegunda linha\tcom tabulação";
+        var result = await service.RegisterEntryAsync(new("Condutor de teste", "ABC1D23", "Visita", AccessCategoryNames.Visitor,
+            Observation: note), 7, TestContext.Current.CancellationToken);
+        Assert.Equal(RegisterVehicleEntryStatus.Success, result.Status);
+        Assert.Equal(note, store.LastEntry?.Observation);
+    }
+
     private static readonly DateTimeOffset FixedNow =
         new(2026, 8, 28, 12, 30, 0, TimeSpan.Zero);
 

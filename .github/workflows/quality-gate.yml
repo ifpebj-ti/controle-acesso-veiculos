@@ -1,0 +1,35 @@
+name: CI - Quality Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  pull-requests: read
+
+concurrency:
+  group: quality-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Check out the PR composition
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify gate regression cases
+        run: python3 -B -m unittest discover -s infrastructure/ci/tests -p test_quality_gate.py -v
+
+      - name: Verify the required workflows for this PR source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 -B infrastructure/ci/quality_gate.py

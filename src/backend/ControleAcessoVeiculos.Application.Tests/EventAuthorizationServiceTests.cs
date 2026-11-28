@@ -7,6 +7,34 @@ public sealed class EventAuthorizationServiceTests
     private static readonly DateTimeOffset FixedNow =
         new(2026, 8, 30, 12, 0, 0, TimeSpan.Zero);
 
+    [Theory]
+    [InlineData("\0")]
+    [InlineData("Evento\0Teste")]
+    [InlineData(" Evento\0 ")]
+    public async Task SearchRejectsNullCharacterBeforeCallingStore(string name)
+    {
+        var store = new FakeStore();
+        var result = await CreateService(store).SearchAsync(
+            new SearchEventAuthorizationsCommand(Name: name),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Invalid, result.Status);
+        Assert.Contains("name", result.Errors.Keys);
+        Assert.Null(store.LastCriteria);
+    }
+
+    [Fact]
+    public async Task SearchPreservesUnicodeAndPunctuation()
+    {
+        var store = new FakeStore();
+        var result = await CreateService(store).SearchAsync(
+            new SearchEventAuthorizationsCommand(Name: "  São João D'Ávila  "),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(EventAuthorizationOperationStatus.Success, result.Status);
+        Assert.Equal("São João D'Ávila", store.LastCriteria?.Name);
+    }
+
     [Fact]
     public async Task CreateAsync_ShouldValidateBeforeCallingStore()
     {

@@ -2,6 +2,7 @@ import axios from "axios";
 
 export type ApiErrorKind =
   | "access-denied"
+  | "cancelled"
   | "conflict"
   | "network"
   | "rate-limited"
@@ -54,7 +55,48 @@ function firstValidationMessage(errors: unknown) {
 }
 
 export function describeApiError(error: unknown): ApiErrorDescription {
-  if (!axios.isAxiosError(error) || !error.response) {
+  if (
+    axios.isCancel(error) ||
+    (axios.isAxiosError(error) && error.code === "ERR_CANCELED") ||
+    (error instanceof Error && error.name === "AbortError") ||
+    (typeof DOMException !== "undefined" &&
+      error instanceof DOMException &&
+      error.name === "AbortError")
+  ) {
+    return {
+      kind: "cancelled",
+      message: "A solicitação foi cancelada.",
+    };
+  }
+
+  if (!axios.isAxiosError(error)) {
+    return {
+      kind: "unexpected",
+      message:
+        "O sistema encontrou um erro inesperado. Tente novamente mais tarde.",
+    };
+  }
+
+  if (!error.response) {
+    const transportCodes = [
+      "ERR_NETWORK",
+      "ECONNABORTED",
+      "ETIMEDOUT",
+      "ENOTFOUND",
+      "ECONNRESET",
+      "ECONNREFUSED",
+      "EAI_AGAIN",
+    ];
+    if (
+      !transportCodes.includes(error.code ?? "") &&
+      !(error.request && !error.code)
+    ) {
+      return {
+        kind: "unexpected",
+        message:
+          "O sistema encontrou um erro inesperado. Tente novamente mais tarde.",
+      };
+    }
     return {
       kind: "network",
       message:

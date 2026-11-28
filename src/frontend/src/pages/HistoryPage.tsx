@@ -89,12 +89,6 @@ export function HistoryPage() {
         categoryCounts={history.categoryCounts}
         categoryCountsStatus={history.categoryCountsStatus}
         onSelect={history.selectCategory}
-        onShowMore={() => {
-          document.getElementById("history-category")?.focus();
-          document
-            .getElementById("history-category")
-            ?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }}
         requestStatus={history.requestStatus}
       />
 

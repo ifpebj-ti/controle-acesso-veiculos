@@ -96,17 +96,22 @@ export async function countAccessHistoryByCategory(
   const baseFilters = { ...filters };
   delete baseFilters.categoryName;
 
-  const totals = await Promise.all(
-    categories.map(async (categoryName) => {
-      const result = await searchAccessHistory({
-        ...baseFilters,
-        categoryName,
-        page: 1,
-        pageSize: 1,
-      });
-      return [categoryName, result.totalCount] as const;
-    }),
-  );
+  const totals: (readonly [string, number])[] = [];
+  // The current API exposes one total per category. Bound concurrent reads.
+  for (let index = 0; index < categories.length; index += 3) {
+    const batch = await Promise.all(
+      categories.slice(index, index + 3).map(async (categoryName) => {
+        const result = await searchAccessHistory({
+          ...baseFilters,
+          categoryName,
+          page: 1,
+          pageSize: 1,
+        });
+        return [categoryName, result.totalCount] as const;
+      }),
+    );
+    totals.push(...batch);
+  }
 
   return Object.fromEntries(totals);
 }
