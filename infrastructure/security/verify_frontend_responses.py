@@ -1,4 +1,4 @@
-"""Verify redirect, frame and cache responses through the running frontend."""
+"""Verify redirect, frame, referrer and cache responses through the frontend."""
 
 import argparse
 import re
@@ -29,6 +29,8 @@ def verify(base_url):
             body = response.read(65537)
             if len(body) > 65536:
                 raise ValueError("Response exceeded the bounded verification size")
+            if response.headers.get_all("Referrer-Policy", []) != ["no-referrer"]:
+                failures.append("Responses must contain exactly one no-referrer policy")
             return response.status, response.headers, body
 
     def require(condition, message):
@@ -68,7 +70,7 @@ def verify(base_url):
             "Missing static resources must return 404 without immutable caching")
     if failures:
         raise ValueError("; ".join(failures))
-    print("Frontend redirect, frame, cache and missing-resource verification passed")
+    print("Frontend redirect, frame, referrer, cache and missing-resource verification passed")
 
 
 if __name__ == "__main__":
