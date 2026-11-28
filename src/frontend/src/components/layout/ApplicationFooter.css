@@ -1,0 +1,8 @@
+.application-footer {
+  padding: 1rem 5rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  overflow-wrap: anywhere;
+}
+
+.application-frame:has(.authenticated-navigation-layout) > .application-footer {
+  display: none;
+}

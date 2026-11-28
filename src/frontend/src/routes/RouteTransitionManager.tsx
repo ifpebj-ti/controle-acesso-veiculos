@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 import { useSession } from "../features/authentication";
+import { ApplicationFooter } from "../components/layout/ApplicationFooter";
 import { getRouteFocusSelector, getRouteTitle } from "./routeMetadata";
 
 export function RouteTransitionManager() {
@@ -31,5 +32,12 @@ export function RouteTransitionManager() {
     return () => window.clearTimeout(focusTimeout);
   }, [location.pathname]);
 
-  return <Outlet />;
+  return (
+    <div className="application-frame flex min-h-svh min-w-0 flex-col bg-background">
+      <div className="min-w-0 flex-1">
+        <Outlet />
+      </div>
+      <ApplicationFooter />
+    </div>
+  );
 }

@@ -1,3 +1,4 @@
+import { ApplicationVersion } from "./ApplicationFooter";
 import { type MouseEvent, useEffect, useId, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
@@ -163,6 +164,7 @@ function SidebarContent({
           })}
         </ul>
       </nav>
+      <ApplicationVersion className="mt-3 hidden break-all text-xs text-text-muted xl:block" />
 
       <AppearanceSelector className="mt-8" />
       <FullscreenControl
@@ -281,7 +283,7 @@ function StandardAppLayout({
   }, [menuOpen]);
 
   return (
-    <div className="min-h-svh bg-background text-text">
+    <div className="authenticated-navigation-layout min-h-svh bg-background text-text">
       <a
         className="ui-button ui-button--primary fixed left-4 top-3 z-50 -translate-y-24 focus:translate-y-0"
         href="#conteudo-principal"
@@ -309,6 +311,7 @@ function StandardAppLayout({
         <span className="text-sm font-bold text-text">Controle de Acesso</span>
         <span aria-hidden="true" className="size-12 shrink-0" />
       </header>
+      <ApplicationVersion className="break-all px-4 pt-2 text-xs text-text-muted xl:hidden" />
 
       {menuOpen && (
         <div className="fixed inset-0 z-40 xl:hidden">
