@@ -6,6 +6,8 @@ Sistema web para registrar, consultar e auditar a movimentação de veículos no
 IFPE — Campus Belo Jardim.
 
 [![CI Backend](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-backend.yml/badge.svg)](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-backend.yml)
+[![Backend coverage-lines](https://raw.githubusercontent.com/ifpebj-ti/controle-acesso-veiculos/coverage-badges/coverage-lines.svg)](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-backend.yml)
+[![Backend coverage-branches](https://raw.githubusercontent.com/ifpebj-ti/controle-acesso-veiculos/coverage-badges/coverage-branches.svg)](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-backend.yml)
 [![CI Frontend](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-frontend.yml/badge.svg)](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-frontend.yml)
 [![CI Containers](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-containers.yml/badge.svg)](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/workflows/ci-containers.yml)
 [![Release](https://img.shields.io/github/v/release/ifpebj-ti/controle-acesso-veiculos?display_name=tag)](https://github.com/ifpebj-ti/controle-acesso-veiculos/releases)
