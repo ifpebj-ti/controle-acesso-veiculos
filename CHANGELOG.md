@@ -11,6 +11,7 @@ from its first published release.
 ### Fixed
 
 - Align edge Referrer-Policy with no-referrer and reject missing, divergent or duplicate effective headers in the HTTP smoke verification (Refs #772).
+- Clarify controlled security-fixture path concatenation with Path.Join while preserving negative cases and protective application catches (Refs #771).
 - Preserve concise, reviewed Technical MVP release notes with both Docker
   commands, verified semantic/source manifest digests, architecture checks and
   explicit pending/deployment limits; protect existing published releases
