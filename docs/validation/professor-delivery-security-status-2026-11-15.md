@@ -1,9 +1,46 @@
 # Balanço das entregas e da segurança — 15/11/2026
 
-## Atualização em 18/11/2026
+## Complemento de 28/11/2026
 
-A main 1801e0b incorpora #751/#752/#755/#757/#738/#739. O reteste público e os controles ainda pendentes continuam descritos abaixo. O quadro #43 recebeu reconciliação de cinco classificações e a preparação da release segue no #754. Consulte o
-[balanço atual](presentation-status-2026-11-18.md).
+O [balanço de entregas](delivery-closure-2026-11-18.md#complemento-de-28112026)
+registra a conferência do relatório de cobertura enviado pelos professores,
+a versão visível na aplicação, os badges e a atualização candidata do Nginx.
+A CI do #792 aprovou os scans das duas arquiteturas e o smoke integrado.
+A publicação de uma nova release e sua promoção permanecem etapas separadas.
+
+## Atualização atual em 18/11/2026
+
+Main `a4ffcc5`, após #764/#767. Release `0.5.0` publicada e instalada,
+fonte `eaccd72`, imagens GHCR por digest e 23 migrations. O registro da
+[promoção](release-050-rollout-2026-11-18.md) identifica backup, restauração,
+SQL idempotente e 46 verificações HTTPS. Não somar execuções antigas como novos
+casos. Os trechos datados de 15/11, 17/11 e a consulta pública anterior ao rollout
+são históricos e não descrevem a versão atual.
+
+Em 18/11 às 13h23 BRT, a borda recebeu somente o ajuste de Referrer-Policy
+no-referrer (#772/PR #774), preservando imagens, containers e banco. Validação
+pelo Caddy instalado, backup, reload e reteste público passaram. O verificador
+confirmou redirect relativo, DENY único, cache e política de referência única;
+providers retorna googleEnabled=true. Não houve nova autenticação do titular
+nessa alteração. O aceite do professor continua separado do reteste técnico.
+
+Os PRs #769 (metadados OCI) e #770 (notas revisadas de release) estão ready com
+20 e 18 checks aprovados, respectivamente, nos SHAs 225c5e4 e 6213f87. Isso não
+muda retroativamente as imagens 0.5.0. O #773 trata sete notes de caminhos nas
+fixtures, sem remover catches protetores; o efeito remoto depende da análise
+da main após incorporação. A consulta anterior conserva nove notes abertas.
+
+O relatório externo ainda não pode ser considerado integralmente encerrado.
+CAV-04/05/06 dependem da política coordenada #727; CAV-08/18 dependem da revisão
+integrada #607/#613. Outros recortes de privacidade, correlação, mensagens e
+borda continuam explicitados na tabela. O achado npm de desenvolvimento #765
+é separado dos 28 IDs do professor e do audit de dependências de produção.
+
+Consulte o [balanço consolidado de 18/11](delivery-closure-2026-11-18.md)
+e a [matriz da Unidade 2](unit-2-readiness.md). A régua não foi inflada por PRs
+ou correções ainda candidatas.
+
+## Referência histórica de 15/11/2026
 
 Rastreabilidade #728/#732. Main `2fe61b1`, após #722/#725/#729.
 Homologação identificada com frontend `67ad6b8`, backend `f7ee701` e 22 migrations.
@@ -116,23 +153,23 @@ continua exigindo conclusão operacional.
 | CAV-14 — datas extremas                      | Validação incorporada e instalada, com respostas 400 e testes nos limites do resumo operacional.                                                   | Reteste independente e regressões para novos filtros de data.                                |
 | CAV-15 — NUL em texto                        | Validações incorporadas para os recortes de entrada, consultas e campos revisados. A implantação posterior preservou essas correções.              | Conservar a validação nos campos novos e executar o reteste do avaliador.                    |
 | CAV-16 — correlação fornecida pelo cliente   | A consulta de 15/11 confirmou que um GUID de correlação válido enviado pelo cliente é refletido.                                                   | Separar identidade interna e correlação externa, com análise de observabilidade.             |
-| CAV-17 — redirect para HTTP/porta interna    | Confirmado no site em 15/11. Correção incorporada #725 usa redirect relativo e passou no Nginx real local.                                         | Promover e repetir a consulta pública pela #686.                                             |
+| CAV-17 — redirect para HTTP/porta interna    | Correção #725 instalada em 0.5.0. Reteste público de 18/11 confirmou redirect relativo /api/.                                                      | Reteste independente do avaliador e regressão nas próximas versões.                          |
 | CAV-28 — credencial temporária e soft-delete | Entrega única, prazo, troca obrigatória e desativação preservando autoria são controles existentes. A reativação Local recebeu recuperação segura. | Concluir a interface, o procedimento de entrega e a governança da limpeza fictícia/retenção. |
 
 ## Relatório externo — dez achados informativos
 
-| ID                                      | Situação conferida                                                                                                                                               | O que falta                                                                    |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| CAV-18 — sobrescrita concorrente        | #607 valida a base original, serializa decisões e preserva proposta/decisão, com testes PostgreSQL.                                                              | Implantar o fluxo integrado de revisão com #613.                               |
-| CAV-19 — antiforgery no login           | Login local continua com seu desenho próprio; refresh/logout/troca possuem controles CSRF.                                                                       | Registrar a análise específica do login e o risco residual.                    |
-| CAV-20 — traceId em erros               | Correlação técnica segue no contrato de erro. Os identificadores auxiliam a investigação.                                                                        | Formalizar o conteúdo público e os limites de exposição da observabilidade.    |
-| CAV-21 — fallback SPA                   | A configuração mantém o fallback das rotas do cliente. #725 acrescenta 404 para recursos estáticos ausentes.                                                     | Avaliar o status HTTP das demais rotas inexistentes do SPA.                    |
-| CAV-22 — frames duplicados              | Confirmado no CSRF público. #725 passou no ensaio local com um único DENY e no-store preservado.                                                                 | Promoção e reteste da resposta pública.                                        |
-| CAV-23 — cache dos bundles/HTML         | Ausência de política explícita confirmada em 15/11. #725 passou com HTML revalidável e bundles com hash imutáveis.                                               | Promoção e reteste dos assets servidos.                                        |
-| CAV-24 — respostas e cobertura de borda | WAF/proxy estão aplicados e possuem contrato operacional próprio. A aplicação trata validação literal.                                                           | Conferir erros 400/403/413/429, headers e limites efetivos por camada.         |
-| CAV-25 — mensagem de validação          | O login ainda agrupa entrada ausente, inválida ou excessiva em mensagem de obrigatoriedade.                                                                      | Ajustar validação de formato preservando negação genérica e acessibilidade.    |
-| CAV-26 — menu e policy                  | Permissões de negócio e interface do Transporte foram incorporadas em #693/#705, com auditoria e restrição de contas ao Administrador.                           | Revalidar as permissões na próxima versão promovida.                           |
-| CAV-27 — configuração efetiva           | A implantação tem fonte/imagem identificadas. A borda pública devolveu strict-origin-when-cross-origin em 15/11, enquanto o Nginx versionado define no-referrer. | Alinhar e registrar a política efetiva das camadas, com reteste após promoção. |
+| ID                                      | Situação conferida                                                                                                                     | O que falta                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| CAV-18 — sobrescrita concorrente        | #607 valida a base original, serializa decisões e preserva proposta/decisão, com testes PostgreSQL.                                    | Implantar o fluxo integrado de revisão com #613.                            |
+| CAV-19 — antiforgery no login           | Login local continua com seu desenho próprio; refresh/logout/troca possuem controles CSRF.                                             | Registrar a análise específica do login e o risco residual.                 |
+| CAV-20 — traceId em erros               | Correlação técnica segue no contrato de erro. Os identificadores auxiliam a investigação.                                              | Formalizar o conteúdo público e os limites de exposição da observabilidade. |
+| CAV-21 — fallback SPA                   | A configuração mantém o fallback das rotas do cliente. #725 acrescenta 404 para recursos estáticos ausentes.                           | Avaliar o status HTTP das demais rotas inexistentes do SPA.                 |
+| CAV-22 — frames duplicados              | Reteste público de 18/11 confirmou DENY único, incluindo CSRF, com no-store preservado.                                                | Reteste independente e preservação nas respostas novas.                     |
+| CAV-23 — cache dos bundles/HTML         | 0.5.0 instalada; verificador público aprovou HTML no-cache, bundle imutável por hash e 404 de recurso ausente.                         | Reteste independente e preservação nas próximas promoções.                  |
+| CAV-24 — respostas e cobertura de borda | WAF/proxy estão aplicados e possuem contrato operacional próprio. A aplicação trata validação literal.                                 | Conferir erros 400/403/413/429, headers e limites efetivos por camada.      |
+| CAV-25 — mensagem de validação          | O login ainda agrupa entrada ausente, inválida ou excessiva em mensagem de obrigatoriedade.                                            | Ajustar validação de formato preservando negação genérica e acessibilidade. |
+| CAV-26 — menu e policy                  | Permissões de negócio e interface do Transporte foram incorporadas em #693/#705, com auditoria e restrição de contas ao Administrador. | Revalidar as permissões na próxima versão promovida.                        |
+| CAV-27 — configuração efetiva           | Política Caddy ajustada em 18/11 às 13h23 BRT; reteste público confirmou no-referrer único. Aplicação 0.5.0 preservada.                | Aceite independente do avaliador. Fonte/rollout específicos no PR #774.     |
 
 ## Trabalho novo desta revisão
 

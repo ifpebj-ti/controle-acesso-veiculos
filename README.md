@@ -80,9 +80,10 @@ Transporte e Administrador podem manter o pré-cadastro. O nascimento conferido
 antes da nova entrada.
 
 A CI publica o resumo de [cobertura backend](docs/development/backend-coverage-gate.md)
-e aplica piso de 70%. A execução 43343801016, na main `8b61ccd`, mediu 93,50%
-das linhas, com migrations geradas excluídas. Cada candidato posterior mantém
-sua medição própria. O [ciclo de releases](docs/operations/release-automation.md)
+e aplica piso de 70% às linhas escritas à mão. A
+[execução da main `fccc58b`](https://github.com/ifpebj-ti/controle-acesso-veiculos/actions/runs/44353086524)
+mediu 93,67% nesse recorte. O relatório Cobertura mesclado mediu 87,25% de
+ramificações, incluindo código gerado. Cada candidato mantém sua medição própria. O [ciclo de releases](docs/operations/release-automation.md)
 prepara changelog, tag e publicação após os gates das imagens. A release publicada
 é `v0.5.0`, promovida na #686; #713 registra a preparação incorporada.
 
