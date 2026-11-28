@@ -112,3 +112,11 @@ sem copiar todo o changelog para a página da release. Consulte o
 aprovação automática: CODEOWNERS, revisão humana e gates continuam exigidos.
 Os metadados Docker são lidos com comandos estruturados, sem shell construído
 com valores de eventos. Nenhum segredo deve entrar em notas ou argumentos.
+
+## Version shown in the frontend
+
+The container build passes its validated `IMAGE_VERSION` into Vite as
+`VITE_APP_VERSION`. The release build derives it from the tag being built
+(for example, `v0.5.1` becomes `0.5.1`). With the footer from #783, the
+application shows the version of the served frontend bundle. A development
+image with a `dev` version has no release number to display.
